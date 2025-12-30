@@ -1,0 +1,135 @@
+@extends('layouts.front')
+
+@section('title', 'Contact')
+
+@section('content')
+<div class="container mx-auto px-4 py-12">
+    <!-- Breadcrumb -->
+    <nav class="text-sm text-slate-500 mb-8">
+        <a href="{{ route('home') }}" class="hover:text-primary-600">Accueil</a>
+        <span class="mx-2">/</span>
+        <span class="text-slate-900">Contact</span>
+    </nav>
+
+    <div class="max-w-6xl mx-auto">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-slate-900 mb-4">Contactez-nous</h1>
+            <p class="text-lg text-slate-600 max-w-2xl mx-auto">
+                Vous avez une question ? N'hésitez pas à nous contacter. Notre équipe est là pour vous aider.
+            </p>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-8 mb-12">
+            <!-- Téléphone -->
+            <div class="bg-white rounded-2xl p-8 text-center shadow-sm border border-slate-200 hover:shadow-lg transition-shadow">
+                <div class="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-slate-900 mb-2">Téléphone</h3>
+                <p class="text-slate-600 mb-4">Du lundi au vendredi, 8h - 18h</p>
+                <a href="tel:+2250700000000" class="text-primary-600 font-medium hover:underline">+225 07 00 00 00 00</a>
+            </div>
+
+            <!-- Email -->
+            <div class="bg-white rounded-2xl p-8 text-center shadow-sm border border-slate-200 hover:shadow-lg transition-shadow">
+                <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-slate-900 mb-2">Email</h3>
+                <p class="text-slate-600 mb-4">Réponse sous 24h</p>
+                <a href="mailto:contact@chamse.ci" class="text-primary-600 font-medium hover:underline">contact@chamse.ci</a>
+            </div>
+
+            <!-- Adresse -->
+            <div class="bg-white rounded-2xl p-8 text-center shadow-sm border border-slate-200 hover:shadow-lg transition-shadow">
+                <div class="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-semibold text-slate-900 mb-2">Adresse</h3>
+                <p class="text-slate-600 mb-4">Notre bureau</p>
+                <p class="text-slate-700">Abidjan, Cocody<br>Côte d'Ivoire</p>
+            </div>
+        </div>
+
+        <!-- Formulaire de contact -->
+        <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6">Envoyez-nous un message</h2>
+            
+            <form action="#" method="POST" class="space-y-6">
+                @csrf
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-slate-700 mb-2">Nom complet</label>
+                        <input type="text" id="name" name="name" required
+                            class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                            placeholder="Votre nom">
+                    </div>
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-slate-700 mb-2">Email</label>
+                        <input type="email" id="email" name="email" required
+                            class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                            placeholder="votre@email.com">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="subject" class="block text-sm font-medium text-slate-700 mb-2">Sujet</label>
+                    <select id="subject" name="subject" required
+                        class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors">
+                        <option value="">Choisir un sujet</option>
+                        <option value="order">Question sur une commande</option>
+                        <option value="product">Question sur un produit</option>
+                        <option value="return">Retour / Remboursement</option>
+                        <option value="partnership">Partenariat</option>
+                        <option value="other">Autre</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="message" class="block text-sm font-medium text-slate-700 mb-2">Message</label>
+                    <textarea id="message" name="message" rows="5" required
+                        class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors resize-none"
+                        placeholder="Votre message..."></textarea>
+                </div>
+
+                <button type="submit"
+                    class="w-full md:w-auto px-8 py-4 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-colors focus:ring-4 focus:ring-primary-500/30">
+                    Envoyer le message
+                </button>
+            </form>
+        </div>
+
+        <!-- FAQ rapide -->
+        <div class="mt-12">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6 text-center">Questions fréquentes</h2>
+            
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                    <h3 class="font-semibold text-slate-900 mb-2">Quels sont les délais de livraison ?</h3>
+                    <p class="text-slate-600 text-sm">La livraison est effectuée sous 24 à 72h pour Abidjan, et sous 3 à 7 jours pour les autres villes de Côte d'Ivoire.</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                    <h3 class="font-semibold text-slate-900 mb-2">Comment suivre ma commande ?</h3>
+                    <p class="text-slate-600 text-sm">Connectez-vous à votre compte client et accédez à la section "Mes commandes" pour voir le statut de vos commandes.</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                    <h3 class="font-semibold text-slate-900 mb-2">Quels modes de paiement acceptez-vous ?</h3>
+                    <p class="text-slate-600 text-sm">Nous acceptons Orange Money, MTN Mobile Money, les cartes bancaires via CinetPay, et le paiement à la livraison.</p>
+                </div>
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                    <h3 class="font-semibold text-slate-900 mb-2">Puis-je retourner un article ?</h3>
+                    <p class="text-slate-600 text-sm">Oui, vous disposez de 30 jours pour retourner un article non utilisé dans son emballage d'origine.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+

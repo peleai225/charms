@@ -93,17 +93,35 @@ class ShopController extends Controller
     /**
      * Page catégorie
      */
-    public function category(string $slug)
+    public function category(string $slug, Request $request)
     {
         $category = Category::where('slug', $slug)->active()->firstOrFail();
         
         $categoryIds = $category->getAllChildrenIds();
         
-        $products = Product::active()
+        $query = Product::active()
             ->whereIn('category_id', $categoryIds)
-            ->with(['images', 'category', 'variants.attributeValues'])
-            ->latest()
-            ->paginate(12);
+            ->with(['images', 'category', 'variants.attributeValues']);
+
+        // Tri
+        switch ($request->get('sort', 'newest')) {
+            case 'price_asc':
+                $query->orderBy('sale_price', 'asc');
+                break;
+            case 'price_desc':
+                $query->orderBy('sale_price', 'desc');
+                break;
+            case 'name':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'popular':
+                $query->orderBy('sales_count', 'desc');
+                break;
+            default:
+                $query->latest();
+        }
+
+        $products = $query->paginate(12)->withQueryString();
 
         $subcategories = $category->children()->active()->ordered()->get();
 

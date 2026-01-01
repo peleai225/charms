@@ -77,9 +77,8 @@ Route::get('/webhook/cinetpay', function () {
 })->withoutMiddleware(['web']);
 
 // Pages statiques
-Route::get('/contact', function () {
-    return view('front.pages.contact');
-})->name('contact');
+Route::get('/contact', [\App\Http\Controllers\Front\ContactController::class, 'index'])->name('contact');
+Route::post('/contact', [\App\Http\Controllers\Front\ContactController::class, 'store'])->name('contact.store');
 
 Route::get('/a-propos', function () {
     return view('front.pages.about');

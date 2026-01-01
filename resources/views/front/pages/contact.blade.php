@@ -19,6 +19,12 @@
             </p>
         </div>
 
+        @php
+            $contactEmail = \App\Models\Setting::get('contact_email', 'contact@chamse.ci');
+            $contactPhone = \App\Models\Setting::get('contact_phone', '+225 07 00 00 00 00');
+            $contactAddress = \App\Models\Setting::get('contact_address', 'Abidjan, Cocody, Côte d\'Ivoire');
+        @endphp
+
         <div class="grid lg:grid-cols-3 gap-8 mb-12">
             <!-- Téléphone -->
             <div class="bg-white rounded-2xl p-8 text-center shadow-sm border border-slate-200 hover:shadow-lg transition-shadow">
@@ -29,7 +35,11 @@
                 </div>
                 <h3 class="text-xl font-semibold text-slate-900 mb-2">Téléphone</h3>
                 <p class="text-slate-600 mb-4">Du lundi au vendredi, 8h - 18h</p>
-                <a href="tel:+2250700000000" class="text-primary-600 font-medium hover:underline">+225 07 00 00 00 00</a>
+                @if($contactPhone)
+                    <a href="tel:{{ preg_replace('/[^0-9+]/', '', $contactPhone) }}" class="text-primary-600 font-medium hover:underline">{{ $contactPhone }}</a>
+                @else
+                    <p class="text-slate-500">Non renseigné</p>
+                @endif
             </div>
 
             <!-- Email -->
@@ -41,7 +51,11 @@
                 </div>
                 <h3 class="text-xl font-semibold text-slate-900 mb-2">Email</h3>
                 <p class="text-slate-600 mb-4">Réponse sous 24h</p>
-                <a href="mailto:contact@chamse.ci" class="text-primary-600 font-medium hover:underline">contact@chamse.ci</a>
+                @if($contactEmail)
+                    <a href="mailto:{{ $contactEmail }}" class="text-primary-600 font-medium hover:underline">{{ $contactEmail }}</a>
+                @else
+                    <p class="text-slate-500">Non renseigné</p>
+                @endif
             </div>
 
             <!-- Adresse -->
@@ -54,7 +68,11 @@
                 </div>
                 <h3 class="text-xl font-semibold text-slate-900 mb-2">Adresse</h3>
                 <p class="text-slate-600 mb-4">Notre bureau</p>
-                <p class="text-slate-700">Abidjan, Cocody<br>Côte d'Ivoire</p>
+                @if($contactAddress)
+                    <p class="text-slate-700">{!! nl2br(e($contactAddress)) !!}</p>
+                @else
+                    <p class="text-slate-500">Non renseignée</p>
+                @endif
             </div>
         </div>
 
@@ -62,41 +80,53 @@
         <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
             <h2 class="text-2xl font-bold text-slate-900 mb-6">Envoyez-nous un message</h2>
             
-            <form action="#" method="POST" class="space-y-6">
+            <form action="{{ route('contact.store') }}" method="POST" class="space-y-6">
                 @csrf
                 <div class="grid md:grid-cols-2 gap-6">
                     <div>
                         <label for="name" class="block text-sm font-medium text-slate-700 mb-2">Nom complet</label>
-                        <input type="text" id="name" name="name" required
-                            class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                        <input type="text" id="name" name="name" value="{{ old('name') }}" required
+                            class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('name') border-red-500 @enderror"
                             placeholder="Votre nom">
+                        @error('name')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div>
                         <label for="email" class="block text-sm font-medium text-slate-700 mb-2">Email</label>
-                        <input type="email" id="email" name="email" required
-                            class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
+                        <input type="email" id="email" name="email" value="{{ old('email') }}" required
+                            class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('email') border-red-500 @enderror"
                             placeholder="votre@email.com">
+                        @error('email')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
 
                 <div>
                     <label for="subject" class="block text-sm font-medium text-slate-700 mb-2">Sujet</label>
                     <select id="subject" name="subject" required
-                        class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors">
+                        class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors @error('subject') border-red-500 @enderror">
                         <option value="">Choisir un sujet</option>
-                        <option value="order">Question sur une commande</option>
-                        <option value="product">Question sur un produit</option>
-                        <option value="return">Retour / Remboursement</option>
-                        <option value="partnership">Partenariat</option>
-                        <option value="other">Autre</option>
+                        <option value="order" {{ old('subject') === 'order' ? 'selected' : '' }}>Question sur une commande</option>
+                        <option value="product" {{ old('subject') === 'product' ? 'selected' : '' }}>Question sur un produit</option>
+                        <option value="return" {{ old('subject') === 'return' ? 'selected' : '' }}>Retour / Remboursement</option>
+                        <option value="partnership" {{ old('subject') === 'partnership' ? 'selected' : '' }}>Partenariat</option>
+                        <option value="other" {{ old('subject') === 'other' ? 'selected' : '' }}>Autre</option>
                     </select>
+                    @error('subject')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div>
                     <label for="message" class="block text-sm font-medium text-slate-700 mb-2">Message</label>
                     <textarea id="message" name="message" rows="5" required
-                        class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors resize-none"
-                        placeholder="Votre message..."></textarea>
+                        class="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors resize-none @error('message') border-red-500 @enderror"
+                        placeholder="Votre message...">{{ old('message') }}</textarea>
+                    @error('message')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <button type="submit"

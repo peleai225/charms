@@ -122,6 +122,23 @@ class Order extends Model
         return $this->hasMany(Refund::class);
     }
 
+    public function orderSuppliers(): HasMany
+    {
+        return $this->hasMany(OrderSupplier::class);
+    }
+
+    public function suppliers()
+    {
+        return $this->hasManyThrough(
+            Supplier::class,
+            OrderSupplier::class,
+            'order_id',
+            'id',
+            'id',
+            'supplier_id'
+        );
+    }
+
     // ========== SCOPES ==========
 
     public function scopeStatus($query, string $status)
@@ -238,6 +255,18 @@ class Order extends Model
             self::STATUS_DELIVERED => 'success',
             self::STATUS_CANCELLED, self::STATUS_REFUNDED => 'danger',
             default => 'secondary',
+        };
+    }
+
+    public function getPaymentMethodLabelAttribute(): string
+    {
+        return match ($this->payment_method) {
+            'cinetpay' => 'CinetPay (Orange Money, MTN MoMo, etc.)',
+            'lygos' => 'Lygos Pay',
+            'cod' => 'Paiement à la livraison',
+            'bank_transfer' => 'Virement bancaire',
+            'cash' => 'Espèces',
+            default => ucfirst(str_replace('_', ' ', $this->payment_method ?? 'Non spécifié')),
         };
     }
 

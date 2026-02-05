@@ -32,7 +32,48 @@
     @endif
     
     <!-- Styles -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if(app()->environment('local'))
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @else
+        @php
+            try {
+                if (class_exists('\App\Helpers\ViteHelper')) {
+                    $viteHelper = new \App\Helpers\ViteHelper();
+                    echo $viteHelper->renderAssets(['resources/css/app.css', 'resources/js/app.js']);
+                } else {
+                    // Fallback: charger directement depuis build/assets
+                    $buildPath = public_path('build/assets');
+                    if (is_dir($buildPath)) {
+                        $files = scandir($buildPath);
+                        foreach ($files as $file) {
+                            if ($file !== '.' && $file !== '..') {
+                                if (str_ends_with($file, '.css')) {
+                                    echo '<link rel="stylesheet" href="' . asset('build/assets/' . $file) . '">' . "\n    ";
+                                } elseif (str_ends_with($file, '.js')) {
+                                    echo '<script type="module" src="' . asset('build/assets/' . $file) . '"></script>' . "\n    ";
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                // En cas d'erreur, essayer de charger directement
+                $buildPath = public_path('build/assets');
+                if (is_dir($buildPath)) {
+                    $files = scandir($buildPath);
+                    foreach ($files as $file) {
+                        if ($file !== '.' && $file !== '..') {
+                            if (str_ends_with($file, '.css')) {
+                                echo '<link rel="stylesheet" href="' . asset('build/assets/' . $file) . '">' . "\n    ";
+                            } elseif (str_ends_with($file, '.js')) {
+                                echo '<script type="module" src="' . asset('build/assets/' . $file) . '"></script>' . "\n    ";
+                            }
+                        }
+                    }
+                }
+            }
+        @endphp
+    @endif
     
     <!-- Couleurs dynamiques du thème -->
     <style>
@@ -115,7 +156,7 @@
         <div x-data="{ 
             currentIndex: 0, 
             banners: {{ $announcementBanners->count() }},
-            dismissed: localStorage.getItem('announcement_dismissed_{{ $announcementBanners->first()->id ?? 0 }}') === 'true'
+            dismissed: (typeof safeLocalStorage !== 'undefined' ? safeLocalStorage.getItem('announcement_dismissed_{{ $announcementBanners->first()->id ?? 0 }}') === 'true' : false)
         }" 
         x-show="!dismissed"
         x-transition
@@ -168,7 +209,7 @@
                         </button>
                     @endif
                     
-                    <button @click="dismissed = true; localStorage.setItem('announcement_dismissed_{{ $announcementBanners->first()->id ?? 0 }}', 'true')" 
+                    <button @click="dismissed = true; if (typeof safeLocalStorage !== 'undefined') { safeLocalStorage.setItem('announcement_dismissed_{{ $announcementBanners->first()->id ?? 0 }}', 'true'); }" 
                             class="absolute right-2 sm:right-4 p-1 hover:bg-white/20 rounded-full transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>

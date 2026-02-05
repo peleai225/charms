@@ -114,6 +114,9 @@ class OrderController extends Controller
             // Envoyer l'email de suivi
             if ($order->billing_email) {
                 try {
+                    // Configurer la connexion mail depuis les paramètres
+                    \App\Services\MailConfigService::configureFromSettings();
+                    
                     Mail::to($order->billing_email)->send(new OrderShipped($order));
                 } catch (\Exception $e) {
                     \Log::error('Failed to send shipping email: ' . $e->getMessage());
@@ -139,6 +142,9 @@ class OrderController extends Controller
         // Envoyer email de changement de statut
         if ($order->billing_email && $newStatus !== 'cancelled') {
             try {
+                // Configurer la connexion mail depuis les paramètres
+                \App\Services\MailConfigService::configureFromSettings();
+                
                 Mail::to($order->billing_email)->send(new OrderStatusChanged($order, $oldStatus));
             } catch (\Exception $e) {
                 \Log::error('Failed to send status email: ' . $e->getMessage());
@@ -198,6 +204,9 @@ class OrderController extends Controller
     {
         if ($order->billing_email) {
             try {
+                // Configurer la connexion mail depuis les paramètres
+                \App\Services\MailConfigService::configureFromSettings();
+                
                 Mail::to($order->billing_email)->send(new \App\Mail\OrderConfirmation($order));
                 return back()->with('success', 'Email de confirmation renvoyé.');
             } catch (\Exception $e) {

@@ -97,13 +97,36 @@ class ProductController extends Controller
             'is_new' => 'boolean',
             'weight' => 'nullable|numeric|min:0',
             'has_variants' => 'boolean',
+            'track_stock' => 'boolean',
+            'allow_backorder' => 'boolean',
+            'is_dropshipping' => 'boolean',
             'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:5120',
         ]);
 
-        $validated['slug'] = Str::slug($validated['name']);
+        // Nettoyer les descriptions (supprimer les espaces multiples et les répétitions)
+        if (!empty($validated['description'])) {
+            $validated['description'] = preg_replace('/\s+/', ' ', trim($validated['description']));
+        }
+        if (!empty($validated['short_description'])) {
+            $validated['short_description'] = preg_replace('/\s+/', ' ', trim($validated['short_description']));
+        }
+        
+        // Générer un slug unique
+        $baseSlug = Str::slug($validated['name']);
+        $slug = $baseSlug;
+        $counter = 1;
+        while (Product::where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+        $validated['slug'] = $slug;
+        
         $validated['is_featured'] = $request->boolean('is_featured');
         $validated['is_new'] = $request->boolean('is_new');
         $validated['has_variants'] = $request->boolean('has_variants');
+        $validated['track_stock'] = $request->boolean('track_stock', true);
+        $validated['allow_backorder'] = $request->boolean('allow_backorder');
+        $validated['is_dropshipping'] = $request->boolean('is_dropshipping');
 
         DB::beginTransaction();
 
@@ -186,12 +209,39 @@ class ProductController extends Controller
             'is_new' => 'boolean',
             'weight' => 'nullable|numeric|min:0',
             'has_variants' => 'boolean',
+            'track_stock' => 'boolean',
+            'allow_backorder' => 'boolean',
+            'is_dropshipping' => 'boolean',
             'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:5120',
         ]);
 
+        // Nettoyer les descriptions (supprimer les espaces multiples et les répétitions)
+        if (!empty($validated['description'])) {
+            $validated['description'] = preg_replace('/\s+/', ' ', trim($validated['description']));
+        }
+        if (!empty($validated['short_description'])) {
+            $validated['short_description'] = preg_replace('/\s+/', ' ', trim($validated['short_description']));
+        }
+        
         $validated['is_featured'] = $request->boolean('is_featured');
         $validated['is_new'] = $request->boolean('is_new');
         $validated['has_variants'] = $request->boolean('has_variants');
+        $validated['track_stock'] = $request->boolean('track_stock', true);
+        $validated['allow_backorder'] = $request->boolean('allow_backorder');
+        $validated['is_dropshipping'] = $request->boolean('is_dropshipping');
+        
+        // Mettre à jour le slug si le nom a changé
+        if ($validated['name'] !== $product->name) {
+            $baseSlug = Str::slug($validated['name']);
+            $slug = $baseSlug;
+            $counter = 1;
+            // Vérifier l'unicité en excluant le produit actuel
+            while (Product::where('slug', $slug)->where('id', '!=', $product->id)->exists()) {
+                $slug = $baseSlug . '-' . $counter;
+                $counter++;
+            }
+            $validated['slug'] = $slug;
+        }
 
         $oldValues = $product->toArray();
 
@@ -235,18 +285,57 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        // Supprimer les images
-        foreach ($product->images as $image) {
-            Storage::disk('public')->delete($image->path);
+        // Vérifier s'il y a des commandes avec ce produit
+        $hasOrders = $product->orderItems()->exists();
+        
+        if ($hasOrders) {
+            return back()->with('error', 'Impossible de supprimer ce produit car il est associé à des commandes. Vous pouvez l\'archiver à la place.');
         }
 
-        ActivityLog::logDeleted($product, "Produit {$product->name} supprimé");
+        DB::beginTransaction();
 
-        $product->delete();
+        try {
+            // Supprimer les images des variantes
+            foreach ($product->variants as $variant) {
+                if ($variant->image) {
+                    Storage::disk('public')->delete($variant->image);
+                }
+            }
 
-        return redirect()
-            ->route('admin.products.index')
-            ->with('success', 'Produit supprimé avec succès.');
+            // Supprimer les images du produit
+            foreach ($product->images as $image) {
+                Storage::disk('public')->delete($image->path);
+            }
+
+            // Supprimer le produit (les variantes seront supprimées en cascade)
+            $productName = $product->name;
+            $productId = $product->id;
+            
+            ActivityLog::logDeleted($product, "Produit {$productName} supprimé");
+            
+            $product->delete();
+
+            // Supprimer le dossier des images du produit s'il existe
+            $productImagesDir = 'products/' . $productId;
+            if (Storage::disk('public')->exists($productImagesDir)) {
+                Storage::disk('public')->deleteDirectory($productImagesDir);
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('admin.products.index')
+                ->with('success', 'Produit supprimé avec succès.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Erreur lors de la suppression du produit', [
+                'product_id' => $product->id,
+                'error' => $e->getMessage(),
+            ]);
+            
+            return back()->with('error', 'Erreur lors de la suppression : ' . $e->getMessage());
+        }
     }
 
     /**

@@ -33,6 +33,31 @@ Route::get('/orders/{order}/status', function (Order $order) {
     ]);
 })->name('api.orders.status');
 
+// Calculer les frais de livraison
+Route::post('/shipping-cost', function (Request $request) {
+    $validated = $request->validate([
+        'country' => 'required|string|size:2',
+        'city' => 'nullable|string|max:100',
+        'cart_subtotal' => 'required|numeric|min:0',
+    ]);
+
+    // Créer un objet Cart minimal pour le calcul
+    $cart = new \App\Models\Cart();
+    $cart->subtotal = $validated['cart_subtotal'];
+    
+    $checkoutController = app(\App\Http\Controllers\Front\CheckoutController::class);
+    
+    $shippingCost = $checkoutController->calculateShipping($cart, [
+        'shipping_country' => $validated['country'],
+        'shipping_city' => $validated['city'] ?? '',
+    ]);
+
+    return response()->json([
+        'shipping_cost' => $shippingCost,
+        'formatted' => number_format($shippingCost, 0, ',', ' ') . ' F CFA',
+    ]);
+})->middleware('web')->name('api.shipping-cost');
+
 // Récupérer le contenu du panier (pour synchronisation)
 Route::get('/cart', function (Request $request) {
     $customer = null;
@@ -41,15 +66,17 @@ Route::get('/cart', function (Request $request) {
     }
 
     $cart = Cart::getOrCreate(session()->getId(), $customer);
-    $cart->load(['items.product.images', 'items.variant']);
+    $cart->load(['items.product.images', 'items.variant', 'coupon']);
 
     return response()->json([
         'items_count' => $cart->items_count,
         'subtotal' => $cart->subtotal,
         'subtotal_formatted' => format_price($cart->subtotal),
         'discount_amount' => $cart->discount_amount,
-        'total' => $cart->subtotal - $cart->discount_amount,
-        'total_formatted' => format_price($cart->subtotal - $cart->discount_amount),
+        'discount_amount_formatted' => format_price($cart->discount_amount),
+        'coupon_code' => $cart->coupon_code,
+        'total' => $cart->total,
+        'total_formatted' => format_price($cart->total),
         'is_empty' => $cart->is_empty,
         'items' => $cart->items->map(function ($item) {
             return [

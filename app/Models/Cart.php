@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Cart extends Model
 {
@@ -141,18 +142,20 @@ class Cart extends Model
 
     public function applyCoupon(string $code): bool
     {
-        $coupon = Coupon::where('code', $code)->valid()->first();
+        $coupon = Coupon::where('code', Str::upper($code))->valid()->first();
 
         if (!$coupon) {
             return false;
         }
 
         $customer = $this->customer;
-        if (!$coupon->canBeUsedBy($customer)) {
+        $validation = $coupon->canBeUsedBy($customer, $this->subtotal);
+        
+        if (!$validation['valid']) {
             return false;
         }
 
-        $this->update(['coupon_code' => $code]);
+        $this->update(['coupon_code' => $coupon->code]);
         return true;
     }
 

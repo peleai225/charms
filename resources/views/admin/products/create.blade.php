@@ -4,6 +4,29 @@
 @section('page-title', 'Ajouter un produit')
 
 @section('content')
+@if ($errors->any())
+    <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+        <strong class="font-bold">Erreurs de validation :</strong>
+        <ul class="mt-2 list-disc list-inside">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+@if(session('success'))
+    <div class="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl">
+        {{ session('success') }}
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+        {{ session('error') }}
+    </div>
+@endif
+
 <form method="POST" action="{{ route('admin.products.store') }}" enctype="multipart/form-data">
     @csrf
 
@@ -131,9 +154,15 @@
                 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">Ajouter des images</label>
-                    <input type="file" name="images[]" multiple accept="image/*"
-                        class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                    <input type="file" name="images[]" id="productImages" multiple accept="image/*"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        onchange="previewImages(this)">
                     <p class="mt-1 text-xs text-slate-500">Formats: JPEG, PNG, WEBP. Max 5MB par image. La première image sera l'image principale.</p>
+                </div>
+
+                <!-- Aperçu des images -->
+                <div id="imagePreview" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 hidden">
+                    <!-- Les images seront ajoutées ici par JavaScript -->
                 </div>
             </div>
         </div>
@@ -218,4 +247,82 @@
         </div>
     </div>
 </form>
+
+<script>
+let selectedImages = [];
+
+function previewImages(input) {
+    const preview = document.getElementById('imagePreview');
+    const files = Array.from(input.files);
+    
+    // Réinitialiser l'aperçu
+    preview.innerHTML = '';
+    selectedImages = [];
+    
+    if (files.length === 0) {
+        preview.classList.add('hidden');
+        return;
+    }
+    
+    preview.classList.remove('hidden');
+    
+    files.forEach((file, index) => {
+        if (!file.type.startsWith('image/')) {
+            return;
+        }
+        
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            const imageData = {
+                file: file,
+                url: e.target.result
+            };
+            selectedImages.push(imageData);
+            
+            const currentIndex = selectedImages.length - 1;
+            const imageDiv = document.createElement('div');
+            imageDiv.className = 'relative group';
+            imageDiv.setAttribute('data-index', currentIndex);
+            imageDiv.innerHTML = `
+                <div class="aspect-square bg-slate-100 rounded-xl overflow-hidden border-2 border-slate-200">
+                    <img src="${e.target.result}" alt="Aperçu ${currentIndex + 1}" 
+                        class="w-full h-full object-cover">
+                </div>
+                <div class="absolute top-2 right-2">
+                    <button type="button" onclick="removeImage(${currentIndex})" 
+                        class="bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                ${currentIndex === 0 ? '<div class="absolute bottom-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">Principale</div>' : ''}
+            `;
+            
+            preview.appendChild(imageDiv);
+        };
+        
+        reader.readAsDataURL(file);
+    });
+}
+
+function removeImage(index) {
+    // Supprimer l'image de la liste
+    selectedImages.splice(index, 1);
+    
+    // Recréer le DataTransfer avec les fichiers restants
+    const dataTransfer = new DataTransfer();
+    selectedImages.forEach(img => {
+        dataTransfer.items.add(img.file);
+    });
+    
+    // Mettre à jour l'input file
+    const input = document.getElementById('productImages');
+    input.files = dataTransfer.files;
+    
+    // Réafficher l'aperçu
+    previewImages(input);
+}
+</script>
 @endsection

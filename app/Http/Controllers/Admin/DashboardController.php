@@ -40,14 +40,37 @@ class DashboardController extends Controller
             ->take(10)
             ->get();
 
-        // Top produits vendus
-        $topProducts = Product::select('products.*')
-            ->selectRaw('SUM(order_items.quantity) as total_sold')
-            ->join('order_items', 'products.id', '=', 'order_items.product_id')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->whereNotIn('orders.status', ['cancelled', 'refunded'])
-            ->where('orders.created_at', '>=', now()->subDays(30))
-            ->groupBy('products.id')
+        // Top produits vendus (CORRIGÉ pour MySQL strict mode)
+        $topProducts = Product::query()
+            ->select([
+                'products.id',
+                'products.name',
+                'products.slug',
+                'products.sku',
+                'products.sale_price',
+                'products.status',
+                'products.stock_quantity',
+                'products.created_at',
+                'products.updated_at'
+            ])
+            ->selectRaw('COALESCE(SUM(order_items.quantity), 0) as total_sold')
+            ->leftJoin('order_items', 'products.id', '=', 'order_items.product_id')
+            ->leftJoin('orders', function ($join) {
+                $join->on('order_items.order_id', '=', 'orders.id')
+                    ->whereNotIn('orders.status', ['cancelled', 'refunded'])
+                    ->where('orders.created_at', '>=', now()->subDays(30));
+            })
+            ->groupBy([
+                'products.id',
+                'products.name',
+                'products.slug',
+                'products.sku',
+                'products.sale_price',
+                'products.status',
+                'products.stock_quantity',
+                'products.created_at',
+                'products.updated_at'
+            ])
             ->orderByDesc('total_sold')
             ->take(5)
             ->get();

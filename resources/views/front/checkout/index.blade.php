@@ -15,7 +15,7 @@
 
     <h1 class="text-3xl font-bold text-gray-900 mb-8">Finaliser ma commande</h1>
 
-    <form method="POST" action="{{ route('checkout.store') }}" x-data="checkoutForm()" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <form method="POST" action="{{ route('checkout.store') }}" x-data="checkoutForm()" x-init="init()" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         @csrf
 
         <!-- Formulaire -->
@@ -120,7 +120,7 @@
                     <div>
                         <label for="shipping_city" class="block text-sm font-medium text-gray-700 mb-1">Ville *</label>
                         <input type="text" name="shipping_city" id="shipping_city" required
-                            x-model="shipping.city"
+                            x-model="shipping.city" @input.debounce.500ms="calculateEstimatedShipping()"
                             class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
                     </div>
 
@@ -133,7 +133,7 @@
 
                     <div class="md:col-span-2">
                         <label for="shipping_country" class="block text-sm font-medium text-gray-700 mb-1">Pays *</label>
-                        <select name="shipping_country" id="shipping_country" required x-model="shipping.country"
+                        <select name="shipping_country" id="shipping_country" required x-model="shipping.country" @change="calculateEstimatedShipping()"
                             class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
                             <option value="">Sélectionner un pays</option>
                             <option value="CI" selected>🇨🇮 Côte d'Ivoire</option>
@@ -231,9 +231,10 @@
 
                 <div class="space-y-3">
                     <!-- CinetPay -->
+                    @if(($settings['payment_cinetpay_enabled'] ?? '0') === '1')
                     <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-colors"
                         :class="paymentMethod === 'cinetpay' ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'">
-                        <input type="radio" name="payment_method" value="cinetpay" x-model="paymentMethod" class="sr-only" checked>
+                        <input type="radio" name="payment_method" value="cinetpay" x-model="paymentMethod" class="sr-only" {{ (($settings['payment_cinetpay_enabled'] ?? '0') === '1' && ($settings['payment_lygos_enabled'] ?? '0') !== '1' && ($settings['payment_cod_enabled'] ?? '1') !== '1') ? 'checked' : '' }}>
                         <div class="flex items-center gap-4 flex-1">
                             <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                                 <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -250,11 +251,30 @@
                             <img src="https://cinetpay.com/assets/images/logo-mtn.png" alt="MTN" class="h-6 object-contain">
                         </div>
                     </label>
+                    @endif
+
+                    <!-- Lygos Pay -->
+                    @if(($settings['payment_lygos_enabled'] ?? '0') === '1')
+                    <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-colors"
+                        :class="paymentMethod === 'lygos' ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'">
+                        <input type="radio" name="payment_method" value="lygos" x-model="paymentMethod" class="sr-only" {{ (($settings['payment_cinetpay_enabled'] ?? '0') !== '1' && ($settings['payment_lygos_enabled'] ?? '0') === '1' && ($settings['payment_cod_enabled'] ?? '1') !== '1') ? 'checked' : '' }}>
+                        <div class="flex items-center gap-4 flex-1">
+                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <img src="https://lygosapp.com/favicon.ico" alt="Lygos Pay" class="w-8 h-8">
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900">Lygos Pay</p>
+                                <p class="text-sm text-gray-500">Mobile Money et paiements internationaux</p>
+                            </div>
+                        </div>
+                    </label>
+                    @endif
 
                     <!-- Paiement à la livraison -->
+                    @if(($settings['payment_cod_enabled'] ?? '1') === '1')
                     <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-colors"
                         :class="paymentMethod === 'cod' ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'">
-                        <input type="radio" name="payment_method" value="cod" x-model="paymentMethod" class="sr-only">
+                        <input type="radio" name="payment_method" value="cod" x-model="paymentMethod" class="sr-only" {{ (($settings['payment_cinetpay_enabled'] ?? '0') !== '1' && ($settings['payment_lygos_enabled'] ?? '0') !== '1' && ($settings['payment_cod_enabled'] ?? '1') === '1') ? 'checked' : '' }}>
                         <div class="flex items-center gap-4 flex-1">
                             <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                                 <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -267,6 +287,7 @@
                             </div>
                         </div>
                     </label>
+                    @endif
                 </div>
             </div>
 
@@ -335,9 +356,10 @@
 
                 <div class="border-t border-gray-200 mt-4 pt-4">
                     <div class="flex justify-between text-lg font-bold">
-                        <span>Total</span>
-                        <span>{{ number_format($cart->total, 0, ',', ' ') }} F CFA</span>
+                        <span>Total estimé</span>
+                        <span x-text="formatPrice(estimatedTotal)">{{ number_format($cart->total, 0, ',', ' ') }} F CFA</span>
                     </div>
+                    <p class="text-xs text-gray-500 mt-1">* Frais de livraison inclus (selon destination)</p>
                 </div>
 
                 <!-- Bouton commander -->
@@ -345,7 +367,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                     </svg>
-                    <span x-text="paymentMethod === 'cinetpay' ? 'Payer maintenant' : 'Confirmer la commande'">Payer maintenant</span>
+                    <span x-text="paymentMethod === 'cod' ? 'Confirmer la commande' : 'Payer maintenant'">Payer maintenant</span>
                 </button>
 
                 <!-- Sécurité -->
@@ -354,7 +376,7 @@
                         <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                         </svg>
-                        Paiement 100% sécurisé par CinetPay
+                        Paiement 100% sécurisé
                     </p>
                 </div>
             </div>
@@ -367,8 +389,10 @@
 function checkoutForm() {
     return {
         sameBilling: true,
-        paymentMethod: 'cinetpay',
+        paymentMethod: '{{ (($settings['payment_cinetpay_enabled'] ?? '0') === '1') ? 'cinetpay' : ((($settings['payment_lygos_enabled'] ?? '0') === '1') ? 'lygos' : 'cod') }}',
         shippingText: 'Selon destination',
+        estimatedShipping: 0,
+        estimatedTotal: {{ $cart->total }},
         shipping: {
             first_name: '{{ old('shipping_first_name', $customer?->first_name ?? '') }}',
             last_name: '{{ old('shipping_last_name', $customer?->last_name ?? '') }}',
@@ -376,7 +400,50 @@ function checkoutForm() {
             address_2: '',
             city: '',
             postal_code: '',
-            country: 'CI',
+            country: '{{ old('shipping_country', 'CI') }}',
+        },
+        
+        formatPrice(amount) {
+            return new Intl.NumberFormat('fr-FR').format(Math.round(amount)) + ' F CFA';
+        },
+        
+        async calculateEstimatedShipping() {
+            const country = this.shipping.country || 'CI';
+            const city = this.shipping.city || '';
+            const subtotal = {{ $cart->subtotal }};
+            
+            if (!country) {
+                this.estimatedShipping = 0;
+                this.estimatedTotal = subtotal - {{ $cart->discount_amount }};
+                this.shippingText = 'Sélectionner un pays';
+                return;
+            }
+            
+            try {
+                const response = await fetch('{{ route("api.shipping-cost") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        country: country,
+                        city: city,
+                        cart_subtotal: subtotal
+                    })
+                });
+                
+                const data = await response.json();
+                this.estimatedShipping = data.shipping_cost || 0;
+                this.estimatedTotal = subtotal - {{ $cart->discount_amount }} + this.estimatedShipping;
+                this.shippingText = this.estimatedShipping === 0 ? 'Gratuite' : data.formatted || this.formatPrice(this.estimatedShipping);
+            } catch (error) {
+                console.error('Erreur calcul livraison:', error);
+                // Fallback sur valeurs par défaut
+                this.estimatedShipping = 5000;
+                this.estimatedTotal = subtotal - {{ $cart->discount_amount }} + this.estimatedShipping;
+                this.shippingText = this.formatPrice(this.estimatedShipping);
+            }
         },
         
         fillShippingAddress(address) {
@@ -387,6 +454,18 @@ function checkoutForm() {
             this.shipping.city = address.city;
             this.shipping.postal_code = address.postal_code;
             this.shipping.country = address.country;
+            this.calculateEstimatedShipping();
+        },
+        
+        init() {
+            // Calculer les frais de livraison au chargement si un pays est sélectionné
+            if (this.shipping.country) {
+                this.calculateEstimatedShipping();
+            }
+            
+            // Watcher pour recalculer quand le pays ou la ville change
+            this.$watch('shipping.country', () => this.calculateEstimatedShipping());
+            this.$watch('shipping.city', () => this.calculateEstimatedShipping());
         }
     }
 }

@@ -56,15 +56,58 @@ Alpine.data('sidebar', () => ({
     }
 }));
 
+// Fonction utilitaire pour gérer localStorage de manière sécurisée
+const safeLocalStorage = {
+    getItem(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            console.warn('localStorage non disponible:', e.message);
+            return null;
+        }
+    },
+    setItem(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {
+            console.warn('localStorage non disponible:', e.message);
+        }
+    },
+    removeItem(key) {
+        try {
+            localStorage.removeItem(key);
+        } catch (e) {
+            console.warn('localStorage non disponible:', e.message);
+        }
+    },
+    isAvailable() {
+        try {
+            const test = '__localStorage_test__';
+            localStorage.setItem(test, test);
+            localStorage.removeItem(test);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+};
+
 Alpine.data('cart', () => ({
     items: [],
     open: false,
     
     init() {
-        // Charger le panier depuis localStorage
-        const saved = localStorage.getItem('cart');
-        if (saved) {
-            this.items = JSON.parse(saved);
+        // Charger le panier depuis localStorage (si disponible)
+        if (safeLocalStorage.isAvailable()) {
+            const saved = safeLocalStorage.getItem('cart');
+            if (saved) {
+                try {
+                    this.items = JSON.parse(saved);
+                } catch (e) {
+                    console.warn('Erreur lors du parsing du panier:', e);
+                    this.items = [];
+                }
+            }
         }
     },
     
@@ -100,7 +143,9 @@ Alpine.data('cart', () => ({
     },
     
     save() {
-        localStorage.setItem('cart', JSON.stringify(this.items));
+        if (safeLocalStorage.isAvailable()) {
+            safeLocalStorage.setItem('cart', JSON.stringify(this.items));
+        }
     },
     
     clear() {
@@ -137,6 +182,31 @@ Alpine.data('notification', () => ({
         this.add(message, 'warning');
     }
 }));
+
+// Fonction utilitaire globale pour localStorage (disponible dans les templates)
+window.safeLocalStorage = {
+    getItem(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            return null;
+        }
+    },
+    setItem(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {
+            // Ignorer silencieusement si localStorage n'est pas disponible
+        }
+    },
+    removeItem(key) {
+        try {
+            localStorage.removeItem(key);
+        } catch (e) {
+            // Ignorer silencieusement
+        }
+    }
+};
 
 // Initialiser Alpine
 window.Alpine = Alpine;

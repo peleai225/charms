@@ -23,6 +23,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/inscription', [CustomerAuthController::class, 'register'])->name('register.post');
     Route::get('/mot-de-passe-oublie', [CustomerAuthController::class, 'showForgotPasswordForm'])->name('password.request');
     Route::post('/mot-de-passe-oublie', [CustomerAuthController::class, 'sendResetLink'])->name('password.email');
+    Route::get('/mot-de-passe/reset/{token}', [CustomerAuthController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/mot-de-passe/reset', [CustomerAuthController::class, 'reset'])->name('password.update');
 });
 
 Route::post('/deconnexion', [CustomerAuthController::class, 'logout'])->name('logout');
@@ -73,6 +75,16 @@ Route::get('/webhook/cinetpay', function () {
         'status' => 'ok',
         'message' => 'CinetPay Webhook Endpoint',
         'info' => 'Ce endpoint accepte uniquement les requêtes POST de CinetPay.',
+    ]);
+})->withoutMiddleware(['web']);
+
+// Webhook Lygos Pay (sans CSRF)
+Route::post('/webhook/lygos', [App\Http\Controllers\Webhook\LygosPayWebhookController::class, 'handle'])->name('webhook.lygos')->withoutMiddleware(['web']);
+Route::get('/webhook/lygos', function () {
+    return response()->json([
+        'status' => 'ok',
+        'message' => 'Lygos Pay Webhook Endpoint',
+        'info' => 'Ce endpoint accepte uniquement les requêtes POST de Lygos Pay.',
     ]);
 })->withoutMiddleware(['web']);
 
@@ -141,6 +153,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Fournisseurs
         Route::resource('suppliers', \App\Http\Controllers\Admin\SupplierController::class)->names('suppliers');
         
+        // Dropshipping
+        Route::get('/dropshipping', [\App\Http\Controllers\Admin\DropshippingController::class, 'index'])->name('dropshipping.index');
+        Route::get('/dropshipping/{orderSupplier}', [\App\Http\Controllers\Admin\DropshippingController::class, 'show'])->name('dropshipping.show');
+        Route::patch('/dropshipping/{orderSupplier}/status', [\App\Http\Controllers\Admin\DropshippingController::class, 'updateStatus'])->name('dropshipping.update-status');
+        
         // Comptabilité
         Route::get('/accounting', [\App\Http\Controllers\Admin\AccountingController::class, 'index'])->name('accounting.index');
         Route::get('/accounting/entries', [\App\Http\Controllers\Admin\AccountingController::class, 'entries'])->name('accounting.entries');
@@ -202,6 +219,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/settings/payment', [\App\Http\Controllers\Admin\SettingsController::class, 'updatePayment'])->name('settings.payment.update');
         Route::get('/settings/emails', [\App\Http\Controllers\Admin\SettingsController::class, 'emails'])->name('settings.emails');
         Route::post('/settings/emails', [\App\Http\Controllers\Admin\SettingsController::class, 'updateEmails'])->name('settings.emails.update');
+        Route::post('/settings/emails/test', [\App\Http\Controllers\Admin\SettingsController::class, 'testEmail'])->name('settings.emails.test');
+        Route::post('/settings/payment/test-lygos', [\App\Http\Controllers\Admin\SettingsController::class, 'testLygosPay'])->name('settings.payment.test-lygos');
 
         // Profil admin
         Route::get('/profile', [\App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('profile.edit');

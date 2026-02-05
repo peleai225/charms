@@ -5,7 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
     <title>Connexion Admin - {{ config('app.name') }}</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if(app()->environment('local'))
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @else
+        @php
+            try {
+                if (class_exists('\App\Helpers\ViteHelper')) {
+                    $viteHelper = new \App\Helpers\ViteHelper();
+                    echo $viteHelper->renderAssets(['resources/css/app.css', 'resources/js/app.js']);
+                } else {
+                    // Fallback: charger directement depuis build/assets
+                    $buildPath = public_path('build/assets');
+                    if (is_dir($buildPath)) {
+                        $files = scandir($buildPath);
+                        foreach ($files as $file) {
+                            if ($file !== '.' && $file !== '..') {
+                                if (str_ends_with($file, '.css')) {
+                                    echo '<link rel="stylesheet" href="' . asset('build/assets/' . $file) . '">' . "\n    ";
+                                } elseif (str_ends_with($file, '.js')) {
+                                    echo '<script type="module" src="' . asset('build/assets/' . $file) . '"></script>' . "\n    ";
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                // En cas d'erreur, essayer de charger directement
+                $buildPath = public_path('build/assets');
+                if (is_dir($buildPath)) {
+                    $files = scandir($buildPath);
+                    foreach ($files as $file) {
+                        if ($file !== '.' && $file !== '..') {
+                            if (str_ends_with($file, '.css')) {
+                                echo '<link rel="stylesheet" href="' . asset('build/assets/' . $file) . '">' . "\n    ";
+                            } elseif (str_ends_with($file, '.js')) {
+                                echo '<script type="module" src="' . asset('build/assets/' . $file) . '"></script>' . "\n    ";
+                            }
+                        }
+                    }
+                }
+            }
+        @endphp
+    @endif
 </head>
 <body class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
     
@@ -125,12 +166,6 @@
                 </svg>
                 Retour au site
             </a>
-        </div>
-
-        <!-- Info de test -->
-        <div class="mt-8 p-4 rounded-lg bg-slate-800/30 border border-slate-700/50 text-center">
-            <p class="text-xs text-slate-500">Compte de test :</p>
-            <p class="text-sm text-slate-400 font-mono mt-1">admin@chamse.fr / password</p>
         </div>
     </div>
 

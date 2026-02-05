@@ -19,7 +19,48 @@
         <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%234F46E5' rx='15' width='100' height='100'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='50' fill='white'>{{ substr($siteName, 0, 1) }}</text></svg>">
     @endif
     
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @if(app()->environment('local'))
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @else
+        @php
+            try {
+                if (class_exists('\App\Helpers\ViteHelper')) {
+                    $viteHelper = new \App\Helpers\ViteHelper();
+                    echo $viteHelper->renderAssets(['resources/css/app.css', 'resources/js/app.js']);
+                } else {
+                    // Fallback: charger directement depuis build/assets
+                    $buildPath = public_path('build/assets');
+                    if (is_dir($buildPath)) {
+                        $files = scandir($buildPath);
+                        foreach ($files as $file) {
+                            if ($file !== '.' && $file !== '..') {
+                                if (str_ends_with($file, '.css')) {
+                                    echo '<link rel="stylesheet" href="' . asset('build/assets/' . $file) . '">' . "\n    ";
+                                } elseif (str_ends_with($file, '.js')) {
+                                    echo '<script type="module" src="' . asset('build/assets/' . $file) . '"></script>' . "\n    ";
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                // En cas d'erreur, essayer de charger directement
+                $buildPath = public_path('build/assets');
+                if (is_dir($buildPath)) {
+                    $files = scandir($buildPath);
+                    foreach ($files as $file) {
+                        if ($file !== '.' && $file !== '..') {
+                            if (str_ends_with($file, '.css')) {
+                                echo '<link rel="stylesheet" href="' . asset('build/assets/' . $file) . '">' . "\n    ";
+                            } elseif (str_ends_with($file, '.js')) {
+                                echo '<script type="module" src="' . asset('build/assets/' . $file) . '"></script>' . "\n    ";
+                            }
+                        }
+                    }
+                }
+            }
+        @endphp
+    @endif
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     

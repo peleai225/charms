@@ -4,7 +4,23 @@
 @section('page-title', 'Nouveau code promo')
 
 @section('content')
-<form method="POST" action="{{ route('admin.coupons.store') }}" class="space-y-6">
+@if ($errors->any())
+    <div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
+        <div class="flex items-center gap-2 text-red-800 font-medium mb-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            Erreurs de validation
+        </div>
+        <ul class="list-disc list-inside text-sm text-red-700 space-y-1">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+<form method="POST" action="{{ route('admin.coupons.store') }}" class="space-y-6" id="couponForm">
     @csrf
 
     <div class="flex items-center justify-between">
@@ -51,25 +67,29 @@
                     <div class="grid md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Type *</label>
-                            <select name="type" id="couponType" class="w-full px-4 py-2 border border-slate-300 rounded-xl" onchange="toggleValueField()">
+                            <select name="type" id="couponType" class="w-full px-4 py-2 border border-slate-300 rounded-xl" onchange="toggleValueField()" required>
                                 <option value="percentage" {{ old('type') === 'percentage' ? 'selected' : '' }}>Pourcentage (%)</option>
                                 <option value="fixed" {{ old('type') === 'fixed' ? 'selected' : '' }}>Montant fixe (F CFA)</option>
                                 <option value="free_shipping" {{ old('type') === 'free_shipping' ? 'selected' : '' }}>Livraison gratuite</option>
                             </select>
+                            @error('type')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                         </div>
                         <div id="valueField">
                             <label class="block text-sm font-medium text-slate-700 mb-1">Valeur *</label>
                             <input type="number" name="value" value="{{ old('value', 0) }}" step="0.01" min="0" class="w-full px-4 py-2 border border-slate-300 rounded-xl">
+                            @error('value')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                         </div>
                     </div>
                     <div class="grid md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Montant min. de commande</label>
                             <input type="number" name="min_order_amount" value="{{ old('min_order_amount') }}" step="100" min="0" class="w-full px-4 py-2 border border-slate-300 rounded-xl" placeholder="Ex: 10000">
+                            @error('min_order_amount')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Réduction max.</label>
                             <input type="number" name="max_discount_amount" value="{{ old('max_discount_amount') }}" step="100" min="0" class="w-full px-4 py-2 border border-slate-300 rounded-xl" placeholder="Ex: 5000">
+                            @error('max_discount_amount')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                         </div>
                     </div>
                 </div>
@@ -102,6 +122,7 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Date de fin</label>
                         <input type="date" name="expires_at" value="{{ old('expires_at') }}" class="w-full px-4 py-2 border border-slate-300 rounded-xl">
+                        @error('expires_at')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>
             </div>
@@ -129,14 +150,41 @@ function generateCode() {
         .then(r => r.json())
         .then(data => {
             document.querySelector('input[name="code"]').value = data.code;
+        })
+        .catch(error => {
+            console.error('Erreur génération code:', error);
+            alert('Erreur lors de la génération du code');
         });
 }
 
 function toggleValueField() {
     const type = document.getElementById('couponType').value;
-    document.getElementById('valueField').style.display = type === 'free_shipping' ? 'none' : 'block';
+    const valueField = document.getElementById('valueField');
+    if (valueField) {
+        valueField.style.display = type === 'free_shipping' ? 'none' : 'block';
+        const valueInput = valueField.querySelector('input[name="value"]');
+        if (valueInput) {
+            valueInput.required = type !== 'free_shipping';
+        }
+    }
 }
-toggleValueField();
+
+// Initialiser au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    toggleValueField();
+    
+    // Ajouter un listener pour le formulaire
+    const form = document.getElementById('couponForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Création en cours...';
+            }
+        });
+    }
+});
 </script>
 @endsection
 

@@ -31,6 +31,7 @@ class Product extends Model
         'stock_alert_threshold',
         'track_stock',
         'allow_backorder',
+        'is_dropshipping',
         'category_id',
         'type',
         'has_variants',
@@ -55,6 +56,7 @@ class Product extends Model
         'stock_alert_threshold' => 'integer',
         'track_stock' => 'boolean',
         'allow_backorder' => 'boolean',
+        'is_dropshipping' => 'boolean',
         'has_variants' => 'boolean',
         'is_featured' => 'boolean',
         'is_new' => 'boolean',
@@ -70,7 +72,15 @@ class Product extends Model
 
         static::creating(function ($product) {
             if (empty($product->slug)) {
-                $product->slug = Str::slug($product->name);
+                $baseSlug = Str::slug($product->name);
+                $slug = $baseSlug;
+                $counter = 1;
+                // Générer un slug unique
+                while (static::where('slug', $slug)->exists()) {
+                    $slug = $baseSlug . '-' . $counter;
+                    $counter++;
+                }
+                $product->slug = $slug;
             }
             if (empty($product->sku)) {
                 $product->sku = strtoupper(Str::random(10));
@@ -137,6 +147,11 @@ class Product extends Model
     public function scopeFeatured($query)
     {
         return $query->where('is_featured', true);
+    }
+
+    public function scopeDropshipping($query)
+    {
+        return $query->where('is_dropshipping', true);
     }
 
     public function scopeOnSale($query)

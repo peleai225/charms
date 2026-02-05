@@ -18,7 +18,7 @@ class CartController extends Controller
     public function index()
     {
         $cart = $this->getCart();
-        $cart->load(['items.product.images', 'items.variant.attributeValues.attribute']);
+        $cart->load(['items.product.images', 'items.variant.attributeValues.attribute', 'coupon']);
 
         return view('front.cart.index', compact('cart'));
     }
@@ -123,17 +123,74 @@ class CartController extends Controller
      */
     public function applyCoupon(Request $request)
     {
-        $request->validate([
-            'coupon_code' => 'required|string',
-        ]);
+        try {
+            $request->validate([
+                'coupon_code' => 'required|string',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Le code promo est requis.',
+                    'errors' => $e->errors(),
+                ], 422);
+            }
+            throw $e;
+        }
 
         $cart = $this->getCart();
 
-        if ($cart->applyCoupon($request->coupon_code)) {
-            return back()->with('success', 'Code promo appliqué !');
+        // Vérifier le coupon manuellement pour avoir un message d'erreur détaillé
+        $coupon = \App\Models\Coupon::where('code', \Illuminate\Support\Str::upper($request->coupon_code))->first();
+
+        if (!$coupon) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Code promo introuvable.',
+                ], 400);
+            }
+            return back()->with('error', 'Code promo introuvable.');
         }
 
-        return back()->with('error', 'Code promo invalide ou expiré.');
+        $customer = $cart->customer;
+        $validation = $coupon->canBeUsedBy($customer, $cart->subtotal);
+
+        if (!$validation['valid']) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $validation['message'],
+                ], 400);
+            }
+            return back()->with('error', $validation['message']);
+        }
+
+        if ($cart->applyCoupon($request->coupon_code)) {
+            $cart->refresh();
+            
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Code promo appliqué ! Réduction de ' . format_price($cart->discount_amount),
+                    'discount_amount' => $cart->discount_amount,
+                    'subtotal' => $cart->subtotal,
+                    'total' => $cart->total,
+                    'coupon_code' => $cart->coupon_code,
+                ]);
+            }
+            
+            return back()->with('success', 'Code promo appliqué ! Réduction de ' . format_price($cart->discount_amount));
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Impossible d\'appliquer le code promo.',
+            ], 400);
+        }
+
+        return back()->with('error', 'Impossible d\'appliquer le code promo.');
     }
 
     /**

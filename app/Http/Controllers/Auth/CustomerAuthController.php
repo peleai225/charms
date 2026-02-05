@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\ResetPassword;
 use App\Models\ActivityLog;
 use App\Models\Customer;
 use App\Models\User;
@@ -10,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
@@ -167,10 +170,115 @@ class CustomerAuthController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        // TODO: Implémenter l'envoi du lien de réinitialisation
-        // Password::sendResetLink($request->only('email'));
+        // Vérifier si l'utilisateur existe et est un client
+        $user = User::where('email', $request->email)
+            ->where('role', 'customer')
+            ->where('is_active', true)
+            ->first();
 
-        return back()->with('success', 'Si cette adresse email existe, vous recevrez un lien de réinitialisation.');
+        if (!$user) {
+            // Pour la sécurité, on ne révèle pas si l'email existe ou non
+            return back()->with('success', 'Si cette adresse email existe, vous recevrez un lien de réinitialisation.');
+        }
+
+        // Générer un token de réinitialisation
+        $token = Str::random(64);
+        
+        // Sauvegarder le token dans la table password_reset_tokens
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $user->email],
+            [
+                'token' => Hash::make($token),
+                'created_at' => now(),
+            ]
+        );
+
+        // Envoyer l'email avec le lien de réinitialisation
+        try {
+            Mail::to($user->email)->send(new ResetPassword($token, $user->email));
+            
+            ActivityLog::log('password_reset_requested', 'Demande de réinitialisation de mot de passe', $user);
+            
+            return back()->with('success', 'Si cette adresse email existe, vous recevrez un lien de réinitialisation.');
+        } catch (\Exception $e) {
+            \Log::error('Erreur envoi email réinitialisation mot de passe: ' . $e->getMessage());
+            return back()->with('error', 'Une erreur est survenue. Veuillez réessayer plus tard.');
+        }
+    }
+
+    /**
+     * Affiche le formulaire de réinitialisation
+     */
+    public function showResetForm(Request $request, string $token)
+    {
+        $email = $request->query('email');
+        
+        return view('front.auth.reset-password', [
+            'token' => $token,
+            'email' => $email,
+        ]);
+    }
+
+    /**
+     * Traite la réinitialisation du mot de passe
+     */
+    public function reset(Request $request)
+    {
+        $request->validate([
+            'token' => ['required'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
+        ], [
+            'password.confirmed' => 'Les mots de passe ne correspondent pas.',
+        ]);
+
+        // Vérifier le token
+        $resetRecord = DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->first();
+
+        if (!$resetRecord) {
+            return back()->withInput($request->only('email'))
+                ->withErrors(['email' => 'Ce lien de réinitialisation est invalide ou a expiré.']);
+        }
+
+        // Vérifier si le token est valide (60 minutes)
+        if (now()->diffInMinutes($resetRecord->created_at) > 60) {
+            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+            return back()->withInput($request->only('email'))
+                ->withErrors(['email' => 'Ce lien de réinitialisation a expiré. Veuillez en demander un nouveau.']);
+        }
+
+        // Vérifier le token
+        if (!Hash::check($request->token, $resetRecord->token)) {
+            return back()->withInput($request->only('email'))
+                ->withErrors(['email' => 'Ce lien de réinitialisation est invalide.']);
+        }
+
+        // Trouver l'utilisateur
+        $user = User::where('email', $request->email)
+            ->where('role', 'customer')
+            ->where('is_active', true)
+            ->first();
+
+        if (!$user) {
+            return back()->withInput($request->only('email'))
+                ->withErrors(['email' => 'Aucun compte trouvé avec cette adresse email.']);
+        }
+
+        // Mettre à jour le mot de passe
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        // Supprimer le token utilisé
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        // Log
+        ActivityLog::log('password_reset', 'Mot de passe réinitialisé', $user);
+
+        return redirect()->route('login')
+            ->with('success', 'Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.');
     }
 
     /**

@@ -140,11 +140,7 @@
             </div>
 
             <!-- Quantité et Ajouter au panier -->
-            <form action="{{ route('cart.add') }}" method="POST" class="space-y-4">
-                @csrf
-                <input type="hidden" name="product_id" value="{{ $product->id }}">
-                <input type="hidden" name="variant_id" x-model="selectedVariantId">
-
+            <div class="space-y-4">
                 <div class="flex items-center gap-4">
                     <!-- Quantité -->
                     <div class="flex items-center border border-gray-300 rounded-xl overflow-hidden">
@@ -153,7 +149,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
                             </svg>
                         </button>
-                        <input type="number" name="quantity" x-model="quantity" min="1" max="99" 
+                        <input type="number" x-model="quantity" min="1" max="99" 
                             class="w-16 text-center border-0 focus:ring-0 font-medium">
                         <button type="button" @click="quantity = Math.min(99, quantity + 1)" class="px-4 py-3 hover:bg-gray-100 transition-colors">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,16 +159,26 @@
                     </div>
 
                     <!-- Bouton ajouter -->
-                    <button type="submit" 
-                        :disabled="({{ $product->has_variants ? 'true' : 'false' }} && !selectedVariantId) || variantStock <= 0"
+                    <button type="button" 
+                        @click="addToCart()"
+                        :disabled="isAdding || ({{ $product->has_variants ? 'true' : 'false' }} && !selectedVariantId) || ({{ $product->has_variants ? 'true' : 'false' }} && variantStock !== null && variantStock <= 0) || (!{{ $product->has_variants ? 'true' : 'false' }} && {{ $product->stock_quantity <= 0 ? 'true' : 'false' }} && !{{ $product->allow_backorder ? 'true' : 'false' }})"
                         class="flex-1 py-3 px-6 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg x-show="!isAdding" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
                         </svg>
-                        Ajouter au panier
+                        <svg x-show="isAdding" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span x-text="isAdding ? 'Ajout...' : (showSuccess ? '✓ Ajouté !' : 'Ajouter au panier')"></span>
                     </button>
                 </div>
-            </form>
+                
+                <!-- Message de succès -->
+                <div x-show="showSuccess" x-transition class="p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
+                    Produit ajouté au panier avec succès !
+                </div>
+            </div>
 
             <!-- SKU -->
             <p class="text-sm text-gray-500">
@@ -245,6 +251,8 @@ function productGallery() {
         availableSizes: [],
         variantStock: null,
         quantity: 1,
+        isAdding: false,
+        showSuccess: false,
         
         // Variants data from PHP
         variantsByColor: @php
@@ -339,6 +347,58 @@ function productGallery() {
                 if (variant.image) {
                     this.currentImage = variant.image;
                 }
+            }
+        },
+        
+        async addToCart() {
+            if (this.isAdding) return;
+            
+            // Vérifier que la variante est sélectionnée si nécessaire
+            if ({{ $product->has_variants ? 'true' : 'false' }} && !this.selectedVariantId) {
+                alert('Veuillez sélectionner une couleur et une taille');
+                return;
+            }
+            
+            this.isAdding = true;
+            this.showSuccess = false;
+            
+            try {
+                const response = await fetch('{{ route("cart.add") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        product_id: {{ $product->id }},
+                        variant_id: this.selectedVariantId || null,
+                        quantity: this.quantity
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Mettre à jour le store panier
+                    if (Alpine.store('cart')) {
+                        Alpine.store('cart').count = data.cart_count;
+                        await Alpine.store('cart').sync();
+                    }
+                    
+                    this.showSuccess = true;
+                    setTimeout(() => {
+                        this.showSuccess = false;
+                    }, 3000);
+                } else {
+                    alert(data.message || 'Erreur lors de l\'ajout au panier');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de l\'ajout au panier');
+            } finally {
+                this.isAdding = false;
             }
         }
     }

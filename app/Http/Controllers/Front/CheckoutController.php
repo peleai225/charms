@@ -11,7 +11,9 @@ use App\Models\Customer;
 use App\Models\CustomerAddress;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Setting;
 use App\Services\CinetPayService;
+use App\Services\LygosPayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -19,10 +21,12 @@ use Illuminate\Support\Str;
 class CheckoutController extends Controller
 {
     protected CinetPayService $cinetPay;
+    protected LygosPayService $lygosPay;
 
-    public function __construct(CinetPayService $cinetPay)
+    public function __construct(CinetPayService $cinetPay, LygosPayService $lygosPay)
     {
         $this->cinetPay = $cinetPay;
+        $this->lygosPay = $lygosPay;
     }
 
     /**
@@ -49,7 +53,14 @@ class CheckoutController extends Controller
             }
         }
 
-        return view('front.checkout.index', compact('cart', 'customer', 'addresses'));
+        // Récupérer les paramètres de paiement
+        $settings = [
+            'payment_cinetpay_enabled' => Setting::get('payment_cinetpay_enabled', '0'),
+            'payment_lygos_enabled' => Setting::get('payment_lygos_enabled', '0'),
+            'payment_cod_enabled' => Setting::get('payment_cod_enabled', '1'),
+        ];
+
+        return view('front.checkout.index', compact('cart', 'customer', 'addresses', 'settings'));
     }
 
     /**
@@ -92,7 +103,35 @@ class CheckoutController extends Controller
             'notes' => 'nullable|string|max:500',
             'save_address' => 'boolean',
             'newsletter' => 'boolean',
-            'payment_method' => 'required|in:cinetpay,cod',
+            'payment_method' => [
+                'required',
+                function ($attribute, $value, $fail) {
+                    $settings = [
+                        'payment_cinetpay_enabled' => Setting::get('payment_cinetpay_enabled', '0'),
+                        'payment_lygos_enabled' => Setting::get('payment_lygos_enabled', '0'),
+                        'payment_cod_enabled' => Setting::get('payment_cod_enabled', '1'),
+                    ];
+                    
+                    $allowedMethods = [];
+                    if ($settings['payment_cinetpay_enabled'] === '1') {
+                        $allowedMethods[] = 'cinetpay';
+                    }
+                    if ($settings['payment_lygos_enabled'] === '1') {
+                        $allowedMethods[] = 'lygos';
+                    }
+                    if ($settings['payment_cod_enabled'] === '1') {
+                        $allowedMethods[] = 'cod';
+                    }
+                    
+                    if (empty($allowedMethods)) {
+                        $fail('Aucune méthode de paiement n\'est configurée. Veuillez activer au moins une méthode dans les paramètres.');
+                    }
+                    
+                    if (!in_array($value, $allowedMethods)) {
+                        $fail('La méthode de paiement sélectionnée n\'est pas disponible.');
+                    }
+                },
+            ],
         ]);
 
         $cart->load(['items.product', 'items.variant']);
@@ -122,7 +161,17 @@ class CheckoutController extends Controller
             $discount = $cart->discount_amount;
             $shippingCost = $this->calculateShipping($cart, $validated);
             $taxAmount = $this->calculateTax($subtotal - $discount);
-            $total = $subtotal - $discount + $shippingCost;
+            $total = $subtotal - $discount + $shippingCost + $taxAmount;
+            
+            // Log pour déboguer
+            \Log::info('Checkout: Calcul du total', [
+                'subtotal' => $subtotal,
+                'discount' => $discount,
+                'shipping' => $shippingCost,
+                'tax' => $taxAmount,
+                'total' => $total,
+                'cart_items_count' => $cart->items->count(),
+            ]);
 
             // Créer la commande
             $order = Order::create([
@@ -199,6 +248,9 @@ class CheckoutController extends Controller
             // Envoyer l'email de confirmation
             if ($order->billing_email) {
                 try {
+                    // Configurer la connexion mail depuis les paramètres
+                    \App\Services\MailConfigService::configureFromSettings();
+                    
                     Mail::to($order->billing_email)->send(new OrderConfirmation($order));
                 } catch (\Exception $e) {
                     \Log::error('Failed to send order confirmation: ' . $e->getMessage());
@@ -211,8 +263,8 @@ class CheckoutController extends Controller
             DB::commit();
 
             // Rediriger vers le paiement
-            if ($validated['payment_method'] === 'cinetpay') {
-                return $this->redirectToPayment($order);
+            if ($validated['payment_method'] === 'cinetpay' || $validated['payment_method'] === 'lygos') {
+                return $this->redirectToPayment($order, $validated['payment_method']);
             }
 
             // Paiement à la livraison
@@ -231,10 +283,32 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Rediriger vers CinetPay
+     * Rediriger vers le service de paiement
      */
-    protected function redirectToPayment(Order $order)
+    protected function redirectToPayment(Order $order, string $method = 'cinetpay')
     {
+        if ($method === 'lygos') {
+            if (!$this->lygosPay->isConfigured()) {
+                return redirect()->route('checkout.payment', ['order' => $order->id])
+                    ->with('error', 'Lygos Pay n\'est pas configuré.');
+            }
+
+            $result = $this->lygosPay->initializePayment($order, [
+                'name' => $order->billing_first_name,
+                'surname' => $order->billing_last_name,
+                'email' => $order->billing_email,
+                'phone' => $order->billing_phone,
+            ]);
+
+            if ($result['success']) {
+                return redirect()->away($result['payment_url']);
+            }
+
+            return redirect()->route('checkout.payment', ['order' => $order->id])
+                ->with('error', $result['message'] ?? 'Erreur lors de l\'initialisation du paiement.');
+        }
+
+        // CinetPay (par défaut)
         if (!$this->cinetPay->isConfigured()) {
             // Mode démo sans CinetPay configuré
             return redirect()->route('checkout.payment', ['order' => $order->id]);
@@ -272,7 +346,7 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Retour de CinetPay - Confirmation
+     * Retour de paiement - Confirmation
      */
     public function confirmation(Request $request)
     {
@@ -284,18 +358,34 @@ class CheckoutController extends Controller
             // Essayer de vérifier le statut via l'API
             $payment = $order->payments()->latest()->first();
             if ($payment && $payment->transaction_id) {
-                $status = $this->cinetPay->checkPaymentStatus($payment->transaction_id);
-                
-                if ($status['success'] && $status['status'] === 'ACCEPTED') {
-                    $payment->update([
-                        'status' => 'completed',
-                        'paid_at' => now(),
-                    ]);
-                    $order->update([
-                        'payment_status' => 'paid',
-                        'status' => 'processing',
-                        'paid_at' => now(),
-                    ]);
+                if ($order->payment_method === 'cinetpay') {
+                    $status = $this->cinetPay->checkPaymentStatus($payment->transaction_id);
+                    
+                    if ($status['success'] && $status['status'] === 'ACCEPTED') {
+                        $payment->update([
+                            'status' => 'completed',
+                            'paid_at' => now(),
+                        ]);
+                        $order->update([
+                            'payment_status' => 'paid',
+                            'status' => 'processing',
+                            'paid_at' => now(),
+                        ]);
+                    }
+                } elseif ($order->payment_method === 'lygos') {
+                    $status = $this->lygosPay->checkPaymentStatus($payment->transaction_id);
+                    
+                    if ($status['success'] && $status['status'] === 'paid') {
+                        $payment->update([
+                            'status' => 'completed',
+                            'paid_at' => now(),
+                        ]);
+                        $order->update([
+                            'payment_status' => 'paid',
+                            'status' => 'processing',
+                            'paid_at' => now(),
+                        ]);
+                    }
                 }
             }
         }
@@ -345,13 +435,15 @@ class CheckoutController extends Controller
         }
 
         // Client invité - créer un enregistrement sans user_id
+        // Note: user_id est nullable, donc on peut créer un client sans compte
         return Customer::create([
             'first_name' => $data['shipping_first_name'],
             'last_name' => $data['shipping_last_name'],
             'email' => $data['email'],
             'phone' => $data['phone'],
             'status' => 'active',
-            'type' => 'guest',
+            'type' => 'individual', // Type par défaut pour les clients invités
+            'user_id' => null, // Pas de compte utilisateur
         ]);
     }
 
@@ -384,15 +476,36 @@ class CheckoutController extends Controller
     /**
      * Calculer les frais de livraison
      */
-    protected function calculateShipping(Cart $cart, array $data): float
+    public function calculateShipping(Cart $cart, array $data): float
     {
-        // Livraison gratuite au-dessus d'un certain montant
-        if ($cart->subtotal >= 50000) { // 50 000 XOF
+        // Vérifier si la livraison est activée
+        $shippingEnabled = Setting::get('shipping_enabled', '1') === '1';
+        if (!$shippingEnabled) {
             return 0;
         }
 
-        // Frais fixes selon le pays
-        $shippingRates = [
+        // Récupérer le seuil de livraison gratuite
+        $freeShippingThreshold = (float) Setting::get('free_shipping_threshold', 50000);
+        
+        // Livraison gratuite au-dessus du seuil configuré
+        if ($freeShippingThreshold > 0 && $cart->subtotal >= $freeShippingThreshold) {
+            return 0;
+        }
+
+        // Vérifier les zones de livraison configurées
+        $shippingZones = json_decode(Setting::get('shipping_zones', '[]'), true) ?: [];
+        $city = strtolower(trim($data['shipping_city'] ?? ''));
+        
+        // Chercher dans les zones par ville
+        foreach ($shippingZones as $zone) {
+            $cities = array_map('trim', explode(',', strtolower($zone['cities'] ?? '')));
+            if (in_array($city, $cities)) {
+                return (float) ($zone['price'] ?? 0);
+            }
+        }
+
+        // Frais par pays (fallback si pas de zones configurées)
+        $countryRates = [
             'CI' => 2000, // Côte d'Ivoire
             'SN' => 3000, // Sénégal
             'ML' => 3500, // Mali
@@ -402,7 +515,15 @@ class CheckoutController extends Controller
             'FR' => 15000, // France
         ];
 
-        return $shippingRates[$data['shipping_country']] ?? 5000;
+        $country = $data['shipping_country'] ?? 'CI';
+        
+        // Utiliser le tarif forfaitaire si configuré, sinon utiliser les tarifs par pays
+        $flatRate = Setting::get('flat_rate_shipping');
+        if ($flatRate && $flatRate > 0) {
+            return (float) $flatRate;
+        }
+
+        return $countryRates[$country] ?? 5000;
     }
 
     /**
@@ -444,8 +565,8 @@ class CheckoutController extends Controller
             return redirect()->route('checkout.success', ['order' => $order->id]);
         }
 
-        // CinetPay
-        return $this->redirectToPayment($order);
+        // CinetPay ou Lygos Pay
+        return $this->redirectToPayment($order, $method);
     }
 
     /**

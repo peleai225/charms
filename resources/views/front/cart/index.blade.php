@@ -155,7 +155,8 @@
                 </div>
 
                 <!-- Code promo -->
-                <div class="mt-4 pt-4 border-t border-gray-200">
+                <div class="mt-4 pt-4 border-t border-gray-200" 
+                     x-data="couponForm()">
                     @if($cart->coupon_code)
                         <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                             <div>
@@ -173,12 +174,20 @@
                             </form>
                         </div>
                     @else
-                        <form method="POST" action="{{ route('cart.coupon.apply') }}" class="flex gap-2">
+                        <form method="POST" action="{{ route('cart.coupon.apply') }}" 
+                              @submit.prevent="applyCoupon($event)"
+                              class="flex gap-2">
                             @csrf
-                            <input type="text" name="coupon_code" placeholder="Code promo"
-                                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
-                            <button type="submit" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg text-sm transition-colors">
-                                Appliquer
+                            <input type="text" 
+                                   x-model="couponCode"
+                                   name="coupon_code" 
+                                   placeholder="Code promo"
+                                   class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
+                            <button type="submit" 
+                                    :disabled="isApplyingCoupon"
+                                    class="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 font-medium rounded-lg text-sm transition-colors">
+                                <span x-show="!isApplyingCoupon">Appliquer</span>
+                                <span x-show="isApplyingCoupon">...</span>
                             </button>
                         </form>
                     @endif
@@ -242,6 +251,56 @@
 
 @push('scripts')
 <script>
+function couponForm() {
+    return {
+        couponCode: '',
+        isApplyingCoupon: false,
+        async applyCoupon(event) {
+            event.preventDefault();
+            
+            if (this.isApplyingCoupon || !this.couponCode.trim()) {
+                if (!this.couponCode.trim()) {
+                    alert('Veuillez saisir un code promo');
+                }
+                return;
+            }
+            
+            this.isApplyingCoupon = true;
+            
+            try {
+                const formData = new FormData();
+                formData.append('coupon_code', this.couponCode.trim());
+                formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+                
+                const response = await fetch('{{ route('cart.coupon.apply') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    // Recharger la page pour afficher le coupon et mettre à jour les totaux
+                    window.location.reload();
+                } else {
+                    const errorMessage = data.error || data.message || 'Erreur lors de l\'application du code promo';
+                    alert(errorMessage);
+                    this.isApplyingCoupon = false;
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de l\'application du code promo. Veuillez réessayer.');
+                this.isApplyingCoupon = false;
+            }
+        }
+    };
+}
+
 function cartItem(itemId, initialQuantity, unitPrice) {
     return {
         itemId: itemId,
@@ -373,6 +432,29 @@ function cartItem(itemId, initialQuantity, unitPrice) {
                 }
                 if (summaryCount && Alpine.store('cart').count !== undefined) {
                     summaryCount.textContent = `${Alpine.store('cart').count} articles`;
+                }
+            } else {
+                // Fallback: fetch from API
+                try {
+                    const response = await fetch('/api/cart');
+                    if (response.ok) {
+                        const data = await response.json();
+                        const summarySubtotal = document.getElementById('cart-summary-subtotal');
+                        const summaryTotal = document.getElementById('cart-summary-total');
+                        const summaryCount = document.getElementById('cart-summary-count');
+                        
+                        if (summarySubtotal) {
+                            summarySubtotal.textContent = this.formatPrice(data.subtotal);
+                        }
+                        if (summaryTotal) {
+                            summaryTotal.textContent = this.formatPrice(data.total);
+                        }
+                        if (summaryCount) {
+                            summaryCount.textContent = `${data.items_count} articles`;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error updating summary:', error);
                 }
             }
         }

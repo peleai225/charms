@@ -76,6 +76,10 @@ class AccountingController extends Controller
                 ->get();
         } catch (\Exception $e) {
             // Table peut ne pas exister ou avoir une structure différente
+            \Log::warning('Accounting: Impossible de charger les écritures comptables', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
         }
 
         // Journaux comptables (simplifié)
@@ -84,6 +88,10 @@ class AccountingController extends Controller
             $journals = AccountingJournal::withCount('entries')->get();
         } catch (\Exception $e) {
             // Table peut ne pas exister
+            \Log::warning('Accounting: Impossible de charger les journaux comptables', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
         }
 
         return view('admin.accounting.index', compact(

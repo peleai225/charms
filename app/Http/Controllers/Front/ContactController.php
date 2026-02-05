@@ -35,7 +35,7 @@ class ContactController extends Controller
 
         try {
             // Configurer la connexion mail depuis les paramètres si disponibles
-            $this->configureMailFromSettings();
+            \App\Services\MailConfigService::configureFromSettings();
 
             // Envoyer l'email
             Mail::to($contactEmail)->send(new ContactMessage(
@@ -106,7 +106,6 @@ class ContactController extends Controller
         if ($mailFromAddress) {
             config(['mail.from.address' => $mailFromAddress]);
         }
-    }
     }
 }
 

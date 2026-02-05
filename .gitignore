@@ -22,3 +22,11 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Fichiers de diagnostic et installation (à supprimer en production)
+install.php
+public/diagnostic.php
+public/fix-*.php
+public/*-cache.php
+public/*-vite.php
+public/*-production.php

@@ -4,6 +4,29 @@
 @section('page-title', 'Modifier le produit')
 
 @section('content')
+@if ($errors->any())
+    <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+        <strong class="font-bold">Erreurs de validation :</strong>
+        <ul class="mt-2 list-disc list-inside">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
+@if(session('success'))
+    <div class="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl">
+        {{ session('success') }}
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+        {{ session('error') }}
+    </div>
+@endif
+
 <div class="space-y-6">
     <!-- Navigation onglets -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200">

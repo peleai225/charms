@@ -41,6 +41,8 @@ class Payment extends Model
     public const METHOD_BANK_TRANSFER = 'bank_transfer';
     public const METHOD_CHECK = 'check';
     public const METHOD_CASH = 'cash';
+    public const METHOD_CINETPAY = 'cinetpay';
+    public const METHOD_LYGOS = 'lygos';
     public const METHOD_OTHER = 'other';
 
     public const STATUS_PENDING = 'pending';
@@ -101,6 +103,8 @@ class Payment extends Model
             self::METHOD_BANK_TRANSFER => 'Virement bancaire',
             self::METHOD_CHECK => 'Chèque',
             self::METHOD_CASH => 'Espèces',
+            self::METHOD_CINETPAY => 'CinetPay',
+            self::METHOD_LYGOS => 'Lygos Pay',
             self::METHOD_OTHER => 'Autre',
             default => $this->method,
         };

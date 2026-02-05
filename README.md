@@ -1,59 +1,209 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🛒 Chamse E-Commerce
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Plateforme e-commerce complète développée avec Laravel 12, Tailwind CSS 4, et Alpine.js.
 
-## About Laravel
+## ✨ Fonctionnalités
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- 🛍️ **Gestion des Produits** : Produits avec variantes, images multiples, codes-barres
+- 🛒 **Panier & Checkout** : Panier persistant, coupons, calcul automatique
+- 💳 **Paiements** : Intégration CinetPay (Orange Money, MTN MoMo, etc.)
+- 📦 **Gestion des Stocks** : Alertes de stock bas, mouvements de stock
+- 📊 **Tableau de Bord Admin** : Statistiques, rapports, graphiques
+- 👥 **Gestion Clients** : Comptes clients, commandes, adresses
+- 🏷️ **Coupons & Promotions** : Système de réduction flexible
+- 📈 **Comptabilité** : Écritures comptables, journaux, rapports
+- 🎨 **Interface Moderne** : Design responsive avec Tailwind CSS 4
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🚀 Installation
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Prérequis
 
-## Learning Laravel
+- PHP 8.2+
+- Composer
+- Node.js 18+ et npm
+- MySQL 8.0+ ou MariaDB
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### Installation Locale
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+1. **Cloner le projet**
+   ```bash
+   git clone [url-du-repo]
+   cd chamse
+   ```
 
-## Laravel Sponsors
+2. **Installer les dépendances**
+   ```bash
+   composer install
+   npm install
+   ```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+3. **Configuration**
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
 
-### Premium Partners
+4. **Base de données**
+   ```bash
+   # Configurer .env avec vos identifiants DB
+   php artisan migrate
+   php artisan db:seed
+   ```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+5. **Assets**
+   ```bash
+   npm run build
+   # ou pour le développement
+   npm run dev
+   ```
 
-## Contributing
+6. **Démarrer le serveur**
+   ```bash
+   php artisan serve
+   # Dans un autre terminal
+   npm run dev  # Pour le développement
+   ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## 📁 Structure du Projet
 
-## Code of Conduct
+```
+chamse/
+├── app/
+│   ├── Http/Controllers/    # Contrôleurs (Admin, Front)
+│   ├── Models/              # Modèles Eloquent
+│   ├── Helpers/             # Helpers personnalisés
+│   └── Services/            # Services (CinetPay, etc.)
+├── resources/
+│   ├── views/               # Vues Blade
+│   ├── css/                 # Styles Tailwind
+│   └── js/                  # JavaScript Alpine.js
+├── routes/
+│   ├── web.php              # Routes web
+│   └── api.php              # Routes API
+├── database/
+│   ├── migrations/          # Migrations
+│   └── seeders/             # Seeders
+└── public/
+    └── build/               # Assets compilés (production)
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## 🔧 Scripts Disponibles
 
-## Security Vulnerabilities
+### Développement
+```bash
+# Démarrer tous les services (serveur, queue, logs, vite)
+composer run dev
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# Compiler les assets
+npm run build
 
-## License
+# Démarrer le serveur Vite uniquement
+npm run dev
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Déploiement
+```bash
+# Windows
+deploy.bat
+cleanup-production.bat
+
+# Linux/Mac
+./deploy.sh
+./cleanup-production.sh
+```
+
+## 📚 Documentation
+
+- [Guide de Déploiement](GUIDE_DEPLOIEMENT.md) - Guide complet pour déployer en production
+- [Analyse du Projet](ANALYSE_PROJET.md) - Analyse détaillée du projet
+- [Fichiers à Supprimer](FICHIERS_A_SUPPRIMER.md) - Liste des fichiers sensibles
+
+## 🔐 Sécurité
+
+### Avant le Déploiement
+
+1. **Supprimer les fichiers sensibles** :
+   - `install.php`
+   - `public/diagnostic.php`
+   - Tous les scripts `fix-*.php`
+
+2. **Vérifier la configuration** :
+   - `APP_ENV=production`
+   - `APP_DEBUG=false`
+   - `APP_URL` correct (sans slash final)
+
+3. **Exécuter le script de nettoyage** :
+   ```bash
+   cleanup-production.bat  # Windows
+   ./cleanup-production.sh  # Linux/Mac
+   ```
+
+## 🧪 Tests
+
+```bash
+php artisan test
+```
+
+## 📝 Configuration
+
+### Variables d'Environnement Importantes
+
+```env
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://votre-domaine.com
+
+# Vite (production)
+VITE_DEV_SERVER_RUNNING=false
+```
+
+### Base de Données
+
+Le projet utilise MySQL avec le mode strict activé. Toutes les requêtes SQL sont conformes.
+
+## 🛠️ Technologies Utilisées
+
+- **Backend** : Laravel 12
+- **Frontend** : Tailwind CSS 4, Alpine.js
+- **Build** : Vite 7
+- **Graphiques** : Chart.js
+- **PDF** : DomPDF
+- **Codes-barres** : Picqer PHP Barcode Generator
+- **QR Codes** : SimpleSoftwareIO/simple-qrcode
+
+## 📊 Fonctionnalités Admin
+
+- Dashboard avec statistiques en temps réel
+- Gestion complète des produits (CRUD)
+- Gestion des commandes et paiements
+- Rapports de ventes et stocks
+- Comptabilité intégrée
+- Scanner de codes-barres (POS)
+- Import/Export de données
+- Gestion des utilisateurs et permissions
+
+## 🛍️ Fonctionnalités Front
+
+- Catalogue de produits avec filtres
+- Panier persistant
+- Checkout sécurisé
+- Compte client
+- Suivi de commandes
+- Système de coupons
+- Recherche de produits
+
+## 🤝 Contribution
+
+Les contributions sont les bienvenues ! N'hésitez pas à ouvrir une issue ou une pull request.
+
+## 📄 Licence
+
+Ce projet est sous licence MIT.
+
+## 👨‍💻 Auteur
+
+Développé pour Chamse E-Commerce
+
+---
+
+**Note** : Consultez [GUIDE_DEPLOIEMENT.md](GUIDE_DEPLOIEMENT.md) pour un guide complet de déploiement en production.

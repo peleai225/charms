@@ -29,7 +29,17 @@
                 class="relative"
             >
                 <div class="relative h-[400px] md:h-[500px] lg:h-[600px]">
-                    <img src="{{ asset('storage/' . $banner->image) }}" alt="{{ $banner->title }}" class="w-full h-full object-cover">
+                    @if($banner->image)
+                        <img src="{{ asset('storage/' . $banner->image) }}" alt="{{ $banner->title }}" class="w-full h-full object-cover">
+                    @else
+                        <div class="w-full h-full bg-gradient-to-r from-primary-600 to-primary-700 flex items-center justify-center">
+                            <div class="text-center text-white">
+                                @if($banner->title)
+                                    <h2 class="text-4xl font-bold mb-2">{{ $banner->title }}</h2>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
                     
                     <!-- Overlay avec contenu -->
                     <div class="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent">
@@ -207,7 +217,11 @@
     <section class="py-8">
         <div class="container mx-auto px-4">
             <a href="{{ $promoBanner->link ?? '#' }}" class="block relative rounded-2xl overflow-hidden group">
-                <img src="{{ asset('storage/' . $promoBanner->image) }}" alt="{{ $promoBanner->title }}" class="w-full h-48 md:h-64 object-cover group-hover:scale-105 transition-transform duration-500">
+                @if($promoBanner->image)
+                    <img src="{{ asset('storage/' . $promoBanner->image) }}" alt="{{ $promoBanner->title }}" class="w-full h-48 md:h-64 object-cover group-hover:scale-105 transition-transform duration-500">
+                @else
+                    <div class="w-full h-48 md:h-64 bg-gradient-to-r from-primary-600 to-primary-700"></div>
+                @endif
                 @if($promoBanner->title)
                 <div class="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent flex items-center">
                     <div class="p-8">
@@ -320,14 +334,14 @@
 
     <!-- Promotions -->
     @if($saleProducts->count() > 0)
-    <section class="py-16 bg-gradient-to-r from-red-600 to-orange-500">
+    <section class="py-16 bg-white">
         <div class="container mx-auto px-4">
             <div class="flex items-center justify-between mb-12">
                 <div>
-                    <h2 class="text-3xl font-bold text-white mb-2">🔥 Promotions</h2>
-                    <p class="text-red-100">Profitez de nos meilleures offres</p>
+                    <h2 class="text-3xl font-bold text-slate-900 mb-2">Promotions</h2>
+                    <p class="text-slate-600">Profitez de nos meilleures offres</p>
                 </div>
-                <a href="{{ route('shop.index') }}" class="hidden md:inline-flex items-center gap-2 text-white font-medium hover:underline">
+                <a href="{{ route('shop.index') }}" class="hidden md:inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium">
                     Voir tout
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>

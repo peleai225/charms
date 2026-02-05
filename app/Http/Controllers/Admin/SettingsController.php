@@ -67,7 +67,10 @@ class SettingsController extends Controller
             }
         }
 
-        return back()->with('success', 'Paramètres mis à jour.');
+        // Vider tous les caches pour application immédiate
+        Setting::clearCache();
+
+        return back()->with('success', 'Paramètres mis à jour et appliqués en temps réel.');
     }
 
     /**
@@ -103,7 +106,10 @@ class SettingsController extends Controller
             $this->setSetting('shipping_zones', json_encode($validated['shipping_zones']));
         }
 
-        return back()->with('success', 'Paramètres de livraison mis à jour.');
+        // Vider tous les caches pour application immédiate
+        Setting::clearCache();
+
+        return back()->with('success', 'Paramètres de livraison mis à jour et appliqués en temps réel.');
     }
 
     /**
@@ -124,14 +130,17 @@ class SettingsController extends Controller
         $validated = $request->validate([
             'payment_cod_enabled' => 'boolean',
             'payment_cinetpay_enabled' => 'boolean',
+            'payment_lygos_enabled' => 'boolean',
             'cinetpay_site_id' => 'nullable|string',
             'cinetpay_api_key' => 'nullable|string',
             'cinetpay_secret_key' => 'nullable|string',
             'cinetpay_mode' => 'nullable|in:sandbox,live',
+            'lygos_api_key' => 'nullable|string',
         ]);
 
         $this->setSetting('payment_cod_enabled', $request->boolean('payment_cod_enabled') ? '1' : '0');
         $this->setSetting('payment_cinetpay_enabled', $request->boolean('payment_cinetpay_enabled') ? '1' : '0');
+        $this->setSetting('payment_lygos_enabled', $request->boolean('payment_lygos_enabled') ? '1' : '0');
         
         if (!empty($validated['cinetpay_site_id'])) {
             $this->setSetting('cinetpay_site_id', $validated['cinetpay_site_id']);
@@ -144,7 +153,17 @@ class SettingsController extends Controller
         }
         $this->setSetting('cinetpay_mode', $validated['cinetpay_mode'] ?? 'sandbox');
 
-        return back()->with('success', 'Paramètres de paiement mis à jour.');
+        // Lygos Pay
+        if (!empty($validated['lygos_api_key'])) {
+            $this->setSetting('lygos_api_key', $validated['lygos_api_key']);
+            // Mettre à jour aussi le .env via config
+            config(['lygos.api_key' => $validated['lygos_api_key']]);
+        }
+
+        // Vider tous les caches pour application immédiate
+        Setting::clearCache();
+
+        return back()->with('success', 'Paramètres de paiement mis à jour et appliqués en temps réel.');
     }
 
     /**
@@ -179,18 +198,67 @@ class SettingsController extends Controller
             }
         }
 
-        return back()->with('success', 'Paramètres email mis à jour.');
+        // Vider tous les caches pour application immédiate
+        Setting::clearCache();
+
+        return back()->with('success', 'Paramètres email mis à jour et appliqués en temps réel.');
     }
 
     /**
-     * Helper pour sauvegarder un paramètre
+     * Tester la connexion Lygos Pay
+     */
+    public function testLygosPay(Request $request)
+    {
+        try {
+            $lygosService = new \App\Services\LygosPayService();
+            $result = $lygosService->testConnection();
+            
+            if ($result['success']) {
+                return back()->with('success', $result['message']);
+            } else {
+                return back()->with('error', $result['message']);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Test Lygos Pay error: ' . $e->getMessage());
+            return back()->with('error', 'Erreur lors du test: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Tester l'envoi d'un email
+     */
+    public function testEmail(Request $request)
+    {
+        $request->validate([
+            'test_email' => 'required|email',
+        ]);
+
+        try {
+            // Configurer la connexion mail depuis les paramètres
+            \App\Services\MailConfigService::configureFromSettings();
+
+            // Envoyer un email de test
+            \Illuminate\Support\Facades\Mail::to($request->test_email)->send(new \App\Mail\TestEmail());
+
+            return back()->with('success', "Email de test envoyé avec succès à {$request->test_email} !");
+        } catch (\Exception $e) {
+            \Log::error('Test email error: ' . $e->getMessage());
+            
+            $errorMessage = config('app.debug') 
+                ? 'Erreur : ' . $e->getMessage() 
+                : 'Erreur lors de l\'envoi de l\'email de test. Vérifiez votre configuration SMTP.';
+            
+            return back()->with('error', $errorMessage);
+        }
+    }
+
+    /**
+     * Helper pour sauvegarder un paramètre (temps réel)
      */
     protected function setSetting(string $key, $value): void
     {
-        Setting::updateOrCreate(
-            ['key' => $key],
-            ['value' => $value]
-        );
+        // Utiliser Setting::set() qui vide automatiquement le cache
+        Setting::set($key, $value);
     }
 }
 

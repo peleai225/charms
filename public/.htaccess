@@ -1,9 +1,16 @@
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
+        # +FollowSymLinks requis pour servir les fichiers via public/storage (lien vers storage/app/public)
+        Options +FollowSymLinks -MultiViews -Indexes
     </IfModule>
 
     RewriteEngine On
+    RewriteBase /
+
+    # /build/* → servis en direct par Apache (fichiers dans public/build/)
+    # /storage/* → passé à Laravel (route storage.serve) pour éviter 403 sur junction/symlink sous Windows
+    RewriteCond %{REQUEST_URI} ^/storage/
+    RewriteRule ^storage/(.*)$ index.php [L]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .

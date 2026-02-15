@@ -281,15 +281,16 @@ class ProductController extends Controller
     }
 
     /**
-     * Supprimer un produit
+     * Supprimer un produit (ou l'archiver s'il a des commandes)
      */
     public function destroy(Product $product)
     {
-        // Vérifier s'il y a des commandes avec ce produit
+        // Si le produit a des commandes, archiver au lieu de supprimer
         $hasOrders = $product->orderItems()->exists();
         
         if ($hasOrders) {
-            return back()->with('error', 'Impossible de supprimer ce produit car il est associé à des commandes. Vous pouvez l\'archiver à la place.');
+            $product->update(['status' => 'archived']);
+            return back()->with('success', 'Le produit a été archivé (impossible de le supprimer car il est associé à des commandes).');
         }
 
         DB::beginTransaction();

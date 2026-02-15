@@ -19,8 +19,25 @@
         <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%234F46E5' rx='15' width='100' height='100'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='50' fill='white'>{{ substr($siteName, 0, 1) }}</text></svg>">
     @endif
     
-    @if(app()->environment('local'))
+    @php
+        $buildExists = is_dir(public_path('build/assets'));
+    @endphp
+    @if(app()->environment('local') && !$buildExists)
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @elseif($buildExists)
+        @php
+            $buildPath = public_path('build/assets');
+            $files = scandir($buildPath);
+            foreach ($files as $file) {
+                if ($file !== '.' && $file !== '..') {
+                    if (str_ends_with($file, '.css')) {
+                        echo '<link rel="stylesheet" href="' . asset('build/assets/' . $file) . '">' . "\n    ";
+                    } elseif (str_ends_with($file, '.js')) {
+                        echo '<script type="module" src="' . asset('build/assets/' . $file) . '"></script>' . "\n    ";
+                    }
+                }
+            }
+        @endphp
     @else
         @php
             try {

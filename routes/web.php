@@ -4,6 +4,8 @@ use App\Http\Controllers\Auth\AdminAuthController;
 use App\Http\Controllers\Auth\CustomerAuthController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Front\HomeController;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -11,6 +13,53 @@ use Illuminate\Support\Facades\Route;
 | Routes Front-office (Site public)
 |--------------------------------------------------------------------------
 */
+
+// Servir les fichiers build (CSS/JS) quand public_html/build/ absent — URLs /build/xxx
+Route::get('build/{path}', function (string $path) {
+    try {
+        if ($path === '' || strpos($path, '..') !== false) {
+            abort(404);
+        }
+        $buildPath = base_path('public/build/' . $path);
+        $realPath = realpath($buildPath);
+        $allowedRoot = realpath(base_path('public/build'));
+        if (!$allowedRoot || !$realPath || strpos($realPath, $allowedRoot) !== 0 || !File::isFile($realPath)) {
+            abort(404);
+        }
+        $mime = File::mimeType($realPath);
+        return response()->file($realPath, ['Content-Type' => $mime]);
+    } catch (\Throwable $e) {
+        abort(404);
+    }
+})->where('path', '.*')->name('build.serve');
+
+// Servir les fichiers storage (images) quand symlink impossible — uniquement pour les URLs /storage/xxx
+Route::get('storage/{path}', function (string $path) {
+    try {
+        if ($path === '' || strpos($path, '..') !== false) {
+            abort(404);
+        }
+        $storagePath = storage_path('app/public/' . $path);
+        $realPath = realpath($storagePath);
+        $allowedRoot = realpath(storage_path('app/public'));
+        if (!$allowedRoot || !$realPath || strpos($realPath, $allowedRoot) !== 0 || !File::isFile($realPath)) {
+            abort(404);
+        }
+        return response()->file($realPath, ['Content-Type' => File::mimeType($realPath)]);
+    } catch (\Throwable $e) {
+        abort(404);
+    }
+})->where('path', '.*')->name('storage.serve');
+
+// Créer le lien symbolique storage (sans terminal) — visiter /setup-storage une fois puis commenter/supprimer
+Route::get('/setup-storage', function () {
+    try {
+        Artisan::call('storage:link');
+        return 'Le lien storage a été créé avec succès !';
+    } catch (\Throwable $e) {
+        return 'Erreur : ' . $e->getMessage();
+    }
+});
 
 // Page d'accueil
 Route::get('/', [HomeController::class, 'index'])->name('home');

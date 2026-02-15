@@ -32,8 +32,25 @@
     @endif
     
     <!-- Styles -->
-    @if(app()->environment('local'))
+    @php
+        $buildExists = is_dir(public_path('build/assets'));
+    @endphp
+    @if(app()->environment('local') && !$buildExists)
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @elseif($buildExists)
+        @php
+            $buildPath = public_path('build/assets');
+            $files = scandir($buildPath);
+            foreach ($files as $file) {
+                if ($file !== '.' && $file !== '..') {
+                    if (str_ends_with($file, '.css')) {
+                        echo '<link rel="stylesheet" href="' . asset('build/assets/' . $file) . '">' . "\n    ";
+                    } elseif (str_ends_with($file, '.js')) {
+                        echo '<script type="module" src="' . asset('build/assets/' . $file) . '"></script>' . "\n    ";
+                    }
+                }
+            }
+        @endphp
     @else
         @php
             try {

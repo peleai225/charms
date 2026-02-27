@@ -6,9 +6,9 @@
     @php
         $siteName = \App\Models\Setting::get('site_name', config('app.name', 'Ma Boutique'));
         $siteLogo = \App\Models\Setting::get('logo');
-        $siteAddress = \App\Models\Setting::get('address', 'Adresse non définie');
-        $sitePhone = \App\Models\Setting::get('phone', '');
-        $siteEmail = \App\Models\Setting::get('email', '');
+        $siteAddress = \App\Models\Setting::get('contact_address', 'Adresse non définie');
+        $sitePhone = \App\Models\Setting::get('contact_phone', '');
+        $siteEmail = \App\Models\Setting::get('contact_email', '');
         $primaryColor = \App\Models\Setting::get('primary_color', '#2563eb');
     @endphp
     <style>

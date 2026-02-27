@@ -31,7 +31,7 @@
 @endpush
 
 @section('content')
-<div class="h-[calc(100vh-120px)] flex gap-6" x-data="posScanner()">
+<div class="h-[calc(100vh-120px)] flex gap-6" x-data="posScanner({{ ($receiptAutoPrint ?? false) ? 'true' : 'false' }})">
     
     <!-- Partie gauche: Scanner et produits -->
     <div class="flex-1 flex flex-col gap-4">
@@ -323,22 +323,36 @@
             <h3 class="text-2xl font-bold text-slate-900 mb-2">Vente validée !</h3>
             <p class="text-slate-600 mb-2">Commande <span class="font-mono font-semibold" x-text="lastOrder?.order_number"></span></p>
             <p class="text-3xl font-bold text-green-600 mb-4" x-text="lastOrder?.total_formatted"></p>
-            <p x-show="lastOrder?.change > 0" class="text-lg text-slate-700 mb-6">
+            <p x-show="lastOrder?.change > 0" class="text-lg text-slate-700 mb-4">
                 Rendu monnaie: <span class="font-bold" x-text="lastOrder?.change_formatted"></span>
             </p>
-            <button @click="showSuccess = false; $refs.scanInput.focus()" 
-                    class="px-8 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700">
-                Nouvelle vente
-            </button>
+            <p x-show="lastOrder?.receipt_url && receiptAutoPrint" class="text-sm text-slate-500 mb-6">
+                Le reçu s'est ouvert. Appuyez sur <kbd class="px-1.5 py-0.5 bg-slate-200 rounded text-xs">Entrée</kbd> pour imprimer.
+            </p>
+            <div class="flex gap-3 justify-center flex-wrap">
+                <button @click="showSuccess = false; $refs.scanInput.focus()" 
+                        class="px-8 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700">
+                    Nouvelle vente
+                </button>
+                <button x-show="lastOrder?.receipt_url"
+                        @click="window.open(lastOrder.receipt_url, 'receipt', 'width=400,height=600')"
+                        class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 inline-flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                    </svg>
+                    Imprimer le reçu
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
 <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
 <script>
-function posScanner() {
+function posScanner(receiptAutoPrint = false) {
     return {
         mode: 'cart', // cart, stock_in, stock_out
+        receiptAutoPrint: receiptAutoPrint,
         cart: { items: [], count: 0, total: 0, total_formatted: '0 F CFA' },
         lastScanned: null,
         scanHistory: [],
@@ -558,10 +572,16 @@ function posScanner() {
                     this.lastOrder = data.order;
                     this.lastOrder.change = data.change;
                     this.lastOrder.change_formatted = data.change_formatted;
+                    this.lastOrder.receipt_url = data.receipt_url;
                     this.cart = { items: [], count: 0, total: 0, total_formatted: '0 F CFA' };
                     this.amountReceived = 0;
                     this.showSuccess = true;
                     this.playSound('success');
+                    // Impression automatique du reçu si configuré
+                    if (this.receiptAutoPrint && data.receipt_url) {
+                        const receiptWin = window.open(data.receipt_url, 'receipt', 'width=400,height=600');
+                        if (receiptWin) receiptWin.focus();
+                    }
                 } else {
                     this.error = data.message;
                 }

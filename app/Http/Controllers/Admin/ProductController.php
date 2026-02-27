@@ -51,9 +51,10 @@ class ProductController extends Controller
             }
         }
 
-        // Tri
-        $sortBy = $request->get('sort', 'created_at');
-        $sortDir = $request->get('dir', 'desc');
+        // Tri (whitelist pour éviter l'injection)
+        $allowedSort = ['name', 'sku', 'sale_price', 'stock_quantity', 'created_at', 'updated_at', 'status'];
+        $sortBy = in_array($request->get('sort'), $allowedSort) ? $request->get('sort') : 'created_at';
+        $sortDir = strtolower($request->get('dir', 'desc')) === 'asc' ? 'asc' : 'desc';
         $query->orderBy($sortBy, $sortDir);
 
         $products = $query->paginate(20)->withQueryString();

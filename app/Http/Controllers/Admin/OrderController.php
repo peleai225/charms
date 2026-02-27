@@ -73,6 +73,7 @@ class OrderController extends Controller
             'items.product.images',
             'items.productVariant',
             'payments',
+            'refunds',
         ]);
 
         // Timeline des événements

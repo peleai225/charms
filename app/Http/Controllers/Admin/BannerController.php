@@ -41,14 +41,15 @@ class BannerController extends Controller
 
     public function store(Request $request)
     {
-        // L'image n'est pas obligatoire pour les barres d'annonce
+        // L'image n'est pas obligatoire pour les barres d'annonce et les popups
         $isAnnouncementBar = $request->input('position') === 'announcement_bar';
+        $isPopup = $request->input('position') === 'popup_center';
         
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',
             'title' => ($isAnnouncementBar ? 'required' : 'nullable') . '|string|max:255',
             'subtitle' => 'nullable|string|max:255',
-            'image' => ($isAnnouncementBar ? 'nullable' : 'required') . '|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+            'image' => (($isAnnouncementBar || $isPopup) ? 'nullable' : 'required') . '|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
             'link' => 'nullable|string|max:255',
             'button_text' => 'nullable|string|max:100',
             'position' => 'required|string',
@@ -71,9 +72,12 @@ class BannerController extends Controller
             $validated['name'] = $validated['title'] ?? Banner::POSITIONS[$validated['position']] ?? 'Bannière';
         }
         
-        // Auto-set type for announcement bar
+        // Auto-set type for announcement bar and popup
         if ($isAnnouncementBar) {
             $validated['type'] = 'announcement';
+        }
+        if ($isPopup) {
+            $validated['type'] = 'popup';
         }
 
         Banner::create($validated);
@@ -93,6 +97,7 @@ class BannerController extends Controller
     public function update(Request $request, Banner $banner)
     {
         $isAnnouncementBar = $request->input('position') === 'announcement_bar';
+        $isPopup = $request->input('position') === 'popup_center';
         
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',
@@ -124,9 +129,12 @@ class BannerController extends Controller
             $validated['name'] = $validated['title'];
         }
         
-        // Auto-set type for announcement bar
+        // Auto-set type for announcement bar and popup
         if ($isAnnouncementBar) {
             $validated['type'] = 'announcement';
+        }
+        if ($isPopup) {
+            $validated['type'] = 'popup';
         }
 
         $banner->update($validated);

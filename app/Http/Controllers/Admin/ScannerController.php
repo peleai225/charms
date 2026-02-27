@@ -9,6 +9,7 @@ use App\Models\StockMovement;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Customer;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -19,7 +20,9 @@ class ScannerController extends Controller
      */
     public function index()
     {
-        return view('admin.scanner.index');
+        $receiptAutoPrint = Setting::get('pos_receipt_auto_print', '0') === '1';
+
+        return view('admin.scanner.index', compact('receiptAutoPrint'));
     }
 
     /**
@@ -212,7 +215,7 @@ class ScannerController extends Controller
             $order = Order::create([
                 'order_number' => 'POS-' . date('Ymd') . '-' . strtoupper(substr(md5(uniqid()), 0, 6)),
                 'customer_id' => $request->customer_id,
-                'status' => 'completed',
+                'status' => 'delivered', // Vente POS terminée sur place
                 'payment_status' => 'paid',
                 'payment_method' => $request->payment_method,
                 'subtotal' => $subtotal,
@@ -224,6 +227,7 @@ class ScannerController extends Controller
                 'paid_at' => now(),
                 'billing_first_name' => 'Client',
                 'billing_last_name' => 'Comptoir',
+                'billing_email' => 'pos@magasin.local',
                 'billing_address' => 'Vente en magasin',
                 'billing_city' => 'Magasin',
                 'billing_postal_code' => '00000',
@@ -288,9 +292,18 @@ class ScannerController extends Controller
             DB::commit();
 
             $change = 0;
+            $amountReceived = 0;
             if ($request->payment_method === 'cash' && $request->amount_received) {
-                $change = $request->amount_received - $subtotal;
+                $amountReceived = (float) $request->amount_received;
+                $change = $amountReceived - $subtotal;
             }
+
+            $receiptParams = http_build_query([
+                'auto_print' => 1,
+                'change' => max(0, $change),
+                'amount_received' => $amountReceived ?: $subtotal,
+            ]);
+            $receiptUrl = route('admin.scanner.receipt', ['order' => $order->id]) . '?' . $receiptParams;
 
             return response()->json([
                 'success' => true,
@@ -302,6 +315,7 @@ class ScannerController extends Controller
                 ],
                 'change' => $change,
                 'change_formatted' => format_price(max(0, $change)),
+                'receipt_url' => $receiptUrl,
             ]);
 
         } catch (\Exception $e) {
@@ -313,6 +327,22 @@ class ScannerController extends Controller
                 'message' => 'Erreur lors de la finalisation: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Afficher le reçu d'une vente POS pour impression
+     */
+    public function receipt(Order $order)
+    {
+        // Vérifier que c'est une commande POS
+        if ($order->source !== 'pos') {
+            abort(404);
+        }
+
+        $change = (float) request('change', 0);
+        $amountReceived = (float) request('amount_received', $order->total);
+
+        return view('admin.scanner.receipt', compact('order', 'change', 'amountReceived'));
     }
 
     /**

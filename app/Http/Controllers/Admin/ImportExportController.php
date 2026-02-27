@@ -222,7 +222,8 @@ class ImportExportController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Erreur lors de l\'import: ' . $e->getMessage());
+            \Log::error('Import produits échoué', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return back()->with('error', 'Erreur lors de l\'import. Consultez les logs pour plus de détails.');
         }
 
         $message = "Import terminé: {$results['created']} créé(s), {$results['updated']} mis à jour.";

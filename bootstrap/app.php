@@ -9,6 +9,7 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
+        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -16,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'customer' => \App\Http\Middleware\CustomerMiddleware::class,
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
+        ]);
+        $middleware->appendToGroup('web', [
+            \App\Http\Middleware\ConvertRedirectToJson::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

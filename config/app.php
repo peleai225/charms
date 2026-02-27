@@ -123,4 +123,14 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Deploy Token (setup sans SSH)
+    |--------------------------------------------------------------------------
+    | Token pour /setup?token=XXX (storage:link + migrations)
+    | Définir DEPLOY_TOKEN dans .env — supprimer après déploiement si souhaité
+    */
+
+    'deploy_token' => env('DEPLOY_TOKEN'),
+
 ];

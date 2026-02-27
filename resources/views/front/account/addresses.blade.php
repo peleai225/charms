@@ -31,16 +31,12 @@
                     </button>
                 </div>
                 
-                @php
-                    $customer = auth()->user()->customer;
-                    $addresses = $customer ? $customer->addresses : collect();
-                @endphp
 
                 @if($customer && $addresses->count() > 0)
                     <div class="grid md:grid-cols-2 gap-4">
                         @foreach($addresses as $address)
                         <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative">
-                            @if($address->is_default_shipping)
+                            @if($address->is_default)
                                 <span class="absolute top-4 right-4 inline-flex px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                                     Adresse par défaut
                                 </span>
@@ -54,9 +50,9 @@
                             </div>
                             
                             <div class="text-slate-600 text-sm space-y-1">
-                                <p>{{ $address->address }}</p>
-                                @if($address->address2)
-                                    <p>{{ $address->address2 }}</p>
+                                <p>{{ $address->address_line1 }}</p>
+                                @if($address->address_line2)
+                                    <p>{{ $address->address_line2 }}</p>
                                 @endif
                                 <p>{{ $address->postal_code }} {{ $address->city }}</p>
                                 <p>{{ $address->country }}</p>
@@ -67,7 +63,7 @@
                             
                             <div class="mt-4 pt-4 border-t border-slate-100 flex items-center gap-4">
                                 <button type="button" class="text-sm text-primary-600 hover:underline">Modifier</button>
-                                @if(!$address->is_default_shipping)
+                                @if(!$address->is_default)
                                     <button type="button" class="text-sm text-slate-600 hover:underline">Définir par défaut</button>
                                 @endif
                                 <button type="button" class="text-sm text-red-600 hover:underline">Supprimer</button>
@@ -109,7 +105,7 @@
                 <h3 class="text-lg font-semibold text-slate-900" id="modal-title">Ajouter une adresse</h3>
             </div>
             
-            <form action="#" method="POST" class="p-6 space-y-4">
+            <form id="addAddressForm" action="{{ route('account.addresses.store') }}" method="POST" class="p-6 space-y-4">
                 @csrf
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -140,7 +136,13 @@
                 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Pays</label>
-                    <input type="text" name="country" value="Côte d'Ivoire" required class="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    <select name="country" required class="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        <option value="CI" {{ old('country', 'CI') === 'CI' ? 'selected' : '' }}>Côte d'Ivoire</option>
+                        <option value="FR" {{ old('country') === 'FR' ? 'selected' : '' }}>France</option>
+                        <option value="SN" {{ old('country') === 'SN' ? 'selected' : '' }}>Sénégal</option>
+                        <option value="ML" {{ old('country') === 'ML' ? 'selected' : '' }}>Mali</option>
+                        <option value="BF" {{ old('country') === 'BF' ? 'selected' : '' }}>Burkina Faso</option>
+                    </select>
                 </div>
                 
                 <div>

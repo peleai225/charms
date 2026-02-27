@@ -3,22 +3,22 @@
 @section('title', 'Panier')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-4 py-8 md:py-10">
     <!-- Breadcrumb -->
-    <nav class="text-sm text-gray-500 mb-6">
-        <a href="{{ route('home') }}" class="hover:text-primary-600">Accueil</a>
-        <span class="mx-2">/</span>
-        <span class="text-gray-900">Panier</span>
+    <nav class="text-sm text-slate-500 mb-8 flex items-center gap-2">
+        <a href="{{ route('home') }}" class="hover:text-primary-600 transition-colors">Accueil</a>
+        <span class="text-slate-300">/</span>
+        <span class="text-slate-900 font-medium">Panier</span>
     </nav>
 
-    <h1 class="text-3xl font-bold text-gray-900 mb-8">Mon panier</h1>
+    <h1 class="text-3xl md:text-4xl font-bold text-slate-900 mb-8">Mon panier</h1>
 
     @if($cart->items->count() > 0)
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Articles -->
         <div class="lg:col-span-2 space-y-4">
             @foreach($cart->items as $item)
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex gap-4 transition-all duration-300" 
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex gap-4 transition-all duration-300 hover:shadow-md" 
                  x-data="cartItem({{ $item->id }}, {{ $item->quantity }}, {{ $item->unit_price }})"
                  :class="{ 'opacity-50': isUpdating, 'translate-x-full opacity-0': isRemoving }">
                 <!-- Image -->
@@ -185,9 +185,14 @@
                                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
                             <button type="submit" 
                                     :disabled="isApplyingCoupon"
-                                    class="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 font-medium rounded-lg text-sm transition-colors">
-                                <span x-show="!isApplyingCoupon">Appliquer</span>
-                                <span x-show="isApplyingCoupon">...</span>
+                                    class="px-4 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 font-medium rounded-lg text-sm transition-colors flex items-center gap-2 min-w-[100px] justify-center">
+                                <span x-show="isApplyingCoupon" class="animate-spin">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                    </svg>
+                                </span>
+                                <span x-text="isApplyingCoupon ? 'Application...' : 'Appliquer'">Appliquer</span>
                             </button>
                         </form>
                     @endif

@@ -36,7 +36,20 @@
             </div>
         </div>
 
-        <!-- Image -->
+        <!-- Aide pour popup -->
+        <div x-show="bannerPosition === 'popup_center'" 
+             x-transition
+             class="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 flex items-start gap-3">
+            <svg class="w-6 h-6 text-indigo-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+            <div>
+                <h4 class="font-medium text-indigo-800">Popup centre écran</h4>
+                <p class="text-sm text-indigo-700">S'affiche au centre de l'écran après un court délai. L'image est optionnelle — le titre et le sous-titre suffisent pour une annonce textuelle élégante.</p>
+            </div>
+        </div>
+
+        <!-- Image (masquée pour barre d'annonce uniquement) -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
              x-show="bannerPosition !== 'announcement_bar'">
             <h3 class="text-lg font-semibold text-slate-900 mb-6">Image de la bannière</h3>
@@ -44,31 +57,28 @@
             <div>
                 <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center"
                      :class="{ 'border-blue-500': preview }">
-                    <template x-if="!preview">
-                        <div class="space-y-2">
-                            <svg class="w-12 h-12 text-slate-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    {{-- x-show au lieu de x-if pour garder le champ fichier dans le DOM lors de la prévisualisation --}}
+                    <div x-show="!preview" x-cloak class="space-y-2">
+                        <svg class="w-12 h-12 text-slate-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <p class="text-slate-600">Glissez-déposez une image ou</p>
+                        <label class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors">
+                            <span>Choisir un fichier</span>
+                            <input type="file" name="image" accept="image/*" class="hidden" x-ref="fileInput"
+                                   :required="bannerPosition !== 'announcement_bar' && bannerPosition !== 'popup_center'"
+                                   @change="preview = URL.createObjectURL($event.target.files[0])">
+                        </label>
+                        <p class="text-xs text-slate-500">PNG, JPG, WEBP jusqu'à 5MB. Taille recommandée: 1920x600px</p>
+                    </div>
+                    <div x-show="preview" x-cloak class="relative">
+                        <img :src="preview" class="max-h-64 mx-auto rounded-lg">
+                        <button type="button" @click="preview = null; $refs.fileInput && ($refs.fileInput.value = '')" class="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                             </svg>
-                            <p class="text-slate-600">Glissez-déposez une image ou</p>
-                            <label class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors">
-                                <span>Choisir un fichier</span>
-                                <input type="file" name="image" accept="image/*" class="hidden"
-                                       :required="bannerPosition !== 'announcement_bar'"
-                                       @change="preview = URL.createObjectURL($event.target.files[0])">
-                            </label>
-                            <p class="text-xs text-slate-500">PNG, JPG, WEBP jusqu'à 5MB. Taille recommandée: 1920x600px</p>
-                        </div>
-                    </template>
-                    <template x-if="preview">
-                        <div class="relative">
-                            <img :src="preview" class="max-h-64 mx-auto rounded-lg">
-                            <button type="button" @click="preview = null" class="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </template>
+                        </button>
+                    </div>
                 </div>
                 @error('image')
                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>

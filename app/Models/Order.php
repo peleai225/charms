@@ -210,7 +210,8 @@ class Order extends Model
 
     public function getIsRefundableAttribute(): bool
     {
-        return $this->is_paid && !in_array($this->status, [self::STATUS_CANCELLED, self::STATUS_REFUNDED]);
+        $paid = in_array($this->payment_status, [self::PAYMENT_PAID, 'cod']);
+        return $paid && !in_array($this->status, [self::STATUS_CANCELLED, self::STATUS_REFUNDED]);
     }
 
     public function getPaidAmountAttribute(): float

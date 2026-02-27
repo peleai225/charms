@@ -12,12 +12,18 @@ class LygosPayWebhookController extends Controller
     public function handle(Request $request, LygosPayService $lygosPay)
     {
         $data = $request->all();
-        
+
         Log::info('Lygos Pay webhook received', $data);
-        
-        $lygosPay->handleWebhook($data);
-        
-        return response()->json(['status' => 'ok']);
+
+        // Lygos ne documente pas de signature webhook ; on vérifie via l'API (checkPaymentStatus)
+        // avant de traiter. En cas d'échec, on retourne un code approprié.
+        $success = $lygosPay->handleWebhook($data);
+
+        if ($success) {
+            return response()->json(['status' => 'ok']);
+        }
+
+        return response()->json(['status' => 'error'], 500);
     }
 }
 

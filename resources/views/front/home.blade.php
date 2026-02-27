@@ -244,17 +244,18 @@
 
     <!-- Catégories -->
     @if($featuredCategories->count() > 0)
-    <section class="py-16 bg-white">
+    <section class="py-20 bg-white">
         <div class="container mx-auto px-4">
-            <div class="text-center mb-12">
-                <h2 class="text-3xl font-bold text-slate-900 mb-4">Nos catégories</h2>
-                <p class="text-slate-600">Explorez notre sélection de produits par catégorie</p>
+            <div class="text-center mb-14">
+                <div class="inline-block w-16 h-1 bg-primary-600 rounded-full mb-4"></div>
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-3">Nos catégories</h2>
+                <p class="text-slate-600 text-lg">Explorez notre sélection par catégorie</p>
             </div>
             
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
                 @foreach($featuredCategories as $category)
                 <a href="{{ route('shop.category', $category->slug) }}" class="group text-center">
-                    <div class="aspect-square bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl mb-4 overflow-hidden group-hover:shadow-lg transition-all">
+                    <div class="aspect-square bg-slate-100 rounded-2xl mb-4 overflow-hidden ring-1 ring-slate-200/50 group-hover:ring-primary-200 group-hover:shadow-xl group-hover:shadow-slate-200/50 transition-all duration-300">
                         @if($category->image)
                             <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
                         @else
@@ -276,12 +277,13 @@
 
     <!-- Produits mis en avant -->
     @if($featuredProducts->count() > 0)
-    <section class="py-16 bg-slate-50">
+    <section class="py-20 bg-slate-50/80">
         <div class="container mx-auto px-4">
             <div class="flex items-center justify-between mb-12">
                 <div>
-                    <h2 class="text-3xl font-bold text-slate-900 mb-2">Produits vedettes</h2>
-                    <p class="text-slate-600">Nos produits les plus populaires</p>
+                    <div class="inline-block w-16 h-1 bg-primary-600 rounded-full mb-3"></div>
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-2">Produits vedettes</h2>
+                    <p class="text-slate-600 text-lg">Nos produits les plus populaires</p>
                 </div>
                 <a href="{{ route('shop.index') }}" class="hidden md:inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium">
                     Voir tout
@@ -291,14 +293,14 @@
                 </a>
             </div>
             
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 md:gap-6">
                 @foreach($featuredProducts as $product)
                     @include('front.shop.partials.product-card', ['product' => $product])
                 @endforeach
             </div>
             
-            <div class="text-center mt-8 md:hidden">
-                <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition-colors">
+            <div class="text-center mt-10 md:hidden">
+                <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-6 py-3.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 hover:-translate-y-0.5 transition-all shadow-lg shadow-primary-500/25">
                     Voir tous les produits
                 </a>
             </div>
@@ -334,12 +336,13 @@
 
     <!-- Promotions -->
     @if($saleProducts->count() > 0)
-    <section class="py-16 bg-white">
+    <section class="py-20 bg-slate-50/80">
         <div class="container mx-auto px-4">
             <div class="flex items-center justify-between mb-12">
                 <div>
-                    <h2 class="text-3xl font-bold text-slate-900 mb-2">Promotions</h2>
-                    <p class="text-slate-600">Profitez de nos meilleures offres</p>
+                    <span class="inline-block px-3 py-1 bg-red-100 text-red-600 text-xs font-semibold rounded-full mb-3">Offres limitées</span>
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-2">Promotions</h2>
+                    <p class="text-slate-600 text-lg">Profitez de nos meilleures offres</p>
                 </div>
                 <a href="{{ route('shop.index') }}" class="hidden md:inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium">
                     Voir tout
@@ -359,11 +362,11 @@
     @endif
 
     <!-- Avantages -->
-    <section class="py-16 bg-white">
+    <section class="py-20 bg-white border-t border-slate-100">
         <div class="container mx-auto px-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+                <div class="text-center group">
+                    <div class="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                         <svg class="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
                         </svg>
@@ -372,8 +375,8 @@
                     <p class="text-slate-600 text-sm">Expédition sous 24-48h dans toute l'Afrique de l'Ouest</p>
                 </div>
                 
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div class="text-center group">
+                    <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                         <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                         </svg>
@@ -382,8 +385,8 @@
                     <p class="text-slate-600 text-sm">Mobile Money, carte bancaire et paiement à la livraison</p>
                 </div>
                 
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div class="text-center group">
+                    <div class="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                         <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                         </svg>
@@ -392,8 +395,8 @@
                     <p class="text-slate-600 text-sm">30 jours pour changer d'avis</p>
                 </div>
                 
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <div class="text-center group">
+                    <div class="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                         <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
@@ -406,14 +409,18 @@
     </section>
 
     <!-- CTA Newsletter -->
-    <section class="py-16 bg-gradient-to-r from-primary-600 to-primary-800">
-        <div class="container mx-auto px-4 text-center">
-            <h2 class="text-3xl font-bold text-white mb-4">Restez informé</h2>
-            <p class="text-primary-100 mb-8 max-w-xl mx-auto">Inscrivez-vous à notre newsletter pour recevoir nos offres exclusives et nos dernières nouveautés.</p>
+    <section class="py-20 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute inset-0" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 32px 32px;"></div>
+        </div>
+        <div class="container mx-auto px-4 text-center relative z-10">
+            <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Restez informé</h2>
+            <p class="text-primary-100 mb-8 max-w-xl mx-auto text-lg">Inscrivez-vous pour recevoir nos offres exclusives et nouveautés.</p>
             
-            <form class="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-                <input type="email" placeholder="Votre adresse email" class="flex-1 px-6 py-4 rounded-xl focus:ring-2 focus:ring-white/50 focus:outline-none">
-                <button type="submit" class="px-8 py-4 bg-white text-primary-600 font-semibold rounded-xl hover:bg-primary-50 transition-colors">
+            <form method="POST" action="{{ route('newsletter.subscribe') }}" class="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+                @csrf
+                <input type="email" name="email" required placeholder="Votre adresse email" class="flex-1 px-6 py-4 rounded-xl border-0 focus:ring-2 focus:ring-white/50 focus:outline-none shadow-lg">
+                <button type="submit" class="px-8 py-4 bg-white text-primary-600 font-semibold rounded-xl hover:bg-slate-50 hover:-translate-y-0.5 transition-all shadow-xl">
                     S'inscrire
                 </button>
             </form>
@@ -431,12 +438,16 @@
             </div>
             <h2 class="text-2xl font-bold text-slate-900 mb-4">Boutique en cours de création</h2>
             <p class="text-slate-600 mb-8 max-w-md mx-auto">Nos produits arrivent bientôt ! En attendant, n'hésitez pas à vous inscrire à notre newsletter.</p>
+            @auth
+            @if(in_array(auth()->user()->role ?? '', ['admin', 'manager', 'staff']))
             <a href="{{ route('admin.products.create') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
                 Ajouter des produits (Admin)
             </a>
+            @endif
+            @endauth
         </div>
     </section>
     @endif

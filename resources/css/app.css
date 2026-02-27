@@ -87,6 +87,11 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
+/* Headings - use display font for impact */
+h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+}
+
 /* ========================================
    ANIMATIONS
    ======================================== */

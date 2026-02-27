@@ -29,6 +29,7 @@ class SettingsController extends Controller
             'site_name' => 'required|string|max:255',
             'site_description' => 'nullable|string|max:500',
             'contact_email' => 'required|email',
+            'admin_email' => 'nullable|email',
             'contact_phone' => 'nullable|string|max:50',
             'contact_address' => 'nullable|string|max:500',
             'logo' => 'nullable|image|max:2048',
@@ -46,6 +47,7 @@ class SettingsController extends Controller
             'secondary_color' => 'nullable|string|max:7',
             'accent_color' => 'nullable|string|max:7',
             'theme_mode' => 'nullable|in:light,dark,auto',
+            'pos_receipt_auto_print' => 'boolean',
         ]);
 
         // Upload logo

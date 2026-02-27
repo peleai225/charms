@@ -4,7 +4,7 @@
 @section('page-title', 'Gestion des utilisateurs')
 
 @section('content')
-<div class="space-y-6">
+<div class="space-y-6" x-data>
     <div class="flex items-center justify-between">
         <form method="GET" class="flex gap-3">
             <input type="search" name="search" value="{{ request('search') }}" placeholder="Rechercher..." class="px-4 py-2 border border-slate-300 rounded-xl">
@@ -16,10 +16,12 @@
             </select>
             <button type="submit" class="px-4 py-2 bg-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-300">Filtrer</button>
         </form>
-        <a href="{{ route('admin.users.create') }}" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 inline-flex items-center gap-2">
+        <button type="button"
+                @click="$dispatch('open-modal', 'user-create')"
+                class="px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 inline-flex items-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Nouvel utilisateur
-        </a>
+        </button>
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200">
@@ -94,6 +96,73 @@
         <div class="px-6 py-4 border-t border-slate-200">{{ $users->links() }}</div>
         @endif
     </div>
+
+    {{-- Popup création utilisateur --}}
+    <x-admin.modal id="user-create" title="Nouvel utilisateur" maxWidth="max-w-lg" :open="request('open_modal') === 'create' || $errors->any()">
+        <form method="POST" action="{{ route('admin.users.store') }}" class="space-y-4" data-ajax>
+            @csrf
+
+            <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="modal_name" class="block text-sm font-medium text-slate-700 mb-1">Nom *</label>
+                    <input type="text" name="name" id="modal_name" value="{{ old('name') }}" required
+                        class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                    @error('name')<p class="mt-1 text-sm text-red-500">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label for="modal_email" class="block text-sm font-medium text-slate-700 mb-1">Email *</label>
+                    <input type="email" name="email" id="modal_email" value="{{ old('email') }}" required
+                        class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                    @error('email')<p class="mt-1 text-sm text-red-500">{{ $message }}</p>@enderror
+                </div>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="modal_password" class="block text-sm font-medium text-slate-700 mb-1">Mot de passe *</label>
+                    <input type="password" name="password" id="modal_password" required
+                        class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                    @error('password')<p class="mt-1 text-sm text-red-500">{{ $message }}</p>@enderror
+                </div>
+                <div>
+                    <label for="modal_password_confirmation" class="block text-sm font-medium text-slate-700 mb-1">Confirmer *</label>
+                    <input type="password" name="password_confirmation" id="modal_password_confirmation" required
+                        class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                </div>
+            </div>
+
+            <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="modal_role" class="block text-sm font-medium text-slate-700 mb-1">Rôle *</label>
+                    <select name="role" id="modal_role" required
+                        class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                        <option value="staff" {{ old('role') === 'staff' ? 'selected' : '' }}>Staff</option>
+                        <option value="manager" {{ old('role') === 'manager' ? 'selected' : '' }}>Manager</option>
+                        <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>Admin</option>
+                    </select>
+                </div>
+                <div class="flex items-center pt-8">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="hidden" name="is_active" value="0">
+                        <input type="checkbox" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }}
+                            class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        <span class="text-sm text-slate-700">Compte actif</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-4 border-t border-slate-200">
+                <button type="submit" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors">
+                    Créer l'utilisateur
+                </button>
+                <button type="button"
+                        @click="$dispatch('close-modal', 'user-create')"
+                        class="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-colors">
+                    Annuler
+                </button>
+            </div>
+        </form>
+    </x-admin.modal>
 </div>
 @endsection
 

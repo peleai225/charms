@@ -13,9 +13,41 @@
         <span class="text-gray-900">Commander</span>
     </nav>
 
-    <h1 class="text-3xl font-bold text-gray-900 mb-8">Finaliser ma commande</h1>
+    <h1 class="text-3xl font-bold text-gray-900 mb-6">Finaliser ma commande</h1>
 
-    <form method="POST" action="{{ route('checkout.store') }}" x-data="checkoutForm()" x-init="init()" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Indicateur de progression -->
+    <div class="mb-8 overflow-x-auto">
+        <div class="flex items-center gap-2 min-w-max">
+            <div class="flex items-center">
+                <div class="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-700 text-sm font-semibold">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                </div>
+                <span class="ml-2 text-sm font-medium text-gray-600 hidden sm:inline">Panier</span>
+            </div>
+            <div class="w-8 sm:w-12 h-0.5 bg-gray-300"></div>
+            <div class="flex items-center">
+                <div class="flex items-center justify-center w-8 h-8 rounded-full bg-primary-600 text-white text-sm font-semibold">1</div>
+                <span class="ml-2 text-sm font-medium text-gray-900 hidden sm:inline">Contact</span>
+            </div>
+            <div class="w-8 sm:w-12 h-0.5 bg-gray-300"></div>
+            <div class="flex items-center">
+                <div class="flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-500 text-sm font-semibold">2</div>
+                <span class="ml-2 text-sm font-medium text-gray-500 hidden sm:inline">Livraison</span>
+            </div>
+            <div class="w-8 sm:w-12 h-0.5 bg-gray-300"></div>
+            <div class="flex items-center">
+                <div class="flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-500 text-sm font-semibold">3</div>
+                <span class="ml-2 text-sm font-medium text-gray-500 hidden sm:inline">Facturation</span>
+            </div>
+            <div class="w-8 sm:w-12 h-0.5 bg-gray-300"></div>
+            <div class="flex items-center">
+                <div class="flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-500 text-sm font-semibold">4</div>
+                <span class="ml-2 text-sm font-medium text-gray-500 hidden sm:inline">Paiement</span>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ route('checkout.store') }}" x-data="checkoutForm()" x-init="init()" @submit="isSubmitting = true" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         @csrf
 
         <!-- Formulaire -->
@@ -350,7 +382,15 @@
 
                     <div class="flex justify-between">
                         <span class="text-gray-600">Livraison</span>
-                        <span class="font-medium" x-text="shippingText">Calculée à l'étape suivante</span>
+                        <span class="font-medium flex items-center gap-1">
+                            <span x-show="isCalculatingShipping" class="animate-spin inline-block">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                            </span>
+                            <span x-text="isCalculatingShipping ? 'Calcul...' : shippingText">Selon destination</span>
+                        </span>
                     </div>
                 </div>
 
@@ -363,11 +403,19 @@
                 </div>
 
                 <!-- Bouton commander -->
-                <button type="submit" class="mt-6 w-full py-4 px-6 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                    </svg>
-                    <span x-text="paymentMethod === 'cod' ? 'Confirmer la commande' : 'Payer maintenant'">Payer maintenant</span>
+                <button type="submit" :disabled="isSubmitting" class="mt-6 w-full py-4 px-6 bg-primary-600 hover:bg-primary-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <span x-show="!isSubmitting">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
+                    </span>
+                    <span x-show="isSubmitting" class="animate-spin">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </span>
+                    <span x-text="isSubmitting ? 'Traitement en cours...' : (paymentMethod === 'cod' ? 'Confirmer la commande' : 'Payer maintenant')">Payer maintenant</span>
                 </button>
 
                 <!-- Sécurité -->
@@ -388,6 +436,8 @@
 <script>
 function checkoutForm() {
     return {
+        isSubmitting: false,
+        isCalculatingShipping: false,
         sameBilling: true,
         paymentMethod: '{{ (($settings['payment_cinetpay_enabled'] ?? '0') === '1') ? 'cinetpay' : ((($settings['payment_lygos_enabled'] ?? '0') === '1') ? 'lygos' : 'cod') }}',
         shippingText: 'Selon destination',
@@ -419,6 +469,7 @@ function checkoutForm() {
                 return;
             }
             
+            this.isCalculatingShipping = true;
             try {
                 const response = await fetch('{{ route("api.shipping-cost") }}', {
                     method: 'POST',
@@ -439,10 +490,11 @@ function checkoutForm() {
                 this.shippingText = this.estimatedShipping === 0 ? 'Gratuite' : data.formatted || this.formatPrice(this.estimatedShipping);
             } catch (error) {
                 console.error('Erreur calcul livraison:', error);
-                // Fallback sur valeurs par défaut
                 this.estimatedShipping = 5000;
                 this.estimatedTotal = subtotal - {{ $cart->discount_amount }} + this.estimatedShipping;
                 this.shippingText = this.formatPrice(this.estimatedShipping);
+            } finally {
+                this.isCalculatingShipping = false;
             }
         },
         

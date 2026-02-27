@@ -76,12 +76,15 @@
         @forelse($products as $product)
             @include('front.shop.partials.product-card', ['product' => $product])
         @empty
-            <div class="col-span-full text-center py-16">
-                <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <p class="text-gray-500 mb-2">Aucun produit dans cette catégorie</p>
-                <a href="{{ route('shop.index') }}" class="text-primary-600 hover:text-primary-700 font-medium">
+            <div class="col-span-full flex flex-col items-center justify-center py-16 px-4">
+                <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-6">
+                    <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Aucun produit dans cette catégorie</h3>
+                <p class="text-gray-500 text-sm mb-6">Découvrez nos autres produits.</p>
+                <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-xl transition-colors text-sm">
                     Voir tous les produits
                 </a>
             </div>

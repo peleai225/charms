@@ -51,8 +51,35 @@ Route::get('storage/{path}', function (string $path) {
     }
 })->where('path', '.*')->name('storage.serve');
 
-// Créer le lien symbolique storage (sans terminal) — visiter /setup-storage une fois puis commenter/supprimer
+// Setup sans terminal/SSH — pour hébergement mutualisé
+// Utiliser : /setup?token=VOTRE_CLE_SECRETE (définir DEPLOY_TOKEN dans .env)
+Route::get('/setup', function () {
+    $token = request('token');
+    $expected = config('app.deploy_token');
+    if (!$expected || $token !== $expected) {
+        abort(404);
+    }
+    $results = [];
+    try {
+        Artisan::call('storage:link');
+        $results[] = '✓ Lien storage créé';
+    } catch (\Throwable $e) {
+        $results[] = 'Storage : ' . ($e->getMessage());
+    }
+    try {
+        Artisan::call('migrate', ['--force' => true]);
+        $results[] = '✓ Migrations exécutées';
+    } catch (\Throwable $e) {
+        $results[] = 'Migrations : ' . $e->getMessage();
+    }
+    return '<pre style="font-family:sans-serif;padding:20px;">' . implode("\n", $results) . '</pre>';
+});
+
+// Ancienne route (rétrocompatibilité local)
 Route::get('/setup-storage', function () {
+    if (!app()->environment('local')) {
+        abort(404);
+    }
     try {
         Artisan::call('storage:link');
         return 'Le lien storage a été créé avec succès !';
@@ -67,7 +94,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 // Authentification Client
 Route::middleware('guest')->group(function () {
     Route::get('/connexion', [CustomerAuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/connexion', [CustomerAuthController::class, 'login'])->name('login.post');
+    Route::post('/connexion', [CustomerAuthController::class, 'login'])->middleware('throttle:5,1')->name('login.post');
     Route::get('/inscription', [CustomerAuthController::class, 'showRegisterForm'])->name('register');
     Route::post('/inscription', [CustomerAuthController::class, 'register'])->name('register.post');
     Route::get('/mot-de-passe-oublie', [CustomerAuthController::class, 'showForgotPasswordForm'])->name('password.request');
@@ -87,15 +114,15 @@ Route::middleware('customer')->prefix('mon-compte')->name('account.')->group(fun
         return view('front.account.orders');
     })->name('orders');
     Route::get('/commandes/{order}', [App\Http\Controllers\Front\AccountController::class, 'showOrder'])->name('orders.show');
-    Route::get('/adresses', function () {
-        return view('front.account.addresses');
-    })->name('addresses');
+    Route::get('/adresses', [App\Http\Controllers\Front\AccountController::class, 'addresses'])->name('addresses');
+    Route::post('/adresses', [App\Http\Controllers\Front\AccountController::class, 'storeAddress'])->name('addresses.store');
 });
 
 // Catalogue
 Route::get('/boutique', [App\Http\Controllers\Front\ShopController::class, 'index'])->name('shop.index');
 Route::get('/categorie/{slug}', [App\Http\Controllers\Front\ShopController::class, 'category'])->name('shop.category');
 Route::get('/produit/{slug}', [App\Http\Controllers\Front\ShopController::class, 'product'])->name('shop.product');
+Route::post('/produit/avis', [App\Http\Controllers\Front\ReviewController::class, 'store'])->name('review.store')->middleware('throttle:3,1');
 Route::get('/produit/{product}/variant', [App\Http\Controllers\Front\ShopController::class, 'getVariant'])->name('shop.variant');
 
 // Panier
@@ -117,8 +144,15 @@ Route::get('/checkout/confirmation', [App\Http\Controllers\Front\CheckoutControl
 Route::get('/checkout/annulation', [App\Http\Controllers\Front\CheckoutController::class, 'cancel'])->name('checkout.cancel');
 Route::get('/commande/succes', [App\Http\Controllers\Front\CheckoutController::class, 'success'])->name('checkout.success');
 
-// Webhook CinetPay (sans CSRF)
-Route::post('/webhook/cinetpay', [App\Http\Controllers\Webhook\CinetPayWebhookController::class, 'handle'])->name('webhook.cinetpay')->withoutMiddleware(['web']);
+// Suivi de commande (invités)
+Route::get('/suivi-commande', [App\Http\Controllers\Front\OrderTrackingController::class, 'index'])->name('order-tracking.index');
+Route::get('/suivi-commande/resultat', [App\Http\Controllers\Front\OrderTrackingController::class, 'show'])->name('order-tracking.show');
+
+// Webhook CinetPay (sans CSRF, throttle anti-abus)
+Route::post('/webhook/cinetpay', [App\Http\Controllers\Webhook\CinetPayWebhookController::class, 'handle'])
+    ->middleware('throttle:60,1')
+    ->name('webhook.cinetpay')
+    ->withoutMiddleware(['web']);
 Route::get('/webhook/cinetpay', function () {
     return response()->json([
         'status' => 'ok',
@@ -127,8 +161,11 @@ Route::get('/webhook/cinetpay', function () {
     ]);
 })->withoutMiddleware(['web']);
 
-// Webhook Lygos Pay (sans CSRF)
-Route::post('/webhook/lygos', [App\Http\Controllers\Webhook\LygosPayWebhookController::class, 'handle'])->name('webhook.lygos')->withoutMiddleware(['web']);
+// Webhook Lygos Pay (sans CSRF, throttle anti-abus)
+Route::post('/webhook/lygos', [App\Http\Controllers\Webhook\LygosPayWebhookController::class, 'handle'])
+    ->middleware('throttle:60,1')
+    ->name('webhook.lygos')
+    ->withoutMiddleware(['web']);
 Route::get('/webhook/lygos', function () {
     return response()->json([
         'status' => 'ok',
@@ -140,6 +177,7 @@ Route::get('/webhook/lygos', function () {
 // Pages statiques
 Route::get('/contact', [\App\Http\Controllers\Front\ContactController::class, 'index'])->name('contact');
 Route::post('/contact', [\App\Http\Controllers\Front\ContactController::class, 'store'])->name('contact.store');
+Route::post('/newsletter/subscribe', [\App\Http\Controllers\Front\NewsletterController::class, 'subscribe'])->name('newsletter.subscribe');
 
 Route::get('/a-propos', function () {
     return view('front.pages.about');
@@ -156,7 +194,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     // Login (accessible sans auth)
     Route::middleware('guest')->group(function () {
         Route::get('/login', [AdminAuthController::class, 'showLoginForm'])->name('login');
-        Route::post('/login', [AdminAuthController::class, 'login'])->name('login.post');
+        Route::post('/login', [AdminAuthController::class, 'login'])->middleware('throttle:5,1')->name('login.post');
     });
 
     // Logout
@@ -176,6 +214,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         
         // Catégories
         Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class)->names('categories');
+        Route::post('categories/reorder', [\App\Http\Controllers\Admin\CategoryController::class, 'reorder'])->name('categories.reorder');
         
         // Commandes
         Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->names('orders');
@@ -184,6 +223,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('orders/{order}/invoice/view', [\App\Http\Controllers\Admin\OrderController::class, 'viewInvoice'])->name('orders.invoice.view');
         Route::post('orders/{order}/note', [\App\Http\Controllers\Admin\OrderController::class, 'addNote'])->name('orders.note');
         Route::post('orders/{order}/resend', [\App\Http\Controllers\Admin\OrderController::class, 'resendConfirmation'])->name('orders.resend');
+
+        // Remboursements
+        Route::get('/refunds', [\App\Http\Controllers\Admin\RefundController::class, 'index'])->name('refunds.index');
+        Route::post('orders/{order}/refunds', [\App\Http\Controllers\Admin\RefundController::class, 'store'])->name('refunds.store');
         
         // Clients
         Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class)->names('customers');
@@ -228,9 +271,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // Rapports
         Route::get('/reports', [\App\Http\Controllers\Admin\ReportController::class, 'index'])->name('reports.index');
         Route::get('/reports/sales', [\App\Http\Controllers\Admin\ReportController::class, 'sales'])->name('reports.sales');
+        Route::get('/reports/sales/export-csv', [\App\Http\Controllers\Admin\ReportController::class, 'exportSalesCsv'])->name('reports.sales.export-csv');
+        Route::get('/reports/sales/export-pdf', [\App\Http\Controllers\Admin\ReportController::class, 'exportSalesPdf'])->name('reports.sales.export-pdf');
         Route::get('/reports/products', [\App\Http\Controllers\Admin\ReportController::class, 'products'])->name('reports.products');
+        Route::get('/reports/products/export-csv', [\App\Http\Controllers\Admin\ReportController::class, 'exportProductsCsv'])->name('reports.products.export-csv');
         Route::get('/reports/customers', [\App\Http\Controllers\Admin\ReportController::class, 'customers'])->name('reports.customers');
         Route::get('/reports/stock', [\App\Http\Controllers\Admin\ReportController::class, 'stock'])->name('reports.stock');
+        Route::get('/reports/stock/export-csv', [\App\Http\Controllers\Admin\ReportController::class, 'exportStockCsv'])->name('reports.stock.export-csv');
 
         // Codes-barres & QR codes
         Route::get('/barcodes', [\App\Http\Controllers\Admin\BarcodeController::class, 'index'])->name('barcodes.index');
@@ -250,14 +297,24 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/scanner/cart/{key}', [\App\Http\Controllers\Admin\ScannerController::class, 'removeCartItem'])->name('scanner.cart.remove');
         Route::delete('/scanner/cart', [\App\Http\Controllers\Admin\ScannerController::class, 'clearCart'])->name('scanner.cart.clear');
         Route::post('/scanner/checkout', [\App\Http\Controllers\Admin\ScannerController::class, 'checkout'])->name('scanner.checkout');
+        Route::get('/scanner/receipt/{order}', [\App\Http\Controllers\Admin\ScannerController::class, 'receipt'])->name('scanner.receipt');
         Route::post('/scanner/stock-movement', [\App\Http\Controllers\Admin\ScannerController::class, 'stockMovement'])->name('scanner.stock-movement');
 
         // Coupons / Codes promo
         Route::resource('coupons', \App\Http\Controllers\Admin\CouponController::class)->names('coupons');
         Route::get('/coupons-generate-code', [\App\Http\Controllers\Admin\CouponController::class, 'generateCode'])->name('coupons.generate-code');
 
+        // Avis clients
+        Route::get('/reviews', [\App\Http\Controllers\Admin\ReviewController::class, 'index'])->name('reviews.index');
+        Route::post('/reviews/{review}/approve', [\App\Http\Controllers\Admin\ReviewController::class, 'approve'])->name('reviews.approve');
+        Route::post('/reviews/{review}/reject', [\App\Http\Controllers\Admin\ReviewController::class, 'reject'])->name('reviews.reject');
+        Route::post('/reviews/{review}/respond', [\App\Http\Controllers\Admin\ReviewController::class, 'respond'])->name('reviews.respond');
+
         // Bannières
         Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class)->names('banners');
+
+        // Documentation
+        Route::get('/docs/caisse-pos-imprimante', fn () => view('admin.docs.caisse-pos-imprimante'))->name('docs.caisse-pos-imprimante');
 
         // Paramètres
         Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
@@ -273,8 +330,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Profil admin
         Route::get('/profile', [\App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('profile.edit');
-        Route::put('/profile', [\App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
-        Route::put('/profile/password', [\App\Http\Controllers\Admin\ProfileController::class, 'updatePassword'])->name('profile.password');
+        Route::post('/profile', [\App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
+        Route::post('/profile/password', [\App\Http\Controllers\Admin\ProfileController::class, 'updatePassword'])->name('profile.password');
 
         // Utilisateurs admin
         Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->names('users');

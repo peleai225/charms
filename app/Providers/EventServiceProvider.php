@@ -8,6 +8,7 @@ use App\Events\OrderPaid;
 use App\Events\OrderRefunded;
 use App\Events\StockUpdated;
 use App\Listeners\AssignOrderToSuppliers;
+use App\Listeners\BroadcastNewOrderNotification;
 use App\Listeners\CheckLowStockAlert;
 use App\Listeners\CreateAccountingEntryOnPayment;
 use App\Listeners\CreateRefundAccountingEntry;
@@ -29,6 +30,7 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         // Événements de commande
         OrderCreated::class => [
+            BroadcastNewOrderNotification::class,  // Notification temps réel admin (Pusher)
             AssignOrderToSuppliers::class,  // Attribution automatique aux fournisseurs (dropshipping)
             // Le stock n'est plus décrémenté ici pour la sécurité du paiement
             // La décrémentation se fait après paiement confirmé (OrderPaid)

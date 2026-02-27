@@ -32,7 +32,7 @@ class CategoryController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'parent_id' => 'nullable|exists:categories,id',
@@ -40,6 +40,15 @@ class CategoryController extends Controller
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
         ]);
+
+        if ($validator->fails()) {
+            return redirect()
+                ->route('admin.categories.index', ['open_modal' => 'create'])
+                ->withInput()
+                ->withErrors($validator);
+        }
+
+        $validated = $validator->validated();
 
         $validated['slug'] = Str::slug($validated['name']);
         $validated['is_active'] = $request->boolean('is_active');
@@ -70,7 +79,7 @@ class CategoryController extends Controller
 
     public function update(Request $request, Category $category)
     {
-        $validated = $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'parent_id' => 'nullable|exists:categories,id',
@@ -80,12 +89,23 @@ class CategoryController extends Controller
             'order' => 'nullable|integer|min:0',
         ]);
 
+        if ($validator->fails()) {
+            return redirect()
+                ->route('admin.categories.index', ['open_modal' => 'edit', 'category_id' => $category->id])
+                ->withInput()
+                ->withErrors($validator);
+        }
+
+        $validated = $validator->validated();
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_featured'] = $request->boolean('is_featured');
 
         // Empêcher de se définir comme son propre parent
         if ($validated['parent_id'] == $category->id) {
-            return back()->with('error', 'Une catégorie ne peut pas être son propre parent.');
+            return redirect()
+                ->route('admin.categories.index', ['open_modal' => 'edit', 'category_id' => $category->id])
+                ->with('error', 'Une catégorie ne peut pas être son propre parent.')
+                ->withInput();
         }
 
         if ($request->hasFile('image')) {

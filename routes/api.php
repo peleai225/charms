@@ -16,8 +16,22 @@ Route::get('/user', function (Request $request) {
 |--------------------------------------------------------------------------
 */
 
-// Vérifier le statut d'une commande (pour le polling)
+// Vérifier le statut d'une commande (pour le polling) - protégé par session web
 Route::get('/orders/{order}/status', function (Order $order) {
+    // Vérifier que la commande appartient à la session (checkout en cours) ou au client connecté
+    $allowed = false;
+    if (auth()->check() && $order->customer?->user_id === auth()->id()) {
+        $allowed = true;
+    }
+    if (in_array($order->id, session('checkout_order_ids', []))) {
+        $allowed = true;
+    }
+    if (auth()->check() && in_array(auth()->user()->role ?? '', ['admin', 'manager', 'staff'])) {
+        $allowed = true;
+    }
+    if (!$allowed) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
     return response()->json([
         'order_number' => $order->order_number,
         'status' => $order->status,
@@ -31,7 +45,7 @@ Route::get('/orders/{order}/status', function (Order $order) {
             ? route('checkout.success', ['order' => $order->id])
             : null,
     ]);
-})->name('api.orders.status');
+})->middleware('web')->name('api.orders.status');
 
 // Calculer les frais de livraison
 Route::post('/shipping-cost', function (Request $request) {

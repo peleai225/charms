@@ -260,6 +260,9 @@ class CheckoutController extends Controller
             // Vider le panier
             $cart->clear();
 
+            // Stocker l'ID de commande en session pour vérification d'accès (guest + auth)
+            session()->push('checkout_order_ids', $order->id);
+
             DB::commit();
 
             // Rediriger vers le paiement
@@ -338,6 +341,8 @@ class CheckoutController extends Controller
      */
     public function payment(Order $order)
     {
+        $this->authorizeOrderAccess($order);
+
         if ($order->payment_status === 'paid') {
             return redirect()->route('checkout.success', ['order' => $order->id]);
         }
@@ -352,6 +357,7 @@ class CheckoutController extends Controller
     {
         $orderId = $request->get('order');
         $order = Order::findOrFail($orderId);
+        $this->authorizeOrderAccess($order);
 
         // Vérifier le statut du paiement
         if ($order->payment_status === 'pending') {
@@ -400,6 +406,9 @@ class CheckoutController extends Controller
     {
         $orderId = $request->get('order');
         $order = Order::find($orderId);
+        if ($order) {
+            $this->authorizeOrderAccess($order);
+        }
 
         return view('front.checkout.cancel', compact('order'));
     }
@@ -411,6 +420,11 @@ class CheckoutController extends Controller
     {
         $orderId = $request->get('order');
         $order = Order::with(['items.product', 'items.variant'])->findOrFail($orderId);
+        $this->authorizeOrderAccess($order);
+
+        // Retirer la commande de la session (checkout terminé)
+        $orderIds = array_filter(session('checkout_order_ids', []), fn($id) => $id !== $order->id);
+        session(['checkout_order_ids' => array_values($orderIds)]);
 
         return view('front.checkout.success', compact('order'));
     }
@@ -553,7 +567,12 @@ class CheckoutController extends Controller
      */
     public function processPayment(Request $request, Order $order)
     {
-        $method = $request->input('method', 'cinetpay');
+        $this->authorizeOrderAccess($order);
+
+        $validated = $request->validate([
+            'method' => 'nullable|string|in:cinetpay,lygos,cod',
+        ]);
+        $method = $validated['method'] ?? 'cinetpay';
 
         if ($method === 'cod') {
             $order->update([
@@ -567,6 +586,30 @@ class CheckoutController extends Controller
 
         // CinetPay ou Lygos Pay
         return $this->redirectToPayment($order, $method);
+    }
+
+    /**
+     * Vérifier que l'utilisateur/session peut accéder à cette commande
+     */
+    protected function authorizeOrderAccess(Order $order): void
+    {
+        // Admin peut tout voir
+        if (auth()->check() && in_array(auth()->user()->role ?? '', ['admin', 'manager', 'staff'])) {
+            return;
+        }
+
+        // Client connecté : vérifier customer->user_id
+        if (auth()->check() && $order->customer?->user_id === auth()->id()) {
+            return;
+        }
+
+        // Session : commande créée pendant ce checkout
+        $orderIds = session('checkout_order_ids', []);
+        if (in_array($order->id, $orderIds)) {
+            return;
+        }
+
+        abort(403, 'Vous n\'avez pas accès à cette commande.');
     }
 
     /**

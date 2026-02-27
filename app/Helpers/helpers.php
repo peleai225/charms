@@ -12,13 +12,12 @@ if (!function_exists('format_price')) {
      */
     function format_price($amount, bool $showCurrency = true): string
     {
+        $currency = $showCurrency ? (\App\Models\Setting::get('currency_symbol') ?: 'F CFA') : '';
         if ($amount === null) {
-            return $showCurrency ? '0 F CFA' : '0';
+            return $showCurrency ? '0 ' . $currency : '0';
         }
-        
         $formatted = number_format($amount, 0, ',', ' ');
-        
-        return $showCurrency ? $formatted . ' F CFA' : $formatted;
+        return $showCurrency ? $formatted . ' ' . $currency : $formatted;
     }
 }
 
@@ -48,7 +47,7 @@ if (!function_exists('currency')) {
      */
     function currency(): string
     {
-        return config('app.currency', 'F CFA');
+        return \App\Models\Setting::get('currency_symbol') ?: config('app.currency', 'F CFA');
     }
 }
 

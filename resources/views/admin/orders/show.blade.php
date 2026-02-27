@@ -205,7 +205,9 @@
                     <div class="flex justify-between">
                         <span class="text-slate-600">Statut</span>
                         <span>
-                            @if($order->payment_status === 'paid')
+                            @if($order->payment_status === 'refunded')
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">Remboursée</span>
+                            @elseif($order->payment_status === 'paid')
                                 <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">Payée</span>
                             @elseif($order->payment_status === 'cod')
                                 <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700">À la livraison</span>
@@ -220,8 +222,65 @@
                         <span class="font-medium">{{ $order->paid_at->format('d/m/Y H:i') }}</span>
                     </div>
                     @endif
+                    @php $totalRefunded = $order->refunds()->sum('amount'); @endphp
+                    @if($totalRefunded > 0)
+                    <div class="flex justify-between text-amber-600">
+                        <span>Remboursé</span>
+                        <span class="font-medium">-{{ number_format($totalRefunded, 0, ',', ' ') }} F</span>
+                    </div>
+                    @endif
                 </div>
             </div>
+
+            <!-- Remboursement -->
+            @if($order->is_refundable)
+            @php $maxRefundable = max(0, (float)$order->total - $order->refunds()->sum('amount')); @endphp
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <h3 class="font-semibold text-slate-900 mb-4">Créer un remboursement</h3>
+                <form method="POST" action="{{ route('admin.refunds.store', $order) }}" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Montant (max {{ number_format($maxRefundable, 0, ',', ' ') }} F)</label>
+                        <input type="number" name="amount" step="1" min="1" max="{{ (int)$maxRefundable }}" value="{{ (int)$maxRefundable }}" required
+                            class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                        @error('amount')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Motif</label>
+                        <select name="reason" required class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                            <option value="customer_request">Demande client</option>
+                            <option value="product_defective">Produit défectueux</option>
+                            <option value="wrong_item">Mauvais article</option>
+                            <option value="not_delivered">Non livré</option>
+                            <option value="duplicate">Doublon</option>
+                            <option value="other">Autre</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Notes (optionnel)</label>
+                        <textarea name="notes" rows="2" class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500" placeholder="Détails du remboursement..."></textarea>
+                    </div>
+                    <button type="submit" class="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-xl transition-colors">
+                        Créer le remboursement
+                    </button>
+                </form>
+            </div>
+            @endif
+
+            @if($order->refunds->isNotEmpty())
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <h3 class="font-semibold text-slate-900 mb-4">Remboursements</h3>
+                <ul class="space-y-2">
+                    @foreach($order->refunds as $r)
+                    <li class="flex justify-between items-center text-sm">
+                        <span class="font-mono">{{ $r->refund_number }}</span>
+                        <span class="font-medium">{{ number_format($r->amount, 0, ',', ' ') }} F</span>
+                    </li>
+                    @endforeach
+                </ul>
+                <a href="{{ route('admin.refunds.index') }}" class="mt-3 inline-block text-sm text-blue-600 hover:text-blue-700">Voir tous les remboursements</a>
+            </div>
+            @endif
 
             <!-- Actions -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">

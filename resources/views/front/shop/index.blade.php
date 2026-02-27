@@ -3,28 +3,29 @@
 @section('title', 'Boutique')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-4 py-8 md:py-10">
     <!-- Breadcrumb -->
-    <nav class="text-sm text-gray-500 mb-6">
-        <a href="{{ route('home') }}" class="hover:text-primary-600">Accueil</a>
-        <span class="mx-2">/</span>
-        <span class="text-gray-900">Boutique</span>
+    <nav class="text-sm text-slate-500 mb-8 flex items-center gap-2">
+        <a href="{{ route('home') }}" class="hover:text-primary-600 transition-colors">Accueil</a>
+        <span class="text-slate-300">/</span>
+        <span class="text-slate-900 font-medium">Boutique</span>
     </nav>
 
     <div class="flex flex-col lg:flex-row gap-8">
         <!-- Sidebar Filtres -->
         <aside class="lg:w-64 flex-shrink-0">
-            <form method="GET" action="{{ route('shop.index') }}" class="space-y-6">
+            <form method="GET" action="{{ route('shop.index') }}" class="space-y-5">
                 <!-- Recherche -->
-                <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                    <h3 class="font-semibold text-gray-900 mb-3">Recherche</h3>
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <h3 class="font-semibold text-slate-900 mb-3">Recherche</h3>
                     <input type="text" name="search" value="{{ request('search') }}" placeholder="Rechercher..."
-                        class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
+                        class="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                    >
                 </div>
 
                 <!-- Catégories -->
-                <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                    <h3 class="font-semibold text-gray-900 mb-3">Catégories</h3>
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <h3 class="font-semibold text-slate-900 mb-3">Catégories</h3>
                     <div class="space-y-2">
                         @foreach($categories as $category)
                             <label class="flex items-center gap-2 cursor-pointer">
@@ -38,14 +39,14 @@
                 </div>
 
                 <!-- Prix -->
-                <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                    <h3 class="font-semibold text-gray-900 mb-3">Prix</h3>
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <h3 class="font-semibold text-slate-900 mb-3">Prix</h3>
                     <div class="flex gap-2">
                         <input type="number" name="min_price" value="{{ request('min_price') }}" placeholder="{{ floor($priceRange->min ?? 0) }}"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                        <span class="text-gray-400 self-center">-</span>
+                            class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
+                        <span class="text-slate-400 self-center">-</span>
                         <input type="number" name="max_price" value="{{ request('max_price') }}" placeholder="{{ ceil($priceRange->max ?? 1000) }}"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
                     </div>
                 </div>
 
@@ -58,7 +59,7 @@
                             <label class="cursor-pointer">
                                 <input type="radio" name="color" value="{{ $color->slug }}" class="sr-only peer"
                                     {{ request('color') === $color->slug ? 'checked' : '' }}>
-                                <span class="block w-8 h-8 rounded-full border-2 border-transparent peer-checked:border-gray-900 peer-checked:ring-2 peer-checked:ring-offset-2 peer-checked:ring-primary-500 transition-all"
+                                <span class="block w-8 h-8 rounded-full border-2 border-transparent peer-checked:border-slate-900 peer-checked:ring-2 peer-checked:ring-offset-2 peer-checked:ring-primary-500 transition-all"
                                     style="background-color: {{ $color->color_code }}"
                                     title="{{ $color->value }}"></span>
                             </label>
@@ -67,12 +68,12 @@
                 </div>
                 @endif
 
-                <button type="submit" class="w-full py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-xl transition-colors">
+                <button type="submit" class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-primary-500/25 hover:-translate-y-0.5">
                     Filtrer
                 </button>
 
                 @if(request()->hasAny(['search', 'category', 'min_price', 'max_price', 'color']))
-                    <a href="{{ route('shop.index') }}" class="block text-center text-sm text-gray-500 hover:text-primary-600">
+                    <a href="{{ route('shop.index') }}" class="block text-center text-sm text-slate-500 hover:text-primary-600 transition-colors">
                         Effacer les filtres
                     </a>
                 @endif
@@ -82,10 +83,10 @@
         <!-- Produits -->
         <div class="flex-1">
             <!-- En-tête -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                <p class="text-gray-600">{{ $products->total() }} produit(s)</p>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                <p class="text-slate-600 font-medium">{{ $products->total() }} produit(s)</p>
                 
-                <select onchange="window.location.href = this.value" class="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
+                <select onchange="window.location.href = this.value" class="px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 bg-white text-slate-700 font-medium">
                     <option value="{{ request()->fullUrlWithQuery(['sort' => 'newest']) }}" {{ request('sort', 'newest') === 'newest' ? 'selected' : '' }}>Plus récents</option>
                     <option value="{{ request()->fullUrlWithQuery(['sort' => 'price_asc']) }}" {{ request('sort') === 'price_asc' ? 'selected' : '' }}>Prix croissant</option>
                     <option value="{{ request()->fullUrlWithQuery(['sort' => 'price_desc']) }}" {{ request('sort') === 'price_desc' ? 'selected' : '' }}>Prix décroissant</option>
@@ -94,15 +95,21 @@
             </div>
 
             <!-- Grille produits -->
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 md:gap-6">
                 @forelse($products as $product)
                     @include('front.shop.partials.product-card', ['product' => $product])
                 @empty
-                    <div class="col-span-full text-center py-16">
-                        <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p class="text-gray-500">Aucun produit trouvé</p>
+                    <div class="col-span-full flex flex-col items-center justify-center py-20 px-4">
+                        <div class="w-24 h-24 rounded-2xl bg-slate-100 flex items-center justify-center mb-6">
+                            <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-slate-900 mb-2">Aucun produit trouvé</h3>
+                        <p class="text-slate-500 text-sm mb-6 max-w-sm">Essayez de modifier vos filtres ou parcourez nos catégories.</p>
+                        <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-primary-500/25 hover:-translate-y-0.5 text-sm">
+                            Voir tous les produits
+                        </a>
                     </div>
                 @endforelse
             </div>

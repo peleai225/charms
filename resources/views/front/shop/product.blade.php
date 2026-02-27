@@ -3,19 +3,26 @@
 @section('title', $product->name)
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-4 py-8 md:py-10">
     <!-- Breadcrumb -->
-    <nav class="text-sm text-gray-500 mb-6">
-        <a href="{{ route('home') }}" class="hover:text-primary-600">Accueil</a>
-        <span class="mx-2">/</span>
-        <a href="{{ route('shop.index') }}" class="hover:text-primary-600">Boutique</a>
+    <nav class="text-sm text-slate-500 mb-8 flex items-center gap-2 flex-wrap">
+        <a href="{{ route('home') }}" class="hover:text-primary-600 transition-colors">Accueil</a>
+        <span class="text-slate-300">/</span>
+        <a href="{{ route('shop.index') }}" class="hover:text-primary-600 transition-colors">Boutique</a>
         @if($product->category)
-            <span class="mx-2">/</span>
-            <a href="{{ route('shop.category', $product->category->slug) }}" class="hover:text-primary-600">{{ $product->category->name }}</a>
+            <span class="text-slate-300">/</span>
+            <a href="{{ route('shop.category', $product->category->slug) }}" class="hover:text-primary-600 transition-colors">{{ $product->category->name }}</a>
         @endif
-        <span class="mx-2">/</span>
-        <span class="text-gray-900">{{ $product->name }}</span>
+        <span class="text-slate-300">/</span>
+        <span class="text-slate-900 font-medium line-clamp-1">{{ $product->name }}</span>
     </nav>
+
+    @if(session('success'))
+        <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl">{{ session('success') }}</div>
+    @endif
+    @if(session('error'))
+        <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl">{{ session('error') }}</div>
+    @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12" x-data="productGallery()">
         <!-- Galerie images -->
@@ -59,7 +66,20 @@
             @endif
 
             <!-- Nom -->
-            <h1 class="text-3xl font-bold text-gray-900">{{ $product->name }}</h1>
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900">{{ $product->name }}</h1>
+
+            @if($product->reviews_count > 0)
+            <div class="flex items-center gap-2 text-sm">
+                <div class="flex gap-0.5">
+                    @for($i = 1; $i <= 5; $i++)
+                        <svg class="w-5 h-5 {{ $i <= round($product->average_rating) ? 'text-amber-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                    @endfor
+                </div>
+                <span class="text-gray-600">{{ number_format($product->average_rating, 1, ',', '') }} ({{ $product->reviews_count }} avis)</span>
+            </div>
+            @endif
 
             <!-- Prix -->
             <div class="flex items-baseline gap-3">
@@ -196,6 +216,88 @@
                     </summary>
                     <div class="py-4 text-gray-600 prose prose-sm max-w-none">
                         {!! nl2br(e($product->description)) !!}
+                    </div>
+                </details>
+
+                <details class="group border-t border-gray-200">
+                    <summary class="flex items-center justify-between cursor-pointer py-4">
+                        <span class="font-semibold text-gray-900">Avis clients</span>
+                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </summary>
+                    <div class="py-4">
+                        @if($product->reviews->count() > 0)
+                            <div class="space-y-4 mb-6">
+                                @foreach($product->reviews as $review)
+                                <div class="p-4 bg-gray-50 rounded-xl">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <div class="flex gap-0.5">
+                                            @for($i = 1; $i <= 5; $i++)
+                                                <svg class="w-4 h-4 {{ $i <= $review->rating ? 'text-amber-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                                </svg>
+                                            @endfor
+                                        </div>
+                                        <span class="font-medium text-gray-900">{{ $review->author_name }}</span>
+                                        @if($review->is_verified_purchase)
+                                            <span class="text-xs text-green-600 font-medium">✓ Achat vérifié</span>
+                                        @endif
+                                        <span class="text-sm text-gray-500">{{ $review->created_at->format('d/m/Y') }}</span>
+                                    </div>
+                                    @if($review->title)
+                                        <p class="font-medium text-gray-800 mb-1">{{ $review->title }}</p>
+                                    @endif
+                                    <p class="text-gray-600 text-sm">{{ $review->content }}</p>
+                                    @if($review->admin_response)
+                                        <div class="mt-3 pl-4 border-l-2 border-primary-200">
+                                            <p class="text-sm font-medium text-gray-700">Réponse du vendeur</p>
+                                            <p class="text-sm text-gray-600">{{ $review->admin_response }}</p>
+                                        </div>
+                                    @endif
+                                </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <p class="text-gray-500 text-sm mb-4">Aucun avis pour le moment. Soyez le premier à donner votre avis !</p>
+                        @endif
+
+                        <form action="{{ route('review.store') }}" method="POST" class="space-y-4">
+                            @csrf
+                            <input type="hidden" name="product_id" value="{{ $product->id }}">
+                            <div x-data="{ rating: 0 }">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Votre note *</label>
+                                <div class="flex gap-1">
+                                    @for($i = 1; $i <= 5; $i++)
+                                        <button type="button" @click="rating = {{ $i }}" :class="rating >= {{ $i }} ? 'text-amber-400' : 'text-gray-300'" class="hover:text-amber-400 transition-colors">
+                                            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                        </button>
+                                    @endfor
+                                </div>
+                                <input type="hidden" name="rating" :value="rating" required>
+                                @error('rating')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Votre nom *</label>
+                                <input type="text" name="author_name" value="{{ old('author_name', auth()->user()?->name ?? '') }}" required class="w-full px-4 py-2 border border-gray-300 rounded-xl" placeholder="Votre nom">
+                                @error('author_name')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Votre email *</label>
+                                <input type="email" name="author_email" value="{{ old('author_email', auth()->user()?->email ?? '') }}" required class="w-full px-4 py-2 border border-gray-300 rounded-xl" placeholder="votre@email.com">
+                                @error('author_email')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Titre (optionnel)</label>
+                                <input type="text" name="title" value="{{ old('title') }}" class="w-full px-4 py-2 border border-gray-300 rounded-xl" placeholder="Résumé de votre avis">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Votre avis *</label>
+                                <textarea name="content" rows="4" required class="w-full px-4 py-2 border border-gray-300 rounded-xl" placeholder="Partagez votre expérience...">{{ old('content') }}</textarea>
+                                @error('content')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                            </div>
+                            <button type="submit" class="px-6 py-2 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700">Publier mon avis</button>
+                        </form>
                     </div>
                 </details>
 

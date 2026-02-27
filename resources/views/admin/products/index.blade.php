@@ -146,8 +146,20 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center text-slate-500">
-                                Aucun produit trouvé
+                            <td colspan="6" class="px-6 py-16">
+                                <div class="flex flex-col items-center justify-center text-center">
+                                    <div class="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                                        <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                        </svg>
+                                    </div>
+                                    <p class="font-medium text-slate-700">Aucun produit trouvé</p>
+                                    <p class="text-sm text-slate-500 mt-1">Ajoutez votre premier produit pour commencer.</p>
+                                    <a href="{{ route('admin.products.create') }}" class="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-xl transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                        Ajouter un produit
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     @endforelse

@@ -76,13 +76,11 @@ class CheckLowStockAlert
     {
         try {
             // Récupérer l'email admin depuis les settings ou les utilisateurs admin
-            $adminEmail = Setting::get('admin_email');
+            $adminEmail = Setting::get('admin_email') ?: Setting::get('contact_email', config('mail.from.address'));
             
             if (!$adminEmail) {
                 // Fallback : prendre le premier admin
-                $admin = User::whereHas('roles', function ($query) {
-                    $query->whereIn('name', ['admin', 'manager']);
-                })->first();
+                $admin = User::whereIn('role', ['admin', 'manager'])->first();
                 
                 if ($admin) {
                     $adminEmail = $admin->email;

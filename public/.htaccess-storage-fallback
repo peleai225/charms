@@ -1,0 +1,10 @@
+# À ajouter EN PREMIER dans .htaccess (avant les autres règles storage)
+# pour utiliser storage-serve.php au lieu de Laravel pour les images
+#
+# Remplacer les 2 lignes :
+#   RewriteCond %{REQUEST_URI} ^/storage/
+#   RewriteRule ^storage/(.*)$ index.php [L]
+#
+# Par :
+#   RewriteCond %{REQUEST_URI} ^/storage/
+#   RewriteRule ^storage/(.*)$ storage-serve.php?f=$1 [L]

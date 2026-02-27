@@ -52,7 +52,7 @@ class CouponController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'code' => 'required|string|max:50|unique:coupons',
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -71,6 +71,14 @@ class CouponController extends Controller
             'excluded_products' => 'nullable|array',
         ]);
 
+        if ($validator->fails()) {
+            return redirect()
+                ->route('admin.coupons.index', ['open_modal' => 'create'])
+                ->withInput()
+                ->withErrors($validator);
+        }
+
+        $validated = $validator->validated();
         $validated['code'] = Str::upper($validated['code']);
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['first_order_only'] = $request->boolean('first_order_only', false);
@@ -92,7 +100,7 @@ class CouponController extends Controller
 
     public function update(Request $request, Coupon $coupon)
     {
-        $validated = $request->validate([
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'code' => 'required|string|max:50|unique:coupons,code,' . $coupon->id,
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -111,6 +119,14 @@ class CouponController extends Controller
             'excluded_products' => 'nullable|array',
         ]);
 
+        if ($validator->fails()) {
+            return redirect()
+                ->route('admin.coupons.index', ['open_modal' => 'edit', 'coupon_id' => $coupon->id])
+                ->withInput()
+                ->withErrors($validator);
+        }
+
+        $validated = $validator->validated();
         $validated['code'] = Str::upper($validated['code']);
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['first_order_only'] = $request->boolean('first_order_only', false);

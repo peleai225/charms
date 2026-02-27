@@ -10,6 +10,7 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReportController extends Controller
 {
@@ -250,6 +251,162 @@ class ReportController extends Controller
             });
 
         return view('admin.reports.stock', compact('outOfStock', 'lowStock', 'stockValue', 'stockRotation'));
+    }
+
+    /**
+     * Export CSV du rapport ventes
+     */
+    public function exportSalesCsv(Request $request)
+    {
+        $data = $this->getSalesDataForExport($request);
+        $filename = 'rapport-ventes-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($data) {
+            $out = fopen('php://output', 'w');
+            fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF)); // UTF-8 BOM pour Excel
+            fputcsv($out, ['Période', 'Commandes', 'Chiffre d\'affaires', 'Réductions', 'Panier moyen'], ';');
+            foreach ($data['rows'] as $row) {
+                fputcsv($out, $row, ';');
+            }
+            fputcsv($out, [], ';');
+            fputcsv($out, ['TOTAL', $data['totals']['orders'], $data['totals']['revenue'], $data['totals']['discounts'], $data['totals']['average']], ';');
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
+    /**
+     * Export PDF du rapport ventes
+     */
+    public function exportSalesPdf(Request $request)
+    {
+        $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->format('Y-m-d'));
+        $data = $this->getSalesDataForExport($request);
+
+        $pdf = Pdf::loadView('admin.reports.exports.sales-pdf', [
+            'data' => $data,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+        ]);
+
+        return $pdf->download('rapport-ventes-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    protected function getSalesDataForExport(Request $request): array
+    {
+        $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->format('Y-m-d'));
+        $groupBy = $request->get('group_by', 'day');
+
+        $dateFormat = match ($groupBy) {
+            'day' => '%Y-%m-%d',
+            'week' => '%Y-%u',
+            'month' => '%Y-%m',
+            default => '%Y-%m-%d',
+        };
+
+        $salesData = Order::where('payment_status', 'paid')
+            ->whereBetween('created_at', [$startDate, Carbon::parse($endDate)->endOfDay()])
+            ->select(
+                DB::raw("DATE_FORMAT(created_at, '{$dateFormat}') as period"),
+                DB::raw('COUNT(*) as orders_count'),
+                DB::raw('SUM(total) as revenue'),
+                DB::raw('SUM(discount_amount) as discounts'),
+                DB::raw('AVG(total) as average_order')
+            )
+            ->groupBy('period')
+            ->orderBy('period')
+            ->get();
+
+        $rows = $salesData->map(fn ($r) => [
+            $r->period,
+            $r->orders_count,
+            number_format($r->revenue ?? 0, 0, ',', ' '),
+            number_format($r->discounts ?? 0, 0, ',', ' '),
+            number_format($r->average_order ?? 0, 0, ',', ' '),
+        ])->toArray();
+
+        return [
+            'rows' => $rows,
+            'totals' => [
+                'orders' => $salesData->sum('orders_count'),
+                'revenue' => number_format($salesData->sum('revenue') ?? 0, 0, ',', ' '),
+                'discounts' => number_format($salesData->sum('discounts') ?? 0, 0, ',', ' '),
+                'average' => number_format($salesData->avg('average_order') ?? 0, 0, ',', ' '),
+            ],
+        ];
+    }
+
+    /**
+     * Export CSV du rapport produits
+     */
+    public function exportProductsCsv(Request $request)
+    {
+        $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->format('Y-m-d'));
+
+        $topProducts = DB::table('order_items')
+            ->join('orders', 'order_items.order_id', '=', 'orders.id')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
+            ->where('orders.payment_status', 'paid')
+            ->whereBetween('orders.created_at', [$startDate, Carbon::parse($endDate)->endOfDay()])
+            ->select(
+                'products.name',
+                'products.sku',
+                'categories.name as category_name',
+                DB::raw('SUM(order_items.quantity) as quantity_sold'),
+                DB::raw('SUM(order_items.total) as revenue')
+            )
+            ->groupBy('products.id', 'products.name', 'products.sku', 'categories.name')
+            ->orderByDesc('revenue')
+            ->get();
+
+        $filename = 'rapport-produits-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($topProducts) {
+            $out = fopen('php://output', 'w');
+            fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($out, ['Produit', 'SKU', 'Catégorie', 'Quantité vendue', 'Chiffre d\'affaires'], ';');
+            foreach ($topProducts as $p) {
+                fputcsv($out, [$p->name, $p->sku ?? '', $p->category_name ?? '', $p->quantity_sold ?? 0, number_format($p->revenue ?? 0, 0, ',', ' ')], ';');
+            }
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
+    /**
+     * Export CSV du rapport stock
+     */
+    public function exportStockCsv()
+    {
+        $products = Product::active()
+            ->with('category')
+            ->select('id', 'name', 'sku', 'stock_quantity', 'stock_alert_threshold', 'cost_price', 'sale_price')
+            ->orderBy('stock_quantity')
+            ->get();
+
+        $filename = 'rapport-stock-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($products) {
+            $out = fopen('php://output', 'w');
+            fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($out, ['Produit', 'SKU', 'Catégorie', 'Stock', 'Seuil alerte', 'Valeur stock'], ';');
+            foreach ($products as $p) {
+                $value = ($p->cost_price ?? 0) * $p->stock_quantity;
+                fputcsv($out, [$p->name, $p->sku ?? '', $p->category?->name ?? '', $p->stock_quantity, $p->stock_alert_threshold ?? '-', number_format($value, 0, ',', ' ')], ';');
+            }
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
     }
 
     /**

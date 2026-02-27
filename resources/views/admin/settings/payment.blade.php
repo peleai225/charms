@@ -63,9 +63,12 @@
                     <label class="block text-sm font-medium text-slate-700 mb-1">Secret Key</label>
                     <input type="password" name="cinetpay_secret_key" value="{{ $settings['cinetpay_secret_key'] ?? '' }}" class="w-full px-4 py-2 border border-slate-300 rounded-xl" placeholder="••••••••">
                 </div>
-                <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
                     <p class="text-sm text-amber-800">
-                        <strong>Note :</strong> Configurez l'URL de notification (IPN) sur votre tableau de bord CinetPay :<br>
+                        <strong>Champs obligatoires :</strong> Site ID, API Key et Secret Key doivent tous être renseignés. Une erreur « MINIMUM_REQUIRED_FIELDS » indique qu'un champ est manquant ou invalide.
+                    </p>
+                    <p class="text-sm text-amber-800">
+                        <strong>URL de notification (IPN) :</strong> Configurez-la sur votre tableau de bord CinetPay :<br>
                         <code class="bg-amber-100 px-2 py-1 rounded">{{ route('webhook.cinetpay') }}</code>
                     </p>
                 </div>
@@ -99,12 +102,6 @@
                         <strong>Note :</strong> Lygos Pay nécessite uniquement votre clé API pour fonctionner. Configurez l'URL de webhook (si disponible) sur votre tableau de bord Lygos :<br>
                         <code class="bg-blue-100 px-2 py-1 rounded">{{ route('webhook.lygos') }}</code>
                     </p>
-                    <form method="POST" action="{{ route('admin.settings.payment.test-lygos') }}" class="mt-2">
-                        @csrf
-                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-                            Tester la connexion API
-                        </button>
-                    </form>
                 </div>
             </div>
         </div>
@@ -113,6 +110,44 @@
             Enregistrer
         </button>
     </form>
+
+    <!-- Pusher - Notifications temps réel -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-slate-900">Notifications temps réel (Pusher)</h3>
+        </div>
+        <p class="text-sm text-slate-600 mb-4">Configurez Pusher pour recevoir des notifications en direct (nouvelle commande, son, voix « Nouvelle commande ») sans recharger le backoffice.</p>
+        <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+            <p class="text-sm text-slate-700 mb-2">Ajoutez ces variables dans votre fichier <code class="bg-slate-200 px-1 rounded">.env</code> :</p>
+            <pre class="text-xs bg-slate-800 text-slate-100 p-4 rounded-lg overflow-x-auto">PUSHER_APP_ID=votre_app_id
+PUSHER_APP_KEY=votre_cle
+PUSHER_APP_SECRET=votre_secret
+PUSHER_APP_CLUSTER=mt1
+BROADCAST_CONNECTION=pusher
+
+VITE_PUSHER_APP_KEY="${PUSHER_APP_KEY}"
+VITE_PUSHER_APP_CLUSTER="${PUSHER_APP_CLUSTER}"</pre>
+            <p class="text-xs text-slate-500 mt-2">Créez une app gratuite sur <a href="https://dashboard.pusher.com" target="_blank" class="text-blue-600 hover:underline">dashboard.pusher.com</a></p>
+            <p class="text-xs text-amber-600 mt-1"><strong>Important :</strong> Lancez <code class="bg-amber-100 px-1 rounded">php artisan queue:work</code> pour que les notifications soient diffusées.</p>
+        </div>
+    </div>
+
+    <!-- Test Lygos (formulaire séparé, hors du formulaire principal) -->
+    <div class="mt-6 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+        <h4 class="font-medium text-slate-900 mb-2">Tester Lygos Pay</h4>
+        <p class="text-sm text-slate-600 mb-3">Enregistrez d'abord vos paramètres ci-dessus, puis testez la connexion API.</p>
+        <form method="POST" action="{{ route('admin.settings.payment.test-lygos') }}" class="inline">
+            @csrf
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                Tester la connexion API
+            </button>
+        </form>
+    </div>
 </div>
 
 <script>

@@ -75,7 +75,7 @@ class Product extends Model
                 $baseSlug = Str::slug($product->name);
                 $slug = $baseSlug;
                 $counter = 1;
-                // Générer un slug unique
+                // Générer un slug unique (l'index ne contraint que les produits actifs)
                 while (static::where('slug', $slug)->exists()) {
                     $slug = $baseSlug . '-' . $counter;
                     $counter++;

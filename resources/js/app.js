@@ -9,6 +9,33 @@ import focus from '@alpinejs/focus';
 Alpine.plugin(collapse);
 Alpine.plugin(focus);
 
+// Store global pour les notifications (toasts sans rechargement)
+Alpine.store('notify', {
+    notifications: [],
+    add(message, type = 'info', duration = 5000) {
+        const id = Date.now() + Math.random();
+        this.notifications.push({ id, message, type });
+        if (duration > 0) {
+            setTimeout(() => this.remove(id), duration);
+        }
+    },
+    remove(id) {
+        this.notifications = this.notifications.filter(n => n.id !== id);
+    },
+    success(message, duration = 5000) {
+        this.add(message, 'success', duration);
+    },
+    error(message, duration = 6000) {
+        this.add(message, 'error', duration);
+    },
+    warning(message, duration = 5000) {
+        this.add(message, 'warning', duration);
+    },
+    info(message, duration = 5000) {
+        this.add(message, 'info', duration);
+    }
+});
+
 // Composants Alpine globaux
 Alpine.data('dropdown', () => ({
     open: false,
@@ -154,32 +181,13 @@ Alpine.data('cart', () => ({
     }
 }));
 
+// Composant notification : affiche les toasts du store global
 Alpine.data('notification', () => ({
-    notifications: [],
-    
-    add(message, type = 'info', duration = 5000) {
-        const id = Date.now();
-        this.notifications.push({ id, message, type });
-        
-        if (duration > 0) {
-            setTimeout(() => this.remove(id), duration);
-        }
+    get notifications() {
+        return Alpine.store('notify')?.notifications ?? [];
     },
-    
     remove(id) {
-        this.notifications = this.notifications.filter(n => n.id !== id);
-    },
-    
-    success(message) {
-        this.add(message, 'success');
-    },
-    
-    error(message) {
-        this.add(message, 'error');
-    },
-    
-    warning(message) {
-        this.add(message, 'warning');
+        Alpine.store('notify')?.remove(id);
     }
 }));
 
@@ -237,3 +245,57 @@ window.formatDateTime = (date) => {
         minute: '2-digit'
     }).format(new Date(date));
 };
+
+// Interception des formulaires pour soumission AJAX (sans rechargement)
+document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('submit', async (e) => {
+        const form = e.target.closest('form');
+        if (!form || form.classList.contains('no-ajax') || (!form.classList.contains('ajax-form') && !form.dataset.ajax)) return;
+
+        e.preventDefault();
+
+        const submitBtn = form.querySelector('[type="submit"]');
+        const originalText = submitBtn?.innerHTML;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="inline-flex items-center gap-2"><svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>En cours...</span>';
+        }
+
+        try {
+            const formData = new FormData(form);
+            const response = await fetch(form.action, {
+                method: form.method || 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    ...(form.querySelector('[name="_token"]')?.value && {
+                        'X-CSRF-TOKEN': form.querySelector('[name="_token"]').value
+                    })
+                }
+            });
+
+            const data = await response.json().catch(() => ({}));
+            const notify = window.Alpine?.store('notify');
+
+            if (response.ok && data.redirect) {
+                if (notify && data.message) notify.add(data.message, data.type || 'success');
+                window.location.href = data.redirect;
+                return;
+            }
+
+            if (!response.ok) {
+                const msg = data.message || data.errors?.[Object.keys(data.errors || {})[0]]?.[0] || 'Une erreur est survenue.';
+                if (notify) notify.error(msg);
+            }
+        } catch (err) {
+            console.error(err);
+            if (window.Alpine?.store('notify')) Alpine.store('notify').error('Erreur de connexion.');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        }
+    });
+});

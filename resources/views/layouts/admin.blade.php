@@ -23,7 +23,7 @@
         $buildExists = is_dir(public_path('build/assets'));
     @endphp
     @if(app()->environment('local') && !$buildExists)
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/admin-notifications.js'])
     @elseif($buildExists)
         @php
             $buildPath = public_path('build/assets');
@@ -79,6 +79,30 @@
         @endphp
     @endif
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+    document.addEventListener('alpine:init', () => {
+        if (!Alpine.store('notify')) {
+            Alpine.store('notify', {
+                notifications: [],
+                add(message, type = 'info', duration = 5000) {
+                    const id = Date.now() + Math.random();
+                    this.notifications.push({ id, message, type });
+                    if (duration > 0) setTimeout(() => this.remove(id), duration);
+                },
+                remove(id) { this.notifications = this.notifications.filter(n => n.id !== id); },
+                success(m, d = 5000) { this.add(m, 'success', d); },
+                error(m, d = 6000) { this.add(m, 'error', d); },
+                warning(m, d = 5000) { this.add(m, 'warning', d); }
+            });
+        }
+        if (!Alpine.data('notification')) {
+            Alpine.data('notification', () => ({
+                get notifications() { return Alpine.store('notify')?.notifications ?? []; },
+                remove(id) { Alpine.store('notify')?.remove(id); }
+            }));
+        }
+    });
+    </script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <style>
@@ -95,6 +119,9 @@
         /* Animations */
         .fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Alpine x-cloak */
+        [x-cloak] { display: none !important; }
         
         /* Active menu indicator */
         .menu-active { position: relative; }
@@ -113,6 +140,35 @@
     @stack('styles')
 </head>
 <body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen" x-data="{ sidebarOpen: true, mobileMenuOpen: false }">
+    
+    <!-- Notifications toast (sans rechargement) -->
+    <div x-data="notification" class="fixed top-4 right-4 z-[9999] space-y-2">
+        <template x-for="notification in notifications" :key="notification.id">
+            <div 
+                x-show="true"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-x-8"
+                x-transition:enter-end="opacity-100 translate-x-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-x-0"
+                x-transition:leave-end="opacity-0 translate-x-8"
+                :class="{
+                    'bg-green-50 border-green-200 text-green-800': notification.type === 'success',
+                    'bg-red-50 border-red-200 text-red-800': notification.type === 'error',
+                    'bg-amber-50 border-amber-200 text-amber-800': notification.type === 'warning',
+                    'bg-blue-50 border-blue-200 text-blue-800': notification.type === 'info'
+                }"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg min-w-[300px]"
+            >
+                <span x-text="notification.message" class="flex-1"></span>
+                <button @click="remove(notification.id)" class="text-current opacity-50 hover:opacity-100 p-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </template>
+    </div>
     
     <div class="min-h-screen flex">
         <!-- Sidebar -->
@@ -210,8 +266,17 @@
                         <span>Commandes</span>
                         @php $pendingOrders = \App\Models\Order::whereIn('status', ['pending', 'confirmed'])->count(); @endphp
                         @if($pendingOrders > 0)
-                            <span class="ml-auto bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg shadow-red-500/30">{{ $pendingOrders }}</span>
+                            <span data-pending-orders-count class="ml-auto bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg shadow-red-500/30">{{ $pendingOrders }}</span>
+                        @else
+                            <span data-pending-orders-count class="ml-auto bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-lg shadow-red-500/30 hidden">0</span>
                         @endif
+                    </a>
+
+                    <a href="{{ route('admin.refunds.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all {{ request()->routeIs('admin.refunds.*') ? 'menu-active bg-white/10 text-white' : '' }}">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                        </svg>
+                        <span>Remboursements</span>
                     </a>
 
                     <a href="{{ route('admin.customers.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all {{ request()->routeIs('admin.customers.*') ? 'menu-active bg-white/10 text-white' : '' }}">
@@ -223,6 +288,12 @@
                         <span>Clients</span>
                     </a>
 
+                    <a href="{{ route('admin.reviews.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all {{ request()->routeIs('admin.reviews.*') ? 'menu-active bg-white/10 text-white' : '' }}">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                        </svg>
+                        <span>Avis clients</span>
+                    </a>
                     <a href="{{ route('admin.coupons.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all {{ request()->routeIs('admin.coupons.*') ? 'menu-active bg-white/10 text-white' : '' }}">
                         <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-500/20 to-orange-500/20 flex items-center justify-center">
                             <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -389,7 +460,9 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                             </svg>
                             @if($pendingOrders > 0)
-                                <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white"></span>
+                                <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white" data-notification-dot></span>
+                            @else
+                                <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white hidden" data-notification-dot></span>
                             @endif
                         </button>
                         
@@ -557,5 +630,10 @@
     </div>
 
     @stack('scripts')
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('main form:not(.no-ajax)').forEach(f => f.classList.add('ajax-form'));
+    });
+    </script>
 </body>
 </html>

@@ -31,6 +31,10 @@
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Email de contact *</label>
                                 <input type="email" name="contact_email" value="{{ $settings['contact_email'] ?? '' }}" class="w-full px-4 py-2 border border-slate-300 rounded-xl" required>
                             </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Email admin (alertes stock)</label>
+                                <input type="email" name="admin_email" value="{{ $settings['admin_email'] ?? $settings['contact_email'] ?? '' }}" class="w-full px-4 py-2 border border-slate-300 rounded-xl" placeholder="Par défaut : email de contact">
+                            </div>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Description du site</label>
@@ -72,6 +76,22 @@
                             <label class="block text-sm font-medium text-slate-700 mb-1">Taux de taxe (%)</label>
                             <input type="number" name="tax_rate" value="{{ $settings['tax_rate'] ?? 0 }}" step="0.01" min="0" max="100" class="w-full px-4 py-2 border border-slate-300 rounded-xl">
                         </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-4">Caisse POS</h3>
+                    <div class="space-y-4">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="hidden" name="pos_receipt_auto_print" value="0">
+                            <input type="checkbox" name="pos_receipt_auto_print" value="1" {{ ($settings['pos_receipt_auto_print'] ?? '0') === '1' ? 'checked' : '' }} class="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                            <span class="text-slate-700">Ouvrir le reçu et lancer l'impression après validation de vente</span>
+                        </label>
+                        <p class="text-sm text-slate-500">Si activé, le reçu s'ouvre dans une nouvelle fenêtre et la boîte de dialogue d'impression du navigateur se lance. Configurez votre imprimante thermique comme imprimante par défaut pour un flux rapide.</p>
+                        <a href="{{ route('admin.docs.caisse-pos-imprimante') }}" target="_blank" class="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 mt-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                            Guide de configuration imprimante
+                        </a>
                     </div>
                 </div>
 

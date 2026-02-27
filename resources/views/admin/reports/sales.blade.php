@@ -14,21 +14,31 @@
             Retour aux rapports
         </a>
         
-        <!-- Filtres -->
-        <form method="GET" class="flex flex-wrap gap-3">
-            <input type="date" name="start_date" value="{{ $startDate }}" 
-                class="px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-            <input type="date" name="end_date" value="{{ $endDate }}" 
-                class="px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-            <select name="group_by" class="px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-                <option value="day" {{ $groupBy === 'day' ? 'selected' : '' }}>Par jour</option>
-                <option value="week" {{ $groupBy === 'week' ? 'selected' : '' }}>Par semaine</option>
-                <option value="month" {{ $groupBy === 'month' ? 'selected' : '' }}>Par mois</option>
-            </select>
-            <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors">
-                Appliquer
-            </button>
-        </form>
+        <!-- Filtres et export -->
+        <div class="flex flex-wrap items-center gap-3">
+            <a href="{{ route('admin.reports.sales.export-csv', request()->query()) }}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl inline-flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    Export CSV
+                </a>
+            <a href="{{ route('admin.reports.sales.export-pdf', request()->query()) }}" class="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-medium rounded-xl inline-flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                Export PDF
+            </a>
+            <form method="GET" class="flex flex-wrap gap-3">
+                <input type="date" name="start_date" value="{{ $startDate }}" 
+                    class="px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                <input type="date" name="end_date" value="{{ $endDate }}" 
+                    class="px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                <select name="group_by" class="px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                    <option value="day" {{ $groupBy === 'day' ? 'selected' : '' }}>Par jour</option>
+                    <option value="week" {{ $groupBy === 'week' ? 'selected' : '' }}>Par semaine</option>
+                    <option value="month" {{ $groupBy === 'month' ? 'selected' : '' }}>Par mois</option>
+                </select>
+                <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors">
+                    Appliquer
+                </button>
+            </form>
+        </div>
     </div>
 
     <!-- Stats principales -->

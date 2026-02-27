@@ -43,7 +43,8 @@
         </nav>
     </div>
 
-    <form method="POST" action="{{ route('admin.products.update', $product) }}" enctype="multipart/form-data">
+    {{-- no-ajax : formulaire complexe avec champs file, éviter les soumissions AJAX qui peuvent mal gérer _method --}}
+    <form method="POST" action="{{ route('admin.products.update', $product) }}" enctype="multipart/form-data" class="no-ajax" id="product-edit-form">
         @csrf
         @method('PUT')
 
@@ -185,24 +186,17 @@
                             @endif
                             <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
                                 @if(!$image->is_primary)
-                                <form method="POST" action="{{ route('admin.products.images.primary', [$product, $image]) }}">
-                                    @csrf
-                                    <button type="submit" class="p-2 bg-white rounded-lg text-blue-600 hover:bg-blue-50" title="Définir comme principale">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                        </svg>
-                                    </button>
-                                </form>
+                                <button type="submit" form="form-primary-{{ $image->id }}" class="p-2 bg-white rounded-lg text-blue-600 hover:bg-blue-50" title="Définir comme principale">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </button>
                                 @endif
-                                <form method="POST" action="{{ route('admin.products.images.destroy', [$product, $image]) }}" onsubmit="return confirm('Supprimer cette image ?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="p-2 bg-white rounded-lg text-red-600 hover:bg-red-50" title="Supprimer">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                        </svg>
-                                    </button>
-                                </form>
+                                <button type="submit" form="form-delete-{{ $image->id }}" class="p-2 bg-white rounded-lg text-red-600 hover:bg-red-50" title="Supprimer" onclick="return confirm('Supprimer cette image ?')">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                         @endforeach
@@ -314,7 +308,7 @@
         </div>
 
         <!-- Formulaire ajout variante -->
-        <form method="POST" action="{{ route('admin.products.variants.store', $product) }}" enctype="multipart/form-data" class="p-4 bg-slate-50 rounded-xl mb-6">
+        <form method="POST" action="{{ route('admin.products.variants.store', $product) }}" enctype="multipart/form-data" class="p-4 bg-slate-50 rounded-xl mb-6 no-ajax">
             @csrf
             <h3 class="font-medium text-slate-900 mb-4">Ajouter une variante</h3>
             
@@ -431,7 +425,7 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <form method="POST" action="{{ route('admin.products.variants.destroy', [$product, $variant]) }}" class="inline" onsubmit="return confirm('Supprimer cette variante ?')">
+                            <form method="POST" action="{{ route('admin.products.variants.destroy', [$product, $variant]) }}" class="inline no-ajax" onsubmit="return confirm('Supprimer cette variante ?')">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="p-2 text-red-600 hover:bg-red-50 rounded-lg">
@@ -457,4 +451,17 @@
         @endif
     </div>
 </div>
+
+{{-- Formulaires pour actions images (hors du formulaire principal pour éviter HTML invalide) --}}
+@foreach($product->images as $image)
+@if(!$image->is_primary)
+<form id="form-primary-{{ $image->id }}" method="POST" action="{{ route('admin.products.images.primary', [$product, $image]) }}" class="hidden no-ajax">
+    @csrf
+</form>
+@endif
+<form id="form-delete-{{ $image->id }}" method="POST" action="{{ route('admin.products.images.destroy', [$product, $image]) }}" class="hidden no-ajax">
+    @csrf
+    @method('DELETE')
+</form>
+@endforeach
 @endsection

@@ -23,16 +23,20 @@ class CinetPayWebhookController extends Controller
     {
         Log::info('CinetPay webhook received', $request->all());
 
-        // CinetPay envoie les données en POST
         $data = $request->all();
 
-        // Vérifier que les données nécessaires sont présentes
         if (empty($data['cpm_trans_id'])) {
             Log::error('CinetPay webhook: missing cpm_trans_id');
             return response()->json(['status' => 'error', 'message' => 'Missing transaction ID'], 400);
         }
 
-        // Traiter le webhook
+        // Vérification de la signature HMAC (sécurité)
+        $receivedToken = $request->header('x-token', '');
+        if ($receivedToken && !$this->cinetPay->verifyWebhookSignature($data, $receivedToken)) {
+            Log::warning('CinetPay webhook: invalid signature');
+            return response()->json(['status' => 'error', 'message' => 'Invalid signature'], 403);
+        }
+
         $success = $this->cinetPay->handleWebhook($data);
 
         if ($success) {

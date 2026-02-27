@@ -143,8 +143,16 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center text-slate-500">
-                                Aucune commande trouvée
+                            <td colspan="7" class="px-6 py-16">
+                                <div class="flex flex-col items-center justify-center text-center">
+                                    <div class="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                                        <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                        </svg>
+                                    </div>
+                                    <p class="font-medium text-slate-700">Aucune commande trouvée</p>
+                                    <p class="text-sm text-slate-500 mt-1">Les commandes apparaîtront ici lorsqu'elles seront passées.</p>
+                                </div>
                             </td>
                         </tr>
                     @endforelse

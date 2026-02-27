@@ -51,6 +51,7 @@ class Banner extends Model
      */
     const POSITIONS = [
         'announcement_bar' => 'Barre d\'annonce (tout en haut)',
+        'popup_center' => 'Popup (centre de l\'écran)',
         'home_hero' => 'Accueil - Slider principal',
         'home_middle' => 'Accueil - Milieu de page',
         'home_bottom' => 'Accueil - Bas de page',

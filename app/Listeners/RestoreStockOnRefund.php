@@ -18,22 +18,15 @@ class RestoreStockOnRefund
         $order = $event->order;
         $refund = $event->refund;
 
-        // Par défaut, on restaure le stock pour tous les items
-        // Vous pouvez ajouter une logique pour vérifier si les produits ont été retournés
+        $refundRatio = $order->total > 0 ? ($refund->amount / (float) $order->total) : 0;
+
         foreach ($order->items as $item) {
             if (!$item->product || !$item->product->track_stock) {
                 continue;
             }
 
-            // Calculer la quantité remboursée (proportionnel ou total selon la logique métier)
-            // Ici, on assume que le remboursement concerne tous les items
-            // Vous pouvez adapter selon votre logique (remboursement partiel par item)
-            $quantityToRestore = $item->quantity;
-
-            // Si l'item a déjà été partiellement remboursé, ajuster
-            if ($item->quantity_refunded > 0) {
-                $quantityToRestore = $item->quantity - $item->quantity_refunded;
-            }
+            $remainingQty = $item->quantity - ($item->quantity_refunded ?? 0);
+            $quantityToRestore = (int) round($remainingQty * $refundRatio);
 
             if ($quantityToRestore <= 0) {
                 continue;

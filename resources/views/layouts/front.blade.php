@@ -118,7 +118,7 @@
     
     @stack('styles')
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans antialiased" 
+<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen" 
       x-data="{ 
           mobileMenuOpen: false, 
           searchOpen: false,
@@ -137,6 +137,9 @@
         
         // Récupérer la barre d'annonce active
         $announcementBanners = \App\Models\Banner::active()->position('announcement_bar')->orderBy('order')->get();
+        
+        // Récupérer les popups actives (première uniquement pour l'UX)
+        $popupBanner = \App\Models\Banner::active()->position('popup_center')->orderBy('order')->first();
     @endphp
 
     <!-- Notification Container -->
@@ -156,7 +159,7 @@
                     'bg-amber-50 border-amber-200 text-amber-800': notification.type === 'warning',
                     'bg-blue-50 border-blue-200 text-blue-800': notification.type === 'info'
                 }"
-                class="flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg min-w-[300px]"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl min-w-[300px] backdrop-blur-sm"
             >
                 <span x-text="notification.message" class="flex-1"></span>
                 <button @click="remove(notification.id)" class="text-current opacity-50 hover:opacity-100">
@@ -247,10 +250,110 @@
         </div>
     @endif
 
+    <!-- Popup bannière (centre écran) -->
+    @if($popupBanner)
+    <div x-data="{
+        show: false,
+        dismissed: (typeof safeLocalStorage !== 'undefined' ? safeLocalStorage.getItem('popup_dismissed_{{ $popupBanner->id }}') === 'true' : false),
+        init() {
+            if (this.dismissed) return;
+            setTimeout(() => { this.show = true; }, 1200);
+        },
+        close() {
+            this.show = false;
+            if (typeof safeLocalStorage !== 'undefined') {
+                safeLocalStorage.setItem('popup_dismissed_{{ $popupBanner->id }}', 'true');
+            }
+        }
+    }"
+    x-show="show && !dismissed"
+    x-cloak
+    x-transition:enter="transition ease-out duration-400"
+    x-transition:enter-start="opacity-0"
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-250"
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0"
+    class="fixed inset-0 z-[200] flex items-center justify-center p-4"
+    @keydown.escape.window="close()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="popup-title">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-slate-900/75 backdrop-blur-md" @click="close()"></div>
+
+        <!-- Modal popup -->
+        <div x-show="show && !dismissed"
+             x-transition:enter="transition ease-out duration-500"
+             x-transition:enter-start="opacity-0 scale-90 translate-y-4"
+             x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="relative w-full max-w-md overflow-hidden rounded-2xl shadow-2xl ring-1 ring-white/10"
+             style="box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);"
+             @click.stop>
+            <!-- Bouton fermer -->
+            <button type="button" @click="close()" 
+                class="absolute top-3 right-3 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-white/80 hover:bg-white text-slate-500 hover:text-slate-800 shadow-lg hover:scale-110 transition-all duration-200 backdrop-blur-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+
+            @if($popupBanner->image)
+            <!-- Image -->
+            <div class="relative aspect-[4/3] overflow-hidden">
+                <img src="{{ asset('storage/' . $popupBanner->image) }}" alt="{{ $popupBanner->title }}" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                <div class="absolute bottom-0 left-0 right-0 p-6 text-white">
+                    @if($popupBanner->title)
+                    <h3 id="popup-title" class="text-xl font-bold mb-1 drop-shadow-lg">{{ $popupBanner->title }}</h3>
+                    @endif
+                    @if($popupBanner->subtitle)
+                    <p class="text-white/95 text-sm drop-shadow-md">{{ $popupBanner->subtitle }}</p>
+                    @endif
+                </div>
+            </div>
+            @if($popupBanner->link && $popupBanner->button_text)
+            <div class="p-5 bg-white">
+                <a href="{{ $popupBanner->link }}" class="inline-flex items-center justify-center gap-2 w-full px-6 py-3.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 hover:-translate-y-0.5">
+                    {{ $popupBanner->button_text }}
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                    </svg>
+                </a>
+            </div>
+            @endif
+            @else
+            <!-- Contenu sans image -->
+            <div class="p-8 md:p-10 text-center bg-white">
+                @if($popupBanner->title)
+                <h3 id="popup-title" class="text-2xl md:text-3xl font-bold text-slate-900 mb-3 leading-tight">{{ $popupBanner->title }}</h3>
+                @endif
+                @if($popupBanner->subtitle)
+                <p class="text-slate-600 text-base md:text-lg mb-6 max-w-sm mx-auto leading-relaxed">{{ $popupBanner->subtitle }}</p>
+                @endif
+                @if($popupBanner->link && $popupBanner->button_text)
+                <a href="{{ $popupBanner->link }}" class="inline-flex items-center gap-2 px-8 py-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-all duration-200 shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 hover:-translate-y-0.5">
+                    {{ $popupBanner->button_text }}
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                    </svg>
+                </a>
+                @endif
+            </div>
+            @endif
+        </div>
+    </div>
+    @endif
+
     <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <!-- Barre accent couleur primaire -->
+        <div class="h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700"></div>
         <!-- Top bar avec informations dynamiques -->
-        <div class="bg-slate-900 text-slate-300 text-xs py-2 hidden lg:block">
+        <div class="bg-slate-900 text-slate-300 text-xs py-2.5 hidden lg:block">
             <div class="container mx-auto px-4 flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     @if($sitePhone)
@@ -281,7 +384,7 @@
         
         <!-- Main header -->
         <div class="container mx-auto px-4">
-            <div class="flex items-center justify-between py-4">
+            <div class="flex items-center justify-between py-4 lg:py-5">
                 <!-- Logo -->
                 <a href="{{ route('home') }}" class="flex items-center gap-3">
                     @if($siteLogo)
@@ -296,13 +399,13 @@
                 
                 <!-- Search bar (desktop) -->
                 <div class="hidden lg:flex flex-1 max-w-xl mx-8">
-                    <form action="{{ route('shop.index') }}" method="GET" class="relative w-full">
+                    <form action="{{ route('shop.index') }}" method="GET" class="relative w-full group">
                         <input 
                             type="search" 
                             name="search"
                             value="{{ request('search') }}"
                             placeholder="Rechercher un produit..." 
-                            class="w-full pl-12 pr-4 py-3 bg-slate-100 border-0 rounded-full text-sm focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all"
+                            class="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200/80 rounded-full text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 focus:bg-white transition-all duration-200 placeholder:text-slate-400"
                         >
                         <button type="submit" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary-600">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -427,7 +530,7 @@
             <div class="container mx-auto px-4">
                 <ul class="flex items-center gap-8 py-3">
                     <li>
-                        <a href="{{ route('home') }}" class="text-sm font-medium {{ request()->routeIs('home') ? 'text-primary-600' : 'text-slate-900 hover:text-primary-600' }} transition-colors">
+                        <a href="{{ route('home') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium {{ request()->routeIs('home') ? 'text-primary-600 bg-primary-50' : 'text-slate-700 hover:text-primary-600 hover:bg-slate-50' }} transition-colors">
                             Accueil
                         </a>
                     </li>
@@ -435,7 +538,7 @@
                         <button 
                             @click="open = !open" 
                             @click.away="open = false"
-                            class="flex items-center gap-1 text-sm font-medium {{ request()->routeIs('shop.*') ? 'text-primary-600' : 'text-slate-700 hover:text-primary-600' }} transition-colors"
+                            class="flex items-center gap-1 px-4 py-2.5 rounded-lg text-sm font-medium {{ request()->routeIs('shop.*') ? 'text-primary-600 bg-primary-50' : 'text-slate-700 hover:text-primary-600 hover:bg-slate-50' }} transition-colors"
                         >
                             Catégories
                             <svg class="w-4 h-4 transition-transform" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -471,22 +574,22 @@
                         </div>
                     </li>
                     <li>
-                        <a href="{{ route('shop.index') }}" class="text-sm font-medium text-slate-700 hover:text-primary-600 transition-colors">
+                        <a href="{{ route('shop.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:text-primary-600 hover:bg-slate-50 transition-colors">
                             Boutique
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('shop.index', ['sort' => 'newest']) }}" class="text-sm font-medium text-slate-700 hover:text-primary-600 transition-colors">
+                        <a href="{{ route('shop.index', ['sort' => 'newest']) }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:text-primary-600 hover:bg-slate-50 transition-colors">
                             Nouveautés
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('shop.index', ['on_sale' => 1]) }}" class="text-sm font-medium text-slate-700 hover:text-primary-600 transition-colors">
+                        <a href="{{ route('shop.index', ['on_sale' => 1]) }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:text-primary-600 hover:bg-slate-50 transition-colors">
                             Promotions
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('contact') }}" class="text-sm font-medium text-slate-700 hover:text-primary-600 transition-colors">
+                        <a href="{{ route('contact') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:text-primary-600 hover:bg-slate-50 transition-colors">
                             Contact
                         </a>
                     </li>
@@ -590,7 +693,7 @@
     <!-- Flash Messages -->
     @if(session('success'))
         <div class="container mx-auto px-4 mt-4">
-            <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl flex items-center gap-3">
+            <div class="bg-green-50 border border-green-200 text-green-800 px-5 py-4 rounded-xl flex items-center gap-3 shadow-sm">
                 <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
@@ -612,7 +715,7 @@
 
     @if(session('warning'))
         <div class="container mx-auto px-4 mt-4">
-            <div class="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl flex items-center gap-3">
+            <div class="bg-amber-50 border border-amber-200 text-amber-800 px-5 py-4 rounded-xl flex items-center gap-3 shadow-sm">
                 <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                 </svg>
@@ -622,21 +725,24 @@
     @endif
 
     <!-- Main Content -->
-    <main class="min-h-screen">
+    <main class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
         @yield('content')
     </main>
 
     <!-- Footer -->
-    <footer class="bg-slate-900 text-slate-300 mt-16">
+    <footer class="bg-slate-900 text-slate-300 mt-20">
         <!-- Newsletter -->
-        <div class="border-b border-slate-800">
+        <div class="border-b border-slate-800/80">
             <div class="container mx-auto px-4 py-12">
                 <div class="max-w-2xl mx-auto text-center">
                     <h3 class="text-2xl font-bold text-white mb-2">Restez informé</h3>
-                    <p class="text-slate-400 mb-6">Inscrivez-vous à notre newsletter pour recevoir nos offres exclusives</p>
-                    <form class="flex flex-col sm:flex-row gap-3">
+                    <p class="text-slate-400 mb-6">Recevez nos offres exclusives et nouveautés directement dans votre boîte mail</p>
+                    <form method="POST" action="{{ route('newsletter.subscribe') }}" class="flex flex-col sm:flex-row gap-3">
+                        @csrf
                         <input 
                             type="email" 
+                            name="email"
+                            required
                             placeholder="Votre adresse email" 
                             class="flex-1 px-5 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                         >
@@ -696,9 +802,7 @@
                     <h4 class="text-white font-semibold mb-4">Service client</h4>
                     <ul class="space-y-2">
                         <li><a href="{{ route('contact') }}" class="text-sm text-slate-400 hover:text-white transition-colors">Centre d'aide</a></li>
-                        @auth
-                            <li><a href="{{ route('account.orders') }}" class="text-sm text-slate-400 hover:text-white transition-colors">Suivi de commande</a></li>
-                        @endauth
+                        <li><a href="{{ route('order-tracking.index') }}" class="text-sm text-slate-400 hover:text-white transition-colors">Suivi de commande</a></li>
                         <li><a href="#" class="text-sm text-slate-400 hover:text-white transition-colors">Retours & remboursements</a></li>
                         <li><a href="#" class="text-sm text-slate-400 hover:text-white transition-colors">Livraison</a></li>
                         <li><a href="#" class="text-sm text-slate-400 hover:text-white transition-colors">FAQ</a></li>
@@ -926,11 +1030,10 @@
                 }
             });
 
-            // Listen for notification events
+            // Listen for notification events (utilise le store global)
             window.addEventListener('show-notification', (e) => {
-                const notificationComponent = document.querySelector('[x-data="notification"]');
-                if (notificationComponent && notificationComponent._x_dataStack) {
-                    notificationComponent._x_dataStack[0].add(e.detail.message, e.detail.type);
+                if (window.Alpine?.store('notify')) {
+                    Alpine.store('notify').add(e.detail.message, e.detail.type || 'info');
                 }
             });
         });
@@ -949,7 +1052,16 @@
             }
         });
     </script>
-    
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('form:not(.no-ajax)').forEach(f => {
+            const action = (f.getAttribute('action') || '').toLowerCase();
+            if (!action.includes('process-payment') && !f.closest('[data-no-ajax]')) {
+                f.classList.add('ajax-form');
+            }
+        });
+    });
+    </script>
     <style>
         [x-cloak] { display: none !important; }
     </style>

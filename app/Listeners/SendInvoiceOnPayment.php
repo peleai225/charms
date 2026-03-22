@@ -5,11 +5,21 @@ namespace App\Listeners;
 use App\Events\OrderPaid;
 use App\Mail\OrderInvoice;
 use App\Services\MailConfigService;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
-class SendInvoiceOnPayment
+class SendInvoiceOnPayment implements ShouldQueue
 {
+    use InteractsWithQueue;
+
+    /** Nombre de tentatives en cas d'échec */
+    public int $tries = 3;
+
+    /** Délai entre tentatives (secondes) */
+    public int $backoff = 60;
+
     /**
      * Envoie la facture par email après confirmation du paiement
      */

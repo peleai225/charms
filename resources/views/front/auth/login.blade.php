@@ -3,23 +3,33 @@
 @section('title', 'Connexion')
 
 @section('content')
-<div class="min-h-[70vh] flex items-center justify-center py-12 px-4">
-    <div class="w-full max-w-md">
-        
-        <!-- En-tête -->
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-900">Connexion</h1>
-            <p class="text-gray-600 mt-2">
-                Pas encore de compte ? 
-                <a href="{{ route('register') }}" class="text-primary-600 hover:text-primary-700 font-medium">
-                    Créez-en un
-                </a>
-            </p>
+<div class="min-h-[80vh] flex">
+    <!-- Left side - decorative -->
+    <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-600 via-primary-700 to-slate-900 relative overflow-hidden items-center justify-center p-12">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-20 left-20 w-72 h-72 bg-white rounded-full blur-3xl"></div>
+            <div class="absolute bottom-20 right-20 w-96 h-96 bg-accent-500 rounded-full blur-3xl"></div>
         </div>
+        <div class="relative text-white text-center max-w-md">
+            <h2 class="text-4xl font-bold mb-4">Bienvenue</h2>
+            <p class="text-white/80 text-lg">Connectez-vous pour acceder a votre espace personnel et profiter de nos offres exclusives.</p>
+        </div>
+    </div>
+    <!-- Right side - form -->
+    <div class="w-full lg:w-1/2 flex items-center justify-center py-12 px-6 sm:px-12 bg-white">
+        <div class="w-full max-w-md">
 
-        <!-- Carte de connexion -->
-        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-            
+            <!-- En-tête -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900">Connexion</h1>
+                <p class="text-gray-600 mt-2">
+                    Pas encore de compte ?
+                    <a href="{{ route('register') }}" class="text-primary-600 hover:text-primary-700 font-medium">
+                        Créez-en un
+                    </a>
+                </p>
+            </div>
+
             <!-- Messages flash -->
             @if (session('error'))
                 <div class="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
@@ -41,10 +51,10 @@
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1.5">
                         Adresse email
                     </label>
-                    <input 
-                        type="email" 
-                        name="email" 
-                        id="email" 
+                    <input
+                        type="email"
+                        name="email"
+                        id="email"
                         value="{{ old('email') }}"
                         class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
                         placeholder="votre@email.com"
@@ -66,10 +76,10 @@
                             Mot de passe oublié ?
                         </a>
                     </div>
-                    <input 
-                        type="password" 
-                        name="password" 
-                        id="password" 
+                    <input
+                        type="password"
+                        name="password"
+                        id="password"
                         class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
                         placeholder="••••••••"
                         required
@@ -81,9 +91,9 @@
 
                 <!-- Se souvenir de moi -->
                 <div class="flex items-center">
-                    <input 
-                        type="checkbox" 
-                        name="remember" 
+                    <input
+                        type="checkbox"
+                        name="remember"
                         id="remember"
                         class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     >
@@ -93,9 +103,9 @@
                 </div>
 
                 <!-- Bouton de connexion -->
-                <button 
-                    type="submit" 
-                    class="w-full py-3.5 px-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 transition-all duration-200"
+                <button
+                    type="submit"
+                    class="w-full py-3.5 px-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
                 >
                     Se connecter
                 </button>
@@ -129,8 +139,8 @@
                     <span class="text-sm font-medium text-gray-700">Facebook</span>
                 </button>
             </div>
-        </div>
 
+        </div>
     </div>
 </div>
 @endsection

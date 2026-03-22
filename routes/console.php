@@ -23,3 +23,13 @@ Schedule::command('orders:cancel-expired --minutes=30')
     ->everyFiveMinutes()
     ->withoutOverlapping()
     ->appendOutputTo(storage_path('logs/expired-orders.log'));
+
+// Relance des paniers abandonnés (1h sans activité)
+Schedule::command('carts:send-reminders --minutes=60')
+    ->hourly()
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/abandoned-carts.log'));
+
+// Traitement des jobs en file (fallback si queue:work n'est pas actif)
+// Pour la production, démarrez: php artisan queue:work --tries=3 --timeout=60
+// Sur hébergement mutualisé: php artisan queue:work --once (via cron toutes les minutes)

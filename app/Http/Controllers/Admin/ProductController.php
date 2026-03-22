@@ -11,6 +11,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -137,8 +138,8 @@ class ProductController extends Controller
             // Upload des images
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $index => $image) {
-                    $path = $image->store('products/' . $product->id, 'public');
-                    
+                    $path = $this->resizeAndStoreImage($image, 'products/' . $product->id);
+
                     ProductImage::create([
                         'product_id' => $product->id,
                         'path' => $path,
@@ -254,10 +255,10 @@ class ProductController extends Controller
             // Upload des nouvelles images
             if ($request->hasFile('images')) {
                 $lastPosition = $product->images()->max('position') ?? -1;
-                
+
                 foreach ($request->file('images') as $index => $image) {
-                    $path = $image->store('products/' . $product->id, 'public');
-                    
+                    $path = $this->resizeAndStoreImage($image, 'products/' . $product->id);
+
                     ProductImage::create([
                         'product_id' => $product->id,
                         'path' => $path,
@@ -393,7 +394,7 @@ class ProductController extends Controller
 
             // Upload de l'image de la variante
             if ($request->hasFile('image')) {
-                $path = $request->file('image')->store('products/' . $product->id . '/variants', 'public');
+                $path = $this->resizeAndStoreImage($request->file('image'), 'products/' . $product->id . '/variants');
                 $variant->update(['image' => $path]);
             }
 
@@ -458,5 +459,70 @@ class ProductController extends Controller
     {
         $image->setAsPrimary();
         return back()->with('success', 'Image principale mise à jour.');
+    }
+
+    /**
+     * Redimensionner et stocker une image uploadée.
+     *
+     * Crée deux versions :
+     *   - thumb/  : 400×400 (listings, miniatures)
+     *   - medium/ : 800×800 (page produit)
+     *
+     * Retourne le chemin de la version medium (utilisé comme référence).
+     * Si GD n'est pas disponible, stocke l'original sans modification.
+     */
+    private function resizeAndStoreImage(UploadedFile $file, string $directory): string
+    {
+        $filename  = Str::uuid() . '.webp';
+        $diskPath  = 'public/' . $directory;
+
+        // Si GD non disponible → stockage direct sans resize
+        if (!extension_loaded('gd')) {
+            return $file->storeAs($directory, $filename, 'public');
+        }
+
+        $mime = $file->getMimeType();
+        $src  = match ($mime) {
+            'image/jpeg' => imagecreatefromjpeg($file->getRealPath()),
+            'image/png'  => imagecreatefrompng($file->getRealPath()),
+            'image/webp' => imagecreatefromwebp($file->getRealPath()),
+            default      => null,
+        };
+
+        if ($src === null) {
+            return $file->storeAs($directory, $filename, 'public');
+        }
+
+        $origW = imagesx($src);
+        $origH = imagesy($src);
+
+        // Chemin de stockage sur le disque
+        Storage::disk('public')->makeDirectory($directory . '/medium');
+        Storage::disk('public')->makeDirectory($directory . '/thumb');
+
+        foreach (['medium' => 800, 'thumb' => 400] as $size => $maxPx) {
+            [$newW, $newH] = $origW > $origH
+                ? [$maxPx, (int) round($origH * $maxPx / $origW)]
+                : [(int) round($origW * $maxPx / $origH), $maxPx];
+
+            $dst = imagecreatetruecolor($newW, $newH);
+
+            // Préserver la transparence PNG/WebP
+            imagealphablending($dst, false);
+            imagesavealpha($dst, true);
+            $transparent = imagecolorallocatealpha($dst, 0, 0, 0, 127);
+            imagefilledrectangle($dst, 0, 0, $newW, $newH, $transparent);
+
+            imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
+
+            $fullPath = storage_path('app/public/' . $directory . '/' . $size . '/' . $filename);
+            imagewebp($dst, $fullPath, 85);
+            imagedestroy($dst);
+        }
+
+        imagedestroy($src);
+
+        // Le chemin stocké en base pointe vers la version medium
+        return $directory . '/medium/' . $filename;
     }
 }

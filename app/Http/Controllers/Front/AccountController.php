@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Front;
 
 use App\Http\Controllers\Controller;
 use App\Models\CustomerAddress;
+use App\Models\LoyaltyTransaction;
 use App\Models\Order;
 use Illuminate\Http\Request;
 
@@ -39,6 +40,23 @@ class AccountController extends Controller
         $addresses = $customer ? $customer->addresses()->where('type', 'shipping')->get() : collect();
 
         return view('front.account.addresses', compact('customer', 'addresses'));
+    }
+
+    /**
+     * Page de fidélité — solde + historique des points
+     */
+    public function loyalty()
+    {
+        $customer = auth()->user()->customer;
+        if (!$customer) {
+            return redirect()->route('account.dashboard');
+        }
+
+        $transactions = LoyaltyTransaction::where('customer_id', $customer->id)
+            ->latest()
+            ->paginate(15);
+
+        return view('front.account.loyalty', compact('customer', 'transactions'));
     }
 
     /**

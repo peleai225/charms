@@ -218,6 +218,49 @@ class CartController extends Controller
     }
 
     /**
+     * Retourne le contenu du panier en JSON pour le drawer
+     */
+    public function drawer()
+    {
+        $cart = $this->getCart();
+        $cart->load(['items.product.images', 'items.variant.attributeValues.attribute', 'coupon']);
+
+        $items = $cart->items->map(function ($item) {
+            $image = $item->product->images->where('is_primary', true)->first()
+                ?? $item->product->images->first();
+
+            return [
+                'id'           => $item->id,
+                'product_id'   => $item->product_id,
+                'name'         => $item->product->name,
+                'slug'         => $item->product->slug,
+                'image'        => $image ? asset('storage/' . $image->path) : null,
+                'price'        => $item->unit_price,
+                'price_fmt'    => number_format($item->unit_price, 0, ',', ' ') . ' F CFA',
+                'quantity'     => $item->quantity,
+                'subtotal_fmt' => number_format($item->unit_price * $item->quantity, 0, ',', ' ') . ' F CFA',
+                'variant'      => $item->variant
+                    ? $item->variant->attributeValues->pluck('value')->implode(' / ')
+                    : null,
+                'update_url'   => route('cart.update', $item->id),
+                'remove_url'   => route('cart.remove', $item->id),
+            ];
+        });
+
+        return response()->json([
+            'items'         => $items,
+            'count'         => $cart->items_count,
+            'subtotal_fmt'  => number_format($cart->subtotal, 0, ',', ' ') . ' F CFA',
+            'discount_fmt'  => $cart->discount_amount > 0
+                ? number_format($cart->discount_amount, 0, ',', ' ') . ' F CFA'
+                : null,
+            'total_fmt'     => number_format($cart->total, 0, ',', ' ') . ' F CFA',
+            'coupon_code'   => $cart->coupon_code,
+            'checkout_url'  => route('checkout.index'),
+        ]);
+    }
+
+    /**
      * API : Récupérer le nombre d'articles dans le panier
      */
     public function count()

@@ -4,29 +4,45 @@
 @section('page-title', 'Dashboard')
 
 @section('content')
-<div class="space-y-6">
-    
+<div class="space-y-6"
+     x-data="dashboardKpi()"
+     x-init="init()">
+
+    <!-- Filtres période -->
+    <div class="flex items-center justify-between">
+        <div class="flex gap-1 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+            <template x-for="p in periods" :key="p.value">
+                <button @click="setPeriod(p.value)"
+                        :class="period === p.value
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'"
+                        class="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
+                        x-text="p.label">
+                </button>
+            </template>
+        </div>
+        <div x-show="loading" class="flex items-center gap-2 text-sm text-slate-400">
+            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            Chargement...
+        </div>
+    </div>
+
     <!-- Statistiques principales -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- CA du mois -->
+        <!-- CA -->
         <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-slate-500">CA du mois</p>
-                    <p class="text-2xl font-bold text-slate-900 mt-1">{{ format_price($stats['monthly_revenue']) }}</p>
+                    <p class="text-sm font-medium text-slate-500" x-text="periodLabel + ' — CA'"></p>
+                    <p class="text-2xl font-bold text-slate-900 mt-1" x-text="kpi.revenue_fmt || '{{ format_price($stats['monthly_revenue']) }}'"></p>
                     <div class="flex items-center gap-1 mt-2">
-                        @if($stats['revenue_growth'] >= 0)
-                            <span class="text-green-500 text-sm font-medium">+{{ $stats['revenue_growth'] }}%</span>
-                            <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
-                            </svg>
-                        @else
-                            <span class="text-red-500 text-sm font-medium">{{ $stats['revenue_growth'] }}%</span>
-                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-                            </svg>
-                        @endif
-                        <span class="text-slate-400 text-sm">vs mois dernier</span>
+                        <span :class="(kpi.growth ?? {{ $stats['revenue_growth'] }}) >= 0 ? 'text-green-500' : 'text-red-500'"
+                              class="text-sm font-medium"
+                              x-text="((kpi.growth ?? {{ $stats['revenue_growth'] }}) >= 0 ? '+' : '') + (kpi.growth ?? {{ $stats['revenue_growth'] }}) + '%'"></span>
+                        <span class="text-slate-400 text-sm">vs période préc.</span>
                     </div>
                 </div>
                 <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
@@ -37,13 +53,13 @@
             </div>
         </div>
 
-        <!-- Commandes du jour -->
+        <!-- Commandes -->
         <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-slate-500">Commandes du jour</p>
-                    <p class="text-2xl font-bold text-slate-900 mt-1">{{ $stats['today_orders'] }}</p>
-                    <p class="text-sm text-slate-400 mt-2">{{ $stats['pending_orders'] }} en attente</p>
+                    <p class="text-sm font-medium text-slate-500">Commandes</p>
+                    <p class="text-2xl font-bold text-slate-900 mt-1" x-text="kpi.orders ?? {{ $stats['today_orders'] }}"></p>
+                    <p class="text-sm text-slate-400 mt-2"><span x-text="kpi.pending ?? {{ $stats['pending_orders'] }}"></span> en attente</p>
                 </div>
                 <div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
                     <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,7 +75,7 @@
                 <div>
                     <p class="text-sm font-medium text-slate-500">Total clients</p>
                     <p class="text-2xl font-bold text-slate-900 mt-1">{{ number_format($stats['total_customers'], 0, ',', ' ') }}</p>
-                    <p class="text-sm text-green-500 mt-2">+{{ $stats['new_customers'] }} ce mois</p>
+                    <p class="text-sm text-green-500 mt-2">+<span x-text="kpi.new_customers ?? {{ $stats['new_customers'] }}"></span> sur la période</p>
                 </div>
                 <div class="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
                     <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,7 +111,7 @@
         <!-- Graphique des ventes -->
         <div class="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-lg font-semibold text-slate-900">Ventes des 30 derniers jours</h2>
+                <h2 class="text-lg font-semibold text-slate-900" x-text="chartTitle"></h2>
                 <div class="flex items-center gap-4 text-sm">
                     <span class="flex items-center gap-2">
                         <span class="w-3 h-3 rounded-full bg-blue-500"></span>
@@ -220,17 +236,80 @@
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('salesChart').getContext('2d');
-    
-    new Chart(ctx, {
+// Chart instance globale pour pouvoir la mettre à jour
+let salesChartInstance = null;
+
+function dashboardKpi() {
+    return {
+        period: 'month',
+        loading: false,
+        kpi: {},
+        periods: [
+            { value: 'today', label: "Aujourd'hui" },
+            { value: 'week',  label: 'Cette semaine' },
+            { value: 'month', label: 'Ce mois' },
+        ],
+
+        get periodLabel() {
+            return this.periods.find(p => p.value === this.period)?.label ?? 'Ce mois';
+        },
+
+        get chartTitle() {
+            const map = { today: 'Ventes aujourd\'hui (par heure)', week: 'Ventes des 7 derniers jours', month: 'Ventes des 30 derniers jours' };
+            return map[this.period] ?? 'Ventes';
+        },
+
+        init() {
+            // Initialiser le graphique avec les données PHP initiales
+            this.$nextTick(() => {
+                initChart(@json($salesChart['labels']), @json($salesChart['revenues']), @json($salesChart['orders']));
+            });
+        },
+
+        async setPeriod(value) {
+            if (this.period === value) return;
+            this.period = value;
+            await this.fetchStats();
+        },
+
+        async fetchStats() {
+            this.loading = true;
+            try {
+                const res = await fetch('/api/admin/dashboard-stats?period=' + this.period, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                this.kpi = data;
+
+                // Mettre à jour le graphique
+                if (salesChartInstance && data.chart) {
+                    salesChartInstance.data.labels = data.chart.labels;
+                    salesChartInstance.data.datasets[0].data = data.chart.revenues;
+                    salesChartInstance.data.datasets[1].data = data.chart.orders;
+                    salesChartInstance.update('active');
+                }
+            } catch (e) {
+                console.error('Dashboard stats error:', e);
+            } finally {
+                this.loading = false;
+            }
+        }
+    };
+}
+
+function initChart(labels, revenues, orders) {
+    const ctx = document.getElementById('salesChart');
+    if (!ctx) return;
+
+    salesChartInstance = new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
-            labels: @json($salesChart['labels']),
+            labels: labels,
             datasets: [
                 {
                     label: 'CA (F CFA)',
-                    data: @json($salesChart['revenues']),
+                    data: revenues,
                     borderColor: '#3b82f6',
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
                     fill: true,
@@ -239,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 {
                     label: 'Commandes',
-                    data: @json($salesChart['orders']),
+                    data: orders,
                     borderColor: '#10b981',
                     backgroundColor: 'rgba(16, 185, 129, 0.1)',
                     fill: true,
@@ -250,41 +329,16 @@ document.addEventListener('DOMContentLoaded', function() {
         },
         options: {
             responsive: true,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: false } },
             scales: {
-                y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    grid: {
-                        color: '#f1f5f9'
-                    }
-                },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    grid: {
-                        drawOnChartArea: false,
-                    },
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
+                y:  { type: 'linear', display: true, position: 'left',  grid: { color: '#f1f5f9' } },
+                y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } },
+                x:  { grid: { display: false } }
             }
         }
     });
-});
+}
 </script>
 @endpush
 @endsection

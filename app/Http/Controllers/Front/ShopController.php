@@ -159,16 +159,35 @@ class ShopController extends Controller
             ->filter(fn($av) => $av->attribute->slug === 'couleur')
             ->unique('id');
 
-        // Produits similaires
+        // Cross-sell : produits de la même catégorie (prix similaire ±30%)
         $relatedProducts = Product::active()
             ->where('id', '!=', $product->id)
             ->where('category_id', $product->category_id)
+            ->where('sale_price', '>=', $product->sale_price * 0.7)
+            ->where('sale_price', '<=', $product->sale_price * 1.3)
             ->with(['images'])
             ->inRandomOrder()
             ->take(4)
             ->get();
 
-        return view('front.shop.product', compact('product', 'variantsByColor', 'availableColors', 'relatedProducts'));
+        // Upsell : produit plus premium (même catégorie, prix 20-100% plus élevé)
+        $upsellProducts = Product::active()
+            ->where('id', '!=', $product->id)
+            ->where('category_id', $product->category_id)
+            ->where('sale_price', '>', $product->sale_price * 1.2)
+            ->where('sale_price', '<=', $product->sale_price * 2)
+            ->with(['images'])
+            ->orderBy('sale_price')
+            ->take(2)
+            ->get();
+
+        // Points de fidélité que le client gagnerait sur cet achat
+        $pointsToEarn = (int) floor($product->sale_price / 1000 * \App\Models\Setting::get('loyalty_points_per_1000', 10));
+
+        return view('front.shop.product', compact(
+            'product', 'variantsByColor', 'availableColors',
+            'relatedProducts', 'upsellProducts', 'pointsToEarn'
+        ));
     }
 
     /**

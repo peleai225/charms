@@ -3,27 +3,30 @@
 @section('title', 'Panier')
 
 @section('content')
-<div class="container mx-auto px-4 py-8 md:py-10">
-    <!-- Breadcrumb -->
-    <nav class="text-sm text-slate-500 mb-8 flex items-center gap-2">
-        <a href="{{ route('home') }}" class="hover:text-primary-600 transition-colors">Accueil</a>
-        <span class="text-slate-300">/</span>
-        <span class="text-slate-900 font-medium">Panier</span>
-    </nav>
+<!-- Hero-style header -->
+<div class="bg-gradient-to-r from-slate-50 to-slate-100/50 py-8 mb-8 -mt-0">
+    <div class="container mx-auto px-4">
+        <nav class="text-sm text-slate-500 mb-3 flex items-center gap-2">
+            <a href="{{ route('home') }}" class="hover:text-primary-600 transition-colors">Accueil</a>
+            <span class="text-slate-300">/</span>
+            <span class="text-slate-900 font-medium">Panier</span>
+        </nav>
+        <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Mon panier</h1>
+    </div>
+</div>
 
-    <h1 class="text-3xl md:text-4xl font-bold text-slate-900 mb-8">Mon panier</h1>
-
+<div class="container mx-auto px-4 pb-8 md:pb-10">
     @if($cart->items->count() > 0)
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Articles -->
         <div class="lg:col-span-2 space-y-4">
             @foreach($cart->items as $item)
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex gap-4 transition-all duration-300 hover:shadow-md" 
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100/80 p-5 flex gap-5 transition-all duration-300 hover:shadow-md hover:border-slate-200"
                  x-data="cartItem({{ $item->id }}, {{ $item->quantity }}, {{ $item->unit_price }})"
                  :class="{ 'opacity-50': isUpdating, 'translate-x-full opacity-0': isRemoving }">
                 <!-- Image -->
                 <a href="{{ route('shop.product', $item->product->slug) }}" class="flex-shrink-0">
-                    <div class="w-24 h-24 rounded-lg overflow-hidden bg-gray-100">
+                    <div class="w-28 h-28 rounded-xl overflow-hidden bg-slate-50 ring-1 ring-slate-100">
                         @if($item->variant?->image)
                             <img src="{{ asset('storage/' . $item->variant->image) }}" alt="" class="w-full h-full object-cover">
                         @elseif($item->product->images->where('is_primary', true)->first())
@@ -132,7 +135,8 @@
 
         <!-- Récapitulatif -->
         <div class="lg:col-span-1">
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-24">
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-24 relative overflow-hidden">
+                <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-500 to-primary-600"></div>
                 <h2 class="text-lg font-semibold text-gray-900 mb-4">Récapitulatif</h2>
 
                 <div class="space-y-3 text-sm">
@@ -208,7 +212,7 @@
                 </div>
 
                 <!-- Bouton commander -->
-                <a href="{{ route('checkout.index') }}" class="mt-6 w-full block py-3 px-6 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl text-center transition-colors">
+                <a href="{{ route('checkout.index') }}" class="mt-6 w-full block py-3 px-6 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl text-center shadow-lg shadow-primary-500/25 hover:-translate-y-0.5 transition-all">
                     Passer commande
                 </a>
 
@@ -238,13 +242,15 @@
     </div>
     @else
     <!-- Panier vide -->
-    <div class="text-center py-16">
-        <svg class="w-24 h-24 mx-auto text-gray-300 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-        </svg>
+    <div class="text-center py-20">
+        <div class="w-32 h-32 mx-auto mb-8 rounded-full bg-slate-100 flex items-center justify-center">
+            <svg class="w-16 h-16 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+        </div>
         <h2 class="text-2xl font-bold text-gray-900 mb-2">Votre panier est vide</h2>
-        <p class="text-gray-600 mb-6">Découvrez nos produits et ajoutez-les à votre panier</p>
-        <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-colors">
+        <p class="text-gray-600 mb-8 max-w-md mx-auto">Découvrez nos produits et ajoutez-les à votre panier</p>
+        <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-8 py-3.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl shadow-lg shadow-primary-500/25 hover:-translate-y-0.5 transition-all">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
             </svg>

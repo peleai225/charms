@@ -48,6 +48,13 @@ class SettingsController extends Controller
             'accent_color' => 'nullable|string|max:7',
             'theme_mode' => 'nullable|in:light,dark,auto',
             'pos_receipt_auto_print' => 'boolean',
+            // Fidélité
+            'loyalty_points_per_1000' => 'nullable|integer|min:0|max:1000',
+            'loyalty_points_value'    => 'nullable|integer|min:0',
+            // Tracking & Analytics
+            'ga4_id'          => 'nullable|string|max:30',
+            'meta_pixel_id'   => 'nullable|string|max:30',
+            'tiktok_pixel_id' => 'nullable|string|max:30',
         ]);
 
         // Upload logo

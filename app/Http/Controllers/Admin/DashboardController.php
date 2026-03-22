@@ -85,6 +85,65 @@ class DashboardController extends Controller
     }
 
     /**
+     * API : stats filtrées par période (today / week / month)
+     */
+    public function apiStats(Request $request)
+    {
+        $period = $request->input('period', 'month');
+
+        [$start, $prevStart, $prevEnd] = match ($period) {
+            'today' => [
+                Carbon::today(),
+                Carbon::yesterday()->startOfDay(),
+                Carbon::yesterday()->endOfDay(),
+            ],
+            'week' => [
+                Carbon::now()->startOfWeek(),
+                Carbon::now()->subWeek()->startOfWeek(),
+                Carbon::now()->subWeek()->endOfWeek(),
+            ],
+            default => [
+                Carbon::now()->startOfMonth(),
+                Carbon::now()->subMonth()->startOfMonth(),
+                Carbon::now()->subMonth()->endOfMonth(),
+            ],
+        };
+
+        $revenue = Order::whereNotIn('status', ['cancelled', 'refunded'])
+            ->where('created_at', '>=', $start)->sum('total');
+
+        $prevRevenue = Order::whereNotIn('status', ['cancelled', 'refunded'])
+            ->whereBetween('created_at', [$prevStart, $prevEnd])->sum('total');
+
+        $growth = $prevRevenue > 0
+            ? round((($revenue - $prevRevenue) / $prevRevenue) * 100, 1)
+            : 0;
+
+        $ordersCount  = Order::where('created_at', '>=', $start)->count();
+        $pendingCount = Order::whereIn('status', ['pending', 'confirmed', 'processing'])->count();
+        $newCustomers = Customer::where('created_at', '>=', $start)->count();
+
+        // Chart data for the selected period
+        $days = match ($period) {
+            'today' => 24,   // hours
+            'week'  => 7,
+            default => 30,
+        };
+
+        $chart = $this->getSalesChartData($period);
+
+        return response()->json([
+            'revenue'      => $revenue,
+            'revenue_fmt'  => number_format($revenue, 0, ',', ' ') . ' F CFA',
+            'growth'       => $growth,
+            'orders'       => $ordersCount,
+            'pending'      => $pendingCount,
+            'new_customers'=> $newCustomers,
+            'chart'        => $chart,
+        ]);
+    }
+
+    /**
      * Statistiques principales
      */
     protected function getMainStats(): array
@@ -151,36 +210,51 @@ class DashboardController extends Controller
     /**
      * Données pour le graphique des ventes
      */
-    protected function getSalesChartData(): array
+    protected function getSalesChartData(string $period = 'month'): array
     {
-        $days = 30;
-        $startDate = Carbon::now()->subDays($days - 1)->startOfDay();
+        if ($period === 'today') {
+            // Granularité : heure par heure
+            $startDate = Carbon::today();
+            $sales = Order::whereNotIn('status', ['cancelled', 'refunded'])
+                ->where('created_at', '>=', $startDate)
+                ->selectRaw('HOUR(created_at) as hour, SUM(total) as total, COUNT(*) as count')
+                ->groupBy('hour')
+                ->orderBy('hour')
+                ->get()
+                ->keyBy('hour');
 
-        $sales = Order::whereNotIn('status', ['cancelled', 'refunded'])
-            ->where('created_at', '>=', $startDate)
-            ->selectRaw('DATE(created_at) as date, SUM(total) as total, COUNT(*) as count')
-            ->groupBy('date')
-            ->orderBy('date')
-            ->get()
-            ->keyBy('date');
+            $labels = $revenues = $orders = [];
+            for ($h = 0; $h < 24; $h++) {
+                $labels[]   = str_pad($h, 2, '0', STR_PAD_LEFT) . 'h';
+                $revenues[] = $sales[$h]->total ?? 0;
+                $orders[]   = $sales[$h]->count ?? 0;
+            }
+        } else {
+            $days = $period === 'week' ? 7 : 30;
+            $startDate = Carbon::now()->subDays($days - 1)->startOfDay();
 
-        $labels = [];
-        $revenues = [];
-        $orders = [];
+            $sales = Order::whereNotIn('status', ['cancelled', 'refunded'])
+                ->where('created_at', '>=', $startDate)
+                ->selectRaw('DATE(created_at) as date, SUM(total) as total, COUNT(*) as count')
+                ->groupBy('date')
+                ->orderBy('date')
+                ->get()
+                ->keyBy('date');
 
-        for ($i = 0; $i < $days; $i++) {
-            $date = Carbon::now()->subDays($days - 1 - $i);
-            $dateKey = $date->format('Y-m-d');
-            
-            $labels[] = $date->format('d/m');
-            $revenues[] = $sales[$dateKey]->total ?? 0;
-            $orders[] = $sales[$dateKey]->count ?? 0;
+            $labels = $revenues = $orders = [];
+            for ($i = 0; $i < $days; $i++) {
+                $date       = Carbon::now()->subDays($days - 1 - $i);
+                $dateKey    = $date->format('Y-m-d');
+                $labels[]   = $date->format('d/m');
+                $revenues[] = $sales[$dateKey]->total ?? 0;
+                $orders[]   = $sales[$dateKey]->count ?? 0;
+            }
         }
 
         return [
-            'labels' => $labels,
+            'labels'   => $labels,
             'revenues' => $revenues,
-            'orders' => $orders,
+            'orders'   => $orders,
         ];
     }
 }

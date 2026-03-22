@@ -3,46 +3,54 @@
 @section('title', 'Commander')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    <!-- Breadcrumb -->
-    <nav class="text-sm text-gray-500 mb-6">
-        <a href="{{ route('home') }}" class="hover:text-primary-600">Accueil</a>
-        <span class="mx-2">/</span>
-        <a href="{{ route('cart.index') }}" class="hover:text-primary-600">Panier</a>
-        <span class="mx-2">/</span>
-        <span class="text-gray-900">Commander</span>
-    </nav>
+<!-- Hero-style header -->
+<div class="bg-gradient-to-r from-slate-50 to-slate-100/50 py-8 mb-8 -mt-0">
+    <div class="container mx-auto px-4">
+        <nav class="text-sm text-slate-500 mb-3 flex items-center gap-2">
+            <a href="{{ route('home') }}" class="hover:text-primary-600 transition-colors">Accueil</a>
+            <span class="text-slate-300">/</span>
+            <a href="{{ route('cart.index') }}" class="hover:text-primary-600 transition-colors">Panier</a>
+            <span class="text-slate-300">/</span>
+            <span class="text-slate-900 font-medium">Commander</span>
+        </nav>
+        <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Finaliser ma commande</h1>
+    </div>
+</div>
 
-    <h1 class="text-3xl font-bold text-gray-900 mb-6">Finaliser ma commande</h1>
-
+<div class="container mx-auto px-4 pb-8">
     <!-- Indicateur de progression -->
     <div class="mb-8 overflow-x-auto">
-        <div class="flex items-center gap-2 min-w-max">
+        <div class="flex items-center min-w-max max-w-2xl mx-auto">
+            <!-- Panier (completed) -->
             <div class="flex items-center">
-                <div class="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-700 text-sm font-semibold">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 text-white ring-4 ring-green-100 text-sm font-semibold">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                 </div>
-                <span class="ml-2 text-sm font-medium text-gray-600 hidden sm:inline">Panier</span>
+                <span class="ml-2 text-sm font-medium text-gray-700 hidden sm:inline">Panier</span>
             </div>
-            <div class="w-8 sm:w-12 h-0.5 bg-gray-300"></div>
+            <div class="flex-1 h-0.5 mx-3 bg-green-500"></div>
+            <!-- Contact (active) -->
             <div class="flex items-center">
-                <div class="flex items-center justify-center w-8 h-8 rounded-full bg-primary-600 text-white text-sm font-semibold">1</div>
-                <span class="ml-2 text-sm font-medium text-gray-900 hidden sm:inline">Contact</span>
+                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary-600 text-white ring-4 ring-primary-100 animate-pulse text-sm font-semibold">1</div>
+                <span class="ml-2 text-sm font-semibold text-gray-900 hidden sm:inline">Contact</span>
             </div>
-            <div class="w-8 sm:w-12 h-0.5 bg-gray-300"></div>
+            <div class="flex-1 h-0.5 mx-3 bg-slate-200"></div>
+            <!-- Livraison (pending) -->
             <div class="flex items-center">
-                <div class="flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-500 text-sm font-semibold">2</div>
-                <span class="ml-2 text-sm font-medium text-gray-500 hidden sm:inline">Livraison</span>
+                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 text-slate-400 text-sm font-semibold">2</div>
+                <span class="ml-2 text-sm font-medium text-slate-400 hidden sm:inline">Livraison</span>
             </div>
-            <div class="w-8 sm:w-12 h-0.5 bg-gray-300"></div>
+            <div class="flex-1 h-0.5 mx-3 bg-slate-200"></div>
+            <!-- Facturation (pending) -->
             <div class="flex items-center">
-                <div class="flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-500 text-sm font-semibold">3</div>
-                <span class="ml-2 text-sm font-medium text-gray-500 hidden sm:inline">Facturation</span>
+                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 text-slate-400 text-sm font-semibold">3</div>
+                <span class="ml-2 text-sm font-medium text-slate-400 hidden sm:inline">Facturation</span>
             </div>
-            <div class="w-8 sm:w-12 h-0.5 bg-gray-300"></div>
+            <div class="flex-1 h-0.5 mx-3 bg-slate-200"></div>
+            <!-- Paiement (pending) -->
             <div class="flex items-center">
-                <div class="flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 text-gray-500 text-sm font-semibold">4</div>
-                <span class="ml-2 text-sm font-medium text-gray-500 hidden sm:inline">Paiement</span>
+                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 text-slate-400 text-sm font-semibold">4</div>
+                <span class="ml-2 text-sm font-medium text-slate-400 hidden sm:inline">Paiement</span>
             </div>
         </div>
     </div>
@@ -55,7 +63,7 @@
             <!-- Informations de contact -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</span>
+                    <span class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-xl shadow-lg shadow-primary-500/25 flex items-center justify-center text-sm font-bold">1</span>
                     Informations de contact
                 </h2>
 
@@ -94,7 +102,7 @@
             <!-- Adresse de livraison -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">2</span>
+                    <span class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-xl shadow-lg shadow-primary-500/25 flex items-center justify-center text-sm font-bold">2</span>
                     Adresse de livraison
                 </h2>
 
@@ -189,7 +197,7 @@
             <!-- Adresse de facturation -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">3</span>
+                    <span class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-xl shadow-lg shadow-primary-500/25 flex items-center justify-center text-sm font-bold">3</span>
                     Adresse de facturation
                 </h2>
 
@@ -257,17 +265,22 @@
             <!-- Mode de paiement -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <span class="w-8 h-8 bg-primary-600 text-white rounded-full flex items-center justify-center text-sm font-bold">4</span>
+                    <span class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-xl shadow-lg shadow-primary-500/25 flex items-center justify-center text-sm font-bold">4</span>
                     Mode de paiement
                 </h2>
 
                 <div class="space-y-3">
                     <!-- CinetPay -->
                     @if(($settings['payment_cinetpay_enabled'] ?? '0') === '1')
-                    <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-colors"
-                        :class="paymentMethod === 'cinetpay' ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'">
+                    <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200"
+                        :class="paymentMethod === 'cinetpay' ? 'border-primary-500 bg-primary-50 scale-[1.02] shadow-md' : 'border-gray-200 hover:border-gray-300'">
                         <input type="radio" name="payment_method" value="cinetpay" x-model="paymentMethod" class="sr-only" {{ (($settings['payment_cinetpay_enabled'] ?? '0') === '1' && ($settings['payment_lygos_enabled'] ?? '0') !== '1' && ($settings['payment_cod_enabled'] ?? '1') !== '1') ? 'checked' : '' }}>
                         <div class="flex items-center gap-4 flex-1">
+                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+                                :class="paymentMethod === 'cinetpay' ? 'border-primary-500' : 'border-gray-300'">
+                                <div class="w-2.5 h-2.5 rounded-full transition-colors"
+                                    :class="paymentMethod === 'cinetpay' ? 'bg-primary-500' : 'bg-transparent'"></div>
+                            </div>
                             <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                                 <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
@@ -287,10 +300,15 @@
 
                     <!-- Lygos Pay -->
                     @if(($settings['payment_lygos_enabled'] ?? '0') === '1')
-                    <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-colors"
-                        :class="paymentMethod === 'lygos' ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'">
+                    <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200"
+                        :class="paymentMethod === 'lygos' ? 'border-primary-500 bg-primary-50 scale-[1.02] shadow-md' : 'border-gray-200 hover:border-gray-300'">
                         <input type="radio" name="payment_method" value="lygos" x-model="paymentMethod" class="sr-only" {{ (($settings['payment_cinetpay_enabled'] ?? '0') !== '1' && ($settings['payment_lygos_enabled'] ?? '0') === '1' && ($settings['payment_cod_enabled'] ?? '1') !== '1') ? 'checked' : '' }}>
                         <div class="flex items-center gap-4 flex-1">
+                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+                                :class="paymentMethod === 'lygos' ? 'border-primary-500' : 'border-gray-300'">
+                                <div class="w-2.5 h-2.5 rounded-full transition-colors"
+                                    :class="paymentMethod === 'lygos' ? 'bg-primary-500' : 'bg-transparent'"></div>
+                            </div>
                             <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                                 <img src="https://lygosapp.com/favicon.ico" alt="Lygos Pay" class="w-8 h-8">
                             </div>
@@ -304,10 +322,15 @@
 
                     <!-- Paiement à la livraison -->
                     @if(($settings['payment_cod_enabled'] ?? '1') === '1')
-                    <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-colors"
-                        :class="paymentMethod === 'cod' ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'">
+                    <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200"
+                        :class="paymentMethod === 'cod' ? 'border-primary-500 bg-primary-50 scale-[1.02] shadow-md' : 'border-gray-200 hover:border-gray-300'">
                         <input type="radio" name="payment_method" value="cod" x-model="paymentMethod" class="sr-only" {{ (($settings['payment_cinetpay_enabled'] ?? '0') !== '1' && ($settings['payment_lygos_enabled'] ?? '0') !== '1' && ($settings['payment_cod_enabled'] ?? '1') === '1') ? 'checked' : '' }}>
                         <div class="flex items-center gap-4 flex-1">
+                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+                                :class="paymentMethod === 'cod' ? 'border-primary-500' : 'border-gray-300'">
+                                <div class="w-2.5 h-2.5 rounded-full transition-colors"
+                                    :class="paymentMethod === 'cod' ? 'bg-primary-500' : 'bg-transparent'"></div>
+                            </div>
                             <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                                 <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
@@ -403,7 +426,7 @@
                 </div>
 
                 <!-- Bouton commander -->
-                <button type="submit" :disabled="isSubmitting" class="mt-6 w-full py-4 px-6 bg-primary-600 hover:bg-primary-700 disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
+                <button type="submit" :disabled="isSubmitting" class="mt-6 w-full py-4 px-6 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 disabled:opacity-70 disabled:cursor-not-allowed text-white font-semibold rounded-xl shadow-xl shadow-primary-500/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
                     <span x-show="!isSubmitting">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
@@ -430,6 +453,7 @@
             </div>
         </div>
     </form>
+</div>
 </div>
 
 @push('scripts')

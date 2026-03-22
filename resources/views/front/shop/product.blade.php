@@ -1,6 +1,14 @@
 @extends('layouts.front')
 
-@section('title', $product->name)
+@section('title', $product->name . ' — ' . \App\Models\Setting::get('site_name', config('app.name')))
+@section('meta_description', $product->short_description ?: Str::limit(strip_tags($product->description ?? ''), 160))
+@section('og_type', 'product')
+@section('og_title', $product->name)
+@section('og_description', $product->short_description ?: Str::limit(strip_tags($product->description ?? ''), 160))
+@if($product->primaryImage->first())
+    @section('og_image', asset('storage/' . $product->primaryImage->first()->path))
+@endif
+@section('canonical', route('shop.product', $product->slug))
 
 @section('content')
 <div class="container mx-auto px-4 py-8 md:py-10">
@@ -25,18 +33,70 @@
     @endif
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12" x-data="productGallery()">
+
+        {{-- ===== LIGHTBOX ===== --}}
+        <div x-show="lightboxOpen"
+             x-cloak
+             @keydown.escape.window="closeLightbox()"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4"
+             @click.self="closeLightbox()">
+            <button @click="closeLightbox()"
+                    class="absolute top-4 right-4 text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+            @if($product->images->count() > 1)
+            <button @click="prevLightbox()" class="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <button @click="nextLightbox()" class="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </button>
+            @endif
+            <img :src="lightboxImage" alt="{{ $product->name }}"
+                 class="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl select-none">
+            @if($product->images->count() > 1)
+            <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+                @foreach($product->images as $i => $img)
+                <button @click="setLightboxIndex({{ $i }})"
+                        :class="lightboxIndex === {{ $i }} ? 'bg-white' : 'bg-white/40'"
+                        class="w-2 h-2 rounded-full transition-colors"></button>
+                @endforeach
+            </div>
+            @endif
+        </div>
+
         <!-- Galerie images -->
         <div class="space-y-4">
-            <!-- Image principale -->
-            <div class="aspect-square bg-gray-100 rounded-2xl overflow-hidden">
-                <img :src="currentImage" alt="{{ $product->name }}" class="w-full h-full object-cover transition-all duration-300" id="main-image">
+            <!-- Image principale (cliquable → lightbox) -->
+            <div class="aspect-square bg-gray-100 rounded-2xl overflow-hidden cursor-zoom-in group relative"
+                 @click="openLightbox()">
+                <img :src="currentImage" alt="{{ $product->name }}"
+                     class="w-full h-full object-cover transition-all duration-300" id="main-image">
+                <!-- Indicateur zoom -->
+                <div class="absolute bottom-3 right-3 bg-black/40 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
+                    </svg>
+                </div>
             </div>
 
             <!-- Thumbnails -->
             @if($product->images->count() > 1)
             <div class="flex gap-2 overflow-x-auto pb-2">
-                @foreach($product->images as $image)
-                    <button @click="setImage('{{ asset('storage/' . $image->path) }}')"
+                @foreach($product->images as $index => $image)
+                    <button @click="setImageAndIndex('{{ asset('storage/' . $image->path) }}', {{ $index }})"
                         :class="{ 'ring-2 ring-primary-500': currentImage === '{{ asset('storage/' . $image->path) }}' }"
                         class="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 border-transparent hover:border-gray-300 transition-all">
                         <img src="{{ asset('storage/' . $image->path) }}" alt="" class="w-full h-full object-cover">
@@ -160,7 +220,7 @@
             </div>
 
             <!-- Quantité et Ajouter au panier -->
-            <div class="space-y-4">
+            <div class="space-y-4" id="buy-section">
                 <div class="flex items-center gap-4">
                     <!-- Quantité -->
                     <div class="flex items-center border border-gray-300 rounded-xl overflow-hidden">
@@ -198,6 +258,32 @@
                 <div x-show="showSuccess" x-transition class="p-3 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">
                     Produit ajouté au panier avec succès !
                 </div>
+
+                {{-- Points de fidélité à gagner --}}
+                @if($pointsToEarn > 0)
+                <div class="flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+                    <svg class="w-4 h-4 flex-shrink-0 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                    </svg>
+                    <span>Vous gagnerez <strong>{{ $pointsToEarn }} points de fidélité</strong> pour cet achat</span>
+                </div>
+                @endif
+
+                {{-- Bouton WhatsApp Commander --}}
+                @php
+                    $waNumber = preg_replace('/\D/', '', \App\Models\Setting::get('social_whatsapp', ''));
+                    $waMessage = urlencode("Bonjour, je souhaite commander : *{$product->name}* — " . number_format($product->sale_price, 0, ',', ' ') . " F CFA\nLien : " . route('shop.product', $product->slug));
+                @endphp
+                @if($waNumber)
+                <a href="https://wa.me/{{ $waNumber }}?text={{ $waMessage }}"
+                   target="_blank" rel="noopener"
+                   class="flex items-center justify-center gap-2 w-full py-3 px-6 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    Commander via WhatsApp
+                </a>
+                @endif
             </div>
 
             <!-- SKU -->
@@ -320,7 +406,95 @@
         </div>
     </div>
 
-    <!-- Produits similaires -->
+    {{-- ===== STICKY MOBILE ADD-TO-CART BAR ===== --}}
+    {{-- stickyVisible est géré dans productGallery() via IntersectionObserver --}}
+    <div x-show="stickyVisible"
+         x-cloak
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="translate-y-full opacity-0"
+         x-transition:enter-end="translate-y-0 opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="translate-y-0 opacity-100"
+         x-transition:leave-end="translate-y-full opacity-0"
+         class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-2xl px-4 py-3 safe-area-pb">
+        <div class="flex items-center gap-3 max-w-lg mx-auto">
+            {{-- Image miniature --}}
+            @php $thumb = $product->images->where('is_primary', true)->first() ?? $product->images->first(); @endphp
+            @if($thumb)
+            <img src="{{ asset('storage/' . $thumb->path) }}"
+                 alt="{{ $product->name }}"
+                 class="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-gray-100">
+            @endif
+            {{-- Nom + prix --}}
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-gray-900 truncate">{{ $product->name }}</p>
+                <p class="text-sm font-bold text-primary-600">
+                    {{ number_format($product->sale_price, 0, ',', ' ') }} F CFA
+                </p>
+            </div>
+            {{-- Bouton --}}
+            <button type="button"
+                    @click="addToCart()"
+                    :disabled="isAdding"
+                    class="flex-shrink-0 py-2.5 px-5 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors flex items-center gap-2">
+                <svg x-show="!isAdding" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                <svg x-show="isAdding" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span x-text="isAdding ? 'Ajout...' : (showSuccess ? '✓' : 'Ajouter')"></span>
+            </button>
+        </div>
+    </div>
+
+    {{-- Upsell : version premium --}}
+    @if(isset($upsellProducts) && $upsellProducts->count() > 0)
+    <div class="mt-14 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl p-6 border border-indigo-100">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                </svg>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-slate-900">Passez à la version premium</h2>
+                <p class="text-sm text-slate-500">Des options supérieures pour aller encore plus loin</p>
+            </div>
+        </div>
+        <div class="grid sm:grid-cols-2 gap-4">
+            @foreach($upsellProducts as $up)
+            <a href="{{ route('shop.product', $up->slug) }}"
+               class="flex items-center gap-4 bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow border border-white hover:border-indigo-200">
+                @php $upImg = $up->images->where('is_primary', true)->first() ?? $up->images->first(); @endphp
+                @if($upImg)
+                    <img src="{{ asset('storage/' . $upImg->path) }}" alt="{{ $up->name }}" class="w-16 h-16 object-cover rounded-lg flex-shrink-0">
+                @else
+                    <div class="w-16 h-16 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-6 h-6 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                        </svg>
+                    </div>
+                @endif
+                <div class="flex-1 min-w-0">
+                    <p class="font-semibold text-slate-900 text-sm line-clamp-2">{{ $up->name }}</p>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="font-bold text-indigo-600">{{ number_format($up->sale_price, 0, ',', ' ') }} F</span>
+                        @php $diff = round(($up->sale_price - $product->sale_price) / $product->sale_price * 100); @endphp
+                        <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">+{{ $diff }}%</span>
+                    </div>
+                </div>
+                <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </a>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+    <!-- Cross-sell : Vous aimerez aussi -->
     @if($relatedProducts->count() > 0)
     <div class="mt-16">
         <h2 class="text-2xl font-bold text-gray-900 mb-6">Vous aimerez aussi</h2>
@@ -355,6 +529,17 @@ function productGallery() {
         quantity: 1,
         isAdding: false,
         showSuccess: false,
+
+        // Lightbox
+        lightboxOpen: false,
+        lightboxImage: '',
+        lightboxIndex: 0,
+        allImages: @php
+            echo json_encode($product->images->map(fn($img) => asset('storage/' . $img->path))->values()->toArray());
+        @endphp,
+
+        // Sticky bar
+        stickyVisible: false,
         
         // Variants data from PHP
         variantsByColor: @php
@@ -378,8 +563,59 @@ function productGallery() {
             echo json_encode($variantsData);
         @endphp,
         
+        init() {
+            // Sticky bar : visible quand le bouton d'achat sort du viewport
+            const buySection = document.getElementById('buy-section');
+            if (buySection && 'IntersectionObserver' in window) {
+                const self = this;
+                const observer = new IntersectionObserver(([entry]) => {
+                    self.stickyVisible = !entry.isIntersecting;
+                }, { threshold: 0, rootMargin: '0px 0px -20px 0px' });
+                observer.observe(buySection);
+            }
+        },
+
         setImage(src) {
             this.currentImage = src;
+        },
+
+        setImageAndIndex(src, index) {
+            this.currentImage = src;
+            this.lightboxIndex = index;
+            this.lightboxImage = src;
+        },
+
+        openLightbox() {
+            this.lightboxImage = this.currentImage;
+            const idx = this.allImages.indexOf(this.currentImage);
+            this.lightboxIndex = idx >= 0 ? idx : 0;
+            this.lightboxOpen = true;
+            document.body.style.overflow = 'hidden';
+        },
+
+        closeLightbox() {
+            this.lightboxOpen = false;
+            document.body.style.overflow = '';
+        },
+
+        prevLightbox() {
+            if (this.allImages.length === 0) return;
+            this.lightboxIndex = (this.lightboxIndex - 1 + this.allImages.length) % this.allImages.length;
+            this.lightboxImage = this.allImages[this.lightboxIndex];
+            this.currentImage = this.lightboxImage;
+        },
+
+        nextLightbox() {
+            if (this.allImages.length === 0) return;
+            this.lightboxIndex = (this.lightboxIndex + 1) % this.allImages.length;
+            this.lightboxImage = this.allImages[this.lightboxIndex];
+            this.currentImage = this.lightboxImage;
+        },
+
+        setLightboxIndex(index) {
+            this.lightboxIndex = index;
+            this.lightboxImage = this.allImages[index] || '';
+            this.currentImage = this.lightboxImage;
         },
         
         selectColor(colorId, colorName, colorCode, variants) {
@@ -486,9 +722,13 @@ function productGallery() {
                     // Mettre à jour le store panier
                     if (Alpine.store('cart')) {
                         Alpine.store('cart').count = data.cart_count;
-                        await Alpine.store('cart').sync();
                     }
-                    
+
+                    // Ouvrir le drawer panier
+                    if (Alpine.store('cartDrawer')) {
+                        Alpine.store('cartDrawer').open();
+                    }
+
                     this.showSuccess = true;
                     setTimeout(() => {
                         this.showSuccess = false;

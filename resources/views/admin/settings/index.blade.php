@@ -178,6 +178,69 @@
                     <textarea name="footer_text" rows="3" class="w-full px-4 py-2 border border-slate-300 rounded-xl text-sm" placeholder="Texte du pied de page...">{{ $settings['footer_text'] ?? '' }}</textarea>
                 </div>
 
+                <!-- Programme de fidélité -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-1">Programme de fidélité</h3>
+                    <p class="text-sm text-slate-500 mb-4">Les points sont attribués automatiquement après chaque paiement confirmé.</p>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                                Points gagnés par 1 000 F CFA dépensés
+                            </label>
+                            <input type="number" name="loyalty_points_per_1000" min="0" max="1000"
+                                   value="{{ $settings['loyalty_points_per_1000'] ?? 10 }}"
+                                   class="w-full px-4 py-2 border border-slate-300 rounded-xl">
+                            <p class="text-xs text-slate-500 mt-1">Ex. : 10 pts × 5 000 F = 50 pts gagnés</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                                Valeur de 100 points (en F CFA)
+                            </label>
+                            <input type="number" name="loyalty_points_value" min="0"
+                                   value="{{ $settings['loyalty_points_value'] ?? 500 }}"
+                                   class="w-full px-4 py-2 border border-slate-300 rounded-xl">
+                            <p class="text-xs text-slate-500 mt-1">Ex. : 100 pts = 500 F de réduction</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tracking & Analytics -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-1">Tracking & Analytics</h3>
+                    <p class="text-sm text-slate-500 mb-4">Laissez vide pour désactiver un pixel.</p>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                                Google Analytics 4 — Measurement ID
+                            </label>
+                            <input type="text" name="ga4_id"
+                                   value="{{ $settings['ga4_id'] ?? '' }}"
+                                   placeholder="G-XXXXXXXXXX"
+                                   class="w-full px-4 py-2 border border-slate-300 rounded-xl font-mono text-sm">
+                            <p class="text-xs text-slate-500 mt-1">Trouvez cet ID dans Google Analytics → Admin → Flux de données</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                                Meta Pixel ID (Facebook / Instagram)
+                            </label>
+                            <input type="text" name="meta_pixel_id"
+                                   value="{{ $settings['meta_pixel_id'] ?? '' }}"
+                                   placeholder="123456789012345"
+                                   class="w-full px-4 py-2 border border-slate-300 rounded-xl font-mono text-sm">
+                            <p class="text-xs text-slate-500 mt-1">Gestionnaire de publicités Meta → Sources de données → Pixels</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">
+                                TikTok Pixel ID
+                            </label>
+                            <input type="text" name="tiktok_pixel_id"
+                                   value="{{ $settings['tiktok_pixel_id'] ?? '' }}"
+                                   placeholder="CXXXXXXXXXXXXXXXXXX"
+                                   class="w-full px-4 py-2 border border-slate-300 rounded-xl font-mono text-sm">
+                        </div>
+                    </div>
+                </div>
+
                 <button type="submit" class="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors">
                     Enregistrer les modifications
                 </button>

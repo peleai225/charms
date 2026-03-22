@@ -17,6 +17,38 @@
     
     <title>@yield('title', $siteName)</title>
     <meta name="description" content="@yield('meta_description', $siteDescription)">
+
+    @php
+        $ogTitle       = $__env->hasSection('og_title')       ? $__env->yieldContent('og_title')       : ($__env->hasSection('title') ? $__env->yieldContent('title') : $siteName);
+        $ogDescription = $__env->hasSection('og_description') ? $__env->yieldContent('og_description') : ($__env->hasSection('meta_description') ? $__env->yieldContent('meta_description') : $siteDescription);
+    @endphp
+    {{-- Open Graph / Social Sharing --}}
+    <meta property="og:site_name"   content="{{ $siteName }}">
+    <meta property="og:type"        content="@yield('og_type', 'website')">
+    <meta property="og:title"       content="{{ $ogTitle }}">
+    <meta property="og:description" content="{{ $ogDescription }}">
+    <meta property="og:url"         content="{{ url()->current() }}">
+    @hasSection('og_image')
+        <meta property="og:image" content="@yield('og_image')">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+    @elseif($siteLogo)
+        <meta property="og:image" content="{{ asset('storage/' . $siteLogo) }}">
+    @endif
+
+    {{-- Twitter Card --}}
+    <meta name="twitter:card"        content="summary_large_image">
+    <meta name="twitter:title"       content="{{ $ogTitle }}">
+    <meta name="twitter:description" content="{{ $ogDescription }}">
+    @hasSection('og_image')
+        <meta name="twitter:image" content="@yield('og_image')">
+    @endif
+
+    {{-- Canonical URL --}}
+    <link rel="canonical" href="@yield('canonical', url()->current())">
+
+    {{-- Sitemap --}}
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="{{ route('sitemap') }}">
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -114,6 +146,9 @@
         .from-primary-500, .from-primary-600 { --tw-gradient-from: {{ $primaryColor }} !important; }
         .to-primary-700, .to-primary-800 { --tw-gradient-to: color-mix(in srgb, {{ $primaryColor }} 70%, black) !important; }
         .shadow-primary-500\/30, .shadow-primary-600\/30 { --tw-shadow-color: {{ $primaryColor }}4d !important; }
+
+        @keyframes gradient { 0%,100% { background-position: 0% center; } 50% { background-position: 100% center; } }
+        .animate-gradient { animation: gradient 6s ease infinite; }
     </style>
     
     @stack('styles')
@@ -349,9 +384,9 @@
     @endif
 
     <!-- Header -->
-    <header class="bg-white shadow-md sticky top-0 z-50">
+    <header class="bg-white/80 backdrop-blur-xl shadow-lg shadow-slate-200/50 sticky top-0 z-50 border-b border-white/20">
         <!-- Barre accent couleur primaire -->
-        <div class="h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700"></div>
+        <div class="h-0.5 bg-gradient-to-r from-primary-500 via-accent-500 to-primary-500 bg-[length:200%_auto] animate-gradient"></div>
         <!-- Top bar avec informations dynamiques -->
         <div class="bg-slate-900 text-slate-300 text-xs py-2.5 hidden lg:block">
             <div class="container mx-auto px-4 flex items-center justify-between">
@@ -475,21 +510,22 @@
                         </svg>
                     </a>
                     
-                    <!-- Cart -->
-                    <a 
-                        href="{{ route('cart.index') }}"
+                    <!-- Cart (ouvre le drawer) -->
+                    <button
+                        @click="$store.cartDrawer.open()"
                         class="p-2 text-slate-600 hover:text-primary-600 transition-colors relative"
+                        aria-label="Ouvrir le panier"
                     >
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                         </svg>
-                        <span x-text="$store.cart.count" 
+                        <span x-text="$store.cart.count"
                               x-show="$store.cart.count > 0"
                               x-transition:enter="transition ease-out duration-200"
                               x-transition:enter-start="opacity-0 scale-50"
                               x-transition:enter-end="opacity-100 scale-100"
                               class="absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center"></span>
-                    </a>
+                    </button>
                     
                     <!-- Mobile menu toggle -->
                     <button 
@@ -725,35 +761,43 @@
     @endif
 
     <!-- Main Content -->
-    <main class="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <main class="min-h-screen">
         @yield('content')
     </main>
 
     <!-- Footer -->
-    <footer class="bg-slate-900 text-slate-300 mt-20">
+    <!-- Decorative footer top border -->
+    <div class="h-px bg-gradient-to-r from-transparent via-primary-500 to-transparent"></div>
+
+    <footer class="bg-gradient-to-b from-slate-900 to-slate-950 text-slate-300 mt-20">
         <!-- Newsletter -->
         <div class="border-b border-slate-800/80">
-            <div class="container mx-auto px-4 py-12">
-                <div class="max-w-2xl mx-auto text-center">
-                    <h3 class="text-2xl font-bold text-white mb-2">Restez informé</h3>
-                    <p class="text-slate-400 mb-6">Recevez nos offres exclusives et nouveautés directement dans votre boîte mail</p>
-                    <form method="POST" action="{{ route('newsletter.subscribe') }}" class="flex flex-col sm:flex-row gap-3">
-                        @csrf
-                        <input 
-                            type="email" 
-                            name="email"
-                            required
-                            placeholder="Votre adresse email" 
-                            class="flex-1 px-5 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                        >
-                        <button type="submit" class="px-8 py-3 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition-colors">
-                            S'inscrire
-                        </button>
-                    </form>
+            <div class="container mx-auto px-4 py-14">
+                <div class="max-w-2xl mx-auto text-center relative">
+                    <!-- Subtle background pattern -->
+                    <div class="absolute inset-0 -m-8 rounded-2xl opacity-5" style="background-image: url('data:image/svg+xml,%3Csvg width=&quot;40&quot; height=&quot;40&quot; viewBox=&quot;0 0 40 40&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;%3E%3Cg fill=&quot;%23ffffff&quot; fill-opacity=&quot;1&quot;%3E%3Cpath d=&quot;M20 20.5V18H0v-2h20v-2l2 3-2 3zM0 20.5V18h20v-2H0v-2l-2 3 2 3z&quot;/%3E%3C/g%3E%3C/svg%3E');"></div>
+                    <div class="relative">
+                        <span class="inline-block px-4 py-1.5 bg-primary-500/10 text-primary-400 text-xs font-semibold uppercase tracking-wider rounded-full mb-4">Newsletter</span>
+                        <h3 class="text-2xl font-bold text-white mb-2">Restez inform&eacute;</h3>
+                        <p class="text-slate-400 mb-8">Recevez nos offres exclusives et nouveaut&eacute;s directement dans votre bo&icirc;te mail</p>
+                        <form method="POST" action="{{ route('newsletter.subscribe') }}" class="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto">
+                            @csrf
+                            <input
+                                type="email"
+                                name="email"
+                                required
+                                placeholder="Votre adresse email"
+                                class="flex-1 px-5 py-3.5 bg-slate-800/80 border border-slate-700/50 rounded-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-slate-800 transition-colors"
+                            >
+                            <button type="submit" class="px-8 py-3.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-all hover:shadow-lg hover:shadow-primary-500/25">
+                                S'inscrire
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
-        
+
         <!-- Footer content -->
         <div class="container mx-auto px-4 py-12">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -784,31 +828,31 @@
                         </a>
                     </div>
                 </div>
-                
+
                 <!-- Links -->
                 <div>
                     <h4 class="text-white font-semibold mb-4">Liens utiles</h4>
                     <ul class="space-y-2">
-                        <li><a href="{{ route('about') }}" class="text-sm text-slate-400 hover:text-white transition-colors">À propos de nous</a></li>
-                        <li><a href="{{ route('shop.index') }}" class="text-sm text-slate-400 hover:text-white transition-colors">Boutique</a></li>
-                        <li><a href="#" class="text-sm text-slate-400 hover:text-white transition-colors">Conditions générales</a></li>
-                        <li><a href="#" class="text-sm text-slate-400 hover:text-white transition-colors">Politique de confidentialité</a></li>
-                        <li><a href="{{ route('contact') }}" class="text-sm text-slate-400 hover:text-white transition-colors">Contact</a></li>
+                        <li><a href="{{ route('about') }}" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">À propos de nous</a></li>
+                        <li><a href="{{ route('shop.index') }}" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">Boutique</a></li>
+                        <li><a href="#" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">Conditions générales</a></li>
+                        <li><a href="#" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">Politique de confidentialité</a></li>
+                        <li><a href="{{ route('contact') }}" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">Contact</a></li>
                     </ul>
                 </div>
-                
+
                 <!-- Customer Service -->
                 <div>
                     <h4 class="text-white font-semibold mb-4">Service client</h4>
                     <ul class="space-y-2">
-                        <li><a href="{{ route('contact') }}" class="text-sm text-slate-400 hover:text-white transition-colors">Centre d'aide</a></li>
-                        <li><a href="{{ route('order-tracking.index') }}" class="text-sm text-slate-400 hover:text-white transition-colors">Suivi de commande</a></li>
-                        <li><a href="#" class="text-sm text-slate-400 hover:text-white transition-colors">Retours & remboursements</a></li>
-                        <li><a href="#" class="text-sm text-slate-400 hover:text-white transition-colors">Livraison</a></li>
-                        <li><a href="#" class="text-sm text-slate-400 hover:text-white transition-colors">FAQ</a></li>
+                        <li><a href="{{ route('contact') }}" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">Centre d'aide</a></li>
+                        <li><a href="{{ route('order-tracking.index') }}" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">Suivi de commande</a></li>
+                        <li><a href="#" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">Retours & remboursements</a></li>
+                        <li><a href="#" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">Livraison</a></li>
+                        <li><a href="#" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">FAQ</a></li>
                     </ul>
                 </div>
-                
+
                 <!-- Contact -->
                 <div>
                     <h4 class="text-white font-semibold mb-4">Contact</h4>
@@ -833,7 +877,7 @@
                             <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                             </svg>
-                            <a href="tel:{{ $contactPhone }}" class="text-sm text-slate-400 hover:text-white transition-colors">{{ $contactPhone }}</a>
+                            <a href="tel:{{ $contactPhone }}" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">{{ $contactPhone }}</a>
                         </li>
                         @endif
                         @if($contactEmail)
@@ -841,7 +885,7 @@
                             <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                             </svg>
-                            <a href="mailto:{{ $contactEmail }}" class="text-sm text-slate-400 hover:text-white transition-colors">{{ $contactEmail }}</a>
+                            <a href="mailto:{{ $contactEmail }}" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">{{ $contactEmail }}</a>
                         </li>
                         @endif
                         @if($socialWhatsapp)
@@ -849,33 +893,36 @@
                             <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                             </svg>
-                            <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $socialWhatsapp) }}" target="_blank" class="text-sm text-slate-400 hover:text-green-400 transition-colors">WhatsApp</a>
+                            <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $socialWhatsapp) }}" target="_blank" class="text-sm text-slate-400 hover:text-green-400 hover:translate-x-1 transition-transform inline-block">WhatsApp</a>
                         </li>
                         @endif
                     </ul>
                 </div>
             </div>
         </div>
-        
+
         <!-- Bottom bar -->
-        <div class="border-t border-slate-800">
+        <div class="border-t border-slate-800/50">
             <div class="container mx-auto px-4 py-6">
                 <div class="flex flex-col md:flex-row items-center justify-between gap-4">
                     <p class="text-sm text-slate-500">
-                        © {{ date('Y') }} {{ $siteName }}. Tous droits réservés.
+                        &copy; {{ date('Y') }} {{ $siteName }}. Tous droits r&eacute;serv&eacute;s.
                     </p>
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-3">
                         <!-- Orange Money -->
-                        <div class="h-8 px-3 bg-slate-800 rounded flex items-center text-orange-500 font-bold text-sm">
-                            Orange Money
+                        <div class="inline-flex items-center gap-2 h-8 px-4 bg-slate-800/60 border border-slate-700/50 rounded-full">
+                            <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+                            <span class="text-xs font-medium text-slate-400">Orange Money</span>
                         </div>
                         <!-- MTN MoMo -->
-                        <div class="h-8 px-3 bg-slate-800 rounded flex items-center text-yellow-400 font-bold text-sm">
-                            MTN MoMo
+                        <div class="inline-flex items-center gap-2 h-8 px-4 bg-slate-800/60 border border-slate-700/50 rounded-full">
+                            <span class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
+                            <span class="text-xs font-medium text-slate-400">MTN MoMo</span>
                         </div>
                         <!-- CinetPay -->
-                        <div class="h-8 px-3 bg-slate-800 rounded flex items-center text-green-400 font-bold text-sm">
-                            CinetPay
+                        <div class="inline-flex items-center gap-2 h-8 px-4 bg-slate-800/60 border border-slate-700/50 rounded-full">
+                            <span class="w-2.5 h-2.5 rounded-full bg-green-400"></span>
+                            <span class="text-xs font-medium text-slate-400">CinetPay</span>
                         </div>
                     </div>
                 </div>
@@ -1030,6 +1077,76 @@
                 }
             });
 
+            // Cart Drawer Store
+            Alpine.store('cartDrawer', {
+                isOpen: false,
+                loading: false,
+                items: [],
+                subtotal_fmt: '',
+                discount_fmt: null,
+                total_fmt: '',
+                coupon_code: null,
+                checkout_url: '{{ route("checkout.index") }}',
+
+                async open() {
+                    this.isOpen = true;
+                    document.body.style.overflow = 'hidden';
+                    await this.fetch();
+                },
+
+                close() {
+                    this.isOpen = false;
+                    document.body.style.overflow = '';
+                },
+
+                async fetch() {
+                    this.loading = true;
+                    try {
+                        const res = await fetch('{{ route("cart.drawer") }}', {
+                            credentials: 'same-origin',
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.items        = data.items;
+                            this.subtotal_fmt = data.subtotal_fmt;
+                            this.discount_fmt = data.discount_fmt;
+                            this.total_fmt    = data.total_fmt;
+                            this.coupon_code  = data.coupon_code;
+                            Alpine.store('cart').count = data.count;
+                        }
+                    } catch (e) { console.error('Drawer fetch error:', e); }
+                    finally { this.loading = false; }
+                },
+
+                async remove(itemId) {
+                    const csrf = document.querySelector('meta[name="csrf-token"]').content;
+                    await fetch(`/panier/${itemId}`, {
+                        method: 'DELETE',
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    await this.fetch();
+                },
+
+                async updateQty(itemId, qty) {
+                    if (qty < 1) { await this.remove(itemId); return; }
+                    const csrf = document.querySelector('meta[name="csrf-token"]').content;
+                    await fetch(`/panier/${itemId}`, {
+                        method: 'PATCH',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' },
+                        body: JSON.stringify({ quantity: qty })
+                    });
+                    await this.fetch();
+                }
+            });
+
+            // Ouvrir le drawer après un ajout au panier
+            window.addEventListener('cart-item-added', () => {
+                Alpine.store('cartDrawer').open();
+            });
+
             // Listen for notification events (utilise le store global)
             window.addEventListener('show-notification', (e) => {
                 if (window.Alpine?.store('notify')) {
@@ -1065,5 +1182,227 @@
     <style>
         [x-cloak] { display: none !important; }
     </style>
+
+    @php
+        $ga4Id      = \App\Models\Setting::get('ga4_id');
+        $pixelId    = \App\Models\Setting::get('meta_pixel_id');
+        $tiktokPixel = \App\Models\Setting::get('tiktok_pixel_id');
+    @endphp
+
+    {{-- Google Analytics 4 --}}
+    @if($ga4Id)
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ $ga4Id }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{ $ga4Id }}', { send_page_view: true });
+
+        // Helpers pour les événements e-commerce GA4
+        window.trackGA4 = {
+            viewItem: (product) => gtag('event', 'view_item', {
+                currency: 'XOF',
+                value: product.price,
+                items: [{ item_id: product.id, item_name: product.name, price: product.price }]
+            }),
+            addToCart: (product, qty) => gtag('event', 'add_to_cart', {
+                currency: 'XOF',
+                value: product.price * qty,
+                items: [{ item_id: product.id, item_name: product.name, price: product.price, quantity: qty }]
+            }),
+            beginCheckout: (value) => gtag('event', 'begin_checkout', { currency: 'XOF', value }),
+            purchase: (orderId, value) => gtag('event', 'purchase', { transaction_id: orderId, currency: 'XOF', value }),
+        };
+    </script>
+    @endif
+
+    {{-- Meta Pixel (Facebook / Instagram) --}}
+    @if($pixelId)
+    <script>
+        !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+        n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+        document,'script','https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '{{ $pixelId }}');
+        fbq('track', 'PageView');
+
+        // Helpers Meta Pixel pour les événements produit
+        window.trackPixel = {
+            viewContent: (product) => fbq('track', 'ViewContent', {
+                content_ids: [product.id], content_type: 'product',
+                value: product.price, currency: 'XOF'
+            }),
+            addToCart: (product, qty) => fbq('track', 'AddToCart', {
+                content_ids: [product.id], content_type: 'product',
+                value: product.price * qty, currency: 'XOF', num_items: qty
+            }),
+            initiateCheckout: (value, numItems) => fbq('track', 'InitiateCheckout', {
+                value, currency: 'XOF', num_items: numItems
+            }),
+            purchase: (orderId, value) => fbq('track', 'Purchase', {
+                transaction_id: orderId, value, currency: 'XOF'
+            }),
+        };
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+        src="https://www.facebook.com/tr?id={{ $pixelId }}&ev=PageView&noscript=1"/></noscript>
+    @endif
+
+    {{-- TikTok Pixel --}}
+    @if($tiktokPixel)
+    <script>
+        !function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];
+        ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"];
+        ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};
+        for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);
+        ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e};
+        ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";
+        ttq._i=ttq._i||{};ttq._i[e]=[];ttq._i[e]._u=i;ttq._t=ttq._t||{};ttq._t[e]=+new Date;
+        ttq._o=ttq._o||{};ttq._o[e]=n||{};var o=document.createElement("script");
+        o.type="text/javascript";o.async=!0;o.src=i+"?sdkid="+e+"&lib="+t;
+        var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};
+        ttq.load('{{ $tiktokPixel }}');ttq.page();}(window,document,'ttq');
+    </script>
+    @endif
+
+    @stack('tracking')
+
+    {{-- ===== CART DRAWER (slide-over) ===== --}}
+    <div x-data
+         x-show="$store.cartDrawer.isOpen"
+         x-cloak
+         class="relative z-[300]">
+
+        {{-- Backdrop --}}
+        <div x-show="$store.cartDrawer.isOpen"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click="$store.cartDrawer.close()"
+             class="fixed inset-0 bg-black/50"></div>
+
+        {{-- Drawer panel --}}
+        <div x-show="$store.cartDrawer.isOpen"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="translate-x-full"
+             x-transition:enter-end="translate-x-0"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="translate-x-0"
+             x-transition:leave-end="translate-x-full"
+             class="fixed inset-y-0 right-0 w-full max-w-md flex flex-col bg-white shadow-2xl transform">
+
+            {{-- Header --}}
+            <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+                <h2 class="text-lg font-semibold text-slate-900">
+                    Mon panier
+                    <span x-show="$store.cart.count > 0"
+                          class="ml-2 inline-flex items-center justify-center w-6 h-6 bg-primary-600 text-white text-xs rounded-full"
+                          x-text="$store.cart.count"></span>
+                </h2>
+                <button @click="$store.cartDrawer.close()"
+                        class="p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Loading --}}
+            <div x-show="$store.cartDrawer.loading" class="flex-1 flex items-center justify-center">
+                <svg class="w-8 h-8 animate-spin text-primary-600" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+            </div>
+
+            {{-- Empty state --}}
+            <div x-show="!$store.cartDrawer.loading && $store.cartDrawer.items.length === 0"
+                 class="flex-1 flex flex-col items-center justify-center text-center px-6">
+                <svg class="w-16 h-16 text-slate-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                </svg>
+                <p class="text-slate-500 font-medium mb-1">Votre panier est vide</p>
+                <p class="text-sm text-slate-400 mb-6">Découvrez nos produits et ajoutez-en au panier.</p>
+                <a href="{{ route('shop.index') }}"
+                   @click="$store.cartDrawer.close()"
+                   class="px-5 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 transition-colors">
+                    Voir la boutique
+                </a>
+            </div>
+
+            {{-- Items list --}}
+            <div x-show="!$store.cartDrawer.loading && $store.cartDrawer.items.length > 0"
+                 class="flex-1 overflow-y-auto divide-y divide-slate-100 px-5 py-2">
+                <template x-for="item in $store.cartDrawer.items" :key="item.id">
+                    <div class="py-4 flex gap-3">
+                        {{-- Image --}}
+                        <a :href="'/produits/' + item.slug" @click="$store.cartDrawer.close()">
+                            <img :src="item.image || '/images/placeholder.png'"
+                                 :alt="item.name"
+                                 class="w-16 h-16 rounded-lg object-cover border border-slate-100 flex-shrink-0">
+                        </a>
+                        {{-- Info --}}
+                        <div class="flex-1 min-w-0">
+                            <a :href="'/produits/' + item.slug"
+                               @click="$store.cartDrawer.close()"
+                               class="text-sm font-medium text-slate-900 hover:text-primary-600 line-clamp-2"
+                               x-text="item.name"></a>
+                            <p x-show="item.variant" x-text="item.variant"
+                               class="text-xs text-slate-400 mt-0.5"></p>
+                            <p class="text-sm font-bold text-primary-600 mt-1" x-text="item.price_fmt"></p>
+                        </div>
+                        {{-- Qty + remove --}}
+                        <div class="flex flex-col items-end justify-between gap-2">
+                            <button @click="$store.cartDrawer.remove(item.id)"
+                                    class="text-slate-300 hover:text-red-500 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                            <div class="flex items-center gap-1 border border-slate-200 rounded-lg overflow-hidden">
+                                <button @click="$store.cartDrawer.updateQty(item.id, item.quantity - 1)"
+                                        class="px-2 py-1 text-slate-500 hover:bg-slate-100 transition-colors text-sm">−</button>
+                                <span class="px-2 text-sm font-medium text-slate-800" x-text="item.quantity"></span>
+                                <button @click="$store.cartDrawer.updateQty(item.id, item.quantity + 1)"
+                                        class="px-2 py-1 text-slate-500 hover:bg-slate-100 transition-colors text-sm">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            {{-- Footer totals + CTA --}}
+            <div x-show="!$store.cartDrawer.loading && $store.cartDrawer.items.length > 0"
+                 class="border-t border-slate-200 px-5 py-4 space-y-3 bg-slate-50">
+                <div class="space-y-1.5 text-sm">
+                    <div class="flex justify-between text-slate-600">
+                        <span>Sous-total</span>
+                        <span x-text="$store.cartDrawer.subtotal_fmt"></span>
+                    </div>
+                    <div x-show="$store.cartDrawer.discount_fmt" class="flex justify-between text-green-600">
+                        <span>Réduction (<span x-text="$store.cartDrawer.coupon_code"></span>)</span>
+                        <span>− <span x-text="$store.cartDrawer.discount_fmt"></span></span>
+                    </div>
+                    <div class="flex justify-between font-bold text-slate-900 text-base pt-1 border-t border-slate-200">
+                        <span>Total</span>
+                        <span x-text="$store.cartDrawer.total_fmt"></span>
+                    </div>
+                </div>
+                <a :href="$store.cartDrawer.checkout_url"
+                   class="block w-full text-center py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-colors">
+                    Passer la commande →
+                </a>
+                <a href="{{ route('cart.index') }}"
+                   @click="$store.cartDrawer.close()"
+                   class="block w-full text-center py-2 text-sm text-slate-500 hover:text-slate-700 transition-colors">
+                    Voir le panier complet
+                </a>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

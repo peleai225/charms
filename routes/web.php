@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AdminAuthController;
 use App\Http\Controllers\Auth\CustomerAuthController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Front\HomeController;
+use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
@@ -91,6 +92,9 @@ Route::get('/setup-storage', function () {
 // Page d'accueil
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
+// Sitemap XML
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+
 // Authentification Client
 Route::middleware('guest')->group(function () {
     Route::get('/connexion', [CustomerAuthController::class, 'showLoginForm'])->name('login');
@@ -116,6 +120,7 @@ Route::middleware('customer')->prefix('mon-compte')->name('account.')->group(fun
     Route::get('/commandes/{order}', [App\Http\Controllers\Front\AccountController::class, 'showOrder'])->name('orders.show');
     Route::get('/adresses', [App\Http\Controllers\Front\AccountController::class, 'addresses'])->name('addresses');
     Route::post('/adresses', [App\Http\Controllers\Front\AccountController::class, 'storeAddress'])->name('addresses.store');
+    Route::get('/fidelite', [App\Http\Controllers\Front\AccountController::class, 'loyalty'])->name('loyalty');
 });
 
 // Catalogue
@@ -127,19 +132,21 @@ Route::get('/produit/{product}/variant', [App\Http\Controllers\Front\ShopControl
 
 // Panier
 Route::get('/panier', [App\Http\Controllers\Front\CartController::class, 'index'])->name('cart.index');
-Route::post('/panier/ajouter', [App\Http\Controllers\Front\CartController::class, 'add'])->name('cart.add');
-Route::patch('/panier/{item}', [App\Http\Controllers\Front\CartController::class, 'update'])->name('cart.update');
-Route::delete('/panier/{item}', [App\Http\Controllers\Front\CartController::class, 'remove'])->name('cart.remove');
-Route::delete('/panier', [App\Http\Controllers\Front\CartController::class, 'clear'])->name('cart.clear');
-Route::post('/panier/coupon', [App\Http\Controllers\Front\CartController::class, 'applyCoupon'])->name('cart.coupon.apply');
+Route::post('/panier/ajouter', [App\Http\Controllers\Front\CartController::class, 'add'])->middleware('throttle:30,1')->name('cart.add');
+Route::patch('/panier/{item}', [App\Http\Controllers\Front\CartController::class, 'update'])->middleware('throttle:60,1')->name('cart.update');
+Route::delete('/panier/{item}', [App\Http\Controllers\Front\CartController::class, 'remove'])->middleware('throttle:60,1')->name('cart.remove');
+Route::delete('/panier', [App\Http\Controllers\Front\CartController::class, 'clear'])->middleware('throttle:10,1')->name('cart.clear');
+Route::post('/panier/coupon', [App\Http\Controllers\Front\CartController::class, 'applyCoupon'])->middleware('throttle:10,1')->name('cart.coupon.apply');
 Route::delete('/panier/coupon', [App\Http\Controllers\Front\CartController::class, 'removeCoupon'])->name('cart.coupon.remove');
 Route::get('/panier/count', [App\Http\Controllers\Front\CartController::class, 'count'])->name('cart.count');
+// Endpoint AJAX pour le panier drawer (sans rechargement)
+Route::get('/panier/drawer', [App\Http\Controllers\Front\CartController::class, 'drawer'])->name('cart.drawer');
 
 // Checkout
 Route::get('/commander', [App\Http\Controllers\Front\CheckoutController::class, 'index'])->name('checkout.index');
-Route::post('/commander', [App\Http\Controllers\Front\CheckoutController::class, 'store'])->name('checkout.store');
+Route::post('/commander', [App\Http\Controllers\Front\CheckoutController::class, 'store'])->middleware('throttle:8,1')->name('checkout.store');
 Route::get('/commander/paiement/{order}', [App\Http\Controllers\Front\CheckoutController::class, 'payment'])->name('checkout.payment');
-Route::post('/commander/paiement/{order}', [App\Http\Controllers\Front\CheckoutController::class, 'processPayment'])->name('checkout.process-payment');
+Route::post('/commander/paiement/{order}', [App\Http\Controllers\Front\CheckoutController::class, 'processPayment'])->middleware('throttle:5,1')->name('checkout.process-payment');
 Route::get('/checkout/confirmation', [App\Http\Controllers\Front\CheckoutController::class, 'confirmation'])->name('checkout.confirmation');
 Route::get('/checkout/annulation', [App\Http\Controllers\Front\CheckoutController::class, 'cancel'])->name('checkout.cancel');
 Route::get('/commande/succes', [App\Http\Controllers\Front\CheckoutController::class, 'success'])->name('checkout.success');
@@ -176,7 +183,7 @@ Route::get('/webhook/lygos', function () {
 
 // Pages statiques
 Route::get('/contact', [\App\Http\Controllers\Front\ContactController::class, 'index'])->name('contact');
-Route::post('/contact', [\App\Http\Controllers\Front\ContactController::class, 'store'])->name('contact.store');
+Route::post('/contact', [\App\Http\Controllers\Front\ContactController::class, 'store'])->middleware('throttle:5,5')->name('contact.store');
 Route::post('/newsletter/subscribe', [\App\Http\Controllers\Front\NewsletterController::class, 'subscribe'])->name('newsletter.subscribe');
 
 Route::get('/a-propos', function () {
@@ -312,6 +319,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Bannières
         Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class)->names('banners');
+
+        // WhatsApp Business
+        Route::get('/whatsapp', [\App\Http\Controllers\Admin\WhatsAppController::class, 'index'])->name('whatsapp.index');
+        Route::get('/whatsapp/catalog', [\App\Http\Controllers\Admin\WhatsAppController::class, 'exportCatalog'])->name('whatsapp.catalog');
+        Route::post('/whatsapp/product-link', [\App\Http\Controllers\Admin\WhatsAppController::class, 'productLink'])->name('whatsapp.product-link');
 
         // Documentation
         Route::get('/docs/caisse-pos-imprimante', fn () => view('admin.docs.caisse-pos-imprimante'))->name('docs.caisse-pos-imprimante');

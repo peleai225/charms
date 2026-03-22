@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(composer install:*)",
+      "Bash(powershell -Command \"New-Item -ItemType Junction -Path ''C:/laragon/www/chamse/.claude/worktrees/infallible-wiles/public/build'' -Target ''C:/laragon/www/chamse/public/build'' -Force\")",
+      "Bash(curl -s -o /dev/null -w \"/ → %{http_code}\\\\n\" http://127.0.0.1:8001)",
+      "Bash(curl -s -o /dev/null -w \"/boutique → %{http_code}\\\\n\" http://127.0.0.1:8001/boutique)",
+      "Bash(curl -s -o /dev/null -w \"/panier → %{http_code}\\\\n\" http://127.0.0.1:8001/panier)",
+      "Bash(curl -s -o /dev/null -w \"/panier/drawer → %{http_code}\\\\n\" http://127.0.0.1:8001/panier/drawer)",
+      "Bash(curl -s -o /dev/null -w \"/sitemap.xml → %{http_code}\\\\n\" http://127.0.0.1:8001/sitemap.xml)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:8001/sitemap.xml)",
+      "Bash(curl -s -o /dev/null -w \"/ \\(accueil\\)               → %{http_code}\\\\n\" http://127.0.0.1:8001)",
+      "Bash(curl -s -o /dev/null -w \"/boutique                → %{http_code}\\\\n\" http://127.0.0.1:8001/boutique)",
+      "Bash(curl -s -o /dev/null -w \"/panier                  → %{http_code}\\\\n\" http://127.0.0.1:8001/panier)",
+      "Bash(curl -s -o /dev/null -w \"/panier/drawer \\(API\\)     → %{http_code}\\\\n\" http://127.0.0.1:8001/panier/drawer)",
+      "Bash(curl -s -o /dev/null -w \"/sitemap.xml             → %{http_code}\\\\n\" http://127.0.0.1:8001/sitemap.xml)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(powershell -Command \"New-Item -ItemType Junction -Path ''C:/laragon/www/chamse/.claude/worktrees/infallible-wiles/node_modules'' -Target ''C:/laragon/www/chamse/node_modules'' -Force\")",
+      "Bash(curl -s http://localhost:8001/)",
+      "Bash(done)",
+      "Bash(curl -s \"http://localhost:8001/boutique\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:8001/boutique/categorie/electronique\")",
+      "Bash(curl -s \"http://localhost:8001/boutique/categorie/electronique\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:8001/categorie/electronique\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:8001/produit/kylee-englandiddepd\")",
+      "Bash(curl -s \"http://localhost:8001/produit/kylee-englandiddepd\")"
+    ]
+  }
+}

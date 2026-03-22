@@ -8,11 +8,17 @@ use App\Models\ActivityLog;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\MailConfigService;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
-class CheckLowStockAlert
+class CheckLowStockAlert implements ShouldQueue
 {
+    use InteractsWithQueue;
+
+    public int $tries = 3;
+    public int $backoff = 30;
     /**
      * Vérifie si le stock est bas et envoie une alerte
      */

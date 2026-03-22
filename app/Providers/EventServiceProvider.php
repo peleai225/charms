@@ -8,6 +8,7 @@ use App\Events\OrderPaid;
 use App\Events\OrderRefunded;
 use App\Events\StockUpdated;
 use App\Listeners\AssignOrderToSuppliers;
+use App\Listeners\AwardLoyaltyPointsOnPayment;
 use App\Listeners\BroadcastNewOrderNotification;
 use App\Listeners\CheckLowStockAlert;
 use App\Listeners\CreateAccountingEntryOnPayment;
@@ -42,6 +43,7 @@ class EventServiceProvider extends ServiceProvider
             UpdateCustomerStats::class,
             SendInvoiceOnPayment::class,  // Envoi de la facture par email après paiement
             IncrementCouponUsage::class,  // Incrémenter l'usage du coupon
+            AwardLoyaltyPointsOnPayment::class, // Points de fidélité
         ],
 
         OrderCancelled::class => [

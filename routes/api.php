@@ -147,7 +147,7 @@ Route::delete('/cart/items/{item}', function (Request $request, $itemId) {
 
     $cart = Cart::getOrCreate(session()->getId(), $customer);
     $cart->items()->where('id', $itemId)->delete();
-    
+
     $cart->refresh();
 
     return response()->json([
@@ -157,3 +157,53 @@ Route::delete('/cart/items/{item}', function (Request $request, $itemId) {
         'total_formatted' => format_price($cart->subtotal - $cart->discount_amount),
     ]);
 })->middleware('web')->name('api.cart.remove');
+
+/*
+|--------------------------------------------------------------------------
+| Polling admin temps réel (sans Pusher)
+|--------------------------------------------------------------------------
+*/
+Route::get('/admin/poll-stats', function (Request $request) {
+    // Vérifier que l'utilisateur est admin
+    if (!auth()->check() || !in_array(auth()->user()->role ?? '', ['admin', 'manager', 'staff'])) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+
+    $pendingOrders = \App\Models\Order::whereIn('status', ['pending', 'confirmed'])->count();
+
+    $stockAlerts = \App\Models\Product::where('status', 'active')
+        ->where('track_stock', true)
+        ->where(function ($q) {
+            $q->where('stock_quantity', 0)
+              ->orWhereColumn('stock_quantity', '<=', 'stock_alert_threshold');
+        })->count();
+
+    // Nouvelles commandes depuis le dernier check (passé en paramètre)
+    $since = $request->input('since');
+    $newOrders = [];
+    if ($since) {
+        $newOrders = \App\Models\Order::where('created_at', '>', $since)
+            ->latest()
+            ->take(5)
+            ->get(['id', 'order_number', 'total', 'status', 'created_at'])
+            ->map(fn($o) => [
+                'id'           => $o->id,
+                'order_number' => $o->order_number,
+                'total'        => number_format($o->total, 0, ',', ' ') . ' F CFA',
+                'status'       => $o->status,
+                'url'          => route('admin.orders.show', $o->id),
+            ]);
+    }
+
+    return response()->json([
+        'pending_orders' => $pendingOrders,
+        'stock_alerts'   => $stockAlerts,
+        'new_orders'     => $newOrders,
+        'server_time'    => now()->toISOString(),
+    ]);
+})->middleware('web')->name('api.admin.poll-stats');
+
+// Dashboard KPI filtrés par période
+Route::get('/admin/dashboard-stats', [\App\Http\Controllers\Admin\DashboardController::class, 'apiStats'])
+    ->middleware('web')
+    ->name('api.admin.dashboard-stats');

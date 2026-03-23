@@ -3,12 +3,21 @@
 @section('title', 'Suivi de commande')
 
 @section('content')
+<!-- Hero header -->
+<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white py-10">
+    <div class="container mx-auto px-4">
+        <nav class="text-sm text-slate-400 mb-3 flex items-center gap-2">
+            <a href="{{ route('home') }}" class="hover:text-white transition-colors">Accueil</a>
+            <span class="text-slate-600">/</span>
+            <span class="text-white">Suivi de commande</span>
+        </nav>
+        <h1 class="text-3xl font-bold">Suivi de commande</h1>
+        <p class="text-slate-400 mt-2">Entrez votre numéro de commande et l'email utilisé lors de l'achat.</p>
+    </div>
+</div>
+
 <div class="container mx-auto px-4 py-12">
     <div class="max-w-xl mx-auto">
-        <div class="text-center mb-10">
-            <h1 class="text-3xl font-bold text-slate-900 mb-2">Suivi de commande</h1>
-            <p class="text-slate-600">Entrez votre numéro de commande et l'email utilisé lors de l'achat pour suivre votre colis.</p>
-        </div>
 
         @if(session('error'))
             <div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl">{{ session('error') }}</div>
@@ -30,7 +39,7 @@
                         class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
                     @error('email')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                 </div>
-                <button type="submit" class="w-full py-3 px-6 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-colors">
+                <button type="submit" class="w-full py-3.5 px-6 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl shadow-lg shadow-primary-500/25 hover:-translate-y-0.5 transition-all">
                     Voir le suivi
                 </button>
             </form>

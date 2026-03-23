@@ -3,18 +3,23 @@
 @section('title', 'Commande #' . $order->order_number)
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    <!-- Breadcrumb -->
-    <nav class="text-sm text-slate-500 mb-8">
-        <a href="{{ route('home') }}" class="hover:text-primary-600">Accueil</a>
-        <span class="mx-2">/</span>
-        <a href="{{ route('account.dashboard') }}" class="hover:text-primary-600">Mon compte</a>
-        <span class="mx-2">/</span>
-        <a href="{{ route('account.orders') }}" class="hover:text-primary-600">Mes commandes</a>
-        <span class="mx-2">/</span>
-        <span class="text-slate-900">#{{ $order->order_number }}</span>
-    </nav>
+<!-- Hero header -->
+<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white py-10">
+    <div class="container mx-auto px-4">
+        <nav class="text-sm text-slate-400 mb-3 flex items-center gap-2">
+            <a href="{{ route('home') }}" class="hover:text-white transition-colors">Accueil</a>
+            <span class="text-slate-600">/</span>
+            <a href="{{ route('account.dashboard') }}" class="hover:text-white transition-colors">Mon compte</a>
+            <span class="text-slate-600">/</span>
+            <a href="{{ route('account.orders') }}" class="hover:text-white transition-colors">Mes commandes</a>
+            <span class="text-slate-600">/</span>
+            <span class="text-white">#{{ $order->order_number }}</span>
+        </nav>
+        <h1 class="text-3xl font-bold">Commande #{{ $order->order_number }}</h1>
+    </div>
+</div>
 
+<div class="container mx-auto px-4 py-8">
     <div class="max-w-6xl mx-auto">
         <div class="flex flex-col lg:flex-row gap-8">
             <!-- Sidebar -->
@@ -23,7 +28,7 @@
             <!-- Main Content -->
             <div class="flex-1">
                 <div class="flex items-center justify-between mb-6">
-                    <h1 class="text-2xl font-bold text-slate-900">Commande #{{ $order->order_number }}</h1>
+                    <h2 class="text-xl font-bold text-slate-900">Détails de la commande</h2>
                     <span class="inline-flex px-3 py-1 rounded-full text-sm font-medium
                         @if($order->status === 'delivered') bg-green-100 text-green-800
                         @elseif($order->status === 'cancelled') bg-red-100 text-red-800

@@ -3,16 +3,21 @@
 @section('title', 'Mes commandes')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    <!-- Breadcrumb -->
-    <nav class="text-sm text-slate-500 mb-8">
-        <a href="{{ route('home') }}" class="hover:text-primary-600">Accueil</a>
-        <span class="mx-2">/</span>
-        <a href="{{ route('account.dashboard') }}" class="hover:text-primary-600">Mon compte</a>
-        <span class="mx-2">/</span>
-        <span class="text-slate-900">Mes commandes</span>
-    </nav>
+<!-- Hero header -->
+<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white py-10">
+    <div class="container mx-auto px-4">
+        <nav class="text-sm text-slate-400 mb-3 flex items-center gap-2">
+            <a href="{{ route('home') }}" class="hover:text-white transition-colors">Accueil</a>
+            <span class="text-slate-600">/</span>
+            <a href="{{ route('account.dashboard') }}" class="hover:text-white transition-colors">Mon compte</a>
+            <span class="text-slate-600">/</span>
+            <span class="text-white">Mes commandes</span>
+        </nav>
+        <h1 class="text-3xl font-bold">Mes commandes</h1>
+    </div>
+</div>
 
+<div class="container mx-auto px-4 py-8">
     <div class="max-w-6xl mx-auto">
         <div class="flex flex-col lg:flex-row gap-8">
             <!-- Sidebar -->
@@ -20,7 +25,7 @@
 
             <!-- Main Content -->
             <div class="flex-1">
-                <h1 class="text-2xl font-bold text-slate-900 mb-6">Mes commandes</h1>
+                <h2 class="text-xl font-bold text-slate-900 mb-6">Historique de commandes</h2>
                 
                 @php
                     $customer = auth()->user()->customer;
@@ -30,7 +35,7 @@
                 @if($customer && $orders->count() > 0)
                     <div class="space-y-4">
                         @foreach($orders as $order)
-                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow duration-300">
                             <!-- Order header -->
                             <div class="p-6 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                                 <div>

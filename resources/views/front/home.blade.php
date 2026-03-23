@@ -165,12 +165,8 @@
                     </div>
                     <div class="w-px h-10 bg-white/15"></div>
                     <div>
-                        <div class="flex -space-x-2 mb-1">
-                            @foreach(['🟡','🟢','🔵','🟣','🔴'] as $dot)
-                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 border-2 border-slate-800 flex items-center justify-center text-xs">{{ $dot }}</div>
-                            @endforeach
-                        </div>
-                        <p class="text-sm text-slate-400">Clients satisfaits</p>
+                        <p class="text-3xl font-black text-white">98<span class="text-primary-400">%</span></p>
+                        <p class="text-sm text-slate-400 mt-0.5">Clients satisfaits</p>
                     </div>
                 </div>
             </div>
@@ -200,10 +196,25 @@
                     </div>
                 </a>
                 @empty
-                {{-- Placeholder cards --}}
-                @for($i = 0; $i < 4; $i++)
-                <div class="bg-white/5 border border-white/10 rounded-2xl {{ $i === 0 ? 'row-span-2 h-[280px]' : 'h-36' }}"></div>
-                @endfor
+                {{-- Placeholder cards décoratives --}}
+                @php
+                    $placeholders = [
+                        ['icon' => 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z', 'label' => 'Mode', 'from' => 'from-primary-600/20', 'to' => 'to-violet-600/20', 'span' => true],
+                        ['icon' => 'M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7', 'label' => 'Cadeaux', 'from' => 'from-amber-500/20', 'to' => 'to-orange-500/20', 'span' => false],
+                        ['icon' => 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z', 'label' => 'Beauté', 'from' => 'from-pink-500/20', 'to' => 'to-rose-500/20', 'span' => false],
+                        ['icon' => 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', 'label' => 'Maison', 'from' => 'from-emerald-500/20', 'to' => 'to-teal-500/20', 'span' => false],
+                    ];
+                @endphp
+                @foreach($placeholders as $i => $ph)
+                <div class="bg-gradient-to-br {{ $ph['from'] }} {{ $ph['to'] }} border border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 {{ $ph['span'] ? 'row-span-2 h-[280px]' : 'h-36' }}">
+                    <div class="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center">
+                        <svg class="w-7 h-7 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="{{ $ph['icon'] }}"/>
+                        </svg>
+                    </div>
+                    <p class="text-white/40 text-xs font-semibold uppercase tracking-wider">{{ $ph['label'] }}</p>
+                </div>
+                @endforeach
                 @endforelse
 
                 {{-- Badge flottant --}}
@@ -276,10 +287,19 @@
                         <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}"
                              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                     @else
-                        <div class="w-full h-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
-                            <svg class="w-12 h-12 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-                            </svg>
+                        @php
+                            $catGradients = [
+                                'from-primary-500 to-violet-600',
+                                'from-amber-500 to-orange-600',
+                                'from-emerald-500 to-teal-600',
+                                'from-rose-500 to-pink-600',
+                                'from-blue-500 to-indigo-600',
+                                'from-cyan-500 to-sky-600',
+                            ];
+                            $catGrad = $catGradients[$loop->index % count($catGradients)];
+                        @endphp
+                        <div class="w-full h-full bg-gradient-to-br {{ $catGrad }} flex items-center justify-center">
+                            <span class="text-4xl font-black text-white/30">{{ mb_substr($category->name, 0, 1) }}</span>
                         </div>
                     @endif
                     {{-- Overlay au hover --}}

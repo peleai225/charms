@@ -3,24 +3,27 @@
 @section('title', 'À propos de nous')
 
 @section('content')
-<div class="container mx-auto px-4 py-12">
-    <!-- Breadcrumb -->
-    <nav class="text-sm text-slate-500 mb-8">
-        <a href="{{ route('home') }}" class="hover:text-primary-600">Accueil</a>
-        <span class="mx-2">/</span>
-        <span class="text-slate-900">À propos</span>
-    </nav>
-
-    <!-- Hero Section -->
-    <div class="text-center mb-16">
-        <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mb-6">
-            Notre <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-primary-700">Histoire</span>
+<!-- Hero header -->
+<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white py-16 relative overflow-hidden">
+    <div class="absolute -top-20 -right-20 w-80 h-80 bg-primary-600/10 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-20 -left-20 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl"></div>
+    <div class="container mx-auto px-4 relative">
+        <nav class="text-sm text-slate-400 mb-4 flex items-center gap-2">
+            <a href="{{ route('home') }}" class="hover:text-white transition-colors">Accueil</a>
+            <span class="text-slate-600">/</span>
+            <span class="text-white">À propos</span>
+        </nav>
+        <h1 class="text-4xl md:text-5xl font-extrabold mb-4">
+            Notre <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-violet-400 to-amber-400">Histoire</span>
         </h1>
-        <p class="text-xl text-slate-600 max-w-3xl mx-auto">
-            Chamse est né d'une passion : offrir des produits de qualité accessibles à tous, 
+        <p class="text-lg text-slate-300 max-w-2xl">
+            Chamse est né d'une passion : offrir des produits de qualité accessibles à tous,
             avec une expérience d'achat exceptionnelle.
         </p>
     </div>
+</div>
+
+<div class="container mx-auto px-4 py-12">
 
     <!-- Mission Section -->
     <div class="grid lg:grid-cols-2 gap-12 items-center mb-20">
@@ -64,7 +67,7 @@
 
         <div class="grid md:grid-cols-3 gap-8">
             <!-- Qualité -->
-            <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 text-center">
+            <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                 <div class="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
                     <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
@@ -77,7 +80,7 @@
             </div>
 
             <!-- Confiance -->
-            <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 text-center">
+            <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                 <div class="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
                     <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
@@ -90,7 +93,7 @@
             </div>
 
             <!-- Service -->
-            <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 text-center">
+            <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                 <div class="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
                     <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
@@ -105,7 +108,7 @@
     </div>
 
     <!-- Stats Section -->
-    <div class="bg-gradient-to-r from-primary-600 to-primary-800 rounded-3xl p-12 text-white mb-20">
+    <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-primary-900 rounded-3xl p-12 text-white mb-20 shadow-2xl">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
                 <p class="text-4xl font-bold mb-2">{{ \App\Models\Product::active()->count() }}+</p>
@@ -177,10 +180,10 @@
     </div>
 
     <!-- CTA -->
-    <div class="text-center py-12 bg-slate-100 rounded-3xl">
+    <div class="text-center py-14 bg-gradient-to-br from-slate-50 to-primary-50 rounded-3xl border border-slate-200">
         <h2 class="text-2xl font-bold text-slate-900 mb-4">Prêt à découvrir nos produits ?</h2>
         <p class="text-slate-600 mb-8">Explorez notre catalogue et trouvez ce qu'il vous faut.</p>
-        <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-8 py-4 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-colors">
+        <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-8 py-4 bg-primary-600 text-white font-semibold rounded-2xl hover:bg-primary-700 shadow-lg shadow-primary-500/25 hover:-translate-y-0.5 transition-all">
             Découvrir la boutique
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>

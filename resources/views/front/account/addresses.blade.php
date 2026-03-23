@@ -3,16 +3,21 @@
 @section('title', 'Mes adresses')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    <!-- Breadcrumb -->
-    <nav class="text-sm text-slate-500 mb-8">
-        <a href="{{ route('home') }}" class="hover:text-primary-600">Accueil</a>
-        <span class="mx-2">/</span>
-        <a href="{{ route('account.dashboard') }}" class="hover:text-primary-600">Mon compte</a>
-        <span class="mx-2">/</span>
-        <span class="text-slate-900">Mes adresses</span>
-    </nav>
+<!-- Hero header -->
+<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white py-10">
+    <div class="container mx-auto px-4">
+        <nav class="text-sm text-slate-400 mb-3 flex items-center gap-2">
+            <a href="{{ route('home') }}" class="hover:text-white transition-colors">Accueil</a>
+            <span class="text-slate-600">/</span>
+            <a href="{{ route('account.dashboard') }}" class="hover:text-white transition-colors">Mon compte</a>
+            <span class="text-slate-600">/</span>
+            <span class="text-white">Mes adresses</span>
+        </nav>
+        <h1 class="text-3xl font-bold">Mes adresses</h1>
+    </div>
+</div>
 
+<div class="container mx-auto px-4 py-8">
     <div class="max-w-6xl mx-auto">
         <div class="flex flex-col lg:flex-row gap-8">
             <!-- Sidebar -->
@@ -21,9 +26,9 @@
             <!-- Main Content -->
             <div class="flex-1">
                 <div class="flex items-center justify-between mb-6">
-                    <h1 class="text-2xl font-bold text-slate-900">Mes adresses</h1>
-                    <button type="button" onclick="document.getElementById('addAddressModal').classList.remove('hidden')" 
-                            class="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition-colors">
+                    <h2 class="text-xl font-bold text-slate-900">Gérer vos adresses</h2>
+                    <button type="button" onclick="document.getElementById('addAddressModal').classList.remove('hidden')"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 hover:-translate-y-0.5 transition-all shadow-sm hover:shadow-md">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
@@ -35,7 +40,7 @@
                 @if($customer && $addresses->count() > 0)
                     <div class="grid md:grid-cols-2 gap-4">
                         @foreach($addresses as $address)
-                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative">
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
                             @if($address->is_default)
                                 <span class="absolute top-4 right-4 inline-flex px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                                     Adresse par défaut

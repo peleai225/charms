@@ -3,21 +3,27 @@
 @section('title', 'Mes points de fidélité')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    <nav class="text-sm text-slate-500 mb-8">
-        <a href="{{ route('home') }}" class="hover:text-primary-600">Accueil</a>
-        <span class="mx-2">/</span>
-        <a href="{{ route('account.dashboard') }}" class="hover:text-primary-600">Mon compte</a>
-        <span class="mx-2">/</span>
-        <span class="text-slate-900">Fidélité</span>
-    </nav>
+<!-- Hero header -->
+<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white py-10">
+    <div class="container mx-auto px-4">
+        <nav class="text-sm text-slate-400 mb-3 flex items-center gap-2">
+            <a href="{{ route('home') }}" class="hover:text-white transition-colors">Accueil</a>
+            <span class="text-slate-600">/</span>
+            <a href="{{ route('account.dashboard') }}" class="hover:text-white transition-colors">Mon compte</a>
+            <span class="text-slate-600">/</span>
+            <span class="text-white">Fidélité</span>
+        </nav>
+        <h1 class="text-3xl font-bold">Programme de fidélité</h1>
+    </div>
+</div>
 
+<div class="container mx-auto px-4 py-8">
     <div class="max-w-6xl mx-auto">
         <div class="flex flex-col lg:flex-row gap-8">
             @include('front.account.partials.sidebar')
 
             <div class="flex-1">
-                <h1 class="text-2xl font-bold text-slate-900 mb-6">Programme de fidélité</h1>
+                <h2 class="text-xl font-bold text-slate-900 mb-6">Vos points de fidélité</h2>
 
                 {{-- Solde actuel --}}
                 <div class="bg-gradient-to-r from-amber-400 to-orange-500 rounded-2xl p-6 text-white mb-6 shadow-lg">

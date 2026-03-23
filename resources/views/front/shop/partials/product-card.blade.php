@@ -72,7 +72,7 @@
 
         <!-- Prix -->
         <div class="mt-3 flex items-baseline gap-2 flex-wrap">
-            <span class="text-lg font-bold text-primary-600">{{ format_price($product->sale_price) }} <span class="text-xs font-semibold text-primary-400">CFA</span></span>
+            <span class="text-lg font-bold text-primary-600">{{ format_price($product->sale_price) }}</span>
             @if($product->compare_price)
                 <span class="text-sm text-slate-400 line-through">{{ format_price($product->compare_price) }}</span>
             @endif

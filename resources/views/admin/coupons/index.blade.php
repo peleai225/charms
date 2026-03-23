@@ -89,7 +89,15 @@
                                     'exhausted' => 'Épuisé',
                                 ];
                             @endphp
-                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-{{ $statusColors[$coupon->status] }}-100 text-{{ $statusColors[$coupon->status] }}-700">
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
+                                @switch($coupon->status)
+                                    @case('active') bg-green-100 text-green-700 @break
+                                    @case('inactive') bg-slate-100 text-slate-700 @break
+                                    @case('expired') bg-red-100 text-red-700 @break
+                                    @case('scheduled') bg-blue-100 text-blue-700 @break
+                                    @case('exhausted') bg-amber-100 text-amber-700 @break
+                                    @default bg-slate-100 text-slate-700
+                                @endswitch">
                                 {{ $statusLabels[$coupon->status] }}
                             </span>
                         </td>

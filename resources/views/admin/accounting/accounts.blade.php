@@ -32,7 +32,15 @@
     @endphp
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200">
         <div class="p-6 border-b border-slate-100 flex items-center gap-3">
-            <span class="w-3 h-3 rounded-full bg-{{ $typeInfo['color'] }}-500"></span>
+            <span class="w-3 h-3 rounded-full
+                @switch($type)
+                    @case('asset') bg-blue-500 @break
+                    @case('liability') bg-red-500 @break
+                    @case('equity') bg-purple-500 @break
+                    @case('revenue') bg-green-500 @break
+                    @case('expense') bg-amber-500 @break
+                    @default bg-slate-500
+                @endswitch"></span>
             <h2 class="text-lg font-semibold text-slate-900">{{ $typeInfo['name'] }}</h2>
             <span class="text-sm text-slate-500">({{ $typeAccounts->count() }} comptes)</span>
         </div>

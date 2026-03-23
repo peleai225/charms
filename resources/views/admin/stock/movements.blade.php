@@ -66,7 +66,15 @@
                                 $typeColors = ['in' => 'green', 'out' => 'red', 'adjustment' => 'purple', 'return' => 'blue', 'transfer' => 'amber'];
                                 $typeLabels = ['in' => 'Entrée', 'out' => 'Sortie', 'adjustment' => 'Ajustement', 'return' => 'Retour', 'transfer' => 'Transfert'];
                             @endphp
-                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-{{ $typeColors[$movement->type] ?? 'slate' }}-100 text-{{ $typeColors[$movement->type] ?? 'slate' }}-700">
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
+                                @switch($movement->type)
+                                    @case('in') bg-green-100 text-green-700 @break
+                                    @case('out') bg-red-100 text-red-700 @break
+                                    @case('adjustment') bg-purple-100 text-purple-700 @break
+                                    @case('return') bg-blue-100 text-blue-700 @break
+                                    @case('transfer') bg-amber-100 text-amber-700 @break
+                                    @default bg-slate-100 text-slate-700
+                                @endswitch">
                                 {{ $typeLabels[$movement->type] ?? $movement->type }}
                             </span>
                         </td>

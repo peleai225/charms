@@ -173,7 +173,15 @@
                         </div>
                         <div class="text-right">
                             <p class="text-sm font-semibold text-slate-900">{{ format_price($order->total) }}</p>
-                            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-{{ $order->status_color }}-100 text-{{ $order->status_color }}-700">
+                            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full
+                                @switch($order->status)
+                                    @case('delivered') bg-green-100 text-green-700 @break
+                                    @case('cancelled') @case('refunded') bg-red-100 text-red-700 @break
+                                    @case('shipped') bg-blue-100 text-blue-700 @break
+                                    @case('confirmed') @case('processing') bg-cyan-100 text-cyan-700 @break
+                                    @case('pending') bg-amber-100 text-amber-700 @break
+                                    @default bg-slate-100 text-slate-700
+                                @endswitch">
                                 {{ $order->status_label }}
                             </span>
                         </div>

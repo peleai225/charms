@@ -57,7 +57,13 @@
                             @php
                                 $roleColors = ['admin' => 'red', 'manager' => 'blue', 'staff' => 'green'];
                             @endphp
-                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-{{ $roleColors[$user->role ?? 'staff'] ?? 'slate' }}-100 text-{{ $roleColors[$user->role ?? 'staff'] ?? 'slate' }}-700">
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
+                                @switch($user->role ?? 'staff')
+                                    @case('admin') bg-red-100 text-red-700 @break
+                                    @case('manager') bg-blue-100 text-blue-700 @break
+                                    @case('staff') bg-green-100 text-green-700 @break
+                                    @default bg-slate-100 text-slate-700
+                                @endswitch">
                                 {{ ucfirst($user->role ?? 'staff') }}
                             </span>
                         </td>

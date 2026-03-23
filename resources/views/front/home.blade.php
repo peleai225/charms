@@ -123,7 +123,7 @@
 
                 <h1 class="text-5xl md:text-6xl lg:text-7xl font-extrabold text-white leading-[1.08] mb-7 tracking-tight">
                     Votre boutique
-                    <span class="block text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-violet-400 to-amber-400">
+                    <span class="block" style="background: linear-gradient(to right, #7dd3fc, #e879f9, #fcd34d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
                         premium en ligne
                     </span>
                 </h1>
@@ -197,24 +197,30 @@
                 </a>
                 @empty
                 {{-- Placeholder cards décoratives --}}
-                @php
-                    $placeholders = [
-                        ['icon' => 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z', 'label' => 'Mode', 'from' => 'from-primary-600/20', 'to' => 'to-violet-600/20', 'span' => true],
-                        ['icon' => 'M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7', 'label' => 'Cadeaux', 'from' => 'from-amber-500/20', 'to' => 'to-orange-500/20', 'span' => false],
-                        ['icon' => 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z', 'label' => 'Beauté', 'from' => 'from-pink-500/20', 'to' => 'to-rose-500/20', 'span' => false],
-                        ['icon' => 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', 'label' => 'Maison', 'from' => 'from-emerald-500/20', 'to' => 'to-teal-500/20', 'span' => false],
-                    ];
-                @endphp
-                @foreach($placeholders as $i => $ph)
-                <div class="bg-gradient-to-br {{ $ph['from'] }} {{ $ph['to'] }} border border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 {{ $ph['span'] ? 'row-span-2 h-[280px]' : 'h-36' }}">
+                <div class="bg-gradient-to-br from-primary-600/20 to-violet-600/20 border border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 row-span-2 h-[280px]">
                     <div class="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center">
-                        <svg class="w-7 h-7 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="{{ $ph['icon'] }}"/>
-                        </svg>
+                        <svg class="w-7 h-7 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                     </div>
-                    <p class="text-white/40 text-xs font-semibold uppercase tracking-wider">{{ $ph['label'] }}</p>
+                    <p class="text-white/40 text-xs font-semibold uppercase tracking-wider">Mode</p>
                 </div>
-                @endforeach
+                <div class="bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 h-36">
+                    <div class="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center">
+                        <svg class="w-7 h-7 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>
+                    </div>
+                    <p class="text-white/40 text-xs font-semibold uppercase tracking-wider">Cadeaux</p>
+                </div>
+                <div class="bg-gradient-to-br from-pink-500/20 to-rose-500/20 border border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 h-36">
+                    <div class="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center">
+                        <svg class="w-7 h-7 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                    </div>
+                    <p class="text-white/40 text-xs font-semibold uppercase tracking-wider">Beauté</p>
+                </div>
+                <div class="bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-white/10 rounded-2xl flex flex-col items-center justify-center gap-3 h-36">
+                    <div class="w-14 h-14 rounded-2xl bg-white/10 flex items-center justify-center">
+                        <svg class="w-7 h-7 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    </div>
+                    <p class="text-white/40 text-xs font-semibold uppercase tracking-wider">Maison</p>
+                </div>
                 @endforelse
 
                 {{-- Badge flottant --}}
@@ -234,24 +240,54 @@
 <section class="bg-white border-b border-slate-100">
     <div class="container mx-auto px-6">
         <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-100">
-            @foreach([
-                ['icon' => 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8', 'color' => 'blue', 'title' => 'Livraison rapide', 'sub' => '24–48h partout'],
-                ['icon' => 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', 'color' => 'green', 'title' => 'Paiement sécurisé', 'sub' => 'Mobile Money & CB'],
-                ['icon' => 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', 'color' => 'amber', 'title' => 'Retours gratuits', 'sub' => '30 jours pour changer'],
-                ['icon' => 'M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0z', 'color' => 'purple', 'title' => 'Support 7j/7', 'sub' => 'On vous répond vite'],
-            ] as $trust)
+            {{-- Livraison --}}
             <div class="flex items-center gap-4 py-5 px-6">
-                <div class="w-11 h-11 rounded-xl bg-{{ $trust['color'] }}-50 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-5 h-5 text-{{ $trust['color'] }}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $trust['icon'] }}"/>
+                <div class="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/>
                     </svg>
                 </div>
                 <div class="hidden sm:block">
-                    <p class="text-sm font-semibold text-slate-800">{{ $trust['title'] }}</p>
-                    <p class="text-xs text-slate-500">{{ $trust['sub'] }}</p>
+                    <p class="text-sm font-semibold text-slate-800">Livraison rapide</p>
+                    <p class="text-xs text-slate-500">24–48h partout</p>
                 </div>
             </div>
-            @endforeach
+            {{-- Paiement --}}
+            <div class="flex items-center gap-4 py-5 px-6">
+                <div class="w-11 h-11 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <div class="hidden sm:block">
+                    <p class="text-sm font-semibold text-slate-800">Paiement sécurisé</p>
+                    <p class="text-xs text-slate-500">Mobile Money & CB</p>
+                </div>
+            </div>
+            {{-- Retours --}}
+            <div class="flex items-center gap-4 py-5 px-6">
+                <div class="w-11 h-11 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                </div>
+                <div class="hidden sm:block">
+                    <p class="text-sm font-semibold text-slate-800">Retours gratuits</p>
+                    <p class="text-xs text-slate-500">30 jours pour changer</p>
+                </div>
+            </div>
+            {{-- Support --}}
+            <div class="flex items-center gap-4 py-5 px-6">
+                <div class="w-11 h-11 rounded-xl bg-purple-50 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="hidden sm:block">
+                    <p class="text-sm font-semibold text-slate-800">Support 7j/7</p>
+                    <p class="text-xs text-slate-500">On vous répond vite</p>
+                </div>
+            </div>
         </div>
     </div>
 </section>
@@ -287,18 +323,15 @@
                         <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}"
                              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                     @else
-                        @php
-                            $catGradients = [
-                                'from-primary-500 to-violet-600',
-                                'from-amber-500 to-orange-600',
-                                'from-emerald-500 to-teal-600',
-                                'from-rose-500 to-pink-600',
-                                'from-blue-500 to-indigo-600',
-                                'from-cyan-500 to-sky-600',
-                            ];
-                            $catGrad = $catGradients[$loop->index % count($catGradients)];
-                        @endphp
-                        <div class="w-full h-full bg-gradient-to-br {{ $catGrad }} flex items-center justify-center">
+                        @php $catIdx = $loop->index % 6; @endphp
+                        <div class="w-full h-full flex items-center justify-center
+                            @if($catIdx === 0) bg-gradient-to-br from-primary-500 to-violet-600
+                            @elseif($catIdx === 1) bg-gradient-to-br from-amber-500 to-orange-600
+                            @elseif($catIdx === 2) bg-gradient-to-br from-emerald-500 to-teal-600
+                            @elseif($catIdx === 3) bg-gradient-to-br from-rose-500 to-pink-600
+                            @elseif($catIdx === 4) bg-gradient-to-br from-blue-500 to-indigo-600
+                            @else bg-gradient-to-br from-cyan-500 to-sky-600
+                            @endif">
                             <span class="text-4xl font-black text-white/30">{{ mb_substr($category->name, 0, 1) }}</span>
                         </div>
                     @endif
@@ -502,20 +535,38 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            @foreach([
-                ['emoji' => '🚚', 'color' => 'from-blue-500 to-cyan-500', 'bg' => 'blue', 'title' => 'Livraison express', 'desc' => 'Expédition sous 24–48h dans toute l\'Afrique de l\'Ouest'],
-                ['emoji' => '🔒', 'color' => 'from-emerald-500 to-green-500', 'bg' => 'green', 'title' => 'Paiement 100% sécurisé', 'desc' => 'Mobile Money, carte bancaire et paiement à la livraison'],
-                ['emoji' => '↩️', 'color' => 'from-amber-500 to-orange-500', 'bg' => 'amber', 'title' => 'Retours sans frais', 'desc' => '30 jours pour changer d\'avis, sans question'],
-                ['emoji' => '💬', 'color' => 'from-violet-500 to-purple-500', 'bg' => 'purple', 'title' => 'Support 7j/7', 'desc' => 'Notre équipe est là pour vous accompagner à chaque étape'],
-            ] as $feature)
-            <div class="group p-6 rounded-3xl border border-slate-100 hover:border-transparent hover:shadow-2xl hover:shadow-slate-200/60 hover:-translate-y-2 transition-all duration-400 bg-white">
-                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br {{ $feature['color'] }} flex items-center justify-center text-2xl mb-5 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    {{ $feature['emoji'] }}
+            {{-- Livraison --}}
+            <div class="group p-6 rounded-3xl border border-slate-100 hover:border-transparent hover:shadow-2xl hover:shadow-slate-200/60 hover:-translate-y-2 transition-all duration-300 bg-white">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/></svg>
                 </div>
-                <h3 class="text-base font-bold text-slate-900 mb-2">{{ $feature['title'] }}</h3>
-                <p class="text-sm text-slate-500 leading-relaxed">{{ $feature['desc'] }}</p>
+                <h3 class="text-base font-bold text-slate-900 mb-2">Livraison express</h3>
+                <p class="text-sm text-slate-500 leading-relaxed">Expédition sous 24–48h dans toute l'Afrique de l'Ouest</p>
             </div>
-            @endforeach
+            {{-- Paiement --}}
+            <div class="group p-6 rounded-3xl border border-slate-100 hover:border-transparent hover:shadow-2xl hover:shadow-slate-200/60 hover:-translate-y-2 transition-all duration-300 bg-white">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                </div>
+                <h3 class="text-base font-bold text-slate-900 mb-2">Paiement 100% sécurisé</h3>
+                <p class="text-sm text-slate-500 leading-relaxed">Mobile Money, carte bancaire et paiement à la livraison</p>
+            </div>
+            {{-- Retours --}}
+            <div class="group p-6 rounded-3xl border border-slate-100 hover:border-transparent hover:shadow-2xl hover:shadow-slate-200/60 hover:-translate-y-2 transition-all duration-300 bg-white">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                </div>
+                <h3 class="text-base font-bold text-slate-900 mb-2">Retours sans frais</h3>
+                <p class="text-sm text-slate-500 leading-relaxed">30 jours pour changer d'avis, sans question</p>
+            </div>
+            {{-- Support --}}
+            <div class="group p-6 rounded-3xl border border-slate-100 hover:border-transparent hover:shadow-2xl hover:shadow-slate-200/60 hover:-translate-y-2 transition-all duration-300 bg-white">
+                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                </div>
+                <h3 class="text-base font-bold text-slate-900 mb-2">Support 7j/7</h3>
+                <p class="text-sm text-slate-500 leading-relaxed">Notre équipe est là pour vous accompagner à chaque étape</p>
+            </div>
         </div>
     </div>
 </section>

@@ -139,7 +139,7 @@
     </style>
     @stack('styles')
 </head>
-<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen" x-data="{ sidebarOpen: true, mobileMenuOpen: false, sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true', toggleSidebar() { this.sidebarCollapsed = !this.sidebarCollapsed; localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed); }, searchOpen: false }">
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen" x-data="{ sidebarOpen: true, mobileMenuOpen: false, sidebarCollapsed: (() => { try { return localStorage.getItem('sidebarCollapsed') === 'true' } catch(e) { return false } })(), toggleSidebar() { this.sidebarCollapsed = !this.sidebarCollapsed; try { localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed) } catch(e) {} }, searchOpen: false }">
     
     <!-- Notifications toast (sans rechargement) -->
     <div x-data="notification" class="fixed top-4 right-4 z-[9999] space-y-2">

@@ -16,7 +16,7 @@
         <h1 class="text-4xl md:text-5xl font-extrabold mb-4">
             Notre <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-violet-400 to-amber-400">Histoire</span>
         </h1>
-        <p class="text-lg text-slate-300 max-w-2xl">
+        <p class="text-lg text-slate-200 max-w-2xl">
             Chamse est né d'une passion : offrir des produits de qualité accessibles à tous,
             avec une expérience d'achat exceptionnelle.
         </p>

@@ -7,7 +7,7 @@
 <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white py-10 -mt-0 mb-8">
     <div class="container mx-auto px-4 text-center">
         <h1 class="text-3xl font-bold mb-2">Notre Boutique</h1>
-        <p class="text-slate-300 text-sm mb-4">Explorez notre collection</p>
+        <p class="text-slate-200 text-sm mb-4">Explorez notre collection</p>
         <nav class="text-sm text-slate-400 flex items-center justify-center gap-2">
             <a href="{{ route('home') }}" class="hover:text-white transition-colors">Accueil</a>
             <span class="text-slate-600">/</span>

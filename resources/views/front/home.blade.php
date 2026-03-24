@@ -128,7 +128,7 @@
                     </span>
                 </h1>
 
-                <p class="text-slate-300 text-lg leading-relaxed mb-10 max-w-lg">
+                <p class="text-slate-200 text-lg leading-relaxed mb-10 max-w-lg">
                     Des produits de qualité sélectionnés avec soin, livrés rapidement partout en Afrique de l'Ouest.
                 </p>
 

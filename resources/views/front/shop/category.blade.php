@@ -8,7 +8,7 @@
     <div class="container mx-auto px-4 text-center">
         <h1 class="text-3xl font-bold mb-2">{{ $category->name }}</h1>
         @if($category->description)
-            <p class="text-slate-300 text-sm mb-4 max-w-xl mx-auto">{{ $category->description }}</p>
+            <p class="text-slate-200 text-sm mb-4 max-w-xl mx-auto">{{ $category->description }}</p>
         @endif
         <nav class="text-sm text-slate-400 flex items-center justify-center gap-2">
             <a href="{{ route('home') }}" class="hover:text-white transition-colors">Accueil</a>

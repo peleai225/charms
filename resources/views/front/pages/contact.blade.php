@@ -15,7 +15,7 @@
 
         <div class="text-center">
             <h1 class="text-4xl font-bold mb-4">Contactez-nous</h1>
-            <p class="text-lg text-slate-300 max-w-2xl mx-auto">
+            <p class="text-lg text-slate-200 max-w-2xl mx-auto">
                 Vous avez une question ? N'hésitez pas à nous contacter. Notre équipe est là pour vous aider.
             </p>
         </div>

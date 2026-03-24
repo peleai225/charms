@@ -564,17 +564,18 @@
         <!-- Navigation (desktop) -->
         <nav class="hidden lg:block border-t border-slate-100">
             <div class="container mx-auto px-4">
-                <ul class="flex items-center gap-8 py-3">
+                <ul class="flex items-center gap-1 py-0">
                     <li>
-                        <a href="{{ route('home') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium {{ request()->routeIs('home') ? 'text-primary-600 bg-primary-50' : 'text-slate-700 hover:text-primary-600 hover:bg-slate-50' }} transition-colors">
+                        <a href="{{ route('home') }}" class="relative block px-4 py-3.5 text-sm font-medium {{ request()->routeIs('home') ? 'text-primary-600' : 'text-slate-600 hover:text-slate-900' }} transition-colors">
                             Accueil
+                            @if(request()->routeIs('home'))<span class="absolute bottom-0 left-4 right-4 h-0.5 bg-primary-600 rounded-full"></span>@endif
                         </a>
                     </li>
                     <li x-data="{ open: false }" class="relative">
-                        <button 
-                            @click="open = !open" 
+                        <button
+                            @click="open = !open"
                             @click.away="open = false"
-                            class="flex items-center gap-1 px-4 py-2.5 rounded-lg text-sm font-medium {{ request()->routeIs('shop.*') ? 'text-primary-600 bg-primary-50' : 'text-slate-700 hover:text-primary-600 hover:bg-slate-50' }} transition-colors"
+                            class="relative flex items-center gap-1 px-4 py-3.5 text-sm font-medium {{ request()->routeIs('shop.*') ? 'text-primary-600' : 'text-slate-600 hover:text-slate-900' }} transition-colors"
                         >
                             Catégories
                             <svg class="w-4 h-4 transition-transform" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -610,22 +611,22 @@
                         </div>
                     </li>
                     <li>
-                        <a href="{{ route('shop.index') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:text-primary-600 hover:bg-slate-50 transition-colors">
+                        <a href="{{ route('shop.index') }}" class="relative block px-4 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
                             Boutique
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('shop.index', ['sort' => 'newest']) }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:text-primary-600 hover:bg-slate-50 transition-colors">
+                        <a href="{{ route('shop.index', ['sort' => 'newest']) }}" class="relative block px-4 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
                             Nouveautés
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('shop.index', ['on_sale' => 1]) }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:text-primary-600 hover:bg-slate-50 transition-colors">
+                        <a href="{{ route('shop.index', ['on_sale' => 1]) }}" class="relative block px-4 py-3.5 text-sm font-medium text-red-600 hover:text-red-700 transition-colors">
                             Promotions
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('contact') }}" class="block px-4 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:text-primary-600 hover:bg-slate-50 transition-colors">
+                        <a href="{{ route('contact') }}" class="relative block px-4 py-3.5 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
                             Contact
                         </a>
                     </li>
@@ -764,6 +765,25 @@
     <main class="min-h-screen">
         @yield('content')
     </main>
+
+    <!-- Back to top button -->
+    <div x-data="{ showTop: false }"
+         x-init="window.addEventListener('scroll', () => { showTop = window.scrollY > 600 })"
+         class="fixed bottom-6 right-6 z-40">
+        <button x-show="showTop" x-cloak
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-y-4"
+                x-transition:enter-end="opacity-100 translate-y-0"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-y-0"
+                x-transition:leave-end="opacity-0 translate-y-4"
+                @click="window.scrollTo({ top: 0, behavior: 'smooth' })"
+                class="w-11 h-11 bg-white text-slate-600 rounded-full shadow-lg shadow-slate-200/60 border border-slate-200 flex items-center justify-center hover:bg-primary-600 hover:text-white hover:border-primary-600 hover:shadow-primary-500/30 transition-all duration-300 hover:-translate-y-0.5">
+            <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/>
+            </svg>
+        </button>
+    </div>
 
     <!-- Footer -->
     <!-- Decorative footer top border -->

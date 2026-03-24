@@ -4,16 +4,17 @@
 
 @section('content')
 <!-- Hero-style header -->
-<div class="bg-gradient-to-r from-slate-50 to-slate-100/50 py-8 mb-8 -mt-0">
-    <div class="container mx-auto px-4">
-        <nav class="text-sm text-slate-500 mb-3 flex items-center gap-2">
-            <a href="{{ route('home') }}" class="hover:text-primary-600 transition-colors">Accueil</a>
-            <span class="text-slate-300">/</span>
-            <a href="{{ route('cart.index') }}" class="hover:text-primary-600 transition-colors">Panier</a>
-            <span class="text-slate-300">/</span>
-            <span class="text-slate-900 font-medium">Commander</span>
+<div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white py-10 mb-8 relative overflow-hidden">
+    <div class="absolute -top-16 -right-16 w-64 h-64 bg-primary-600/10 rounded-full blur-3xl"></div>
+    <div class="container mx-auto px-4 relative">
+        <nav class="text-sm text-slate-400 mb-4 flex items-center gap-2">
+            <a href="{{ route('home') }}" class="hover:text-white transition-colors">Accueil</a>
+            <span class="text-slate-600">/</span>
+            <a href="{{ route('cart.index') }}" class="hover:text-white transition-colors">Panier</a>
+            <span class="text-slate-600">/</span>
+            <span class="text-white font-medium">Commander</span>
         </nav>
-        <h1 class="text-3xl md:text-4xl font-bold text-slate-900">Finaliser ma commande</h1>
+        <h1 class="text-3xl font-extrabold">Finaliser ma commande</h1>
     </div>
 </div>
 

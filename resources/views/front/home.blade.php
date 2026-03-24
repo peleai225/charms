@@ -342,8 +342,7 @@
                     <h3 class="font-semibold text-slate-800 group-hover:text-primary-600 transition-colors text-sm leading-snug">
                         {{ $category->name }}
                     </h3>
-                    @php $cnt = $category->products()->active()->count(); @endphp
-                    <p class="text-xs text-slate-400 mt-0.5">{{ $cnt }} produit{{ $cnt > 1 ? 's' : '' }}</p>
+                    <p class="text-xs text-slate-400 mt-0.5">{{ $category->products_count ?? 0 }} produit{{ ($category->products_count ?? 0) > 1 ? 's' : '' }}</p>
                 </div>
             </a>
             @endforeach

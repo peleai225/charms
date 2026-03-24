@@ -16,7 +16,7 @@ class ShopController extends Controller
     public function index(Request $request)
     {
         $query = Product::active()
-            ->with(['images', 'category', 'variants.attributeValues']);
+            ->with(['images', 'category', 'variants.attributeValues.attribute']);
 
         // Filtres
         if ($request->filled('category')) {
@@ -101,7 +101,7 @@ class ShopController extends Controller
         
         $query = Product::active()
             ->whereIn('category_id', $categoryIds)
-            ->with(['images', 'category', 'variants.attributeValues']);
+            ->with(['images', 'category', 'variants.attributeValues.attribute']);
 
         // Tri
         switch ($request->get('sort', 'newest')) {

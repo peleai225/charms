@@ -4,13 +4,11 @@
 
 @section('content')
 <!-- Hero Banner -->
-<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white py-10 -mt-0 mb-8">
-    <div class="container mx-auto px-4 text-center">
-        <h1 class="text-3xl font-bold mb-2">{{ $category->name }}</h1>
-        @if($category->description)
-            <p class="text-slate-200 text-sm mb-4 max-w-xl mx-auto">{{ $category->description }}</p>
-        @endif
-        <nav class="text-sm text-slate-400 flex items-center justify-center gap-2">
+<div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white py-10 mb-8 relative overflow-hidden">
+    <div class="absolute -top-16 -right-16 w-64 h-64 bg-primary-600/10 rounded-full blur-3xl"></div>
+    <div class="absolute -bottom-16 -left-16 w-72 h-72 bg-violet-600/8 rounded-full blur-3xl"></div>
+    <div class="container mx-auto px-4 relative">
+        <nav class="text-sm text-slate-400 mb-4 flex items-center gap-2">
             <a href="{{ route('home') }}" class="hover:text-white transition-colors">Accueil</a>
             <span class="text-slate-600">/</span>
             <a href="{{ route('shop.index') }}" class="hover:text-white transition-colors">Boutique</a>
@@ -21,6 +19,10 @@
             <span class="text-slate-600">/</span>
             <span class="text-white font-medium">{{ $category->name }}</span>
         </nav>
+        <h1 class="text-3xl font-extrabold">{{ $category->name }}</h1>
+        @if($category->description)
+            <p class="text-slate-300 text-sm mt-1 max-w-xl">{{ $category->description }}</p>
+        @endif
     </div>
 </div>
 

@@ -6,11 +6,11 @@
 @section('content')
 <div class="space-y-6">
     <!-- Navigation -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-2 flex flex-wrap gap-2">
-        <a href="{{ route('admin.settings.index') }}" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-xl">Général</a>
-        <a href="{{ route('admin.settings.shipping') }}" class="px-4 py-2 text-slate-700 hover:bg-slate-100 font-medium rounded-xl">Livraison</a>
-        <a href="{{ route('admin.settings.payment') }}" class="px-4 py-2 text-slate-700 hover:bg-slate-100 font-medium rounded-xl">Paiement</a>
-        <a href="{{ route('admin.settings.emails') }}" class="px-4 py-2 text-slate-700 hover:bg-slate-100 font-medium rounded-xl">Emails</a>
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-1.5 flex flex-wrap gap-1">
+        <a href="{{ route('admin.settings.index') }}" class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl shadow-sm transition-all">Général</a>
+        <a href="{{ route('admin.settings.shipping') }}" class="px-5 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium rounded-xl transition-all">Livraison</a>
+        <a href="{{ route('admin.settings.payment') }}" class="px-5 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium rounded-xl transition-all">Paiement</a>
+        <a href="{{ route('admin.settings.emails') }}" class="px-5 py-2.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium rounded-xl transition-all">Emails</a>
     </div>
 
     <form method="POST" action="{{ route('admin.settings.update') }}" enctype="multipart/form-data" class="space-y-6">
@@ -241,7 +241,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                <button type="submit" class="w-full px-6 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/25 hover:shadow-xl transition-all">
                     Enregistrer les modifications
                 </button>
             </div>

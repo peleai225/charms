@@ -1,4 +1,5 @@
-<div class="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-slate-200/80 transition-all duration-400 hover:-translate-y-1.5 border border-slate-100/80 relative">
+<div class="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-slate-200/80 transition-all duration-400 hover:-translate-y-1.5 border border-slate-100/80 relative"
+     x-data="{ adding: false, added: false }">
     <!-- Image -->
     <a href="{{ route('shop.product', $product->slug) }}" class="block relative aspect-[4/5] overflow-hidden bg-slate-50">
         @if($product->images->where('is_primary', true)->first())
@@ -27,6 +28,7 @@
         <!-- Couleurs disponibles -->
         @php
             $colors = $product->variants->pluck('attributeValues')->flatten()->filter(fn($av) => $av->attribute?->slug === 'couleur')->unique('id');
+            $hasVariants = $product->variants->count() > 0;
         @endphp
         @if($colors->count() > 0)
             <div class="absolute bottom-2.5 left-2.5 flex gap-1 z-10">
@@ -41,7 +43,7 @@
             </div>
         @endif
 
-        <!-- Hover overlay with CTA -->
+        <!-- Hover overlay -->
         <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-400 flex items-end justify-center pb-4">
             <span class="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-slate-900 font-semibold rounded-full shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-transform duration-400 text-xs">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,7 +71,7 @@
             </a>
         </h3>
 
-        <!-- Prix + Stock -->
+        <!-- Prix + Actions -->
         <div class="mt-2.5 flex items-end justify-between gap-2">
             <div class="flex items-baseline gap-1.5 flex-wrap">
                 <span class="text-base font-extrabold text-slate-900">{{ format_price($product->sale_price) }}</span>
@@ -79,6 +81,67 @@
             </div>
             @if(!$product->is_in_stock)
                 <span class="text-[10px] text-red-500 font-semibold uppercase tracking-wide whitespace-nowrap">Rupture</span>
+            @elseif(!$hasVariants)
+                {{-- Ajout rapide au panier (produits sans variantes) --}}
+                <button
+                    @click.prevent="
+                        if (adding) return;
+                        adding = true;
+                        fetch('{{ route('cart.add') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({ product_id: {{ $product->id }}, quantity: 1 })
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                            adding = false;
+                            if (data.success !== false) {
+                                added = true;
+                                if ($store.cart) $store.cart.count = data.cart_count || ($store.cart.count + 1);
+                                if ($store.cartDrawer) $store.cartDrawer.open();
+                                $dispatch('show-notification', { message: 'Produit ajouté au panier', type: 'success' });
+                                setTimeout(() => added = false, 2000);
+                            } else {
+                                $dispatch('show-notification', { message: data.message || 'Erreur', type: 'error' });
+                            }
+                        })
+                        .catch(() => { adding = false; $dispatch('show-notification', { message: 'Erreur réseau', type: 'error' }); })
+                    "
+                    class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300"
+                    :class="added ? 'bg-emerald-500 text-white scale-110' : 'bg-slate-100 text-slate-500 hover:bg-primary-600 hover:text-white hover:scale-110'"
+                    :disabled="adding"
+                    title="Ajouter au panier"
+                >
+                    <template x-if="adding">
+                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </template>
+                    <template x-if="!adding && added">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </template>
+                    <template x-if="!adding && !added">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                        </svg>
+                    </template>
+                </button>
+            @else
+                {{-- Produit avec variantes : lien vers la page produit --}}
+                <a href="{{ route('shop.product', $product->slug) }}"
+                   class="flex-shrink-0 w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-primary-600 hover:text-white hover:scale-110 flex items-center justify-center transition-all duration-300"
+                   title="Choisir les options">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                </a>
             @endif
         </div>
     </div>

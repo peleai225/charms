@@ -1,6 +1,7 @@
 @extends('layouts.front')
 
 @section('title', 'À propos de nous')
+@section('meta_description', 'Découvrez notre histoire, nos valeurs et notre engagement envers la qualité. Une boutique de confiance au service de nos clients en Côte d\'Ivoire.')
 
 @section('content')
 <!-- Hero header -->

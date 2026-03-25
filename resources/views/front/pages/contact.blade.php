@@ -1,6 +1,7 @@
 @extends('layouts.front')
 
 @section('title', 'Contact')
+@section('meta_description', 'Contactez notre équipe pour toute question sur vos commandes, produits ou livraisons. Réponse rapide garantie. Service client disponible du lundi au vendredi.')
 
 @section('content')
 <!-- Hero Section -->

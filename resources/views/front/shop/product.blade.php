@@ -11,6 +11,7 @@
 @section('canonical', route('shop.product', $product->slug))
 
 @section('content')
+@include('front.partials.product-structured-data', ['product' => $product])
 <div class="container mx-auto px-4 py-8 md:py-10">
     <!-- Breadcrumb -->
     <nav class="text-sm text-slate-500 mb-8 flex items-center gap-2 flex-wrap">

@@ -171,9 +171,9 @@
     </div>
 
     <!-- Graphiques et tableaux -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
         <!-- Graphique des ventes -->
-        <div class="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+        <div class="xl:col-span-3 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-lg font-semibold text-slate-900" x-text="chartTitle"></h2>
                 <div class="flex items-center gap-4 text-sm">
@@ -187,11 +187,11 @@
                     </span>
                 </div>
             </div>
-            <canvas id="salesChart" height="100"></canvas>
+            <canvas id="salesChart" height="90"></canvas>
         </div>
 
         <!-- Top produits -->
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+        <div class="xl:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
             <h2 class="text-lg font-semibold text-slate-900 mb-5">Top produits</h2>
             <div class="space-y-4">
                 @forelse($topProducts as $product)
@@ -386,6 +386,11 @@ function dashboardKpi() {
             // Initialiser le graphique avec les données PHP initiales
             this.$nextTick(() => {
                 initChart(@json($salesChart['labels']), @json($salesChart['revenues']), @json($salesChart['orders']));
+            });
+
+            // Auto-rafraîchir quand une nouvelle commande arrive (via admin-notifications.js polling)
+            window.addEventListener('admin:new-orders', () => {
+                this.fetchStats();
             });
         },
 

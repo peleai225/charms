@@ -178,12 +178,12 @@
                 '-translate-x-full': !mobileMenuOpen && false,
                 'translate-x-0': mobileMenuOpen,
                 'w-20': sidebarCollapsed && !mobileMenuOpen,
-                'w-72': !sidebarCollapsed || mobileMenuOpen,
+                'w-64': !sidebarCollapsed || mobileMenuOpen,
                 '-translate-x-full lg:translate-x-0': !mobileMenuOpen
             }"
         >
             <!-- Logo -->
-            <div class="h-20 flex items-center justify-between border-b border-slate-700/50" :class="sidebarCollapsed ? 'px-3' : 'px-6'">
+            <div class="h-16 flex items-center justify-between border-b border-slate-700/50" :class="sidebarCollapsed ? 'px-3' : 'px-5'">
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 group" :class="sidebarCollapsed ? 'justify-center w-full' : ''">
                     @if($siteLogo)
                         <img src="{{ asset('storage/' . $siteLogo) }}" alt="{{ $siteName }}" class="h-10 w-auto rounded-lg flex-shrink-0">
@@ -207,7 +207,7 @@
             </div>
 
             <!-- Navigation -->
-            <nav class="space-y-1 overflow-y-auto sidebar-scroll h-[calc(100vh-5rem-3.5rem)]" :class="sidebarCollapsed ? 'p-2' : 'p-4'">
+            <nav class="space-y-0.5 overflow-y-auto sidebar-scroll h-[calc(100vh-4rem-3.5rem)]" :class="sidebarCollapsed ? 'p-2' : 'p-3'">
                 <!-- Dashboard -->
                 <div class="relative group">
                     <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all {{ request()->routeIs('admin.dashboard') ? 'menu-active bg-white/10 text-white' : '' }}" :class="sidebarCollapsed ? 'justify-center px-2' : ''">
@@ -519,7 +519,7 @@
         ></div>
 
         <!-- Contenu principal -->
-        <div class="flex-1 transition-all duration-300" :class="sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-72'">
+        <div class="flex-1 transition-all duration-300" :class="sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'">
             <!-- Header -->
             <header class="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-30 shadow-sm">
                 <div class="h-16 flex items-center justify-between px-6">
@@ -556,6 +556,24 @@
                         </svg>
                         <span>Voir le site</span>
                     </a>
+
+                    <!-- Toggle son notifications -->
+                    <button
+                        x-data="{ enabled: true }"
+                        x-init="try { enabled = localStorage.getItem('admin_sound_enabled') !== 'false' } catch(e) {}"
+                        @click="enabled = !enabled; try { localStorage.setItem('admin_sound_enabled', enabled) } catch(e) {}; if (window.adminToggleSound) window.adminToggleSound();"
+                        class="p-2 rounded-lg transition-colors"
+                        :class="enabled ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-300 hover:text-slate-500 hover:bg-slate-100'"
+                        :title="enabled ? 'Son activé (cliquer pour désactiver)' : 'Son désactivé (cliquer pour activer)'"
+                    >
+                        <svg x-show="enabled" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                        </svg>
+                        <svg x-show="!enabled" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/>
+                        </svg>
+                    </button>
 
                     <!-- Notifications -->
                     <div class="relative" x-data="{ open: false }">

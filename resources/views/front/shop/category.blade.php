@@ -1,6 +1,7 @@
 @extends('layouts.front')
 
 @section('title', $category->name . ' - Boutique')
+@section('meta_description', 'Achetez ' . $category->name . ' en ligne. ' . ($category->description ? Str::limit(strip_tags($category->description), 120) : 'Large choix, prix compétitifs, livraison rapide en Côte d\'Ivoire.'))
 
 @section('content')
 <!-- Hero Banner -->

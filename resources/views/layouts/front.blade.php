@@ -151,7 +151,16 @@
         .animate-gradient { animation: gradient 6s ease infinite; }
     </style>
     
+    {{-- SEO Meta Tags --}}
+    <meta name="theme-color" content="{{ $primaryColor }}">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="author" content="{{ $siteName }}">
+    <link rel="alternate" hreflang="fr" href="{{ url()->current() }}">
+
     @stack('styles')
+
+    {{-- Structured Data JSON-LD --}}
+    @include('front.partials.structured-data')
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen" 
       x-data="{ 

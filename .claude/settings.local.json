@@ -23,7 +23,23 @@
       "Bash(curl -s \"http://localhost:8001/boutique/categorie/electronique\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:8001/categorie/electronique\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:8001/produit/kylee-englandiddepd\")",
-      "Bash(curl -s \"http://localhost:8001/produit/kylee-englandiddepd\")"
+      "Bash(curl -s \"http://localhost:8001/produit/kylee-englandiddepd\")",
+      "Bash(ln -s \"C:/laragon/www/chamse/storage/app/public\" \"C:\\\\laragon\\\\www\\\\chamse\\\\.claude\\\\worktrees\\\\infallible-wiles\\\\public\\\\storage\")",
+      "Bash(grep -E 800[0-9])",
+      "Bash(tasklist)",
+      "Bash(curl -sL -o /dev/null -w \"%{http_code}\" http://127.0.0.1:8001/admin/login)",
+      "Bash(curl -s http://127.0.0.1:8001/admin/login -c /tmp/cookies.txt)",
+      "Bash(npx vite:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://chamse.test)",
+      "Bash(find /c/laragon/www/chamse -name *Cart* -type f)",
+      "Bash(find /c/laragon/www/chamse -name *admin*notification* -o -name *broadcast*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://chamse.test/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://chamse.test/boutique)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://chamse.test/contact)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://chamse.test/a-propos)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://chamse.test/\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://127.0.0.1:80/\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost/\")"
     ]
   }
 }

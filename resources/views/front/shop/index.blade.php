@@ -1,6 +1,7 @@
 @extends('layouts.front')
 
 @section('title', 'Boutique')
+@section('meta_description', 'Découvrez notre sélection de produits de qualité. Livraison rapide en Côte d\'Ivoire. Paiement sécurisé par Mobile Money et carte bancaire.')
 
 @section('content')
 <!-- Hero Banner -->

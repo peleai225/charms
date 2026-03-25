@@ -85,6 +85,30 @@ class DashboardController extends Controller
     }
 
     /**
+     * API : commandes récentes (pour rafraîchissement AJAX)
+     */
+    public function recentOrders()
+    {
+        $orders = Order::with('customer')
+            ->latest()
+            ->take(10)
+            ->get();
+
+        return response()->json($orders->map(fn($o) => [
+            'id'           => $o->id,
+            'order_number' => $o->order_number,
+            'total'        => format_price($o->total),
+            'status'       => $o->status,
+            'status_label' => $o->status_label,
+            'created_at'   => $o->created_at->diffForHumans(),
+            'initials'     => $o->customer
+                ? strtoupper(substr($o->customer->first_name, 0, 1) . substr($o->customer->last_name, 0, 1))
+                : 'IN',
+            'url'          => route('admin.orders.show', $o->id),
+        ]));
+    }
+
+    /**
      * API : stats filtrées par période (today / week / month)
      */
     public function apiStats(Request $request)

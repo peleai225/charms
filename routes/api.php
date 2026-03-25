@@ -207,3 +207,8 @@ Route::get('/admin/poll-stats', function (Request $request) {
 Route::get('/admin/dashboard-stats', [\App\Http\Controllers\Admin\DashboardController::class, 'apiStats'])
     ->middleware('web')
     ->name('api.admin.dashboard-stats');
+
+// Commandes récentes (rafraîchissement AJAX)
+Route::get('/admin/recent-orders', [\App\Http\Controllers\Admin\DashboardController::class, 'recentOrders'])
+    ->middleware('web')
+    ->name('api.admin.recent-orders');

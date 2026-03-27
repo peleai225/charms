@@ -133,8 +133,8 @@
                             if (data.success !== false) {
                                 added = true;
                                 if ($store.cart) $store.cart.count = data.cart_count || ($store.cart.count + 1);
-                                if ($store.cartDrawer) $store.cartDrawer.open();
-                                $dispatch('show-notification', { message: 'Ajouté au panier', type: 'success' });
+                                if ($store.cartDrawer) { $store.cartDrawer.open(); }
+                                else { $dispatch('show-notification', { message: 'Ajouté au panier', type: 'success' }); }
                                 setTimeout(() => added = false, 2500);
                             }
                         })

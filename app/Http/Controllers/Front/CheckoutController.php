@@ -435,30 +435,40 @@ class CheckoutController extends Controller
     protected function getOrCreateCustomer(array $data): ?Customer
     {
         if (auth()->check()) {
-            $customer = Customer::firstOrCreate(
-                ['user_id' => auth()->id()],
-                [
-                    'first_name' => $data['shipping_first_name'],
-                    'last_name' => $data['shipping_last_name'],
-                    'email' => $data['email'],
-                    'phone' => $data['phone'],
-                    'status' => 'active',
-                ]
-            );
-            return $customer;
+            // Chercher d'abord par user_id
+            $customer = Customer::where('user_id', auth()->id())->first();
+            if ($customer) {
+                return $customer;
+            }
+            // Sinon chercher par email et lier au compte
+            $customer = Customer::where('email', $data['email'])->first();
+            if ($customer) {
+                $customer->update(['user_id' => auth()->id()]);
+                return $customer;
+            }
+            return Customer::create([
+                'user_id' => auth()->id(),
+                'first_name' => $data['shipping_first_name'],
+                'last_name' => $data['shipping_last_name'],
+                'email' => $data['email'],
+                'phone' => $data['phone'],
+                'status' => 'active',
+                'type' => 'individual',
+            ]);
         }
 
-        // Client invité - créer un enregistrement sans user_id
-        // Note: user_id est nullable, donc on peut créer un client sans compte
-        return Customer::create([
-            'first_name' => $data['shipping_first_name'],
-            'last_name' => $data['shipping_last_name'],
-            'email' => $data['email'],
-            'phone' => $data['phone'],
-            'status' => 'active',
-            'type' => 'individual', // Type par défaut pour les clients invités
-            'user_id' => null, // Pas de compte utilisateur
-        ]);
+        // Client invité : firstOrCreate pour éviter le doublon sur l'email unique
+        return Customer::firstOrCreate(
+            ['email' => $data['email']],
+            [
+                'first_name' => $data['shipping_first_name'],
+                'last_name' => $data['shipping_last_name'],
+                'phone' => $data['phone'],
+                'status' => 'active',
+                'type' => 'individual',
+                'user_id' => null,
+            ]
+        );
     }
 
     /**

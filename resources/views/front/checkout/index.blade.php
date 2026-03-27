@@ -391,6 +391,37 @@
                     @endforeach
                 </div>
 
+                {{-- Code promo --}}
+                <div class="mb-4" x-data="couponInput()">
+                    @if($cart->coupon_code)
+                    <div class="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-3 py-2">
+                        <div class="flex items-center gap-2 text-sm">
+                            <svg class="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                            <span class="font-semibold text-green-700">{{ $cart->coupon_code }}</span>
+                            <span class="text-green-600 text-xs">appliqué ✓</span>
+                        </div>
+                        <form method="POST" action="{{ route('cart.coupon.remove') }}" class="no-ajax">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="text-red-400 hover:text-red-600 transition-colors ml-2 text-xs underline">Retirer</button>
+                        </form>
+                    </div>
+                    @else
+                    <div class="flex gap-2">
+                        <input type="text" x-model="couponCode" placeholder="Code promo"
+                            class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 uppercase"
+                            @keydown.enter.prevent="applyCoupon()">
+                        <button type="button" @click="applyCoupon()" :disabled="applying"
+                            class="px-3 py-2 text-sm bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-medium transition-colors disabled:opacity-50 whitespace-nowrap">
+                            <span x-show="!applying">Appliquer</span>
+                            <span x-show="applying" class="inline-flex items-center gap-1">
+                                <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                            </span>
+                        </button>
+                    </div>
+                    <p x-show="couponError" x-text="couponError" class="mt-1 text-xs text-red-500"></p>
+                    @endif
+                </div>
+
                 <div class="border-t border-gray-200 pt-4 space-y-2 text-sm">
                     <div class="flex justify-between">
                         <span class="text-gray-600">Sous-total</span>
@@ -399,7 +430,7 @@
 
                     @if($cart->discount_amount > 0)
                     <div class="flex justify-between text-green-600">
-                        <span>Réduction</span>
+                        <span>Réduction <span class="text-xs opacity-75">({{ $cart->coupon_code }})</span></span>
                         <span>-{{ number_format($cart->discount_amount, 0, ',', ' ') }} F</span>
                     </div>
                     @endif
@@ -543,6 +574,41 @@ function checkoutForm() {
             // Watcher pour recalculer quand le pays ou la ville change
             this.$watch('shipping.country', () => this.calculateEstimatedShipping());
             this.$watch('shipping.city', () => this.calculateEstimatedShipping());
+        }
+    }
+}
+
+
+function couponInput() {
+    return {
+        couponCode: '',
+        applying: false,
+        couponError: '',
+        async applyCoupon() {
+            if (!this.couponCode.trim()) return;
+            this.applying = true;
+            this.couponError = '';
+            try {
+                const res = await fetch('{{ route("cart.coupon.apply") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ code: this.couponCode.trim().toUpperCase() })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    this.couponError = data.message || 'Code invalide.';
+                }
+            } catch(e) {
+                this.couponError = 'Erreur réseau. Réessayez.';
+            } finally {
+                this.applying = false;
+            }
         }
     }
 }

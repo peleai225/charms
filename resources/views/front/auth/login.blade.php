@@ -1,147 +1,218 @@
 @extends('layouts.front')
 
 @section('title', 'Connexion')
+@section('hide_site_chrome', '1')
 
 @section('content')
-<div class="min-h-[80vh] flex">
-    <!-- Left side - decorative -->
-    <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-600 via-primary-700 to-slate-900 relative overflow-hidden items-center justify-center p-12">
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-20 left-20 w-72 h-72 bg-white rounded-full blur-3xl"></div>
-            <div class="absolute bottom-20 right-20 w-96 h-96 bg-accent-500 rounded-full blur-3xl"></div>
+<div class="min-h-screen flex" x-data="{ showPass: false }">
+
+    {{-- Panneau gauche : visuel immersif --}}
+    <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-slate-900 via-primary-950 to-slate-900 flex-col justify-between p-14">
+
+        {{-- Fond décoratif --}}
+        <div class="absolute inset-0 pointer-events-none">
+            <div class="absolute top-0 left-0 w-full h-full opacity-20"
+                 style="background-image: radial-gradient(circle at 20% 20%, #f59e0b 0%, transparent 50%), radial-gradient(circle at 80% 80%, #6366f1 0%, transparent 50%)">
+            </div>
+            {{-- Grille de points --}}
+            <div class="absolute inset-0 opacity-10"
+                 style="background-image: radial-gradient(circle, #ffffff 1px, transparent 1px); background-size: 32px 32px;">
+            </div>
+            {{-- Blob décoratif --}}
+            <div class="absolute -top-32 -left-32 w-96 h-96 bg-primary-600/30 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-accent-500/20 rounded-full blur-3xl"></div>
         </div>
-        <div class="relative text-white text-center max-w-md">
-            <h2 class="text-4xl font-bold mb-4">Bienvenue</h2>
-            <p class="text-white/80 text-lg">Connectez-vous pour acceder a votre espace personnel et profiter de nos offres exclusives.</p>
+
+        {{-- Logo --}}
+        <div class="relative z-10">
+            <a href="{{ route('home') }}" class="inline-flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/15 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                    </svg>
+                </div>
+                <span class="text-white font-bold text-lg tracking-tight">Le Grand Bazar</span>
+            </a>
+        </div>
+
+        {{-- Contenu central --}}
+        <div class="relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-white/80 text-xs font-semibold uppercase tracking-widest mb-6">
+                <span class="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
+                Espace client sécurisé
+            </div>
+            <h2 class="text-5xl font-black text-white leading-tight mb-4">
+                Heureux de<br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">vous revoir</span>
+            </h2>
+            <p class="text-white/70 text-lg leading-relaxed max-w-xs">
+                Accédez à votre espace pour suivre vos commandes et profiter de vos offres exclusives.
+            </p>
+
+            {{-- Avantages --}}
+            <div class="mt-10 space-y-4">
+                @foreach([
+                    ['icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', 'text' => 'Suivi en temps réel de vos commandes'],
+                    ['icon' => 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z', 'text' => 'Votre liste de favoris sauvegardée'],
+                    ['icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', 'text' => 'Paiement express à chaque commande'],
+                ] as $item)
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $item['icon'] }}"/>
+                        </svg>
+                    </div>
+                    <span class="text-white/75 text-sm">{{ $item['text'] }}</span>
+                </div>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- Témoignage --}}
+        <div class="relative z-10">
+            <div class="bg-white/8 backdrop-blur-sm border border-white/15 rounded-2xl p-5">
+                <div class="flex items-center gap-1 mb-2">
+                    @for($i = 0; $i < 5; $i++)
+                    <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                    @endfor
+                </div>
+                <p class="text-white/80 text-sm italic leading-relaxed">"Service excellent, livraison rapide et produits de qualité. Je recommande vivement !"</p>
+                <p class="text-white/50 text-xs mt-2 font-medium">— Aminata K., Abidjan</p>
+            </div>
         </div>
     </div>
-    <!-- Right side - form -->
-    <div class="w-full lg:w-1/2 flex items-center justify-center py-12 px-6 sm:px-12 bg-white">
-        <div class="w-full max-w-md">
 
-            <!-- En-tête -->
-            <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-gray-900">Connexion</h1>
-                <p class="text-gray-600 mt-2">
+    {{-- Panneau droit : formulaire --}}
+    <div class="flex-1 flex flex-col justify-center px-6 py-12 sm:px-12 lg:px-16 bg-white">
+        <div class="max-w-md w-full mx-auto">
+
+            {{-- Logo mobile --}}
+            <div class="lg:hidden mb-8">
+                <a href="{{ route('home') }}" class="inline-flex items-center gap-2 text-slate-900 font-bold text-lg">
+                    <div class="w-9 h-9 bg-primary-600 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                        </svg>
+                    </div>
+                    Le Grand Bazar
+                </a>
+            </div>
+
+            <div class="mb-8">
+                <h1 class="text-3xl font-black text-slate-900 mb-2">Connexion</h1>
+                <p class="text-slate-500">
                     Pas encore de compte ?
-                    <a href="{{ route('register') }}" class="text-primary-600 hover:text-primary-700 font-medium">
-                        Créez-en un
-                    </a>
+                    <a href="{{ route('register') }}" class="text-primary-600 font-semibold hover:text-primary-700 transition-colors">Créez-en un gratuitement →</a>
                 </p>
             </div>
 
-            <!-- Messages flash -->
             @if (session('error'))
-                <div class="mb-6 p-4 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
-                    {{ session('error') }}
-                </div>
+            <div class="mb-5 flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-2xl">
+                <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <p class="text-red-700 text-sm">{{ session('error') }}</p>
+            </div>
             @endif
 
             @if (session('success'))
-                <div class="mb-6 p-4 rounded-lg bg-green-50 border border-green-200 text-green-600 text-sm">
-                    {{ session('success') }}
-                </div>
+            <div class="mb-5 flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                <svg class="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <p class="text-emerald-700 text-sm">{{ session('success') }}</p>
+            </div>
             @endif
 
-            <form method="POST" action="{{ route('login.post') }}" class="space-y-5">
+            <form method="POST" action="{{ route('login.post') }}" class="space-y-5 no-ajax">
                 @csrf
 
-                <!-- Email -->
+                {{-- Email --}}
                 <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1.5">
-                        Adresse email
-                    </label>
-                    <input
-                        type="email"
-                        name="email"
-                        id="email"
-                        value="{{ old('email') }}"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
-                        placeholder="votre@email.com"
-                        required
-                        autofocus
-                    >
+                    <label for="email" class="block text-sm font-semibold text-slate-700 mb-2">Adresse email</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <input type="email" name="email" id="email" value="{{ old('email') }}"
+                            class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border @error('email') border-red-400 bg-red-50 @else border-slate-200 @enderror rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 focus:bg-white transition-all"
+                            placeholder="votre@email.com" required autofocus>
+                    </div>
                     @error('email')
-                        <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
+                        <p class="mt-2 text-sm text-red-500 flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                            {{ $message }}
+                        </p>
                     @enderror
                 </div>
 
-                <!-- Mot de passe -->
+                {{-- Mot de passe --}}
                 <div>
-                    <div class="flex items-center justify-between mb-1.5">
-                        <label for="password" class="block text-sm font-medium text-gray-700">
-                            Mot de passe
-                        </label>
-                        <a href="{{ route('password.request') }}" class="text-sm text-primary-600 hover:text-primary-700">
-                            Mot de passe oublié ?
+                    <div class="flex items-center justify-between mb-2">
+                        <label for="password" class="text-sm font-semibold text-slate-700">Mot de passe</label>
+                        <a href="{{ route('password.request') }}" class="text-sm text-primary-600 hover:text-primary-700 transition-colors font-medium">
+                            Oublié ?
                         </a>
                     </div>
-                    <input
-                        type="password"
-                        name="password"
-                        id="password"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
-                        placeholder="••••••••"
-                        required
-                    >
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </div>
+                        <input :type="showPass ? 'text' : 'password'" name="password" id="password"
+                            class="w-full pl-12 pr-12 py-3.5 bg-slate-50 border @error('password') border-red-400 bg-red-50 @else border-slate-200 @enderror rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 focus:bg-white transition-all"
+                            placeholder="••••••••" required>
+                        <button type="button" @click="showPass = !showPass"
+                            class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition-colors">
+                            <svg x-show="!showPass" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            <svg x-show="showPass" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                        </button>
+                    </div>
                     @error('password')
-                        <p class="mt-1.5 text-sm text-red-500">{{ $message }}</p>
+                        <p class="mt-2 text-sm text-red-500 flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                            {{ $message }}
+                        </p>
                     @enderror
                 </div>
 
-                <!-- Se souvenir de moi -->
-                <div class="flex items-center">
-                    <input
-                        type="checkbox"
-                        name="remember"
-                        id="remember"
-                        class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                    >
-                    <label for="remember" class="ml-2 text-sm text-gray-600">
-                        Se souvenir de moi
-                    </label>
+                {{-- Remember me --}}
+                <label class="flex items-center gap-3 cursor-pointer group">
+                    <div class="relative">
+                        <input type="checkbox" name="remember" id="remember" class="sr-only peer">
+                        <div class="w-5 h-5 bg-slate-100 border-2 border-slate-300 rounded-md peer-checked:bg-primary-600 peer-checked:border-primary-600 transition-all group-hover:border-primary-400"></div>
+                        <svg class="absolute inset-0 w-5 h-5 text-white opacity-0 peer-checked:opacity-100 transition-opacity p-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <span class="text-sm text-slate-600 select-none">Se souvenir de moi</span>
+                </label>
+
+                {{-- Submit --}}
+                <button type="submit"
+                    class="w-full py-4 px-6 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-bold rounded-2xl shadow-xl shadow-primary-500/25 hover:shadow-primary-500/40 hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2 text-base">
+                    Se connecter
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                </button>
+
+                {{-- Séparateur --}}
+                <div class="relative flex items-center gap-3">
+                    <div class="flex-1 h-px bg-slate-200"></div>
+                    <span class="text-xs text-slate-400 font-medium uppercase tracking-wider">ou continuer en tant qu'invité</span>
+                    <div class="flex-1 h-px bg-slate-200"></div>
                 </div>
 
-                <!-- Bouton de connexion -->
-                <button
-                    type="submit"
-                    class="w-full py-3.5 px-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
-                >
-                    Se connecter
-                </button>
+                <a href="{{ route('shop.index') }}"
+                   class="w-full py-3.5 px-6 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold rounded-2xl border border-slate-200 hover:border-slate-300 transition-all duration-200 flex items-center justify-center gap-2 text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                    Continuer sans compte
+                </a>
             </form>
 
-            <!-- Séparateur -->
-            <div class="relative my-6">
-                <div class="absolute inset-0 flex items-center">
-                    <div class="w-full border-t border-gray-200"></div>
-                </div>
-                <div class="relative flex justify-center text-sm">
-                    <span class="px-4 bg-white text-gray-500">Ou continuer avec</span>
-                </div>
-            </div>
-
-            <!-- Connexion sociale -->
-            <div class="grid grid-cols-2 gap-3">
-                <button type="button" class="flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
-                    <svg class="w-5 h-5" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                    </svg>
-                    <span class="text-sm font-medium text-gray-700">Google</span>
-                </button>
-                <button type="button" class="flex items-center justify-center gap-2 py-2.5 px-4 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
-                    <svg class="w-5 h-5" fill="#1877F2" viewBox="0 0 24 24">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                    </svg>
-                    <span class="text-sm font-medium text-gray-700">Facebook</span>
-                </button>
-            </div>
-
+            {{-- Footer --}}
+            <p class="mt-8 text-center text-xs text-slate-400">
+                En vous connectant vous acceptez nos
+                <a href="#" class="text-slate-600 hover:text-primary-600 underline underline-offset-2">CGV</a> et notre
+                <a href="#" class="text-slate-600 hover:text-primary-600 underline underline-offset-2">politique de confidentialité</a>
+            </p>
         </div>
     </div>
 </div>
 @endsection
-

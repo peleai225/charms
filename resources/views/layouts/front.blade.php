@@ -173,6 +173,7 @@
     @php
         $cart = \App\Models\Cart::getOrCreate(session()->getId(), auth()->user()?->customer);
         $categories = \App\Models\Category::active()->whereNull('parent_id')->with('children')->orderBy('order')->take(6)->get();
+        $hideSiteChrome = trim($__env->yieldContent('hide_site_chrome')) === '1';
         
         // Récupérer les informations de contact depuis les paramètres
         $sitePhone = \App\Models\Setting::get('contact_phone', '+225 07 00 00 00 00');
@@ -186,6 +187,7 @@
         $popupBanner = \App\Models\Banner::active()->position('popup_center')->orderBy('order')->first();
     @endphp
 
+    @if(!$hideSiteChrome)
     <!-- Notification Container -->
     <div x-data="notification" class="fixed top-4 right-4 z-[100] space-y-2">
         <template x-for="notification in notifications" :key="notification.id">
@@ -514,7 +516,8 @@
                     @endauth
                     
                     <!-- Wishlist -->
-                    <a href="#" class="p-2 text-slate-600 hover:text-primary-600 transition-colors relative group hidden sm:block">
+                    <a href="{{ auth()->check() ? route('account.wishlist.index') : route('login') }}"
+                       class="p-2 text-slate-600 hover:text-red-500 transition-colors relative group hidden sm:block">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                         </svg>
@@ -736,6 +739,7 @@
             </div>
         </div>
     </header>
+    @endif
 
     <!-- Flash Messages -->
     @if(session('success'))
@@ -776,6 +780,7 @@
         @yield('content')
     </main>
 
+    @if(!$hideSiteChrome)
     <!-- Back to top button -->
     <div x-data="{ showTop: false }"
          x-init="window.addEventListener('scroll', () => { showTop = window.scrollY > 600 })"
@@ -799,7 +804,7 @@
     <!-- Decorative footer top border -->
     <div class="h-px bg-gradient-to-r from-transparent via-primary-500 to-transparent"></div>
 
-    <footer class="bg-gradient-to-b from-slate-900 to-slate-950 text-slate-300 mt-20">
+    <footer class="bg-gradient-to-b from-slate-900 to-slate-950 text-slate-300">
         <!-- Newsletter -->
         <div class="border-b border-slate-800/80">
             <div class="container mx-auto px-4 py-14">
@@ -1436,5 +1441,6 @@
             </div>
         </div>
     </div>
+    @endif
 </body>
 </html>

@@ -121,7 +121,11 @@ Route::middleware('customer')->prefix('mon-compte')->name('account.')->group(fun
     Route::get('/adresses', [App\Http\Controllers\Front\AccountController::class, 'addresses'])->name('addresses');
     Route::post('/adresses', [App\Http\Controllers\Front\AccountController::class, 'storeAddress'])->name('addresses.store');
     Route::get('/fidelite', [App\Http\Controllers\Front\AccountController::class, 'loyalty'])->name('loyalty');
+    Route::get('/favoris', [App\Http\Controllers\Front\WishlistController::class, 'index'])->name('wishlist.index');
 });
+
+// Wishlist toggle (accessible même hors espace client pour rediriger)
+Route::post('/favoris/{product}/toggle', [App\Http\Controllers\Front\WishlistController::class, 'toggle'])->name('wishlist.toggle');
 
 // Catalogue
 Route::get('/boutique', [App\Http\Controllers\Front\ShopController::class, 'index'])->name('shop.index');

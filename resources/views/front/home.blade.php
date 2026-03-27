@@ -225,7 +225,16 @@
             </a>
         </div>
 
-        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+        @php
+            $catCount = $featuredCategories->count();
+            $catGrid = match(true) {
+                $catCount <= 3 => 'lg:grid-cols-3',
+                $catCount == 4 => 'lg:grid-cols-4',
+                $catCount == 5 => 'lg:grid-cols-5',
+                default => 'lg:grid-cols-6',
+            };
+        @endphp
+        <div class="grid grid-cols-2 sm:grid-cols-3 {{ $catGrid }} gap-4">
             @foreach($featuredCategories as $category)
             <a href="{{ route('shop.category', $category->slug) }}"
                class="group text-center">
@@ -629,51 +638,7 @@
 </section>
 @endif
 
-{{-- ═══════════════════════════════════════════════
-     NEWSLETTER
-═══════════════════════════════════════════════ --}}
-<section class="py-14 relative overflow-hidden bg-slate-950">
-    <div class="absolute -top-20 -left-20 w-80 h-80 bg-primary-600/30 rounded-full blur-3xl"></div>
-    <div class="absolute -bottom-20 -right-20 w-96 h-96 bg-violet-600/20 rounded-full blur-3xl"></div>
-
-    <div class="container mx-auto px-6 relative z-10">
-        <div class="max-w-xl mx-auto text-center"
-             x-data="{ submitted: false }">
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-primary-500/20 border border-primary-500/30 rounded-full text-primary-300 text-xs font-bold mb-4">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>
-                -10% sur votre 1ère commande
-            </div>
-            <h2 class="text-2xl md:text-3xl font-extrabold text-white mb-3">
-                Rejoignez notre communauté
-            </h2>
-            <p class="text-slate-400 mb-6 text-sm">
-                Recevez nos offres exclusives et nouveautés en avant-première.
-            </p>
-
-            <div x-show="!submitted">
-                <form method="POST" action="{{ route('newsletter.subscribe') }}"
-                      class="flex flex-col sm:flex-row gap-2.5 max-w-md mx-auto no-ajax"
-                      @submit.prevent="submitted = true; $el.submit()">
-                    @csrf
-                    <input type="email" name="email" required
-                           placeholder="votre@email.com"
-                           class="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/15 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 backdrop-blur-sm text-sm">
-                    <button type="submit"
-                            class="px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-xl hover:-translate-y-0.5 transition-all text-sm whitespace-nowrap">
-                        S'inscrire
-                    </button>
-                </form>
-            </div>
-            <div x-show="submitted" x-cloak class="py-4">
-                <div class="inline-flex items-center gap-2 text-emerald-400 font-semibold">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    Merci ! Vérifiez votre boîte mail.
-                </div>
-            </div>
-            <p class="text-slate-600 text-[10px] mt-3">Pas de spam. Désabonnement en un clic.</p>
-        </div>
-    </div>
-</section>
+{{-- Newsletter est dans le footer layout, pas besoin de dupliquer ici --}}
 
 {{-- ═══════════════════════════════════════════════
      NOTIFICATION FOMO (Social Proof - Popup)

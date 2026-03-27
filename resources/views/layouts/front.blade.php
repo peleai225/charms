@@ -834,7 +834,7 @@
                 <div>
                     <div class="flex items-center gap-3 mb-4">
                         @if($siteLogo)
-                            <img src="{{ asset('storage/' . $siteLogo) }}" alt="{{ $siteName }}" class="h-10 w-auto brightness-0 invert">
+                            <img src="{{ asset('storage/' . $siteLogo) }}" alt="{{ $siteName }}" class="h-10 w-auto">
                         @else
                             <div class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center">
                                 <span class="text-white font-bold text-xl">{{ substr($siteName, 0, 1) }}</span>

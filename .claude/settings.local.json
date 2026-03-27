@@ -39,7 +39,12 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://chamse.test/a-propos)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://chamse.test/\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://127.0.0.1:80/\")",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost/\")"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost/\")",
+      "Read(//c/laragon/www/chamse/storage/app/public/settings/**)",
+      "Read(//c/laragon/www/chamse/storage/app/public/**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://chamse.test/storage/products/8/LxGzLrIAYVvw40AtN7h2zx7J4Z05NOjDTQuc3FhI.jpg\")",
+      "Bash(curl -s -w \"\\\\n%{http_code}\" \"http://chamse.test/storage/settings/oR3OSAJR8XqiRxnqKXftomgH28sDZG0ErUPap1yq.png\")",
+      "Bash(curl -s -I \"http://chamse.test/storage/settings/oR3OSAJR8XqiRxnqKXftomgH28sDZG0ErUPap1yq.png\")"
     ]
   }
 }

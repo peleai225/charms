@@ -18,7 +18,7 @@
 @section('content')
 
 {{-- ═══════════════════════════════════════════════
-     HERO — avec produits vedettes
+     HERO SECTION
 ═══════════════════════════════════════════════ --}}
 @if($heroBanners->count() > 0)
 <section class="relative"
@@ -28,28 +28,28 @@
         @foreach($heroBanners as $i => $banner)
         <div x-show="slide === {{ $i }}" x-cloak
              x-transition:enter="transition ease-out duration-700"
-             x-transition:enter-start="opacity-0"
-             x-transition:enter-end="opacity-100"
-             x-transition:leave="transition ease-in duration-300"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0"
-             class="relative h-[400px] md:h-[480px] lg:h-[540px]">
+             x-transition:enter-start="opacity-0 scale-105"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-500"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="relative h-[420px] md:h-[500px] lg:h-[560px]">
             @if($banner->image)
                 <img src="{{ asset('storage/' . $banner->image) }}" alt="{{ $banner->title }}" class="w-full h-full object-cover">
             @else
                 <div class="w-full h-full bg-gradient-to-br from-slate-900 via-primary-950 to-slate-900"></div>
             @endif
-            <div class="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent">
+            <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent">
                 <div class="container mx-auto px-6 h-full flex items-center">
-                    <div class="max-w-lg">
+                    <div class="max-w-xl">
                         @if($banner->title)
-                        <h1 class="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-3">{!! nl2br(e($banner->title)) !!}</h1>
+                        <h1 class="text-3xl md:text-5xl lg:text-6xl font-black text-white leading-[1.1] mb-4 tracking-tight">{!! nl2br(e($banner->title)) !!}</h1>
                         @endif
                         @if($banner->subtitle)
-                        <p class="text-white/75 text-sm md:text-base mb-5">{{ $banner->subtitle }}</p>
+                        <p class="text-white/70 text-base md:text-lg mb-6 leading-relaxed max-w-md">{{ $banner->subtitle }}</p>
                         @endif
                         @if($banner->link && $banner->button_text)
-                        <a href="{{ $banner->link }}" class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-lg transition-all text-sm">
+                        <a href="{{ $banner->link }}" class="inline-flex items-center gap-2 px-8 py-4 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-2xl transition-all text-sm shadow-xl shadow-primary-600/30 hover:-translate-y-0.5">
                             {{ $banner->button_text }}
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                         </a>
@@ -61,97 +61,113 @@
         @endforeach
     </div>
     @if($heroBanners->count() > 1)
-    <div class="absolute bottom-0 left-0 right-0 z-20 h-0.5 bg-white/10">
-        <div class="h-full bg-primary-500 transition-all duration-75" :style="'width:' + progress + '%'"></div>
+    <div class="absolute bottom-0 left-0 right-0 z-20 h-1 bg-white/10">
+        <div class="h-full bg-gradient-to-r from-primary-400 to-primary-600 transition-all duration-75 rounded-r-full" :style="'width:' + progress + '%'"></div>
     </div>
-    <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
+    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
         @foreach($heroBanners as $i => $banner)
         <button @click="slide = {{ $i }}; progress = 0"
-                :class="slide === {{ $i }} ? 'w-6 bg-white' : 'w-2 bg-white/40'"
-                class="h-1.5 rounded-full transition-all duration-300"></button>
+                :class="slide === {{ $i }} ? 'w-8 bg-white' : 'w-2.5 bg-white/40 hover:bg-white/60'"
+                class="h-2 rounded-full transition-all duration-300"></button>
         @endforeach
     </div>
     @endif
 </section>
 @else
 {{-- Hero par défaut avec grille produits --}}
-<section class="relative bg-gradient-to-br from-slate-900 via-slate-800 to-primary-950 overflow-hidden">
-    <div class="absolute inset-0 opacity-5" style="background-image: radial-gradient(circle at 1px 1px, white 1px, transparent 0); background-size: 40px 40px;"></div>
+<section class="relative overflow-hidden min-h-[520px] lg:min-h-[580px]">
+    {{-- Background avec motif --}}
+    <div class="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-primary-950"></div>
+    <div class="absolute inset-0 opacity-[0.03]" style="background-image: url('data:image/svg+xml,%3Csvg width=60 height=60 viewBox=%270 0 60 60%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cg fill=%27none%27 fill-rule=%27evenodd%27%3E%3Cg fill=%27%23ffffff%27 fill-opacity=%271%27%3E%3Cpath d=%27M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z%27/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+    {{-- Glow decoratif --}}
+    <div class="absolute top-1/2 left-1/4 -translate-y-1/2 w-[500px] h-[500px] bg-primary-600/10 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-violet-600/8 rounded-full blur-3xl"></div>
 
-    <div class="container mx-auto px-6 py-12 lg:py-16 relative z-10">
-        <div class="grid lg:grid-cols-2 gap-10 items-center">
+    <div class="container mx-auto px-6 py-16 lg:py-20 relative z-10">
+        <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {{-- Texte gauche --}}
-            <div>
-                <div class="inline-flex items-center gap-2 px-3 py-1 bg-primary-500/15 border border-primary-500/25 text-primary-300 rounded-full text-xs font-semibold mb-5">
-                    <span class="w-1.5 h-1.5 bg-primary-400 rounded-full animate-pulse"></span>
+            <div class="max-w-xl">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-white/[0.06] border border-white/[0.08] text-primary-300 rounded-full text-xs font-semibold mb-6 backdrop-blur-sm">
+                    <span class="relative flex h-2 w-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-primary-400"></span>
+                    </span>
                     Bienvenue chez {{ $siteName }}
                 </div>
-                <h1 class="text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-4">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-[1.05] mb-5 tracking-tight">
                     Découvrez nos
-                    <span class="text-primary-400">meilleurs produits</span>
+                    <span class="relative">
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-amber-400">meilleurs produits</span>
+                    </span>
                 </h1>
-                <p class="text-slate-300 text-sm md:text-base leading-relaxed mb-6 max-w-md">
-                    Qualité, prix imbattables et livraison rapide partout en Afrique de l'Ouest.
+                <p class="text-slate-400 text-base md:text-lg leading-relaxed mb-8 max-w-md">
+                    Qualité premium, prix imbattables et livraison express partout en Afrique de l'Ouest.
                 </p>
                 <div class="flex flex-wrap gap-3">
-                    <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white font-bold rounded-lg hover:-translate-y-0.5 transition-all text-sm">
+                    <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-500 text-white font-bold rounded-2xl hover:-translate-y-0.5 transition-all text-sm shadow-xl shadow-primary-600/25">
                         Explorer la boutique
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                     </a>
                     @if($whatsapp)
                     <a href="https://wa.me/{{ preg_replace('/\D/', '', $whatsapp) }}" target="_blank"
-                       class="inline-flex items-center gap-2 px-6 py-3 border border-white/20 text-white font-semibold rounded-lg hover:bg-white/10 transition-all text-sm">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                       class="inline-flex items-center gap-2 px-6 py-4 border border-white/15 text-white font-semibold rounded-2xl hover:bg-white/[0.06] backdrop-blur-sm transition-all text-sm">
+                        <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                         WhatsApp
                     </a>
                     @endif
                 </div>
                 {{-- Stats --}}
-                <div class="flex items-center gap-6 mt-8 pt-6 border-t border-white/10">
+                <div class="flex items-center gap-8 mt-10 pt-8 border-t border-white/[0.06]">
                     <div>
-                        <p class="text-2xl font-black text-white">{{ number_format($productCount, 0, ',', ' ') }}+</p>
-                        <p class="text-xs text-slate-400">Produits</p>
+                        <p class="text-3xl font-black text-white tracking-tight">{{ number_format($productCount, 0, ',', ' ') }}<span class="text-primary-400">+</span></p>
+                        <p class="text-xs text-slate-500 mt-0.5">Produits</p>
                     </div>
-                    <div class="w-px h-8 bg-white/15"></div>
+                    <div class="w-px h-10 bg-white/[0.06]"></div>
                     <div>
-                        <p class="text-2xl font-black text-white">24h</p>
-                        <p class="text-xs text-slate-400">Livraison</p>
+                        <p class="text-3xl font-black text-white tracking-tight">24<span class="text-primary-400">h</span></p>
+                        <p class="text-xs text-slate-500 mt-0.5">Livraison</p>
                     </div>
-                    <div class="w-px h-8 bg-white/15"></div>
+                    <div class="w-px h-10 bg-white/[0.06]"></div>
                     <div>
-                        <p class="text-2xl font-black text-white">98%</p>
-                        <p class="text-xs text-slate-400">Satisfaits</p>
+                        <p class="text-3xl font-black text-white tracking-tight">98<span class="text-primary-400">%</span></p>
+                        <p class="text-xs text-slate-500 mt-0.5">Satisfaits</p>
                     </div>
                 </div>
             </div>
 
             {{-- Grille produits droite --}}
-            <div class="hidden lg:grid grid-cols-2 gap-3 relative">
-                @forelse($featuredProducts->take(4) as $i => $product)
-                @php $img = $product->images->where('is_primary', true)->first() ?? $product->images->first(); @endphp
-                <a href="{{ route('shop.product', $product->slug) }}"
-                   class="group relative rounded-xl overflow-hidden {{ $i === 0 ? 'row-span-2' : '' }} bg-white/5 border border-white/10 hover:border-primary-400/40 transition-all duration-300">
-                    @if($img)
-                    <img src="{{ asset('storage/' . $img->path) }}" alt="{{ $product->name }}"
-                         class="w-full h-full object-cover {{ $i === 0 ? 'min-h-[300px]' : 'h-40' }} group-hover:scale-105 transition-transform duration-500" loading="lazy">
-                    @else
-                    <div class="w-full {{ $i === 0 ? 'min-h-[300px]' : 'h-40' }} bg-gradient-to-br from-primary-800 to-primary-900 flex items-center justify-center">
-                        <span class="text-3xl font-black text-white/20">{{ mb_substr($product->name, 0, 1) }}</span>
+            <div class="hidden lg:block relative">
+                <div class="grid grid-cols-2 gap-4">
+                    @forelse($featuredProducts->take(4) as $i => $product)
+                    @php $img = $product->images->where('is_primary', true)->first() ?? $product->images->first(); @endphp
+                    <a href="{{ route('shop.product', $product->slug) }}"
+                       class="group/card relative rounded-2xl overflow-hidden {{ $i === 0 ? 'row-span-2' : '' }} bg-white/[0.04] border border-white/[0.08] hover:border-primary-400/30 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary-600/10">
+                        @if($img)
+                        <img src="{{ asset('storage/' . $img->path) }}" alt="{{ $product->name }}"
+                             class="w-full h-full object-cover {{ $i === 0 ? 'min-h-[340px]' : 'h-44' }} group-hover/card:scale-105 transition-transform duration-700" loading="lazy">
+                        @else
+                        <div class="w-full {{ $i === 0 ? 'min-h-[340px]' : 'h-44' }} bg-gradient-to-br from-primary-900/50 to-primary-800/50 flex items-center justify-center">
+                            <span class="text-4xl font-black text-white/10">{{ mb_substr($product->name, 0, 1) }}</span>
+                        </div>
+                        @endif
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover/card:opacity-90 transition-opacity"></div>
+                        <div class="absolute bottom-0 inset-x-0 p-4">
+                            <p class="text-white text-sm font-bold truncate mb-0.5">{{ $product->name }}</p>
+                            <p class="text-primary-300 text-sm font-extrabold">{{ format_price($product->sale_price) }}</p>
+                        </div>
+                        <div class="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-all duration-300">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                        </div>
+                    </a>
+                    @empty
+                    <div class="col-span-2 h-[340px] rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center">
+                        <div class="text-center">
+                            <svg class="w-12 h-12 text-white/10 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                            <p class="text-white/20 text-sm">Produits à venir</p>
+                        </div>
                     </div>
-                    @endif
-                    <div class="absolute bottom-0 inset-x-0 p-2.5 bg-gradient-to-t from-black/70 to-transparent">
-                        <p class="text-white text-xs font-medium truncate">{{ $product->name }}</p>
-                        <p class="text-primary-300 text-xs font-bold">{{ format_price($product->sale_price) }}</p>
-                    </div>
-                </a>
-                @empty
-                <div class="col-span-2 h-[300px] rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                    <div class="text-center">
-                        <svg class="w-12 h-12 text-white/20 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-                        <p class="text-white/30 text-sm">Produits à venir</p>
-                    </div>
+                    @endforelse
                 </div>
-                @endforelse
             </div>
         </div>
     </div>
@@ -159,84 +175,86 @@
 @endif
 
 {{-- ═══════════════════════════════════════════════
-     BARRE DE CONFIANCE
+     BARRE DE CONFIANCE - Floating
 ═══════════════════════════════════════════════ --}}
-<section class="bg-white border-b border-slate-100">
+<section class="relative z-20 -mt-6">
     <div class="container mx-auto px-6">
-        <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-100">
-            <div class="flex items-center gap-3 py-4 px-4">
-                <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-4.5 h-4.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
+        <div class="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100">
+            <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-100">
+                @php
+                    $trustItems = [
+                        ['icon' => 'M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0', 'color' => 'blue', 'title' => 'Livraison rapide', 'sub' => '24–48h partout'],
+                        ['icon' => 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', 'color' => 'emerald', 'title' => 'Paiement sécurisé', 'sub' => 'Mobile Money & CB'],
+                        ['icon' => 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', 'color' => 'amber', 'title' => 'Satisfait ou remboursé', 'sub' => '30 jours de garantie'],
+                        ['icon' => 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z', 'color' => 'violet', 'title' => 'Support 7j/7', 'sub' => 'Réponse rapide'],
+                    ];
+                @endphp
+                @foreach($trustItems as $item)
+                <div class="flex items-center gap-3 py-5 px-5 group hover:bg-slate-50/50 transition-colors first:rounded-l-2xl last:rounded-r-2xl">
+                    <div class="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110
+                        @if($item['color'] === 'blue') bg-blue-50 text-blue-600
+                        @elseif($item['color'] === 'emerald') bg-emerald-50 text-emerald-600
+                        @elseif($item['color'] === 'amber') bg-amber-50 text-amber-600
+                        @else bg-violet-50 text-violet-600
+                        @endif">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="{{ $item['icon'] }}"/></svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-slate-800">{{ $item['title'] }}</p>
+                        <p class="text-[11px] text-slate-400 hidden sm:block">{{ $item['sub'] }}</p>
+                    </div>
                 </div>
-                <div>
-                    <p class="text-xs font-bold text-slate-800">Livraison rapide</p>
-                    <p class="text-[10px] text-slate-400 hidden sm:block">24–48h partout</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-3 py-4 px-4">
-                <div class="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-4.5 h-4.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-slate-800">Paiement sécurisé</p>
-                    <p class="text-[10px] text-slate-400 hidden sm:block">Mobile Money & CB</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-3 py-4 px-4">
-                <div class="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-4.5 h-4.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-slate-800">Satisfait ou remboursé</p>
-                    <p class="text-[10px] text-slate-400 hidden sm:block">30 jours</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-3 py-4 px-4">
-                <div class="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0">
-                    <svg class="w-4.5 h-4.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-slate-800">Support 7j/7</p>
-                    <p class="text-[10px] text-slate-400 hidden sm:block">Réponse rapide</p>
-                </div>
+                @endforeach
             </div>
         </div>
     </div>
 </section>
 
 {{-- ═══════════════════════════════════════════════
-     CATÉGORIES — Design moderne circulaire
+     CATÉGORIES — Cards modernes avec image
 ═══════════════════════════════════════════════ --}}
 @if($featuredCategories->count() > 0)
-<section class="py-10 bg-white">
+<section class="py-14 bg-white">
     <div class="container mx-auto px-6">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-xl md:text-2xl font-extrabold text-slate-900">Nos catégories</h2>
-            <a href="{{ route('shop.index') }}" class="text-sm font-semibold text-primary-600 hover:text-primary-700 transition-colors flex items-center gap-1">
-                Tout voir <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <div class="flex items-end justify-between mb-8">
+            <div>
+                <span class="text-primary-600 text-xs font-bold uppercase tracking-widest">Explorer</span>
+                <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-1">Nos catégories</h2>
+            </div>
+            <a href="{{ route('shop.index') }}" class="text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors flex items-center gap-1.5 group">
+                Tout voir
+                <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
             </a>
         </div>
-        <div class="flex gap-6 overflow-x-auto pb-2 scrollbar-hide">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             @foreach($featuredCategories as $category)
-            <a href="{{ route('shop.category', $category->slug) }}" class="group flex-shrink-0 text-center w-24">
-                <div class="w-20 h-20 mx-auto rounded-full overflow-hidden border-2 border-slate-100 group-hover:border-primary-400 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-primary-100/50 mb-2">
-                    @if($category->image)
-                        <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy">
-                    @else
-                        @php $catIdx = $loop->index % 6; @endphp
-                        <div class="w-full h-full flex items-center justify-center
-                            @if($catIdx === 0) bg-gradient-to-br from-indigo-400 to-indigo-600
-                            @elseif($catIdx === 1) bg-gradient-to-br from-amber-400 to-amber-600
-                            @elseif($catIdx === 2) bg-gradient-to-br from-emerald-400 to-emerald-600
-                            @elseif($catIdx === 3) bg-gradient-to-br from-rose-400 to-rose-600
-                            @elseif($catIdx === 4) bg-gradient-to-br from-blue-400 to-blue-600
-                            @else bg-gradient-to-br from-cyan-400 to-cyan-600
-                            @endif">
-                            <span class="text-lg font-black text-white/80">{{ mb_substr($category->name, 0, 2) }}</span>
+            <a href="{{ route('shop.category', $category->slug) }}"
+               class="group relative rounded-2xl overflow-hidden bg-slate-100 aspect-[4/3] flex items-end hover:-translate-y-1 transition-all duration-500 hover:shadow-xl">
+                @if($category->image)
+                    <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy">
+                @else
+                    @php $catIdx = $loop->index % 6; @endphp
+                    <div class="absolute inset-0
+                        @if($catIdx === 0) bg-gradient-to-br from-indigo-500 to-indigo-700
+                        @elseif($catIdx === 1) bg-gradient-to-br from-amber-500 to-orange-600
+                        @elseif($catIdx === 2) bg-gradient-to-br from-emerald-500 to-teal-600
+                        @elseif($catIdx === 3) bg-gradient-to-br from-rose-500 to-pink-600
+                        @elseif($catIdx === 4) bg-gradient-to-br from-blue-500 to-cyan-600
+                        @else bg-gradient-to-br from-violet-500 to-purple-600
+                        @endif">
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-6xl font-black text-white/[0.08]">{{ mb_substr($category->name, 0, 1) }}</span>
                         </div>
-                    @endif
+                    </div>
+                @endif
+                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
+                <div class="relative z-10 p-4 w-full">
+                    <h3 class="font-bold text-white text-sm leading-tight">{{ $category->name }}</h3>
+                    <p class="text-white/60 text-[11px] mt-0.5">{{ $category->products_count ?? 0 }} produits</p>
                 </div>
-                <h3 class="font-medium text-slate-700 group-hover:text-primary-600 transition-colors text-xs leading-tight line-clamp-2">{{ $category->name }}</h3>
+                <div class="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:rotate-45">
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                </div>
             </a>
             @endforeach
         </div>
@@ -248,18 +266,20 @@
      PRODUITS VEDETTES
 ═══════════════════════════════════════════════ --}}
 @if($featuredProducts->count() > 0)
-<section class="py-10 bg-slate-50">
+<section class="py-14 bg-slate-50/80">
     <div class="container mx-auto px-6">
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex items-end justify-between mb-8">
             <div>
-                <h2 class="text-xl md:text-2xl font-extrabold text-slate-900">Produits populaires</h2>
-                <p class="text-slate-400 text-xs mt-0.5">Les plus demandés par nos clients</p>
+                <span class="text-primary-600 text-xs font-bold uppercase tracking-widest">Tendances</span>
+                <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-1">Produits populaires</h2>
+                <p class="text-slate-400 text-sm mt-1">Les plus demandés par nos clients</p>
             </div>
-            <a href="{{ route('shop.index') }}" class="text-sm font-semibold text-primary-600 hover:text-primary-700 transition-colors flex items-center gap-1">
-                Tout voir <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <a href="{{ route('shop.index') }}" class="text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors flex items-center gap-1.5 group">
+                Tout voir
+                <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
             </a>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             @foreach($featuredProducts as $product)
                 @include('front.shop.partials.product-card', ['product' => $product])
             @endforeach
@@ -272,25 +292,25 @@
      BANNIÈRE PROMO
 ═══════════════════════════════════════════════ --}}
 @if($promoBanner)
-<section class="py-4 bg-white">
+<section class="py-6 bg-white">
     <div class="container mx-auto px-6">
-        <a href="{{ $promoBanner->link ?? '#' }}" class="group relative flex rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all">
+        <a href="{{ $promoBanner->link ?? '#' }}" class="group relative flex rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-0.5">
             @if($promoBanner->image)
-                <img src="{{ asset('storage/' . $promoBanner->image) }}" alt="{{ $promoBanner->title }}" class="w-full h-40 md:h-52 object-cover group-hover:scale-[1.02] transition-transform duration-500" loading="lazy">
+                <img src="{{ asset('storage/' . $promoBanner->image) }}" alt="{{ $promoBanner->title }}" class="w-full h-44 md:h-56 object-cover group-hover:scale-[1.03] transition-transform duration-700" loading="lazy">
             @else
-                <div class="w-full h-40 md:h-52 bg-gradient-to-r from-primary-700 to-violet-700"></div>
+                <div class="w-full h-44 md:h-56 bg-gradient-to-r from-primary-700 via-primary-800 to-violet-800"></div>
             @endif
             @if($promoBanner->title)
-            <div class="absolute inset-0 bg-gradient-to-r from-black/60 via-black/25 to-transparent flex items-center">
-                <div class="p-5 md:p-8">
+            <div class="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent flex items-center">
+                <div class="p-6 md:p-10">
                     @if($promoBanner->subtitle)
-                    <p class="text-primary-300 text-xs font-bold uppercase tracking-widest mb-1">{{ $promoBanner->subtitle }}</p>
+                    <p class="text-primary-300 text-xs font-bold uppercase tracking-widest mb-2">{{ $promoBanner->subtitle }}</p>
                     @endif
-                    <h3 class="text-lg md:text-2xl font-extrabold text-white mb-2">{{ $promoBanner->title }}</h3>
+                    <h3 class="text-xl md:text-3xl font-black text-white mb-4 tracking-tight">{{ $promoBanner->title }}</h3>
                     @if($promoBanner->button_text)
-                    <span class="inline-flex items-center gap-1.5 px-4 py-2 bg-white text-slate-900 font-bold rounded-lg text-xs group-hover:bg-primary-500 group-hover:text-white transition-all">
+                    <span class="inline-flex items-center gap-2 px-6 py-3 bg-white text-slate-900 font-bold rounded-xl text-sm group-hover:bg-primary-500 group-hover:text-white transition-all duration-300 shadow-lg">
                         {{ $promoBanner->button_text }}
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                        <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                     </span>
                     @endif
                 </div>
@@ -302,13 +322,13 @@
 @endif
 
 {{-- ═══════════════════════════════════════════════
-     VENTES FLASH — avec produits
+     VENTES FLASH — avec produits et urgence
 ═══════════════════════════════════════════════ --}}
 @if($saleProducts->count() > 0)
-<section class="py-10 bg-white">
+<section class="py-14 bg-gradient-to-br from-red-50/50 via-white to-orange-50/30">
     <div class="container mx-auto px-6">
         {{-- Header avec countdown --}}
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6"
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8"
              x-data="{
                 h: 0, m: 0, s: 0,
                 init() {
@@ -323,32 +343,33 @@
                     tick(); setInterval(tick, 1000);
                 }
              }">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/25">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 </div>
                 <div>
-                    <h2 class="text-xl md:text-2xl font-extrabold text-slate-900">Ventes Flash</h2>
-                    <p class="text-slate-400 text-xs">Offres limitées du jour</p>
+                    <span class="text-red-500 text-xs font-bold uppercase tracking-widest">Offres limitées</span>
+                    <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Ventes Flash</h2>
                 </div>
             </div>
-            <div class="flex items-center gap-3">
-                <span class="text-xs text-slate-500 font-medium">Se termine dans :</span>
-                <div class="flex items-center gap-1">
-                    <span class="bg-slate-900 text-white text-sm font-bold px-2.5 py-1 rounded-md min-w-[36px] text-center" x-text="String(h).padStart(2,'0')">00</span>
-                    <span class="text-slate-400 font-bold">:</span>
-                    <span class="bg-slate-900 text-white text-sm font-bold px-2.5 py-1 rounded-md min-w-[36px] text-center" x-text="String(m).padStart(2,'0')">00</span>
-                    <span class="text-slate-400 font-bold">:</span>
-                    <span class="bg-red-500 text-white text-sm font-bold px-2.5 py-1 rounded-md min-w-[36px] text-center" x-text="String(s).padStart(2,'0')">00</span>
+            <div class="flex items-center gap-4">
+                <span class="text-xs text-slate-500 font-semibold hidden sm:block">Se termine dans</span>
+                <div class="flex items-center gap-1.5">
+                    <div class="bg-slate-900 text-white text-lg font-black px-3 py-2 rounded-xl min-w-[48px] text-center shadow-lg" x-text="String(h).padStart(2,'0')">00</div>
+                    <span class="text-slate-300 font-black text-lg">:</span>
+                    <div class="bg-slate-900 text-white text-lg font-black px-3 py-2 rounded-xl min-w-[48px] text-center shadow-lg" x-text="String(m).padStart(2,'0')">00</div>
+                    <span class="text-slate-300 font-black text-lg">:</span>
+                    <div class="bg-gradient-to-b from-red-500 to-red-600 text-white text-lg font-black px-3 py-2 rounded-xl min-w-[48px] text-center shadow-lg shadow-red-500/30 animate-pulse" x-text="String(s).padStart(2,'0')">00</div>
                 </div>
-                <a href="{{ route('shop.index', ['sale' => 1]) }}" class="text-sm font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 ml-2">
-                    Tout voir <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <a href="{{ route('shop.index', ['sale' => 1]) }}" class="text-sm font-bold text-red-600 hover:text-red-700 flex items-center gap-1 ml-2 group">
+                    Tout voir
+                    <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                 </a>
             </div>
         </div>
 
         {{-- Produits en promo --}}
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             @foreach($saleProducts as $product)
                 @include('front.shop.partials.product-card', ['product' => $product])
             @endforeach
@@ -361,23 +382,24 @@
      NOUVEAUTÉS
 ═══════════════════════════════════════════════ --}}
 @if($newProducts->count() > 0)
-<section class="py-10 bg-slate-50">
+<section class="py-14 bg-white">
     <div class="container mx-auto px-6">
-        <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+        <div class="flex items-end justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
                 </div>
                 <div>
-                    <h2 class="text-xl md:text-2xl font-extrabold text-slate-900">Nouveautés</h2>
-                    <p class="text-slate-400 text-xs">Fraîchement ajoutés</p>
+                    <span class="text-emerald-600 text-xs font-bold uppercase tracking-widest">Fraîchement ajoutés</span>
+                    <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Nouveautés</h2>
                 </div>
             </div>
-            <a href="{{ route('shop.index', ['sort' => 'newest']) }}" class="text-sm font-semibold text-primary-600 hover:text-primary-700 transition-colors flex items-center gap-1">
-                Tout voir <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <a href="{{ route('shop.index', ['sort' => 'newest']) }}" class="text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors flex items-center gap-1.5 group">
+                Tout voir
+                <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
             </a>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
             @foreach($newProducts as $product)
                 @include('front.shop.partials.product-card', ['product' => $product])
             @endforeach
@@ -389,38 +411,30 @@
 {{-- ═══════════════════════════════════════════════
      POURQUOI NOUS CHOISIR
 ═══════════════════════════════════════════════ --}}
-<section class="py-10 bg-white">
+<section class="py-16 bg-gradient-to-br from-slate-50 to-white">
     <div class="container mx-auto px-6">
-        <h2 class="text-xl md:text-2xl font-extrabold text-slate-900 text-center mb-8">Pourquoi nous choisir ?</h2>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="group text-center p-5 rounded-xl border border-slate-100 hover:border-primary-200 hover:shadow-md transition-all">
-                <div class="w-12 h-12 mx-auto rounded-xl bg-blue-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+        <div class="text-center mb-10">
+            <span class="text-primary-600 text-xs font-bold uppercase tracking-widest">Nos avantages</span>
+            <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-1">Pourquoi nous choisir ?</h2>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+            @php
+                $advantages = [
+                    ['icon' => 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z', 'gradient' => 'from-blue-500 to-indigo-600', 'bg' => 'bg-blue-50', 'title' => 'Qualité garantie', 'desc' => 'Produits vérifiés et sélectionnés avec soin'],
+                    ['icon' => 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', 'gradient' => 'from-emerald-500 to-green-600', 'bg' => 'bg-emerald-50', 'title' => 'Meilleurs prix', 'desc' => 'Promotions exclusives chaque semaine'],
+                    ['icon' => 'M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0', 'gradient' => 'from-amber-500 to-orange-500', 'bg' => 'bg-amber-50', 'title' => 'Livraison express', 'desc' => '24-48h en Afrique de l\'Ouest'],
+                    ['icon' => 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z', 'gradient' => 'from-violet-500 to-purple-600', 'bg' => 'bg-violet-50', 'title' => 'SAV réactif', 'desc' => 'WhatsApp & téléphone 7j/7'],
+                ];
+            @endphp
+            @foreach($advantages as $adv)
+            <div class="group text-center p-6 rounded-2xl bg-white border border-slate-100 hover:border-transparent hover:shadow-xl hover:-translate-y-1 transition-all duration-500">
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br {{ $adv['gradient'] }} flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="{{ $adv['icon'] }}"/></svg>
                 </div>
-                <h3 class="font-bold text-slate-900 text-sm mb-1">Qualité garantie</h3>
-                <p class="text-xs text-slate-500">Produits vérifiés et sélectionnés</p>
+                <h3 class="font-bold text-slate-900 text-sm mb-1.5">{{ $adv['title'] }}</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">{{ $adv['desc'] }}</p>
             </div>
-            <div class="group text-center p-5 rounded-xl border border-slate-100 hover:border-emerald-200 hover:shadow-md transition-all">
-                <div class="w-12 h-12 mx-auto rounded-xl bg-emerald-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </div>
-                <h3 class="font-bold text-slate-900 text-sm mb-1">Meilleurs prix</h3>
-                <p class="text-xs text-slate-500">Promotions chaque semaine</p>
-            </div>
-            <div class="group text-center p-5 rounded-xl border border-slate-100 hover:border-amber-200 hover:shadow-md transition-all">
-                <div class="w-12 h-12 mx-auto rounded-xl bg-amber-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
-                </div>
-                <h3 class="font-bold text-slate-900 text-sm mb-1">Livraison express</h3>
-                <p class="text-xs text-slate-500">24-48h en Afrique de l'Ouest</p>
-            </div>
-            <div class="group text-center p-5 rounded-xl border border-slate-100 hover:border-violet-200 hover:shadow-md transition-all">
-                <div class="w-12 h-12 mx-auto rounded-xl bg-violet-500 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                </div>
-                <h3 class="font-bold text-slate-900 text-sm mb-1">SAV réactif</h3>
-                <p class="text-xs text-slate-500">WhatsApp & téléphone 7j/7</p>
-            </div>
+            @endforeach
         </div>
     </div>
 </section>
@@ -429,17 +443,20 @@
      WHATSAPP CTA
 ═══════════════════════════════════════════════ --}}
 @if($whatsapp)
-<section class="py-8 bg-[#075e54]">
-    <div class="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-3 text-white">
-            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+<section class="py-10 bg-gradient-to-r from-[#075e54] to-[#128c7e]">
+    <div class="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-4 text-white">
+            <div class="w-14 h-14 bg-white/15 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            </div>
             <div>
-                <h3 class="font-bold text-base">Besoin d'aide ? Écrivez-nous</h3>
-                <p class="text-white/70 text-xs">Réponse rapide · Conseil personnalisé</p>
+                <h3 class="font-black text-lg">Besoin d'aide ? Écrivez-nous</h3>
+                <p class="text-white/60 text-sm">Réponse rapide · Conseil personnalisé</p>
             </div>
         </div>
         <a href="https://wa.me/{{ preg_replace('/\D/', '', $whatsapp) }}?text={{ urlencode('Bonjour ! Je souhaite des informations sur vos produits.') }}" target="_blank"
-           class="inline-flex items-center gap-2 px-6 py-2.5 bg-white text-[#075e54] font-bold rounded-lg hover:bg-green-50 transition-all text-sm">
+           class="inline-flex items-center gap-2 px-8 py-3.5 bg-white text-[#075e54] font-bold rounded-2xl hover:bg-green-50 hover:-translate-y-0.5 transition-all text-sm shadow-xl shadow-black/10">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
             Écrire sur WhatsApp
         </a>
     </div>
@@ -466,36 +483,23 @@
         }
      }"
      x-show="show" x-cloak
-     x-transition:enter="transition ease-out duration-400"
-     x-transition:enter-start="opacity-0 translate-y-3"
-     x-transition:enter-end="opacity-100 translate-y-0"
-     x-transition:leave="transition ease-in duration-200"
-     x-transition:leave-start="opacity-100"
-     x-transition:leave-end="opacity-0 translate-y-3"
-     class="fixed bottom-4 left-4 z-50 bg-white rounded-lg shadow-xl border border-slate-100 p-2.5 max-w-[260px] flex items-center gap-2.5">
-    <div class="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
-        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+     x-transition:enter="transition ease-out duration-500"
+     x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+     x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+     x-transition:leave="transition ease-in duration-300"
+     x-transition:leave-start="opacity-100 translate-y-0"
+     x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+     class="fixed bottom-5 left-5 z-50 bg-white rounded-2xl shadow-2xl shadow-slate-300/50 border border-slate-100 p-3.5 max-w-[280px] flex items-center gap-3">
+    <div class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-500/20">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
     </div>
-    <div class="min-w-0">
-        <p class="text-[11px] text-slate-800 font-medium"><span x-text="name"></span> de <span x-text="city"></span></p>
-        <p class="text-[10px] text-slate-400">a commandé il y a <span x-text="time" class="text-emerald-600 font-medium"></span></p>
+    <div>
+        <p class="text-xs font-bold text-slate-900"><span x-text="name"></span> de <span x-text="city"></span></p>
+        <p class="text-[11px] text-slate-400">a commandé il y a <span x-text="time" class="text-emerald-600 font-semibold"></span></p>
     </div>
-    <button @click="show = false" class="flex-shrink-0 text-slate-300 hover:text-slate-500">
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    <button @click="show = false" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-xs hover:bg-slate-300 transition-colors">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
     </button>
 </div>
-
-{{-- État vide --}}
-@if($featuredProducts->count() === 0 && $newProducts->count() === 0)
-<section class="py-16 bg-slate-50">
-    <div class="container mx-auto px-6 text-center">
-        <div class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg class="w-8 h-8 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-        </div>
-        <h2 class="text-lg font-bold text-slate-900 mb-2">Boutique en cours de création</h2>
-        <p class="text-slate-500 text-sm max-w-md mx-auto">Nos produits arrivent très bientôt !</p>
-    </div>
-</section>
-@endif
 
 @endsection

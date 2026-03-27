@@ -443,7 +443,7 @@
                 
                 <!-- Search bar (desktop) -->
                 <div class="hidden lg:flex flex-1 max-w-xl mx-8">
-                    <form action="{{ route('shop.index') }}" method="GET" class="relative w-full group" role="search">
+                    <form action="{{ route('shop.index') }}" method="GET" class="relative w-full group no-ajax" role="search">
                         <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
@@ -454,7 +454,7 @@
                             placeholder="Rechercher un produit..."
                             class="w-full pl-12 pr-24 py-3 bg-slate-50 border border-slate-200/80 rounded-full text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 focus:bg-white transition-all duration-200 placeholder:text-slate-400"
                         >
-                        <button type="submit" class="absolute right-1.5 top-1/2 -translate-y-1/2 px-5 py-1.5 bg-primary-600 text-white text-xs font-semibold rounded-full hover:bg-primary-700 transition-colors">
+                        <button type="submit" class="absolute right-1.5 top-1/2 -translate-y-1/2 z-10 px-5 py-1.5 bg-primary-600 text-white text-xs font-semibold rounded-full hover:bg-primary-700 transition-colors">
                             Rechercher
                         </button>
                     </form>
@@ -1203,6 +1203,8 @@
     document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('form:not(.no-ajax)').forEach(f => {
             const action = (f.getAttribute('action') || '').toLowerCase();
+            const method = (f.getAttribute('method') || 'GET').toUpperCase();
+            if (method === 'GET') return; // GET forms should navigate normally
             if (!action.includes('process-payment') && !f.closest('[data-no-ajax]')) {
                 f.classList.add('ajax-form');
             }

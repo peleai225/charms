@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Front;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Coupon;
 use App\Models\Product;
 use Illuminate\Http\Request;
 
@@ -14,28 +15,43 @@ class HomeController extends Controller
      */
     public function index()
     {
-        // Catégories mises en avant
+        // Catégories mises en avant (+ comptage produits actifs, prix mini par catégorie)
         $featuredCategories = Category::active()
             ->featured()
             ->roots()
             ->ordered()
-            ->withCount(['products' => fn($q) => $q->where('is_active', true)])
             ->take(6)
+            ->withCount(['products' => function ($query) {
+                $query->active();
+            }])
             ->get();
 
-        // Produits mis en avant
-        $eagerLoads = ['images', 'category', 'variants.attributeValues.attribute'];
+        if ($featuredCategories->isNotEmpty()) {
+            $minByCategory = Product::active()
+                ->whereIn('category_id', $featuredCategories->pluck('id'))
+                ->groupBy('category_id')
+                ->selectRaw('category_id, MIN(sale_price) as min_sale_price')
+                ->pluck('min_sale_price', 'category_id');
 
+            $featuredCategories->each(function (Category $category) use ($minByCategory) {
+                $category->setAttribute(
+                    'min_product_price',
+                    $minByCategory[$category->id] ?? null
+                );
+            });
+        }
+
+        // Produits mis en avant
         $featuredProducts = Product::active()
             ->featured()
-            ->with($eagerLoads)
+            ->with(['images', 'category'])
             ->take(8)
             ->get();
 
         // Nouveautés
         $newProducts = Product::active()
             ->new()
-            ->with($eagerLoads)
+            ->with(['images', 'category'])
             ->latest()
             ->take(8)
             ->get();
@@ -44,15 +60,28 @@ class HomeController extends Controller
         $saleProducts = Product::active()
             ->whereNotNull('compare_price')
             ->whereColumn('compare_price', '>', 'sale_price')
-            ->with($eagerLoads)
+            ->with(['images', 'category'])
             ->take(8)
+            ->get();
+
+        $activeCoupons = Coupon::where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('starts_at')->orWhere('starts_at', '<=', now());
+            })
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>=', now());
+            })
+            ->where('first_order_only', false)
+            ->whereNull('applicable_products')
+            ->take(3)
             ->get();
 
         return view('front.home', compact(
             'featuredCategories',
             'featuredProducts',
             'newProducts',
-            'saleProducts'
+            'saleProducts',
+            'activeCoupons'
         ));
     }
 }

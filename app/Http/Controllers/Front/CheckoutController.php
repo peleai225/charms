@@ -257,31 +257,34 @@ class CheckoutController extends Controller
                 }
             }
 
-            // Vider le panier
+            // Pour COD, mettre à jour le statut avant le commit
+            if ($validated['payment_method'] === 'cod') {
+                $order->update([
+                    'payment_status' => 'pending',
+                    'status'         => 'confirmed',
+                ]);
+            }
+
+            DB::commit();
+
+            // Vider le panier uniquement après le commit réussi
             $cart->clear();
 
             // Stocker l'ID de commande en session pour vérification d'accès (guest + auth)
             session()->push('checkout_order_ids', $order->id);
 
-            DB::commit();
-
-            // Rediriger vers le paiement
-            if ($validated['payment_method'] === 'cinetpay' || $validated['payment_method'] === 'lygos') {
+            // Rediriger vers le paiement en ligne
+            if (in_array($validated['payment_method'], ['cinetpay', 'lygos'])) {
                 return $this->redirectToPayment($order, $validated['payment_method']);
             }
 
-            // Paiement à la livraison
-            $order->update([
-                'payment_status' => 'cod',
-                'status' => 'processing',
-            ]);
-
+            // Paiement à la livraison → page de succès
             return redirect()->route('checkout.success', ['order' => $order->id]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Checkout error: ' . $e->getMessage());
-            return back()->with('error', 'Erreur lors de la création de la commande. Veuillez réessayer.');
+            \Log::error('Checkout error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return back()->withInput()->with('error', 'Erreur lors de la création de la commande : ' . $e->getMessage());
         }
     }
 
@@ -587,8 +590,8 @@ class CheckoutController extends Controller
         if ($method === 'cod') {
             $order->update([
                 'payment_method' => 'cod',
-                'payment_status' => 'cod',
-                'status' => 'processing',
+                'payment_status' => 'pending',
+                'status' => 'confirmed',
             ]);
 
             return redirect()->route('checkout.success', ['order' => $order->id]);

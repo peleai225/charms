@@ -301,154 +301,453 @@
         </div>
     </form>
 
-    <!-- Section Variantes (en dehors du formulaire principal) -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-lg font-semibold text-slate-900">Variantes par couleur</h2>
+    {{-- ===== SECTION VARIANTES ===== --}}
+    @php
+        $allSizes  = $attributes->where('slug', 'taille')->first()?->values ?? collect();
+        $allColors = $attributes->where('slug', 'couleur')->first()?->values ?? collect();
+        $productSlug = strtoupper(preg_replace('/[^A-Za-z0-9]+/', '-', $product->name));
+    @endphp
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"
+         x-data="{
+            panel: 'bulk',
+            mode: 'sizes',
+            selectedSizes: @js($allSizes->pluck('id')->toArray()),
+            selectedColors: [],
+            productSlug: '{{ $productSlug }}',
+
+            toggleSize(id) {
+                const idx = this.selectedSizes.indexOf(id);
+                if (idx >= 0) this.selectedSizes.splice(idx, 1);
+                else this.selectedSizes.push(id);
+            },
+            toggleColor(id) {
+                const idx = this.selectedColors.indexOf(id);
+                if (idx >= 0) this.selectedColors.splice(idx, 1);
+                else this.selectedColors.push(id);
+            },
+            autoSku(val, extra) {
+                const base = this.productSlug.substring(0, 12);
+                const v = val.replace(/\s+/g, '').toUpperCase().substring(0, 6);
+                const e = extra ? '-' + extra.replace(/\s+/g, '').toUpperCase().substring(0, 5) : '';
+                return base + '-' + v + e;
+            }
+         }">
+
+        <!-- En-tête avec onglets internes -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <h2 class="text-base font-semibold text-slate-900">
+                Variantes
+                <span class="ml-2 text-xs font-normal text-slate-500 bg-slate-200 rounded-full px-2 py-0.5">{{ $product->variants->count() }} existante(s)</span>
+            </h2>
+            <div class="flex gap-1 bg-white rounded-lg border border-slate-200 p-1">
+                <button type="button" @click="panel='bulk'"
+                    :class="panel==='bulk' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                    class="px-3 py-1.5 rounded-md text-xs font-medium transition-all">
+                    + Ajout en masse
+                </button>
+                <button type="button" @click="panel='single'"
+                    :class="panel==='single' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                    class="px-3 py-1.5 rounded-md text-xs font-medium transition-all">
+                    + Variante unique
+                </button>
+                <button type="button" @click="panel='list'"
+                    :class="panel==='list' ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                    class="px-3 py-1.5 rounded-md text-xs font-medium transition-all">
+                    Gérer ({{ $product->variants->count() }})
+                </button>
+            </div>
         </div>
 
-        <!-- Formulaire ajout variante -->
-        <form method="POST" action="{{ route('admin.products.variants.store', $product) }}" enctype="multipart/form-data" class="p-4 bg-slate-50 rounded-xl mb-6 no-ajax">
-            @csrf
-            <h3 class="font-medium text-slate-900 mb-4">Ajouter une variante</h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Couleur *</label>
-                    <select name="color_id" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
-                        <option value="">Choisir...</option>
-                        @foreach($colors as $color)
-                            <option value="{{ $color->id }}" data-color="{{ $color->color_code }}">
-                                {{ $color->value }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+        {{-- ===== PANEL : AJOUT EN MASSE ===== --}}
+        <div x-show="panel==='bulk'" class="p-6 space-y-5">
 
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Taille (optionnel)</label>
-                    <select name="size_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
-                        <option value="">Aucune</option>
-                        @foreach($attributes->where('slug', 'taille')->first()?->values ?? [] as $size)
-                            <option value="{{ $size->id }}">{{ $size->value }}</option>
-                        @endforeach
-                    </select>
-                </div>
+            {{-- Sélection du mode --}}
+            <div class="flex flex-wrap gap-3">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" x-model="mode" value="sizes" class="text-blue-600">
+                    <span class="text-sm font-medium text-slate-700">Tailles seulement</span>
+                    <span class="text-xs text-slate-400">(vêtements enfant, âge...)</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" x-model="mode" value="colors" class="text-blue-600">
+                    <span class="text-sm font-medium text-slate-700">Couleurs seulement</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" x-model="mode" value="matrix" class="text-blue-600">
+                    <span class="text-sm font-medium text-slate-700">Tailles × Couleurs</span>
+                    <span class="text-xs text-slate-400">(grille complète)</span>
+                </label>
+            </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">SKU variante *</label>
-                    <input type="text" name="sku" required placeholder="SKU-ROUGE" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Stock *</label>
-                    <input type="number" name="stock_quantity" required min="0" value="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Prix (si différent)</label>
-                    <input type="number" name="sale_price" step="0.01" min="0" placeholder="{{ $product->sale_price }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+            {{-- Sélection des tailles (modes sizes + matrix) --}}
+            <div x-show="mode==='sizes' || mode==='matrix'">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Sélectionner les tailles</p>
+                <div class="flex flex-wrap gap-2">
+                    @foreach($allSizes as $size)
+                    <button type="button"
+                        @click="toggleSize({{ $size->id }})"
+                        :class="selectedSizes.includes({{ $size->id }}) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-300 hover:border-blue-400'"
+                        class="px-3 py-1.5 rounded-lg border text-sm font-medium transition-all">
+                        {{ $size->value }}
+                    </button>
+                    @endforeach
+                    @if($allSizes->isEmpty())
+                        <p class="text-sm text-slate-400 italic">Aucune taille définie en base.</p>
+                    @endif
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Image de la couleur</label>
-                    <input type="file" name="image" accept="image/*" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
-                    <p class="text-xs text-slate-500 mt-1">Cette image apparaîtra quand le client sélectionne cette couleur</p>
+            {{-- Sélection des couleurs (modes colors + matrix) --}}
+            <div x-show="mode==='colors' || mode==='matrix'">
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Sélectionner les couleurs</p>
+                <div class="flex flex-wrap gap-2">
+                    @foreach($allColors as $color)
+                    <button type="button"
+                        @click="toggleColor({{ $color->id }})"
+                        :class="selectedColors.includes({{ $color->id }}) ? 'ring-2 ring-offset-1 ring-blue-600 opacity-100' : 'opacity-60 hover:opacity-90'"
+                        class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium transition-all">
+                        @if($color->color_code)
+                            <span class="w-4 h-4 rounded-full border border-slate-200 inline-block" style="background:{{ $color->color_code }}"></span>
+                        @endif
+                        {{ $color->value }}
+                    </button>
+                    @endforeach
+                    @if($allColors->isEmpty())
+                        <p class="text-sm text-slate-400 italic">Aucune couleur définie.</p>
+                    @endif
                 </div>
+            </div>
 
-                <div class="flex items-end">
-                    <button type="submit" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors">
+            {{-- ===== GRILLE : MODE TAILLES ===== --}}
+            <form method="POST" action="{{ route('admin.products.variants.bulk', $product) }}" class="no-ajax" x-show="mode==='sizes'">
+                @csrf
+                <template x-if="selectedSizes.length > 0">
+                    <div class="overflow-x-auto rounded-xl border border-slate-200">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-50 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase w-28">Taille</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase w-28">Stock *</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase w-36">Prix spécial (FCFA)</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">SKU (modifiable)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @foreach($allSizes as $i => $size)
+                                <tr x-show="selectedSizes.includes({{ $size->id }})" class="hover:bg-blue-50/30">
+                                    <td class="px-4 py-3">
+                                        <input type="hidden" name="rows[{{ $i }}][size_id]" value="{{ $size->id }}">
+                                        <span class="font-semibold text-slate-800">{{ $size->value }}</span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <input type="number" name="rows[{{ $i }}][stock_quantity]" min="0" value="0"
+                                               class="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <input type="number" name="rows[{{ $i }}][sale_price]" min="0" step="1"
+                                               placeholder="{{ intval($product->sale_price) }}"
+                                               class="w-32 px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <input type="text" name="rows[{{ $i }}][sku]"
+                                               :value="autoSku('{{ addslashes($size->value) }}')"
+                                               class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+                <template x-if="selectedSizes.length === 0">
+                    <p class="text-sm text-slate-400 italic py-2">Sélectionnez au moins une taille ci-dessus.</p>
+                </template>
+                <div class="flex justify-end mt-4">
+                    <button type="submit"
+                        x-bind:disabled="selectedSizes.length === 0"
+                        :class="selectedSizes.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-xl transition-colors shadow-sm shadow-blue-600/20 text-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Créer <span x-text="selectedSizes.length"></span> variante(s)
+                    </button>
+                </div>
+            </form>
+
+            {{-- ===== GRILLE : MODE COULEURS ===== --}}
+            <form method="POST" action="{{ route('admin.products.variants.bulk', $product) }}" class="no-ajax" x-show="mode==='colors'">
+                @csrf
+                <template x-if="selectedColors.length > 0">
+                    <div class="overflow-x-auto rounded-xl border border-slate-200">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-50 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase w-36">Couleur</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase w-28">Stock *</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase w-36">Prix spécial (FCFA)</th>
+                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">SKU</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @foreach($allColors as $i => $color)
+                                <tr x-show="selectedColors.includes({{ $color->id }})" class="hover:bg-blue-50/30">
+                                    <td class="px-4 py-3">
+                                        <input type="hidden" name="rows[{{ $i }}][color_id]" value="{{ $color->id }}">
+                                        <div class="flex items-center gap-2">
+                                            @if($color->color_code)
+                                                <span class="w-5 h-5 rounded-full border border-slate-200 flex-shrink-0" style="background:{{ $color->color_code }}"></span>
+                                            @endif
+                                            <span class="font-semibold text-slate-800">{{ $color->value }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <input type="number" name="rows[{{ $i }}][stock_quantity]" min="0" value="0"
+                                               class="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <input type="number" name="rows[{{ $i }}][sale_price]" min="0" step="1"
+                                               placeholder="{{ intval($product->sale_price) }}"
+                                               class="w-32 px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <input type="text" name="rows[{{ $i }}][sku]"
+                                               :value="autoSku('{{ addslashes($color->value) }}')"
+                                               class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </template>
+                <template x-if="selectedColors.length === 0">
+                    <p class="text-sm text-slate-400 italic py-2">Sélectionnez au moins une couleur ci-dessus.</p>
+                </template>
+                <div class="flex justify-end mt-4">
+                    <button type="submit"
+                        x-bind:disabled="selectedColors.length === 0"
+                        :class="selectedColors.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-xl transition-colors shadow-sm shadow-blue-600/20 text-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        Créer <span x-text="selectedColors.length"></span> variante(s)
+                    </button>
+                </div>
+            </form>
+
+            {{-- ===== GRILLE : MODE MATRICE Taille × Couleur ===== --}}
+            <div x-show="mode==='matrix'">
+                @php $matrixSizes = $allSizes; $matrixColors = $allColors; @endphp
+                <template x-if="selectedSizes.length > 0 && selectedColors.length > 0">
+                    <form method="POST" action="{{ route('admin.products.variants.bulk', $product) }}" class="no-ajax" x-data="{ rows: [] }">
+                        @csrf
+                        @php $rowIdx = 0; @endphp
+                        <div class="overflow-x-auto rounded-xl border border-slate-200">
+                            <table class="w-full text-sm">
+                                <thead class="bg-slate-50 border-b border-slate-200">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Taille</th>
+                                        @foreach($matrixColors as $color)
+                                        <th class="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase" x-show="selectedColors.includes({{ $color->id }})">
+                                            <div class="flex items-center justify-center gap-1">
+                                                @if($color->color_code)<span class="w-3 h-3 rounded-full" style="background:{{ $color->color_code }}"></span>@endif
+                                                {{ $color->value }}
+                                            </div>
+                                        </th>
+                                        @endforeach
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    @foreach($matrixSizes as $size)
+                                    <tr x-show="selectedSizes.includes({{ $size->id }})" class="hover:bg-blue-50/30">
+                                        <td class="px-4 py-3 font-semibold text-slate-800 w-28">{{ $size->value }}</td>
+                                        @foreach($matrixColors as $color)
+                                        <td class="px-3 py-3 text-center" x-show="selectedColors.includes({{ $color->id }})">
+                                            <input type="hidden" name="rows[{{ $rowIdx }}][size_id]" value="{{ $size->id }}">
+                                            <input type="hidden" name="rows[{{ $rowIdx }}][color_id]" value="{{ $color->id }}">
+                                            <input type="hidden" name="rows[{{ $rowIdx }}][sku]"
+                                                   :value="autoSku('{{ addslashes($size->value) }}', '{{ addslashes($color->value) }}')">
+                                            <input type="hidden" name="rows[{{ $rowIdx }}][sale_price]" value="">
+                                            <input type="number" name="rows[{{ $rowIdx }}][stock_quantity]" min="0" value="0"
+                                                   placeholder="qté"
+                                                   class="w-20 px-2 py-1.5 border border-slate-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        </td>
+                                        @php $rowIdx++; @endphp
+                                        @endforeach
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-2">Saisir 0 pour créer la variante sans stock. Les SKUs sont générés automatiquement.</p>
+                        <div class="flex justify-end mt-3">
+                            <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors shadow-sm shadow-blue-600/20 text-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                Créer la matrice
+                            </button>
+                        </div>
+                    </form>
+                </template>
+                <template x-if="selectedSizes.length === 0 || selectedColors.length === 0">
+                    <p class="text-sm text-slate-400 italic py-2">Sélectionnez au moins une taille et une couleur.</p>
+                </template>
+            </div>
+        </div>
+
+        {{-- ===== PANEL : VARIANTE UNIQUE ===== --}}
+        <div x-show="panel==='single'" class="p-6">
+            <form method="POST" action="{{ route('admin.products.variants.store', $product) }}" enctype="multipart/form-data" class="no-ajax space-y-4">
+                @csrf
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Couleur</label>
+                        <select name="color_id" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                            <option value="">Choisir...</option>
+                            @foreach($colors as $color)
+                                <option value="{{ $color->id }}" data-color="{{ $color->color_code }}">{{ $color->value }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Taille</label>
+                        <select name="size_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                            <option value="">Aucune</option>
+                            @foreach($allSizes as $size)
+                                <option value="{{ $size->id }}">{{ $size->value }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">SKU *</label>
+                        <input type="text" name="sku" required placeholder="EX: CARGO-ROUGE-4ANS" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Stock *</label>
+                        <input type="number" name="stock_quantity" required min="0" value="0" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Prix spécial (FCFA)</label>
+                        <input type="number" name="sale_price" step="1" min="0" placeholder="{{ intval($product->sale_price) }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Image couleur</label>
+                        <input type="file" name="image" accept="image/*" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit" class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors text-sm">
                         Ajouter la variante
                     </button>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
 
-        <!-- Liste des variantes existantes -->
-        @if($product->variants->count() > 0)
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-slate-50">
-                    <tr>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Image</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Variante</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">SKU</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Prix</th>
-                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Stock</th>
-                        <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200">
-                    @foreach($product->variants as $variant)
-                    <tr class="hover:bg-slate-50">
-                        <td class="px-4 py-3">
-                            @if($variant->image)
-                                <img src="{{ asset('storage/' . $variant->image) }}" alt="" class="w-12 h-12 object-cover rounded-lg">
-                            @else
-                                <div class="w-12 h-12 bg-slate-100 rounded-lg flex items-center justify-center">
-                                    @php
-                                        $colorValue = $variant->attributeValues->firstWhere('attribute.slug', 'couleur');
-                                    @endphp
-                                    @if($colorValue && $colorValue->color_code)
-                                        <div class="w-8 h-8 rounded-full border-2 border-white shadow" style="background-color: {{ $colorValue->color_code }}"></div>
+        {{-- ===== PANEL : LISTE / GESTION ===== --}}
+        <div x-show="panel==='list'" class="p-6">
+            @if($product->variants->count() > 0)
+            <div class="overflow-x-auto rounded-xl border border-slate-200">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 border-b border-slate-200">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Variante</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">SKU</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Prix</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Stock</th>
+                            <th class="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach($product->variants as $variant)
+                        @php
+                            $vColor = $variant->attributeValues->firstWhere(fn($v) => $v->attribute->slug === 'couleur');
+                            $vSize  = $variant->attributeValues->firstWhere(fn($v) => $v->attribute->slug === 'taille');
+                        @endphp
+                        <tr class="hover:bg-slate-50 group" x-data="{ editing: false, stock: {{ $variant->stock_quantity }}, saving: false }">
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    @if($variant->image)
+                                        <img src="{{ asset('storage/' . $variant->image) }}" class="w-9 h-9 rounded-lg object-cover">
+                                    @elseif($vColor && $vColor->color_code)
+                                        <span class="w-9 h-9 rounded-lg border border-slate-200 flex-shrink-0 inline-block" style="background:{{ $vColor->color_code }}"></span>
                                     @else
-                                        <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"></path>
-                                        </svg>
+                                        <span class="w-9 h-9 rounded-lg bg-slate-100 flex-shrink-0 inline-block"></span>
                                     @endif
+                                    <div>
+                                        @if($vColor)<span class="font-medium text-slate-900">{{ $vColor->value }}</span>@endif
+                                        @if($vSize)<span class="ml-1 text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{{ $vSize->value }}</span>@endif
+                                    </div>
                                 </div>
-                            @endif
-                        </td>
-                        <td class="px-4 py-3">
-                            <div class="flex items-center gap-2">
-                                @foreach($variant->attributeValues as $attrValue)
-                                    @if($attrValue->color_code)
-                                        <span class="w-5 h-5 rounded-full border border-slate-200" style="background-color: {{ $attrValue->color_code }}" title="{{ $attrValue->value }}"></span>
-                                    @endif
-                                    <span class="text-sm font-medium text-slate-900">{{ $attrValue->value }}</span>
-                                @endforeach
-                            </div>
-                        </td>
-                        <td class="px-4 py-3 font-mono text-sm text-slate-600">{{ $variant->sku }}</td>
-                        <td class="px-4 py-3 font-medium text-slate-900">
-                            {{ format_price($variant->sale_price ?? $product->sale_price) }}
-                        </td>
-                        <td class="px-4 py-3">
-                            @if($variant->stock_quantity <= 0)
-                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">Rupture</span>
-                            @elseif($variant->stock_quantity <= 5)
-                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700">{{ $variant->stock_quantity }}</span>
-                            @else
-                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">{{ $variant->stock_quantity }}</span>
-                            @endif
-                        </td>
-                        <td class="px-4 py-3 text-right">
-                            <form method="POST" action="{{ route('admin.products.variants.destroy', [$product, $variant]) }}" class="inline no-ajax" onsubmit="return confirm('Supprimer cette variante ?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="p-2 text-red-600 hover:bg-red-50 rounded-lg">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                    </svg>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                            </td>
+                            <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $variant->sku }}</td>
+                            <td class="px-4 py-3 font-medium text-slate-900">
+                                {{ format_price($variant->sale_price ?? $product->sale_price) }}
+                            </td>
+                            {{-- Stock : édition inline --}}
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <template x-if="!editing">
+                                        <span @click="editing=true"
+                                              :class="stock <= 0 ? 'bg-red-100 text-red-700' : (stock <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700')"
+                                              class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full cursor-pointer hover:opacity-80 transition-opacity"
+                                              title="Cliquer pour modifier">
+                                            <span x-text="stock <= 0 ? 'Rupture' : stock + ' pcs'"></span>
+                                            <svg class="w-3 h-3 ml-1 opacity-0 group-hover:opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                        </span>
+                                    </template>
+                                    <template x-if="editing">
+                                        <form @submit.prevent="
+                                            saving=true;
+                                            fetch('{{ route('admin.products.variants.update', [$product, $variant]) }}', {
+                                                method: 'PATCH',
+                                                headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}','X-Requested-With':'XMLHttpRequest'},
+                                                body: JSON.stringify({stock_quantity: parseInt(stock)})
+                                            }).then(r=>r.json()).then(d=>{ if(d.success){ editing=false; } }).finally(()=>{ saving=false; });
+                                        " class="flex items-center gap-1">
+                                            <input type="number" x-model="stock" min="0"
+                                                   class="w-20 px-2 py-1 border-2 border-blue-400 rounded-lg text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                   @keydown.escape="editing=false" @click.stop>
+                                            <button type="submit" :disabled="saving"
+                                                    class="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                            </button>
+                                            <button type="button" @click="editing=false"
+                                                    class="p-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            </button>
+                                        </form>
+                                    </template>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <form method="POST" action="{{ route('admin.products.variants.destroy', [$product, $variant]) }}" class="inline no-ajax" onsubmit="return confirm('Supprimer cette variante ?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                    <tfoot class="bg-slate-50 border-t border-slate-200">
+                        <tr>
+                            <td colspan="3" class="px-4 py-2 text-xs text-slate-500">{{ $product->variants->count() }} variante(s)</td>
+                            <td class="px-4 py-2 text-xs font-semibold text-slate-700">
+                                Total : {{ $product->variants->sum('stock_quantity') }} pcs
+                            </td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            @else
+            <div class="text-center py-12 text-slate-400">
+                <svg class="w-12 h-12 mx-auto mb-3 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+                <p class="text-sm">Aucune variante pour le moment.</p>
+                <button type="button" @click="panel='bulk'" class="mt-2 text-sm text-blue-600 hover:underline">Utilisez l'ajout en masse →</button>
+            </div>
+            @endif
         </div>
-        @else
-        <div class="text-center py-8 text-slate-500">
-            <svg class="w-12 h-12 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
-            </svg>
-            <p>Aucune variante pour le moment</p>
-            <p class="text-sm">Ajoutez des variantes pour proposer différentes couleurs et tailles</p>
-        </div>
-        @endif
     </div>
 </div>
 

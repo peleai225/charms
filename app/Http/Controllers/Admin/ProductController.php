@@ -414,6 +414,101 @@ class ProductController extends Controller
     }
 
     /**
+     * Créer plusieurs variantes en une seule soumission (grille)
+     */
+    public function bulkStoreVariants(Request $request, Product $product)
+    {
+        $request->validate([
+            'rows'                    => 'required|array|min:1',
+            'rows.*.sku'              => 'required|string|max:100',
+            'rows.*.stock_quantity'   => 'required|integer|min:0',
+            'rows.*.sale_price'       => 'nullable|numeric|min:0',
+            'rows.*.size_id'          => 'nullable|exists:attribute_values,id',
+            'rows.*.color_id'         => 'nullable|exists:attribute_values,id',
+        ]);
+
+        $sizeAttr  = Attribute::where('slug', 'taille')->first();
+        $colorAttr = Attribute::where('slug', 'couleur')->first();
+        $created   = 0;
+        $skipped   = 0;
+
+        DB::beginTransaction();
+        try {
+            foreach ($request->rows as $row) {
+                $sku = trim($row['sku'] ?? '');
+                if ($sku === '') continue;
+
+                // SKU déjà pris → ignorer
+                if (ProductVariant::where('sku', $sku)->exists()) {
+                    $skipped++;
+                    continue;
+                }
+
+                $variant = ProductVariant::create([
+                    'product_id'     => $product->id,
+                    'sku'            => $sku,
+                    'stock_quantity' => (int) ($row['stock_quantity'] ?? 0),
+                    'sale_price'     => !empty($row['sale_price']) ? $row['sale_price'] : null,
+                    'is_active'      => true,
+                ]);
+
+                if (!empty($row['color_id']) && $colorAttr) {
+                    DB::table('product_variant_values')->insert([
+                        'product_variant_id' => $variant->id,
+                        'attribute_id'       => $colorAttr->id,
+                        'attribute_value_id' => $row['color_id'],
+                    ]);
+                }
+
+                if (!empty($row['size_id']) && $sizeAttr) {
+                    DB::table('product_variant_values')->insert([
+                        'product_variant_id' => $variant->id,
+                        'attribute_id'       => $sizeAttr->id,
+                        'attribute_value_id' => $row['size_id'],
+                    ]);
+                }
+
+                $variant->generateName();
+                $created++;
+            }
+
+            if (!$product->has_variants && $created > 0) {
+                $product->update(['has_variants' => true]);
+            }
+
+            DB::commit();
+
+            $msg = "{$created} variante(s) créée(s)";
+            if ($skipped > 0) $msg .= ", {$skipped} ignorée(s) (SKU déjà existant)";
+
+            return back()->with('success', $msg . '.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Erreur : ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Modifier le stock / prix d'une variante (AJAX inline)
+     */
+    public function updateVariant(Request $request, Product $product, ProductVariant $variant)
+    {
+        $validated = $request->validate([
+            'stock_quantity' => 'required|integer|min:0',
+            'sale_price'     => 'nullable|numeric|min:0',
+        ]);
+
+        $variant->update($validated);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'stock_quantity' => $variant->stock_quantity]);
+        }
+
+        return back()->with('success', 'Variante mise à jour.');
+    }
+
+    /**
      * Supprimer une variante
      */
     public function destroyVariant(Product $product, ProductVariant $variant)

@@ -1,0 +1,24 @@
+---
+# ============================================================
+#  CHAMSE — Déploiement automatique via cPanel Git
+#  S'exécute à chaque "git pull" depuis l'interface cPanel
+# ============================================================
+deployment:
+  tasks:
+    # 1. Dépendances PHP (sans packages de dev, autoloader optimisé)
+    - export COMPOSER_HOME=/home/$USER/.composer
+    - /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction --quiet
+
+    # 2. Migrations base de données
+    - /usr/local/bin/php artisan migrate --force
+
+    # 3. Lien symbolique storage → public/storage
+    - /usr/local/bin/php artisan storage:link --quiet 2>/dev/null || true
+
+    # 4. Vider et reconstruire les caches
+    - /usr/local/bin/php artisan config:cache
+    - /usr/local/bin/php artisan route:cache
+    - /usr/local/bin/php artisan view:cache
+
+    # 5. Permissions sur storage et bootstrap/cache
+    - chmod -R 775 storage bootstrap/cache

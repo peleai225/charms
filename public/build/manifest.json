@@ -1,0 +1,23 @@
+{
+  "resources/css/app.css": {
+    "file": "assets/app-K8Agd4gP.css",
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "name": "app",
+    "names": [
+      "app.css"
+    ]
+  },
+  "resources/js/admin-notifications.js": {
+    "file": "assets/admin-notifications-DpfPfANJ.js",
+    "name": "admin-notifications",
+    "src": "resources/js/admin-notifications.js",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app--JUJmvQ0.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  }
+}

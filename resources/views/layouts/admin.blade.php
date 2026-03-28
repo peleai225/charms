@@ -119,6 +119,15 @@
         /* Animations */
         .fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes bellShake {
+            0%,100% { transform: rotate(0deg); }
+            15%      { transform: rotate(15deg); }
+            30%      { transform: rotate(-12deg); }
+            45%      { transform: rotate(10deg); }
+            60%      { transform: rotate(-8deg); }
+            75%      { transform: rotate(5deg); }
+            90%      { transform: rotate(-3deg); }
+        }
         
         /* Alpine x-cloak */
         [x-cloak] { display: none !important; }
@@ -575,58 +584,107 @@
                         </svg>
                     </button>
 
-                    <!-- Notifications -->
-                    <div class="relative" x-data="{ open: false }">
-                        <button @click="open = !open" class="relative p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                    <!-- Notifications (commandes uniquement) -->
+                    <div class="relative" x-data="{
+                        open: false,
+                        orders: [],
+                        loading: false,
+                        async loadOrders() {
+                            this.loading = true;
+                            try {
+                                const r = await fetch('/api/admin/poll-stats', { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                                const d = await r.json();
+                                this.orders = d.pending_order_list || [];
+                            } catch(e) {}
+                            this.loading = false;
+                        }
+                    }" @open-bell.window="open = true; loadOrders()">
+                        <button @click="open = !open; if(open) loadOrders()"
+                            class="relative p-2 rounded-xl transition-all duration-200"
+                            :class="{{ $pendingOrders > 0 ? 'true' : 'false' }} || orders.length > 0
+                                ? 'text-orange-600 bg-orange-50 hover:bg-orange-100'
+                                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'"
+                            id="notification-bell-btn">
+                            <svg class="w-5 h-5 transition-transform" id="notification-bell-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                             </svg>
-                            @if($pendingOrders > 0)
-                                <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white" data-notification-dot></span>
-                            @else
-                                <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white hidden" data-notification-dot></span>
-                            @endif
+                            <span id="notification-count-badge"
+                                class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full flex items-center justify-center ring-2 ring-white transition-all {{ $pendingOrders > 0 ? '' : 'hidden' }}"
+                                data-notification-dot>{{ $pendingOrders > 0 ? $pendingOrders : '' }}</span>
                         </button>
-                        
-                        <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-50">
-                            <div class="p-4 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
-                                <h3 class="font-semibold text-slate-900">Notifications</h3>
-                            </div>
-                            <div class="max-h-80 overflow-y-auto">
-                                @if($pendingOrders > 0)
-                                    <a href="{{ route('admin.orders.index') }}" class="flex items-center gap-3 p-4 hover:bg-slate-50 transition-colors border-b border-slate-100">
-                                        <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                                            <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <p class="text-sm font-medium text-slate-900">{{ $pendingOrders }} commande(s) en attente</p>
-                                            <p class="text-xs text-slate-500">À traiter</p>
-                                        </div>
-                                    </a>
-                                @endif
-                                @if($stockAlerts > 0)
-                                    <a href="{{ route('admin.stock.alerts') }}" class="flex items-center gap-3 p-4 hover:bg-slate-50 transition-colors">
-                                        <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                                            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <p class="text-sm font-medium text-slate-900">{{ $stockAlerts }} alerte(s) stock</p>
-                                            <p class="text-xs text-slate-500">Réapprovisionnement nécessaire</p>
-                                        </div>
-                                    </a>
-                                @endif
-                                @if($pendingOrders == 0 && $stockAlerts == 0)
-                                    <div class="p-8 text-center text-slate-500">
-                                        <svg class="w-12 h-12 mx-auto mb-2 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        <p class="text-sm">Aucune notification</p>
+
+                        <div x-show="open" @click.away="open = false"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 translate-y-1 scale-95"
+                             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave-end="opacity-0 translate-y-1 scale-95"
+                             class="absolute right-0 mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-50">
+
+                            <!-- Header -->
+                            <div class="px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-orange-50 to-amber-50 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                                        <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                                     </div>
-                                @endif
+                                    <div>
+                                        <h3 class="font-bold text-slate-900 text-sm">Commandes en attente</h3>
+                                        <p class="text-xs text-slate-500" x-text="orders.length > 0 ? orders.length + ' commande(s) à traiter' : 'Aucune commande en attente'"></p>
+                                    </div>
+                                </div>
+                                <a href="{{ route('admin.orders.index') }}?status=pending"
+                                   class="text-xs text-orange-600 font-semibold hover:text-orange-700 hover:underline">
+                                    Voir tout
+                                </a>
+                            </div>
+
+                            <!-- Loading state -->
+                            <div x-show="loading" class="p-6 flex items-center justify-center gap-2 text-slate-400">
+                                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                <span class="text-sm">Chargement...</span>
+                            </div>
+
+                            <!-- Orders list -->
+                            <div x-show="!loading" class="max-h-[420px] overflow-y-auto divide-y divide-slate-50">
+                                <template x-if="orders.length === 0">
+                                    <div class="p-8 text-center">
+                                        <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+                                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        </div>
+                                        <p class="text-sm font-semibold text-slate-700">Tout est traité !</p>
+                                        <p class="text-xs text-slate-400 mt-1">Aucune commande en attente</p>
+                                    </div>
+                                </template>
+                                <template x-for="order in orders" :key="order.id">
+                                    <a :href="order.url"
+                                       @click="open = false"
+                                       class="flex items-center gap-3 px-4 py-3 hover:bg-orange-50/50 transition-colors group">
+                                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center flex-shrink-0 shadow-sm shadow-orange-500/20">
+                                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center justify-between gap-2">
+                                                <span class="font-mono font-bold text-sm text-slate-900" x-text="order.order_number"></span>
+                                                <span class="text-xs font-semibold text-slate-900 flex-shrink-0" x-text="order.total"></span>
+                                            </div>
+                                            <p class="text-xs text-slate-500 truncate mt-0.5" x-text="order.customer_name || 'Client'"></p>
+                                            <p class="text-[10px] text-slate-400 mt-0.5" x-text="order.time_ago"></p>
+                                        </div>
+                                        <svg class="w-4 h-4 text-slate-300 group-hover:text-orange-500 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                    </a>
+                                </template>
+                            </div>
+
+                            <!-- Footer -->
+                            <div class="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                                <a href="{{ route('admin.orders.index') }}" class="text-xs text-slate-500 hover:text-slate-700 transition-colors">
+                                    Toutes les commandes
+                                </a>
+                                <button @click="loadOrders()" class="text-xs text-blue-500 hover:text-blue-700 transition-colors flex items-center gap-1">
+                                    <svg class="w-3 h-3" :class="loading && 'animate-spin'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                    Actualiser
+                                </button>
                             </div>
                         </div>
                     </div>

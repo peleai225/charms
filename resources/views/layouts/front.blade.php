@@ -161,6 +161,9 @@
 
     {{-- Structured Data JSON-LD --}}
     @include('front.partials.structured-data')
+
+    {{-- Schemas additionnels injectés par les pages enfants --}}
+    @stack('schema')
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen" 
       x-data="{ 

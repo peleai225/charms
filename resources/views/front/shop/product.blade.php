@@ -10,6 +10,64 @@
 @endif
 @section('canonical', route('shop.product', $product->slug))
 
+@push('schema')
+@php
+    $productImg = $product->images->where('is_primary', true)->first() ?? $product->images->first();
+    $productSchema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'Product',
+        'name' => $product->name,
+        'description' => strip_tags($product->description ?? ''),
+        'sku' => $product->sku,
+        'url' => route('shop.product', $product->slug),
+        'image' => $productImg ? asset('storage/' . $productImg->path) : null,
+        'brand' => [
+            '@type' => 'Brand',
+            'name' => \App\Models\Setting::get('site_name', config('app.name'))
+        ],
+        'offers' => [
+            '@type' => 'Offer',
+            'url' => route('shop.product', $product->slug),
+            'price' => (string)$product->sale_price,
+            'priceCurrency' => 'XOF',
+            'availability' => $product->is_in_stock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+            'seller' => [
+                '@type' => 'Organization',
+                'name' => \App\Models\Setting::get('site_name', config('app.name'))
+            ]
+        ]
+    ];
+    if ($product->compare_price) {
+        $productSchema['offers']['priceValidUntil'] = now()->addYear()->format('Y-m-d');
+    }
+    if ($product->reviews_count ?? 0 > 0) {
+        $productSchema['aggregateRating'] = [
+            '@type' => 'AggregateRating',
+            'ratingValue' => number_format($product->reviews_avg_rating ?? 0, 1),
+            'reviewCount' => $product->reviews_count
+        ];
+    }
+@endphp
+<script type="application/ld+json">
+{!! json_encode($productSchema, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
+</script>
+@php
+$breadcrumbItems = [
+    ['@type' => 'ListItem', 'position' => 1, 'name' => 'Accueil', 'item' => url('/')],
+    ['@type' => 'ListItem', 'position' => 2, 'name' => 'Boutique', 'item' => route('shop.index')],
+];
+if ($product->category) {
+    $breadcrumbItems[] = ['@type' => 'ListItem', 'position' => 3, 'name' => $product->category->name, 'item' => route('shop.category', $product->category->slug)];
+    $breadcrumbItems[] = ['@type' => 'ListItem', 'position' => 4, 'name' => $product->name, 'item' => route('shop.product', $product->slug)];
+} else {
+    $breadcrumbItems[] = ['@type' => 'ListItem', 'position' => 3, 'name' => $product->name, 'item' => route('shop.product', $product->slug)];
+}
+@endphp
+<script type="application/ld+json">
+{!! json_encode(['@context' => 'https://schema.org', '@type' => 'BreadcrumbList', 'itemListElement' => $breadcrumbItems], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) !!}
+</script>
+@endpush
+
 @section('content')
 @include('front.partials.product-structured-data', ['product' => $product])
 <div class="container mx-auto px-4 py-8 md:py-10">

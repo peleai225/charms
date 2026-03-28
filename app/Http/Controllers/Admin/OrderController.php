@@ -152,6 +152,10 @@ class OrderController extends Controller
             }
         }
 
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Statut mis à jour', 'status' => $order->status]);
+        }
+
         return back()->with('success', 'Statut mis à jour avec succès.');
     }
 
@@ -195,6 +199,10 @@ class OrderController extends Controller
 
         ActivityLog::log('order_note_added', "Note ajoutée", $order);
 
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'admin_notes' => $order->fresh()->admin_notes]);
+        }
+
         return back()->with('success', 'Note ajoutée.');
     }
 
@@ -203,18 +211,23 @@ class OrderController extends Controller
      */
     public function resendConfirmation(Order $order)
     {
+        $isAjax = request()->wantsJson() || request()->ajax();
+
         if ($order->billing_email) {
             try {
                 // Configurer la connexion mail depuis les paramètres
                 \App\Services\MailConfigService::configureFromSettings();
-                
+
                 Mail::to($order->billing_email)->send(new \App\Mail\OrderConfirmation($order));
+                if ($isAjax) return response()->json(['success' => true, 'message' => 'Email envoyé.']);
                 return back()->with('success', 'Email de confirmation renvoyé.');
             } catch (\Exception $e) {
+                if ($isAjax) return response()->json(['success' => false, 'message' => 'Erreur: ' . $e->getMessage()], 422);
                 return back()->with('error', 'Erreur lors de l\'envoi : ' . $e->getMessage());
             }
         }
 
+        if ($isAjax) return response()->json(['success' => false, 'message' => 'Aucune adresse email.'], 422);
         return back()->with('error', 'Aucune adresse email.');
     }
 }

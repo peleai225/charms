@@ -178,6 +178,22 @@ Route::get('/admin/poll-stats', function (Request $request) {
               ->orWhereColumn('stock_quantity', '<=', 'stock_alert_threshold');
         })->count();
 
+    // Liste des commandes en attente pour la cloche (toujours retournée)
+    $pendingOrderList = \App\Models\Order::whereIn('status', ['pending', 'confirmed'])
+        ->with('customer:id,first_name,last_name')
+        ->latest()
+        ->take(10)
+        ->get(['id', 'order_number', 'total', 'status', 'billing_first_name', 'billing_last_name', 'created_at'])
+        ->map(fn($o) => [
+            'id'           => $o->id,
+            'order_number' => $o->order_number,
+            'total'        => number_format($o->total, 0, ',', ' ') . ' F',
+            'status'       => $o->status,
+            'customer_name'=> trim($o->billing_first_name . ' ' . $o->billing_last_name),
+            'time_ago'     => $o->created_at->diffForHumans(),
+            'url'          => route('admin.orders.show', $o->id),
+        ]);
+
     // Nouvelles commandes depuis le dernier check (passé en paramètre)
     $since = $request->input('since');
     $newOrders = [];
@@ -196,10 +212,11 @@ Route::get('/admin/poll-stats', function (Request $request) {
     }
 
     return response()->json([
-        'pending_orders' => $pendingOrders,
-        'stock_alerts'   => $stockAlerts,
-        'new_orders'     => $newOrders,
-        'server_time'    => now()->toISOString(),
+        'pending_orders'     => $pendingOrders,
+        'stock_alerts'       => $stockAlerts,
+        'new_orders'         => $newOrders,
+        'pending_order_list' => $pendingOrderList,
+        'server_time'        => now()->toISOString(),
     ]);
 })->middleware('web')->name('api.admin.poll-stats');
 
@@ -212,3 +229,38 @@ Route::get('/admin/dashboard-stats', [\App\Http\Controllers\Admin\DashboardContr
 Route::get('/admin/recent-orders', [\App\Http\Controllers\Admin\DashboardController::class, 'recentOrders'])
     ->middleware('web')
     ->name('api.admin.recent-orders');
+
+// Détail commande pour le drawer AJAX
+Route::get('/admin/order-detail/{order}', function (\App\Models\Order $order) {
+    if (!auth()->check() || !in_array(auth()->user()->role ?? '', ['admin', 'manager', 'staff'])) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+    $order->load(['items.product.images', 'items.productVariant']);
+    $items = $order->items->map(function($item) {
+        $img = $item->product?->images->where('is_primary', true)->first() ?? $item->product?->images->first();
+        return [
+            'id'      => $item->id,
+            'name'    => $item->product_name,
+            'variant' => $item->variant_name,
+            'quantity'=> $item->quantity,
+            'total'   => number_format($item->total, 0, ',', ' ') . ' F',
+            'image'   => $img ? asset('storage/' . $img->path) : null,
+        ];
+    });
+    return response()->json([
+        'id'             => $order->id,
+        'order_number'   => $order->order_number,
+        'status'         => $order->status,
+        'created_at'     => $order->created_at->format('d/m/Y à H:i'),
+        'customer_name'  => trim($order->billing_first_name . ' ' . $order->billing_last_name),
+        'billing_email'  => $order->billing_email,
+        'billing_phone'  => $order->billing_phone,
+        'items'          => $items,
+        'total_fmt'      => number_format($order->total, 0, ',', ' ') . ' F CFA',
+        'discount_amount'=> $order->discount_amount,
+        'discount_fmt'   => $order->discount_amount > 0 ? number_format($order->discount_amount, 0, ',', ' ') . ' F' : null,
+        'shipping_fmt'   => $order->shipping_amount > 0 ? number_format($order->shipping_amount, 0, ',', ' ') . ' F' : 'Gratuite',
+        'show_url'       => route('admin.orders.show', $order->id),
+        'invoice_url'    => route('admin.orders.invoice.view', $order->id),
+    ]);
+})->middleware('web')->name('api.admin.order-detail');

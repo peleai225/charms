@@ -48,9 +48,13 @@ class ViteHelper
                         }
                     }
                     
-                    // Charger le JS
+                    // Charger le fichier principal (JS ou CSS)
                     if (isset($entry['file'])) {
-                        $html .= '<script type="module" src="' . e(asset('build/' . $entry['file'])) . '"></script>' . "\n    ";
+                        if (str_ends_with($entry['file'], '.css')) {
+                            $html .= '<link rel="stylesheet" href="' . e(asset('build/' . $entry['file'])) . '">' . "\n    ";
+                        } else {
+                            $html .= '<script type="module" src="' . e(asset('build/' . $entry['file'])) . '"></script>' . "\n    ";
+                        }
                     }
                 } else {
                     // Si l'asset n'est pas dans le manifest, essayer de le charger directement

@@ -61,18 +61,47 @@ Route::get('/setup', function () {
         abort(404);
     }
     $results = [];
+
+    // Créer le lien storage dans public_html (cPanel : public_html != app/public)
+    $docRoot = $_SERVER['DOCUMENT_ROOT'] ?? public_path();
+    $storageLink = rtrim($docRoot, '/') . '/storage';
+    $storageTarget = storage_path('app/public');
+    if (!file_exists($storageLink) && is_dir($storageTarget)) {
+        $ok = @symlink($storageTarget, $storageLink);
+        $results[] = $ok ? '✓ Lien storage créé dans public_html' : '✗ Échec symlink public_html/storage';
+    } elseif (is_link($storageLink)) {
+        $results[] = '✓ Lien storage existe déjà dans public_html';
+    } else {
+        $results[] = 'ℹ storage existe dans public_html (type: ' . filetype($storageLink) . ')';
+    }
+
+    // Aussi créer dans app/public (standard Laravel)
     try {
         Artisan::call('storage:link');
-        $results[] = '✓ Lien storage créé';
+        $results[] = '✓ Lien storage Laravel créé';
     } catch (\Throwable $e) {
-        $results[] = 'Storage : ' . ($e->getMessage());
+        $results[] = 'Storage Laravel : ' . ($e->getMessage());
     }
+
+    // Migrations
     try {
         Artisan::call('migrate', ['--force' => true]);
         $results[] = '✓ Migrations exécutées';
     } catch (\Throwable $e) {
         $results[] = 'Migrations : ' . $e->getMessage();
     }
+
+    // Vider tous les caches
+    try {
+        Artisan::call('route:clear');
+        Artisan::call('view:clear');
+        Artisan::call('config:clear');
+        Artisan::call('cache:clear');
+        $results[] = '✓ Caches vidés (route, view, config, cache)';
+    } catch (\Throwable $e) {
+        $results[] = 'Cache : ' . $e->getMessage();
+    }
+
     return '<pre style="font-family:sans-serif;padding:20px;">' . implode("\n", $results) . '</pre>';
 });
 

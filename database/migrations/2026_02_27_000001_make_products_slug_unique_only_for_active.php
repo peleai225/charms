@@ -16,9 +16,11 @@ return new class extends Migration
             $table->dropUnique(['slug']);
         });
 
-        // Index unique partiel : seul un produit actif (deleted_at IS NULL) peut avoir un slug donné.
-        // Les produits soft-deleted peuvent partager des slugs, permettant la recréation.
-        \DB::statement('CREATE UNIQUE INDEX products_slug_unique ON products (slug, (IF(deleted_at IS NULL, 1, NULL)))');
+        // Ajouter une colonne virtuelle qui vaut le slug pour les produits actifs
+        // et l'ID pour les produits supprimés, puis indexer dessus.
+        // Compatible MariaDB 10.2+ et MySQL 5.7+
+        \DB::statement('ALTER TABLE products ADD COLUMN slug_active VARCHAR(255) AS (IF(deleted_at IS NULL, slug, CONCAT(slug, \'-deleted-\', id))) STORED');
+        \DB::statement('CREATE UNIQUE INDEX products_slug_unique ON products (slug_active)');
     }
 
     /**
@@ -26,9 +28,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->dropIndex('products_slug_unique');
-        });
+        \DB::statement('DROP INDEX products_slug_unique ON products');
+        \DB::statement('ALTER TABLE products DROP COLUMN slug_active');
         Schema::table('products', function (Blueprint $table) {
             $table->unique('slug');
         });

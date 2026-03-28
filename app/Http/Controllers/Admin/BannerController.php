@@ -156,5 +156,16 @@ class BannerController extends Controller
             ->route('admin.banners.index')
             ->with('success', 'Bannière supprimée.');
     }
+
+    public function toggle(Banner $banner)
+    {
+        $banner->update(['is_active' => !$banner->is_active]);
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json(['is_active' => $banner->is_active]);
+        }
+
+        return back()->with('success', 'Bannière ' . ($banner->is_active ? 'activée' : 'désactivée') . '.');
+    }
 }
 

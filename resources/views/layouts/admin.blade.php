@@ -874,6 +874,9 @@
     });
     </script>
 
+    {{-- Système tutoriel guidé --}}
+    @include('admin.partials.tour')
+
     {{-- =====================================================
          POLLING TEMPS RÉEL - Notifications admin sans Pusher
          Rafraîchit les compteurs toutes les 30 secondes

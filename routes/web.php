@@ -333,6 +333,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Bannières
         Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class)->names('banners');
+        Route::patch('banners/{banner}/toggle', [\App\Http\Controllers\Admin\BannerController::class, 'toggle'])->name('banners.toggle');
 
         // WhatsApp Business
         Route::get('/whatsapp', [\App\Http\Controllers\Admin\WhatsAppController::class, 'index'])->name('whatsapp.index');

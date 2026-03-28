@@ -221,6 +221,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('products/{product}/images/{image}', [\App\Http\Controllers\Admin\ProductController::class, 'destroyImage'])->name('products.images.destroy');
         Route::post('products/{product}/images/{image}/primary', [\App\Http\Controllers\Admin\ProductController::class, 'setPrimaryImage'])->name('products.images.primary');
         
+        // Attributs (tailles, couleurs, matières...)
+        Route::get('attributes', [\App\Http\Controllers\Admin\AttributeController::class, 'index'])->name('attributes.index');
+        Route::post('attributes', [\App\Http\Controllers\Admin\AttributeController::class, 'storeAttribute'])->name('attributes.store');
+        Route::delete('attributes/{attribute}', [\App\Http\Controllers\Admin\AttributeController::class, 'destroyAttribute'])->name('attributes.destroy');
+        Route::post('attributes/{attribute}/values', [\App\Http\Controllers\Admin\AttributeController::class, 'storeValue'])->name('attributes.values.store');
+        Route::post('attributes/{attribute}/values/bulk', [\App\Http\Controllers\Admin\AttributeController::class, 'bulkStoreValues'])->name('attributes.values.bulk');
+        Route::delete('attributes/{attribute}/values/{value}', [\App\Http\Controllers\Admin\AttributeController::class, 'destroyValue'])->name('attributes.values.destroy');
+
         // Catégories
         Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class)->names('categories');
         Route::post('categories/reorder', [\App\Http\Controllers\Admin\CategoryController::class, 'reorder'])->name('categories.reorder');

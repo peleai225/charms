@@ -44,7 +44,12 @@
       "Read(//c/laragon/www/chamse/storage/app/public/**)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://chamse.test/storage/products/8/LxGzLrIAYVvw40AtN7h2zx7J4Z05NOjDTQuc3FhI.jpg\")",
       "Bash(curl -s -w \"\\\\n%{http_code}\" \"http://chamse.test/storage/settings/oR3OSAJR8XqiRxnqKXftomgH28sDZG0ErUPap1yq.png\")",
-      "Bash(curl -s -I \"http://chamse.test/storage/settings/oR3OSAJR8XqiRxnqKXftomgH28sDZG0ErUPap1yq.png\")"
+      "Bash(curl -s -I \"http://chamse.test/storage/settings/oR3OSAJR8XqiRxnqKXftomgH28sDZG0ErUPap1yq.png\")",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":8000\")",
+      "Bash(findstr LISTENING)",
+      "Bash(grep -l \"wishlist\\\\|Wishlist\" /c/laragon/www/chamse/database/migrations/*.php)",
+      "Bash(grep -r \"wishlists\" /c/laragon/www/chamse/database/migrations/*.php)"
     ]
   }
 }

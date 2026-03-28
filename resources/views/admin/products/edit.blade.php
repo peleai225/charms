@@ -27,18 +27,18 @@
     </div>
 @endif
 
-<div class="space-y-6">
+<div class="space-y-6" x-data="{ tab: 'general' }">
     <!-- Navigation onglets -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200">
-        <nav class="flex border-b border-slate-200" x-data="{ tab: 'general' }">
-            <button @click="tab = 'general'" :class="{ 'border-blue-500 text-blue-600': tab === 'general' }" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent hover:text-blue-600 transition-colors">
+        <nav class="flex border-b border-slate-200">
+            <button type="button" @click="tab = 'general'" :class="{ 'border-blue-500 text-blue-600': tab === 'general' }" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent hover:text-blue-600 transition-colors">
                 Informations
             </button>
-            <button @click="tab = 'images'" :class="{ 'border-blue-500 text-blue-600': tab === 'images' }" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent hover:text-blue-600 transition-colors">
+            <button type="button" @click="tab = 'images'" :class="{ 'border-blue-500 text-blue-600': tab === 'images' }" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent hover:text-blue-600 transition-colors">
                 Images ({{ $product->images->count() }})
             </button>
-            <button @click="tab = 'variants'" :class="{ 'border-blue-500 text-blue-600': tab === 'variants' }" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent hover:text-blue-600 transition-colors">
-                Variantes / Couleurs ({{ $product->variants->count() }})
+            <button type="button" @click="tab = 'variants'" :class="{ 'border-blue-500 text-blue-600': tab === 'variants' }" class="px-6 py-4 text-sm font-medium border-b-2 border-transparent hover:text-blue-600 transition-colors">
+                Variantes ({{ $product->variants->count() }})
             </button>
         </nav>
     </div>
@@ -52,7 +52,7 @@
             <!-- Colonne principale -->
             <div class="lg:col-span-2 space-y-6">
                 <!-- Informations générales -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6" x-show="tab==='general'">
                     <h2 class="text-lg font-semibold text-slate-900 mb-4">Informations générales</h2>
                     
                     <div class="space-y-4">
@@ -80,7 +80,7 @@
                 </div>
 
                 <!-- Prix -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6" x-show="tab==='general'">
                     <h2 class="text-lg font-semibold text-slate-900 mb-4">Prix</h2>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -125,7 +125,7 @@
                 </div>
 
                 <!-- Stock de base -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6" x-show="tab==='general'">
                     <h2 class="text-lg font-semibold text-slate-900 mb-4">Stock & Identifiants</h2>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -172,7 +172,7 @@
                 </div>
 
                 <!-- Images -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6" x-show="tab==='images'">
                     <h2 class="text-lg font-semibold text-slate-900 mb-4">Images du produit</h2>
                     
                     <!-- Images existantes -->
@@ -214,7 +214,7 @@
             </div>
 
             <!-- Colonne latérale -->
-            <div class="space-y-6">
+            <div class="space-y-6" x-show="tab==='general' || tab==='images'">
                 <!-- Actions -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                     <h2 class="text-lg font-semibold text-slate-900 mb-4">Publication</h2>
@@ -309,6 +309,7 @@
     @endphp
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"
+         x-show="tab==='variants'"
          x-data="{
             panel: 'bulk',
             mode: 'sizes',

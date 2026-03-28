@@ -72,14 +72,33 @@ function showBrowserNotification(title, body, url) {
 function updateBadge(count) {
     const countBadge = document.querySelector('[data-pending-orders-count]');
     const dotBadge = document.querySelector('[data-notification-dot]');
+    const bellIcon = document.getElementById('notification-bell-icon');
+    const bellBtn = document.getElementById('notification-bell-btn');
+
+    // Badge count (nouveau style avec chiffre)
+    if (dotBadge) {
+        dotBadge.textContent = count > 0 ? count : '';
+        if (count > 0) {
+            dotBadge.classList.remove('hidden');
+            // Shake animation sur la cloche
+            if (bellIcon) {
+                bellIcon.style.animation = 'none';
+                requestAnimationFrame(() => {
+                    bellIcon.style.animation = 'bellShake 0.6s ease-in-out';
+                });
+            }
+            if (bellBtn) bellBtn.classList.add('text-orange-600');
+        } else {
+            dotBadge.classList.add('hidden');
+            if (bellBtn) bellBtn.classList.remove('text-orange-600');
+        }
+    }
+
+    // Legacy badge support
     if (countBadge) {
         countBadge.textContent = count;
         if (count > 0) countBadge.classList.remove('hidden');
         else countBadge.classList.add('hidden');
-    }
-    if (dotBadge) {
-        if (count > 0) dotBadge.classList.remove('hidden');
-        else dotBadge.classList.add('hidden');
     }
 }
 

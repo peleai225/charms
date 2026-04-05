@@ -623,6 +623,26 @@ function productGallery() {
         @endphp,
         
         init() {
+            // Si variantes sans couleur (taille seule), charger les tailles directement
+            if (this.variantsByColor['default'] && this.variantsByColor['default'].length > 0) {
+                const defaultVariants = this.variantsByColor['default'];
+                this.availableSizes = defaultVariants
+                    .filter(v => v.size)
+                    .map(v => ({
+                        id: v.size.id,
+                        name: v.size.value,
+                        stock: v.stock,
+                        variantId: v.id
+                    }));
+                // Si pas de taille non plus (variante unique sans attribut), sélectionner directement
+                if (this.availableSizes.length === 0 && defaultVariants.length === 1) {
+                    const variant = defaultVariants[0];
+                    this.selectedVariantId = variant.id;
+                    this.selectedVariantSku = variant.sku;
+                    this.variantStock = variant.stock;
+                }
+            }
+
             // Sticky bar : visible quand le bouton d'achat sort du viewport
             const buySection = document.getElementById('buy-section');
             if (buySection && 'IntersectionObserver' in window) {
@@ -729,8 +749,9 @@ function productGallery() {
             this.selectedVariantId = size.variantId;
             this.variantStock = size.stock;
             
-            // Trouver la variante complète
-            const colorVariants = this.variantsByColor[this.selectedColorId] || [];
+            // Trouver la variante complète (couleur sélectionnée ou 'default' pour taille seule)
+            const colorKey = this.selectedColorId || 'default';
+            const colorVariants = this.variantsByColor[colorKey] || [];
             const variant = colorVariants.find(v => v.id === size.variantId);
             
             if (variant) {

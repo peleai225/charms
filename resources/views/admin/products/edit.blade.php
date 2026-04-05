@@ -313,7 +313,7 @@
          x-data="{
             panel: 'bulk',
             mode: 'sizes',
-            selectedSizes: @js($allSizes->pluck('id')->toArray()),
+            selectedSizes: [],
             selectedColors: [],
             productSlug: '{{ $productSlug }}',
 

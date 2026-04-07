@@ -438,21 +438,24 @@
                                 @foreach($allSizes as $i => $size)
                                 <tr x-show="selectedSizes.includes({{ $size->id }})" class="hover:bg-blue-50/30">
                                     <td class="px-4 py-3">
-                                        <input type="hidden" name="rows[{{ $i }}][size_id]" value="{{ $size->id }}">
+                                        <input type="hidden" name="rows[{{ $i }}][size_id]" value="{{ $size->id }}" :disabled="!selectedSizes.includes({{ $size->id }})">
                                         <span class="font-semibold text-slate-800">{{ $size->value }}</span>
                                     </td>
                                     <td class="px-4 py-3">
                                         <input type="number" name="rows[{{ $i }}][stock_quantity]" min="0" value="0"
+                                               :disabled="!selectedSizes.includes({{ $size->id }})"
                                                class="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                     </td>
                                     <td class="px-4 py-3">
                                         <input type="number" name="rows[{{ $i }}][sale_price]" min="0" step="1"
                                                placeholder="{{ intval($product->sale_price) }}"
+                                               :disabled="!selectedSizes.includes({{ $size->id }})"
                                                class="w-32 px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                     </td>
                                     <td class="px-4 py-3">
                                         <input type="text" name="rows[{{ $i }}][sku]"
                                                :value="autoSku('{{ addslashes($size->value) }}')"
+                                               :disabled="!selectedSizes.includes({{ $size->id }})"
                                                class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                     </td>
                                 </tr>
@@ -493,7 +496,7 @@
                                 @foreach($allColors as $i => $color)
                                 <tr x-show="selectedColors.includes({{ $color->id }})" class="hover:bg-blue-50/30">
                                     <td class="px-4 py-3">
-                                        <input type="hidden" name="rows[{{ $i }}][color_id]" value="{{ $color->id }}">
+                                        <input type="hidden" name="rows[{{ $i }}][color_id]" value="{{ $color->id }}" :disabled="!selectedColors.includes({{ $color->id }})">
                                         <div class="flex items-center gap-2">
                                             @if($color->color_code)
                                                 <span class="w-5 h-5 rounded-full border border-slate-200 flex-shrink-0" style="background:{{ $color->color_code }}"></span>
@@ -503,16 +506,19 @@
                                     </td>
                                     <td class="px-4 py-3">
                                         <input type="number" name="rows[{{ $i }}][stock_quantity]" min="0" value="0"
+                                               :disabled="!selectedColors.includes({{ $color->id }})"
                                                class="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                     </td>
                                     <td class="px-4 py-3">
                                         <input type="number" name="rows[{{ $i }}][sale_price]" min="0" step="1"
                                                placeholder="{{ intval($product->sale_price) }}"
+                                               :disabled="!selectedColors.includes({{ $color->id }})"
                                                class="w-32 px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                     </td>
                                     <td class="px-4 py-3">
                                         <input type="text" name="rows[{{ $i }}][sku]"
                                                :value="autoSku('{{ addslashes($color->value) }}')"
+                                               :disabled="!selectedColors.includes({{ $color->id }})"
                                                class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                     </td>
                                 </tr>
@@ -563,13 +569,18 @@
                                         <td class="px-4 py-3 font-semibold text-slate-800 w-28">{{ $size->value }}</td>
                                         @foreach($matrixColors as $color)
                                         <td class="px-3 py-3 text-center" x-show="selectedColors.includes({{ $color->id }})">
-                                            <input type="hidden" name="rows[{{ $rowIdx }}][size_id]" value="{{ $size->id }}">
-                                            <input type="hidden" name="rows[{{ $rowIdx }}][color_id]" value="{{ $color->id }}">
+                                            <input type="hidden" name="rows[{{ $rowIdx }}][size_id]" value="{{ $size->id }}"
+                                                   :disabled="!selectedSizes.includes({{ $size->id }}) || !selectedColors.includes({{ $color->id }})">
+                                            <input type="hidden" name="rows[{{ $rowIdx }}][color_id]" value="{{ $color->id }}"
+                                                   :disabled="!selectedSizes.includes({{ $size->id }}) || !selectedColors.includes({{ $color->id }})">
                                             <input type="hidden" name="rows[{{ $rowIdx }}][sku]"
-                                                   :value="autoSku('{{ addslashes($size->value) }}', '{{ addslashes($color->value) }}')">
-                                            <input type="hidden" name="rows[{{ $rowIdx }}][sale_price]" value="">
+                                                   :value="autoSku('{{ addslashes($size->value) }}', '{{ addslashes($color->value) }}')"
+                                                   :disabled="!selectedSizes.includes({{ $size->id }}) || !selectedColors.includes({{ $color->id }})">
+                                            <input type="hidden" name="rows[{{ $rowIdx }}][sale_price]" value=""
+                                                   :disabled="!selectedSizes.includes({{ $size->id }}) || !selectedColors.includes({{ $color->id }})">
                                             <input type="number" name="rows[{{ $rowIdx }}][stock_quantity]" min="0" value="0"
                                                    placeholder="qté"
+                                                   :disabled="!selectedSizes.includes({{ $size->id }}) || !selectedColors.includes({{ $color->id }})"
                                                    class="w-20 px-2 py-1.5 border border-slate-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                         </td>
                                         @php $rowIdx++; @endphp

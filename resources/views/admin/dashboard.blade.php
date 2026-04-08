@@ -24,10 +24,12 @@
                 </p>
             </div>
             <div class="flex items-center gap-3">
+                @if(in_array(auth()->user()->role, ['admin', 'manager']))
                 <a href="{{ route('admin.products.create') }}" class="inline-flex items-center gap-2 rounded-xl bg-white/20 backdrop-blur-sm px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/30 transition-colors border border-white/20">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     Nouveau produit
                 </a>
+                @endif
                 <a href="{{ route('admin.orders.index') }}" class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 transition-colors shadow-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                     Voir commandes
@@ -144,12 +146,14 @@
 
     <!-- Quick Actions Bar -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        @if(in_array(auth()->user()->role, ['admin', 'manager']))
         <a href="{{ route('admin.products.create') }}" class="flex items-center gap-3 bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all group">
             <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
                 <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             </div>
             <span class="text-sm font-semibold text-slate-700 group-hover:text-blue-700 transition-colors">Ajouter un produit</span>
         </a>
+        @endif
         <a href="{{ route('admin.orders.index') }}" class="flex items-center gap-3 bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:border-orange-300 hover:shadow-md transition-all group">
             <div class="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center group-hover:bg-orange-200 transition-colors">
                 <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>

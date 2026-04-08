@@ -234,7 +234,8 @@
                 <div class="pt-6">
                     <p class="px-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3" x-show="!sidebarCollapsed" x-transition.opacity.duration.200ms>Catalogue</p>
                     <div x-show="sidebarCollapsed" class="border-t border-slate-700/50 my-3 mx-2"></div>
-                    
+
+                    @if(in_array(auth()->user()->role, ['admin', 'manager']))
                     <div class="relative group">
                         <a href="{{ route('admin.products.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all {{ request()->routeIs('admin.products.*') ? 'menu-active bg-white/10 text-white' : '' }}" :class="sidebarCollapsed ? 'justify-center px-2' : ''">
                             <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center flex-shrink-0">
@@ -270,6 +271,7 @@
                         </a>
                         <div x-show="sidebarCollapsed" class="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-slate-800 text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">Attributs (tailles, couleurs)</div>
                     </div>
+                    @endif
 
                     <div class="relative group">
                         <a href="{{ route('admin.barcodes.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all {{ request()->routeIs('admin.barcodes.*') ? 'menu-active bg-white/10 text-white' : '' }}" :class="sidebarCollapsed ? 'justify-center px-2' : ''">
@@ -354,6 +356,7 @@
                         </a>
                         <div x-show="sidebarCollapsed" class="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-slate-800 text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">Avis clients</div>
                     </div>
+                    @if(in_array(auth()->user()->role, ['admin', 'manager']))
                     <div class="relative group">
                         <a href="{{ route('admin.coupons.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all {{ request()->routeIs('admin.coupons.*') ? 'menu-active bg-white/10 text-white' : '' }}" :class="sidebarCollapsed ? 'justify-center px-2' : ''">
                             <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-yellow-500/20 to-orange-500/20 flex items-center justify-center flex-shrink-0">
@@ -365,6 +368,7 @@
                         </a>
                         <div x-show="sidebarCollapsed" class="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-slate-800 text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">Codes promo</div>
                     </div>
+                    @endif
                 </div>
 
                 <!-- Stock -->
@@ -395,6 +399,7 @@
                         <div x-show="sidebarCollapsed" class="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-slate-800 text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">Gestion stock</div>
                     </div>
 
+                    @if(in_array(auth()->user()->role, ['admin', 'manager']))
                     <div class="relative group">
                         <a href="{{ route('admin.suppliers.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all {{ request()->routeIs('admin.suppliers.*') ? 'menu-active bg-white/10 text-white' : '' }}" :class="sidebarCollapsed ? 'justify-center px-2' : ''">
                             <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-500/20 to-gray-500/20 flex items-center justify-center flex-shrink-0">
@@ -406,6 +411,7 @@
                         </a>
                         <div x-show="sidebarCollapsed" class="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-slate-800 text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">Fournisseurs</div>
                     </div>
+                    @endif
                 </div>
 
                 <!-- Finances -->

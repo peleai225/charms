@@ -238,31 +238,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     // Routes protégées (nécessite rôle admin/manager/staff)
     Route::middleware('admin')->group(function () {
-        // Dashboard
+        // Dashboard — tous les rôles
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-        // Produits
-        Route::resource('products', \App\Http\Controllers\Admin\ProductController::class)->names('products');
-        Route::post('products/{product}/variants', [\App\Http\Controllers\Admin\ProductController::class, 'storeVariant'])->name('products.variants.store');
-        Route::post('products/{product}/variants/bulk', [\App\Http\Controllers\Admin\ProductController::class, 'bulkStoreVariants'])->name('products.variants.bulk');
-        Route::patch('products/{product}/variants/{variant}', [\App\Http\Controllers\Admin\ProductController::class, 'updateVariant'])->name('products.variants.update');
-        Route::delete('products/{product}/variants/{variant}', [\App\Http\Controllers\Admin\ProductController::class, 'destroyVariant'])->name('products.variants.destroy');
-        Route::delete('products/{product}/images/{image}', [\App\Http\Controllers\Admin\ProductController::class, 'destroyImage'])->name('products.images.destroy');
-        Route::post('products/{product}/images/{image}/primary', [\App\Http\Controllers\Admin\ProductController::class, 'setPrimaryImage'])->name('products.images.primary');
-        
-        // Attributs (tailles, couleurs, matières...)
-        Route::get('attributes', [\App\Http\Controllers\Admin\AttributeController::class, 'index'])->name('attributes.index');
-        Route::post('attributes', [\App\Http\Controllers\Admin\AttributeController::class, 'storeAttribute'])->name('attributes.store');
-        Route::delete('attributes/{attribute}', [\App\Http\Controllers\Admin\AttributeController::class, 'destroyAttribute'])->name('attributes.destroy');
-        Route::post('attributes/{attribute}/values', [\App\Http\Controllers\Admin\AttributeController::class, 'storeValue'])->name('attributes.values.store');
-        Route::post('attributes/{attribute}/values/bulk', [\App\Http\Controllers\Admin\AttributeController::class, 'bulkStoreValues'])->name('attributes.values.bulk');
-        Route::delete('attributes/{attribute}/values/{value}', [\App\Http\Controllers\Admin\AttributeController::class, 'destroyValue'])->name('attributes.values.destroy');
+        // Profil admin — tous les rôles
+        Route::get('/profile', [\App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('profile.edit');
+        Route::post('/profile', [\App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
+        Route::post('/profile/password', [\App\Http\Controllers\Admin\ProfileController::class, 'updatePassword'])->name('profile.password');
 
-        // Catégories
-        Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class)->names('categories');
-        Route::post('categories/reorder', [\App\Http\Controllers\Admin\CategoryController::class, 'reorder'])->name('categories.reorder');
-        
-        // Commandes
+        // Commandes — tous les rôles (consultation + mise à jour statut)
         Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->names('orders');
         Route::patch('orders/{order}/status', [\App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('orders.status');
         Route::get('orders/{order}/invoice', [\App\Http\Controllers\Admin\OrderController::class, 'invoice'])->name('orders.invoice');
@@ -270,14 +254,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('orders/{order}/note', [\App\Http\Controllers\Admin\OrderController::class, 'addNote'])->name('orders.note');
         Route::post('orders/{order}/resend', [\App\Http\Controllers\Admin\OrderController::class, 'resendConfirmation'])->name('orders.resend');
 
-        // Remboursements
-        Route::get('/refunds', [\App\Http\Controllers\Admin\RefundController::class, 'index'])->name('refunds.index');
-        Route::post('orders/{order}/refunds', [\App\Http\Controllers\Admin\RefundController::class, 'store'])->name('refunds.store');
-        
-        // Clients
-        Route::resource('customers', \App\Http\Controllers\Admin\CustomerController::class)->names('customers');
-        
-        // Stock
+        // Clients — tous les rôles (consultation)
+        Route::get('customers', [\App\Http\Controllers\Admin\CustomerController::class, 'index'])->name('customers.index');
+        Route::get('customers/{customer}', [\App\Http\Controllers\Admin\CustomerController::class, 'show'])->name('customers.show');
+
+        // Stock — tous les rôles
         Route::get('/stock', [\App\Http\Controllers\Admin\StockController::class, 'index'])->name('stock.index');
         Route::get('/stock/movements', [\App\Http\Controllers\Admin\StockController::class, 'movements'])->name('stock.movements');
         Route::get('/stock/movements/create', [\App\Http\Controllers\Admin\StockController::class, 'createMovement'])->name('stock.create-movement');
@@ -287,54 +268,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/stock/inventory', [\App\Http\Controllers\Admin\StockController::class, 'inventory'])->name('stock.inventory');
         Route::post('/stock/inventory/adjust', [\App\Http\Controllers\Admin\StockController::class, 'adjustInventory'])->name('stock.adjust-inventory');
         Route::get('/stock/alerts', [\App\Http\Controllers\Admin\StockController::class, 'alerts'])->name('stock.alerts');
-        
-        // Fournisseurs
-        Route::resource('suppliers', \App\Http\Controllers\Admin\SupplierController::class)->names('suppliers');
-        
-        // Dropshipping
-        Route::get('/dropshipping', [\App\Http\Controllers\Admin\DropshippingController::class, 'index'])->name('dropshipping.index');
-        Route::get('/dropshipping/{orderSupplier}', [\App\Http\Controllers\Admin\DropshippingController::class, 'show'])->name('dropshipping.show');
-        Route::patch('/dropshipping/{orderSupplier}/status', [\App\Http\Controllers\Admin\DropshippingController::class, 'updateStatus'])->name('dropshipping.update-status');
-        
-        // Comptabilité
-        Route::get('/accounting', [\App\Http\Controllers\Admin\AccountingController::class, 'index'])->name('accounting.index');
-        Route::get('/accounting/entries', [\App\Http\Controllers\Admin\AccountingController::class, 'entries'])->name('accounting.entries');
-        Route::get('/accounting/entries/create', [\App\Http\Controllers\Admin\AccountingController::class, 'createEntry'])->name('accounting.entries.create');
-        Route::post('/accounting/entries', [\App\Http\Controllers\Admin\AccountingController::class, 'storeEntry'])->name('accounting.entries.store');
-        Route::get('/accounting/entries/{entry}', [\App\Http\Controllers\Admin\AccountingController::class, 'showEntry'])->name('accounting.entries.show');
-        Route::get('/accounting/accounts', [\App\Http\Controllers\Admin\AccountingController::class, 'accounts'])->name('accounting.accounts');
-        Route::get('/accounting/balance', [\App\Http\Controllers\Admin\AccountingController::class, 'balance'])->name('accounting.balance');
-        Route::get('/accounting/ledger', [\App\Http\Controllers\Admin\AccountingController::class, 'ledger'])->name('accounting.ledger');
-        Route::post('/accounting/export', [\App\Http\Controllers\Admin\AccountingController::class, 'export'])->name('accounting.export');
-        
-        // Import/Export
-        Route::get('/import-export', [\App\Http\Controllers\Admin\ImportExportController::class, 'index'])->name('import-export.index');
-        Route::get('/import-export/export-products', [\App\Http\Controllers\Admin\ImportExportController::class, 'exportProducts'])->name('import-export.export-products');
-        Route::get('/import-export/export-categories', [\App\Http\Controllers\Admin\ImportExportController::class, 'exportCategories'])->name('import-export.export-categories');
-        Route::get('/import-export/template', [\App\Http\Controllers\Admin\ImportExportController::class, 'downloadTemplate'])->name('import-export.template');
-        Route::post('/import-export/import-products', [\App\Http\Controllers\Admin\ImportExportController::class, 'importProducts'])->name('import-export.import-products');
 
-        // Rapports
-        Route::get('/reports', [\App\Http\Controllers\Admin\ReportController::class, 'index'])->name('reports.index');
-        Route::get('/reports/sales', [\App\Http\Controllers\Admin\ReportController::class, 'sales'])->name('reports.sales');
-        Route::get('/reports/sales/export-csv', [\App\Http\Controllers\Admin\ReportController::class, 'exportSalesCsv'])->name('reports.sales.export-csv');
-        Route::get('/reports/sales/export-pdf', [\App\Http\Controllers\Admin\ReportController::class, 'exportSalesPdf'])->name('reports.sales.export-pdf');
-        Route::get('/reports/products', [\App\Http\Controllers\Admin\ReportController::class, 'products'])->name('reports.products');
-        Route::get('/reports/products/export-csv', [\App\Http\Controllers\Admin\ReportController::class, 'exportProductsCsv'])->name('reports.products.export-csv');
-        Route::get('/reports/customers', [\App\Http\Controllers\Admin\ReportController::class, 'customers'])->name('reports.customers');
-        Route::get('/reports/stock', [\App\Http\Controllers\Admin\ReportController::class, 'stock'])->name('reports.stock');
-        Route::get('/reports/stock/export-csv', [\App\Http\Controllers\Admin\ReportController::class, 'exportStockCsv'])->name('reports.stock.export-csv');
-
-        // Codes-barres & QR codes
-        Route::get('/barcodes', [\App\Http\Controllers\Admin\BarcodeController::class, 'index'])->name('barcodes.index');
-        Route::get('/barcodes/{product}/generate', [\App\Http\Controllers\Admin\BarcodeController::class, 'generateBarcode'])->name('barcodes.generate');
-        Route::get('/barcodes/{product}/qrcode', [\App\Http\Controllers\Admin\BarcodeController::class, 'generateQrCode'])->name('barcodes.qrcode');
-        Route::get('/barcodes/{product}/qrcode-image', [\App\Http\Controllers\Admin\BarcodeController::class, 'showQrCode'])->name('barcodes.qrcode-image');
-        Route::get('/barcodes/print-labels', [\App\Http\Controllers\Admin\BarcodeController::class, 'printLabels'])->name('barcodes.print-labels');
-        Route::post('/barcodes/scan', [\App\Http\Controllers\Admin\BarcodeController::class, 'scan'])->name('barcodes.scan');
-        Route::post('/barcodes/bulk-generate', [\App\Http\Controllers\Admin\BarcodeController::class, 'bulkGenerate'])->name('barcodes.bulk-generate');
-
-        // Scanner / Mode Caisse (POS)
+        // Scanner / Mode Caisse (POS) — tous les rôles
         Route::get('/scanner', [\App\Http\Controllers\Admin\ScannerController::class, 'index'])->name('scanner.index');
         Route::post('/scanner/scan', [\App\Http\Controllers\Admin\ScannerController::class, 'scan'])->name('scanner.scan');
         Route::get('/scanner/cart', [\App\Http\Controllers\Admin\ScannerController::class, 'getCart'])->name('scanner.cart');
@@ -346,45 +281,124 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/scanner/receipt/{order}', [\App\Http\Controllers\Admin\ScannerController::class, 'receipt'])->name('scanner.receipt');
         Route::post('/scanner/stock-movement', [\App\Http\Controllers\Admin\ScannerController::class, 'stockMovement'])->name('scanner.stock-movement');
 
-        // Coupons / Codes promo
-        Route::resource('coupons', \App\Http\Controllers\Admin\CouponController::class)->names('coupons');
-        Route::get('/coupons-generate-code', [\App\Http\Controllers\Admin\CouponController::class, 'generateCode'])->name('coupons.generate-code');
+        // Codes-barres — tous les rôles
+        Route::get('/barcodes', [\App\Http\Controllers\Admin\BarcodeController::class, 'index'])->name('barcodes.index');
+        Route::get('/barcodes/{product}/generate', [\App\Http\Controllers\Admin\BarcodeController::class, 'generateBarcode'])->name('barcodes.generate');
+        Route::get('/barcodes/{product}/qrcode', [\App\Http\Controllers\Admin\BarcodeController::class, 'generateQrCode'])->name('barcodes.qrcode');
+        Route::get('/barcodes/{product}/qrcode-image', [\App\Http\Controllers\Admin\BarcodeController::class, 'showQrCode'])->name('barcodes.qrcode-image');
+        Route::get('/barcodes/print-labels', [\App\Http\Controllers\Admin\BarcodeController::class, 'printLabels'])->name('barcodes.print-labels');
+        Route::post('/barcodes/scan', [\App\Http\Controllers\Admin\BarcodeController::class, 'scan'])->name('barcodes.scan');
+        Route::post('/barcodes/bulk-generate', [\App\Http\Controllers\Admin\BarcodeController::class, 'bulkGenerate'])->name('barcodes.bulk-generate');
 
-        // Avis clients
+        // Rapports — tous les rôles (consultation)
+        Route::get('/reports', [\App\Http\Controllers\Admin\ReportController::class, 'index'])->name('reports.index');
+        Route::get('/reports/sales', [\App\Http\Controllers\Admin\ReportController::class, 'sales'])->name('reports.sales');
+        Route::get('/reports/sales/export-csv', [\App\Http\Controllers\Admin\ReportController::class, 'exportSalesCsv'])->name('reports.sales.export-csv');
+        Route::get('/reports/sales/export-pdf', [\App\Http\Controllers\Admin\ReportController::class, 'exportSalesPdf'])->name('reports.sales.export-pdf');
+        Route::get('/reports/products', [\App\Http\Controllers\Admin\ReportController::class, 'products'])->name('reports.products');
+        Route::get('/reports/products/export-csv', [\App\Http\Controllers\Admin\ReportController::class, 'exportProductsCsv'])->name('reports.products.export-csv');
+        Route::get('/reports/customers', [\App\Http\Controllers\Admin\ReportController::class, 'customers'])->name('reports.customers');
+        Route::get('/reports/stock', [\App\Http\Controllers\Admin\ReportController::class, 'stock'])->name('reports.stock');
+        Route::get('/reports/stock/export-csv', [\App\Http\Controllers\Admin\ReportController::class, 'exportStockCsv'])->name('reports.stock.export-csv');
+
+        // Avis clients — tous les rôles
         Route::get('/reviews', [\App\Http\Controllers\Admin\ReviewController::class, 'index'])->name('reviews.index');
         Route::post('/reviews/{review}/approve', [\App\Http\Controllers\Admin\ReviewController::class, 'approve'])->name('reviews.approve');
         Route::post('/reviews/{review}/reject', [\App\Http\Controllers\Admin\ReviewController::class, 'reject'])->name('reviews.reject');
         Route::post('/reviews/{review}/respond', [\App\Http\Controllers\Admin\ReviewController::class, 'respond'])->name('reviews.respond');
 
-        // Bannières
-        Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class)->names('banners');
+        // Documentation — tous les rôles
+        Route::get('/docs/caisse-pos-imprimante', fn () => view('admin.docs.caisse-pos-imprimante'))->name('docs.caisse-pos-imprimante');
 
-        // WhatsApp Business
+        // WhatsApp Business — tous les rôles
         Route::get('/whatsapp', [\App\Http\Controllers\Admin\WhatsAppController::class, 'index'])->name('whatsapp.index');
         Route::get('/whatsapp/catalog', [\App\Http\Controllers\Admin\WhatsAppController::class, 'exportCatalog'])->name('whatsapp.catalog');
         Route::post('/whatsapp/product-link', [\App\Http\Controllers\Admin\WhatsAppController::class, 'productLink'])->name('whatsapp.product-link');
 
-        // Documentation
-        Route::get('/docs/caisse-pos-imprimante', fn () => view('admin.docs.caisse-pos-imprimante'))->name('docs.caisse-pos-imprimante');
+        // ===== ADMIN + MANAGER uniquement =====
+        Route::middleware('admin:admin,manager')->group(function () {
+            // Produits (CRUD complet)
+            Route::resource('products', \App\Http\Controllers\Admin\ProductController::class)->names('products');
+            Route::post('products/{product}/variants', [\App\Http\Controllers\Admin\ProductController::class, 'storeVariant'])->name('products.variants.store');
+            Route::post('products/{product}/variants/bulk', [\App\Http\Controllers\Admin\ProductController::class, 'bulkStoreVariants'])->name('products.variants.bulk');
+            Route::patch('products/{product}/variants/{variant}', [\App\Http\Controllers\Admin\ProductController::class, 'updateVariant'])->name('products.variants.update');
+            Route::delete('products/{product}/variants/{variant}', [\App\Http\Controllers\Admin\ProductController::class, 'destroyVariant'])->name('products.variants.destroy');
+            Route::delete('products/{product}/images/{image}', [\App\Http\Controllers\Admin\ProductController::class, 'destroyImage'])->name('products.images.destroy');
+            Route::post('products/{product}/images/{image}/primary', [\App\Http\Controllers\Admin\ProductController::class, 'setPrimaryImage'])->name('products.images.primary');
 
-        // Paramètres
-        Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
-        Route::post('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');
-        Route::get('/settings/shipping', [\App\Http\Controllers\Admin\SettingsController::class, 'shipping'])->name('settings.shipping');
-        Route::post('/settings/shipping', [\App\Http\Controllers\Admin\SettingsController::class, 'updateShipping'])->name('settings.shipping.update');
-        Route::get('/settings/payment', [\App\Http\Controllers\Admin\SettingsController::class, 'payment'])->name('settings.payment');
-        Route::post('/settings/payment', [\App\Http\Controllers\Admin\SettingsController::class, 'updatePayment'])->name('settings.payment.update');
-        Route::get('/settings/emails', [\App\Http\Controllers\Admin\SettingsController::class, 'emails'])->name('settings.emails');
-        Route::post('/settings/emails', [\App\Http\Controllers\Admin\SettingsController::class, 'updateEmails'])->name('settings.emails.update');
-        Route::post('/settings/emails/test', [\App\Http\Controllers\Admin\SettingsController::class, 'testEmail'])->name('settings.emails.test');
-        Route::post('/settings/payment/test-lygos', [\App\Http\Controllers\Admin\SettingsController::class, 'testLygosPay'])->name('settings.payment.test-lygos');
+            // Attributs (tailles, couleurs, matières...)
+            Route::get('attributes', [\App\Http\Controllers\Admin\AttributeController::class, 'index'])->name('attributes.index');
+            Route::post('attributes', [\App\Http\Controllers\Admin\AttributeController::class, 'storeAttribute'])->name('attributes.store');
+            Route::delete('attributes/{attribute}', [\App\Http\Controllers\Admin\AttributeController::class, 'destroyAttribute'])->name('attributes.destroy');
+            Route::post('attributes/{attribute}/values', [\App\Http\Controllers\Admin\AttributeController::class, 'storeValue'])->name('attributes.values.store');
+            Route::post('attributes/{attribute}/values/bulk', [\App\Http\Controllers\Admin\AttributeController::class, 'bulkStoreValues'])->name('attributes.values.bulk');
+            Route::delete('attributes/{attribute}/values/{value}', [\App\Http\Controllers\Admin\AttributeController::class, 'destroyValue'])->name('attributes.values.destroy');
 
-        // Profil admin
-        Route::get('/profile', [\App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('profile.edit');
-        Route::post('/profile', [\App\Http\Controllers\Admin\ProfileController::class, 'update'])->name('profile.update');
-        Route::post('/profile/password', [\App\Http\Controllers\Admin\ProfileController::class, 'updatePassword'])->name('profile.password');
+            // Catégories
+            Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class)->names('categories');
+            Route::post('categories/reorder', [\App\Http\Controllers\Admin\CategoryController::class, 'reorder'])->name('categories.reorder');
 
-        // Utilisateurs admin
-        Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->names('users');
+            // Clients (modification + suppression)
+            Route::get('customers/create', [\App\Http\Controllers\Admin\CustomerController::class, 'create'])->name('customers.create');
+            Route::post('customers', [\App\Http\Controllers\Admin\CustomerController::class, 'store'])->name('customers.store');
+            Route::get('customers/{customer}/edit', [\App\Http\Controllers\Admin\CustomerController::class, 'edit'])->name('customers.edit');
+            Route::put('customers/{customer}', [\App\Http\Controllers\Admin\CustomerController::class, 'update'])->name('customers.update');
+            Route::delete('customers/{customer}', [\App\Http\Controllers\Admin\CustomerController::class, 'destroy'])->name('customers.destroy');
+
+            // Remboursements
+            Route::get('/refunds', [\App\Http\Controllers\Admin\RefundController::class, 'index'])->name('refunds.index');
+            Route::post('orders/{order}/refunds', [\App\Http\Controllers\Admin\RefundController::class, 'store'])->name('refunds.store');
+
+            // Coupons / Codes promo
+            Route::resource('coupons', \App\Http\Controllers\Admin\CouponController::class)->names('coupons');
+            Route::get('/coupons-generate-code', [\App\Http\Controllers\Admin\CouponController::class, 'generateCode'])->name('coupons.generate-code');
+
+            // Bannières
+            Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class)->names('banners');
+
+            // Fournisseurs
+            Route::resource('suppliers', \App\Http\Controllers\Admin\SupplierController::class)->names('suppliers');
+
+            // Dropshipping
+            Route::get('/dropshipping', [\App\Http\Controllers\Admin\DropshippingController::class, 'index'])->name('dropshipping.index');
+            Route::get('/dropshipping/{orderSupplier}', [\App\Http\Controllers\Admin\DropshippingController::class, 'show'])->name('dropshipping.show');
+            Route::patch('/dropshipping/{orderSupplier}/status', [\App\Http\Controllers\Admin\DropshippingController::class, 'updateStatus'])->name('dropshipping.update-status');
+        });
+
+        // ===== ADMIN uniquement =====
+        Route::middleware('admin:admin')->group(function () {
+            // Utilisateurs admin
+            Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->names('users');
+
+            // Paramètres
+            Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
+            Route::post('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('settings.update');
+            Route::get('/settings/shipping', [\App\Http\Controllers\Admin\SettingsController::class, 'shipping'])->name('settings.shipping');
+            Route::post('/settings/shipping', [\App\Http\Controllers\Admin\SettingsController::class, 'updateShipping'])->name('settings.shipping.update');
+            Route::get('/settings/payment', [\App\Http\Controllers\Admin\SettingsController::class, 'payment'])->name('settings.payment');
+            Route::post('/settings/payment', [\App\Http\Controllers\Admin\SettingsController::class, 'updatePayment'])->name('settings.payment.update');
+            Route::get('/settings/emails', [\App\Http\Controllers\Admin\SettingsController::class, 'emails'])->name('settings.emails');
+            Route::post('/settings/emails', [\App\Http\Controllers\Admin\SettingsController::class, 'updateEmails'])->name('settings.emails.update');
+            Route::post('/settings/emails/test', [\App\Http\Controllers\Admin\SettingsController::class, 'testEmail'])->name('settings.emails.test');
+            Route::post('/settings/payment/test-lygos', [\App\Http\Controllers\Admin\SettingsController::class, 'testLygosPay'])->name('settings.payment.test-lygos');
+
+            // Comptabilité
+            Route::get('/accounting', [\App\Http\Controllers\Admin\AccountingController::class, 'index'])->name('accounting.index');
+            Route::get('/accounting/entries', [\App\Http\Controllers\Admin\AccountingController::class, 'entries'])->name('accounting.entries');
+            Route::get('/accounting/entries/create', [\App\Http\Controllers\Admin\AccountingController::class, 'createEntry'])->name('accounting.entries.create');
+            Route::post('/accounting/entries', [\App\Http\Controllers\Admin\AccountingController::class, 'storeEntry'])->name('accounting.entries.store');
+            Route::get('/accounting/entries/{entry}', [\App\Http\Controllers\Admin\AccountingController::class, 'showEntry'])->name('accounting.entries.show');
+            Route::get('/accounting/accounts', [\App\Http\Controllers\Admin\AccountingController::class, 'accounts'])->name('accounting.accounts');
+            Route::get('/accounting/balance', [\App\Http\Controllers\Admin\AccountingController::class, 'balance'])->name('accounting.balance');
+            Route::get('/accounting/ledger', [\App\Http\Controllers\Admin\AccountingController::class, 'ledger'])->name('accounting.ledger');
+            Route::post('/accounting/export', [\App\Http\Controllers\Admin\AccountingController::class, 'export'])->name('accounting.export');
+
+            // Import/Export
+            Route::get('/import-export', [\App\Http\Controllers\Admin\ImportExportController::class, 'index'])->name('import-export.index');
+            Route::get('/import-export/export-products', [\App\Http\Controllers\Admin\ImportExportController::class, 'exportProducts'])->name('import-export.export-products');
+            Route::get('/import-export/export-categories', [\App\Http\Controllers\Admin\ImportExportController::class, 'exportCategories'])->name('import-export.export-categories');
+            Route::get('/import-export/template', [\App\Http\Controllers\Admin\ImportExportController::class, 'downloadTemplate'])->name('import-export.template');
+            Route::post('/import-export/import-products', [\App\Http\Controllers\Admin\ImportExportController::class, 'importProducts'])->name('import-export.import-products');
+        });
     });
 });

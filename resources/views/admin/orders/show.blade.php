@@ -632,7 +632,8 @@ function statusForm() {
                 if (data.success !== false) {
                     this.saved = true;
                     if (window.Alpine?.store('notify')) window.Alpine.store('notify').success('Statut mis à jour');
-                    setTimeout(() => this.saved = false, 3000);
+                    // Recharger la page pour mettre à jour la timeline et le badge
+                    setTimeout(() => window.location.reload(), 600);
                 } else {
                     if (window.Alpine?.store('notify')) window.Alpine.store('notify').error(data.message || 'Erreur');
                 }

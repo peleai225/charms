@@ -223,6 +223,17 @@ Route::get('/a-propos', function () {
     return view('front.pages.about');
 })->name('about');
 
+Route::get('/legal/{slug}', function (string $slug) {
+    $pages = [
+        'conditions-generales' => ['title' => 'Conditions Générales de Vente', 'key' => 'legal_cgv'],
+        'politique-de-confidentialite' => ['title' => 'Politique de Confidentialité', 'key' => 'legal_privacy'],
+    ];
+    if (!isset($pages[$slug])) abort(404);
+    $page = $pages[$slug];
+    $content = \App\Models\Setting::get($page['key'], '<p class="text-slate-500 italic">Cette page sera bientôt disponible.</p>');
+    return view('front.pages.legal', ['title' => $page['title'], 'content' => $content]);
+})->name('legal');
+
 /*
 |--------------------------------------------------------------------------
 | Routes Admin (Back-office)

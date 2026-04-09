@@ -108,7 +108,11 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Twitter / X</label>
-                            <input type="url" name="social_twitter" value="{{ $settings['social_twitter'] ?? '' }}" class="w-full px-4 py-2 border border-slate-300 rounded-xl" placeholder="https://twitter.com/...">
+                            <input type="url" name="social_twitter" value="{{ $settings['social_twitter'] ?? '' }}" class="w-full px-4 py-2 border border-slate-300 rounded-xl" placeholder="https://x.com/...">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">TikTok</label>
+                            <input type="url" name="social_tiktok" value="{{ $settings['social_tiktok'] ?? '' }}" class="w-full px-4 py-2 border border-slate-300 rounded-xl" placeholder="https://tiktok.com/@...">
                         </div>
                     </div>
                 </div>

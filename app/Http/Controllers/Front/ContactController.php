@@ -59,53 +59,5 @@ class ContactController extends Controller
         }
     }
 
-    /**
-     * Configurer la connexion mail depuis les paramètres de la base de données
-     */
-    protected function configureMailFromSettings(): void
-    {
-        $mailDriver = Setting::get('mail_driver');
-        $mailHost = Setting::get('mail_host');
-        $mailPort = Setting::get('mail_port');
-        $mailUsername = Setting::get('mail_username');
-        $mailPassword = Setting::get('mail_password');
-        $mailEncryption = Setting::get('mail_encryption');
-        $mailFromName = Setting::get('mail_from_name');
-        $mailFromAddress = Setting::get('mail_from_address');
-
-        if ($mailDriver) {
-            config(['mail.default' => $mailDriver]);
-        }
-
-        if ($mailHost) {
-            config(['mail.mailers.smtp.host' => $mailHost]);
-        }
-
-        if ($mailPort) {
-            config(['mail.mailers.smtp.port' => $mailPort]);
-        }
-
-        if ($mailUsername) {
-            config(['mail.mailers.smtp.username' => $mailUsername]);
-        }
-
-        if ($mailPassword) {
-            config(['mail.mailers.smtp.password' => $mailPassword]);
-        }
-
-        if ($mailEncryption && $mailEncryption !== 'null') {
-            config(['mail.mailers.smtp.encryption' => $mailEncryption]);
-        } else {
-            config(['mail.mailers.smtp.encryption' => null]);
-        }
-
-        if ($mailFromName) {
-            config(['mail.from.name' => $mailFromName]);
-        }
-
-        if ($mailFromAddress) {
-            config(['mail.from.address' => $mailFromAddress]);
-        }
-    }
 }
 

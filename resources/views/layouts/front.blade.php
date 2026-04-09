@@ -44,6 +44,14 @@
         <meta name="twitter:image" content="@yield('og_image')">
     @endif
 
+    {{-- PWA --}}
+    <link rel="manifest" href="{{ route('manifest') }}">
+    <meta name="theme-color" content="{{ $primaryColor }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="{{ $siteName }}">
+    <meta name="mobile-web-app-capable" content="yes">
+
     {{-- Canonical URL --}}
     <link rel="canonical" href="@yield('canonical', url()->current())">
 
@@ -208,7 +216,7 @@
                     'bg-amber-50 border-amber-200 text-amber-800': notification.type === 'warning',
                     'bg-blue-50 border-blue-200 text-blue-800': notification.type === 'info'
                 }"
-                class="flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl min-w-[300px] backdrop-blur-sm"
+                class="flex items-center gap-3 px-4 py-3 rounded-xl border shadow-xl min-w-[calc(100vw-2rem)] sm:min-w-[300px] backdrop-blur-sm"
             >
                 <span x-text="notification.message" class="flex-1"></span>
                 <button @click="remove(notification.id)" class="text-current opacity-50 hover:opacity-100">
@@ -902,9 +910,9 @@
                     <ul class="space-y-2">
                         <li><a href="{{ route('contact') }}" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">Centre d'aide</a></li>
                         <li><a href="{{ route('order-tracking.index') }}" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">Suivi de commande</a></li>
-                        <li><a href="#" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">Retours & remboursements</a></li>
-                        <li><a href="#" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">Livraison</a></li>
-                        <li><a href="#" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">FAQ</a></li>
+                        <li><a href="{{ route('legal', 'retours-remboursements') }}" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">Retours & remboursements</a></li>
+                        <li><a href="{{ route('legal', 'livraison') }}" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">Livraison</a></li>
+                        <li><a href="{{ route('legal', 'faq') }}" class="text-sm text-slate-400 hover:text-white hover:translate-x-1 transition-transform inline-block">FAQ</a></li>
                     </ul>
                 </div>
 
@@ -963,21 +971,21 @@
                     <p class="text-sm text-slate-500">
                         &copy; {{ date('Y') }} {{ $siteName }}. Tous droits r&eacute;serv&eacute;s.
                     </p>
-                    <div class="flex items-center gap-3">
+                    <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                         <!-- Orange Money -->
-                        <div class="inline-flex items-center gap-2 h-8 px-4 bg-slate-800/60 border border-slate-700/50 rounded-full">
-                            <span class="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
-                            <span class="text-xs font-medium text-slate-400">Orange Money</span>
+                        <div class="inline-flex items-center gap-1.5 sm:gap-2 h-7 sm:h-8 px-2.5 sm:px-4 bg-slate-800/60 border border-slate-700/50 rounded-full">
+                            <span class="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-orange-500"></span>
+                            <span class="text-[10px] sm:text-xs font-medium text-slate-400">Orange Money</span>
                         </div>
                         <!-- MTN MoMo -->
-                        <div class="inline-flex items-center gap-2 h-8 px-4 bg-slate-800/60 border border-slate-700/50 rounded-full">
-                            <span class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
-                            <span class="text-xs font-medium text-slate-400">MTN MoMo</span>
+                        <div class="inline-flex items-center gap-1.5 sm:gap-2 h-7 sm:h-8 px-2.5 sm:px-4 bg-slate-800/60 border border-slate-700/50 rounded-full">
+                            <span class="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-yellow-400"></span>
+                            <span class="text-[10px] sm:text-xs font-medium text-slate-400">MTN MoMo</span>
                         </div>
                         <!-- CinetPay -->
-                        <div class="inline-flex items-center gap-2 h-8 px-4 bg-slate-800/60 border border-slate-700/50 rounded-full">
-                            <span class="w-2.5 h-2.5 rounded-full bg-green-400"></span>
-                            <span class="text-xs font-medium text-slate-400">CinetPay</span>
+                        <div class="inline-flex items-center gap-1.5 sm:gap-2 h-7 sm:h-8 px-2.5 sm:px-4 bg-slate-800/60 border border-slate-700/50 rounded-full">
+                            <span class="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-green-400"></span>
+                            <span class="text-[10px] sm:text-xs font-medium text-slate-400">CinetPay</span>
                         </div>
                     </div>
                 </div>
@@ -1473,5 +1481,15 @@
         </div>
     </div>
     @endif
+
+    {{-- Service Worker Registration --}}
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .catch(() => {});
+            });
+        }
+    </script>
 </body>
 </html>

@@ -223,10 +223,44 @@ Route::get('/a-propos', function () {
     return view('front.pages.about');
 })->name('about');
 
+Route::get('/offline', function () {
+    return view('front.pages.offline');
+})->name('offline');
+
+Route::get('/manifest.json', function () {
+    $siteName = \App\Models\Setting::get('site_name', config('app.name', 'Le Grand Bazar'));
+    $siteDescription = \App\Models\Setting::get('site_description', 'Votre boutique en ligne de confiance');
+    $primaryColor = \App\Models\Setting::get('primary_color', '#6366f1');
+    $favicon = \App\Models\Setting::get('favicon');
+
+    $iconBase = $favicon ? asset('storage/' . $favicon) : '/favicon.ico';
+
+    return response()->json([
+        'name' => $siteName,
+        'short_name' => \Illuminate\Support\Str::limit($siteName, 20, ''),
+        'description' => $siteDescription,
+        'start_url' => '/',
+        'display' => 'standalone',
+        'background_color' => '#f8fafc',
+        'theme_color' => $primaryColor,
+        'orientation' => 'any',
+        'scope' => '/',
+        'lang' => 'fr',
+        'categories' => ['shopping', 'business'],
+        'icons' => [
+            ['src' => $iconBase, 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any maskable'],
+            ['src' => $iconBase, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any maskable'],
+        ],
+    ], 200, ['Content-Type' => 'application/manifest+json'])->setCache(['public' => true, 'max_age' => 86400]);
+})->name('manifest');
+
 Route::get('/legal/{slug}', function (string $slug) {
     $pages = [
         'conditions-generales' => ['title' => 'Conditions Générales de Vente', 'key' => 'legal_cgv'],
         'politique-de-confidentialite' => ['title' => 'Politique de Confidentialité', 'key' => 'legal_privacy'],
+        'retours-remboursements' => ['title' => 'Retours & Remboursements', 'key' => 'legal_returns'],
+        'livraison' => ['title' => 'Politique de Livraison', 'key' => 'legal_shipping'],
+        'faq' => ['title' => 'Foire Aux Questions', 'key' => 'legal_faq'],
     ];
     if (!isset($pages[$slug])) abort(404);
     $page = $pages[$slug];

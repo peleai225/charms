@@ -153,7 +153,17 @@ class OrderController extends Controller
         }
 
         if ($request->wantsJson() || $request->ajax()) {
-            return response()->json(['success' => true, 'message' => 'Statut mis à jour', 'status' => $order->status]);
+            return response()->json([
+                'success'          => true,
+                'message'          => 'Statut mis à jour',
+                'status'           => $order->status,
+                'status_label'     => $order->status_label,
+                'status_color'     => $order->status_color,
+                'shipped_at'       => $order->shipped_at?->format('d/m/Y H:i'),
+                'delivered_at'     => $order->delivered_at?->format('d/m/Y H:i'),
+                'tracking_number'  => $order->tracking_number,
+                'shipping_carrier' => $order->shipping_carrier,
+            ]);
         }
 
         return back()->with('success', 'Statut mis à jour avec succès.');

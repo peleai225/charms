@@ -966,6 +966,17 @@
                 </div>
             </div>
         </div>
+
+        {{-- Branding peleAi --}}
+        <div class="border-t border-slate-800/60 py-4">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center gap-2">
+                <span class="text-xs text-slate-500">Solution e-commerce par</span>
+                <a href="https://peleai.online" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    peleAi
+                </a>
+            </div>
+        </div>
     </footer>
 
     @stack('scripts')

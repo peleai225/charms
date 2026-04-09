@@ -983,5 +983,14 @@
         }, 5000);
     })();
     </script>
+
+    {{-- Branding peleAi --}}
+    <div class="fixed bottom-0 right-0 p-3 z-10">
+        <a href="https://peleai.online" target="_blank" rel="noopener"
+           class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800/80 backdrop-blur-sm rounded-full text-[10px] font-medium text-slate-400 hover:text-white transition-colors border border-slate-700/50">
+            <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            Propulsé par peleAi
+        </a>
+    </div>
 </body>
 </html>

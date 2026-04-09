@@ -62,32 +62,13 @@
             <div>
                 <div class="flex items-center gap-3">
                     <h2 class="text-2xl font-bold text-slate-900 font-mono">{{ $order->order_number }}</h2>
-                    @switch($order->status)
-                        @case('pending')
-                            <span id="status-badge" class="inline-flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded-full bg-amber-50 text-amber-700 ring-1 ring-amber-200">
-                                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>En attente
-                            </span>@break
-                        @case('confirmed')
-                            <span id="status-badge" class="inline-flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded-full bg-blue-50 text-blue-700 ring-1 ring-blue-200">
-                                <span class="w-2 h-2 rounded-full bg-blue-500"></span>Confirmée
-                            </span>@break
-                        @case('processing')
-                            <span id="status-badge" class="inline-flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded-full bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200">
-                                <span class="w-2 h-2 rounded-full bg-indigo-500"></span>En préparation
-                            </span>@break
-                        @case('shipped')
-                            <span id="status-badge" class="inline-flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded-full bg-purple-50 text-purple-700 ring-1 ring-purple-200">
-                                <span class="w-2 h-2 rounded-full bg-purple-500"></span>Expédiée
-                            </span>@break
-                        @case('delivered')
-                            <span id="status-badge" class="inline-flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded-full bg-green-50 text-green-700 ring-1 ring-green-200">
-                                <span class="w-2 h-2 rounded-full bg-green-500"></span>Livrée
-                            </span>@break
-                        @case('cancelled')
-                            <span id="status-badge" class="inline-flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded-full bg-red-50 text-red-700 ring-1 ring-red-200">
-                                <span class="w-2 h-2 rounded-full bg-red-500"></span>Annulée
-                            </span>@break
-                    @endswitch
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded-full transition-all duration-300"
+                          :class="badgeClasses[currentStatus] || 'bg-slate-50 text-slate-700 ring-1 ring-slate-200'">
+                        <span class="w-2 h-2 rounded-full transition-colors duration-300"
+                              :class="dotClasses[currentStatus] || 'bg-slate-500'"
+                              :style="currentStatus === 'pending' ? 'animation: pulse 2s infinite' : ''"></span>
+                        <span x-text="statusLabels[currentStatus] || currentStatus"></span>
+                    </span>
                 </div>
                 <p class="text-slate-500 text-sm mt-0.5">Passée le {{ $order->created_at->format('d/m/Y à H:i') }}</p>
             </div>
@@ -106,69 +87,56 @@
         </div>
     </div>
 
-    {{-- ===== TIMELINE ===== --}}
-    @if(!$isCancelled)
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-x-auto">
-        <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-6">Suivi de la commande</h3>
-        <div class="relative min-w-[560px]">
-            {{-- Progress bar background --}}
-            <div class="absolute top-6 left-6 right-6 h-1 bg-slate-100 rounded-full"></div>
-            {{-- Progress bar fill: width = currentIdx/4 * (100% - 48px) = currentIdx*25% - currentIdx*12px --}}
-            @php
-                $pW = $currentIdx * 25;     // percentage part
-                $pPx = $currentIdx * 12;    // pixel offset (half of step width per step)
-            @endphp
-            <div class="absolute top-6 left-6 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-700"
-                 style="width: calc({{ $pW }}% - {{ $pPx }}px)"></div>
+    {{-- ===== TIMELINE (Alpine réactif) ===== --}}
+    <template x-if="currentStatus !== 'cancelled'">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-x-auto">
+            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-6">Suivi de la commande</h3>
+            <div class="relative min-w-[560px]">
+                <div class="absolute top-6 left-6 right-6 h-1 bg-slate-100 rounded-full"></div>
+                <div class="absolute top-6 left-6 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-700"
+                     :style="'width: calc(' + (currentIdx * 25) + '% - ' + (currentIdx * 12) + 'px)'"></div>
 
-            {{-- Steps --}}
-            <div class="relative flex justify-between">
-                @foreach($statusOrder as $i => $step)
-                @php
-                    $isDone    = $currentIdx >= $i;
-                    $isActive  = $currentIdx === $i;
-                    $stepDate  = $stepDates[$step] ?? null;
-                    $color     = $statusColors[$step] ?? 'slate';
-                @endphp
-                <div class="flex flex-col items-center gap-2 flex-1">
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-500 z-10
-                        {{ $isDone
-                            ? 'border-' . $color . '-500 bg-' . $color . '-500 text-white shadow-lg shadow-' . $color . '-500/30'
-                            : 'border-slate-200 bg-white text-slate-300' }}">
-                        @if($isActive)
-                            <div class="w-3 h-3 rounded-full bg-white animate-ping absolute"></div>
-                        @endif
-                        <svg class="w-5 h-5 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $statusIcons[$step] }}"/>
-                        </svg>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-xs font-semibold {{ $isDone ? 'text-slate-900' : 'text-slate-400' }}">
-                            {{ $statusLabels[$step] }}
-                        </p>
-                        @if($stepDate && $isDone)
-                            <p class="text-[10px] text-slate-400 mt-0.5">{{ $stepDate->format('d/m/Y') }}</p>
-                            <p class="text-[10px] text-slate-400">{{ $stepDate->format('H:i') }}</p>
-                        @else
-                            <p class="text-[10px] text-slate-300 mt-0.5">—</p>
-                        @endif
-                    </div>
+                <div class="relative flex justify-between">
+                    <template x-for="(step, i) in steps" :key="step.key">
+                        <div class="flex flex-col items-center gap-2 flex-1">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-500 z-10"
+                                 :class="currentIdx >= i
+                                    ? 'border-' + step.color + '-500 bg-' + step.color + '-500 text-white shadow-lg shadow-' + step.color + '-500/30'
+                                    : 'border-slate-200 bg-white text-slate-300'">
+                                <div x-show="currentIdx === i" class="w-3 h-3 rounded-full bg-white animate-ping absolute"></div>
+                                <svg class="w-5 h-5 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="step.icon"/>
+                                </svg>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-xs font-semibold" :class="currentIdx >= i ? 'text-slate-900' : 'text-slate-400'" x-text="step.label"></p>
+                                <template x-if="currentIdx >= i && step.date">
+                                    <div>
+                                        <p class="text-[10px] text-slate-400 mt-0.5" x-text="step.date.split(' ')[0]"></p>
+                                        <p class="text-[10px] text-slate-400" x-text="step.date.split(' ')[1] || ''"></p>
+                                    </div>
+                                </template>
+                                <template x-if="!(currentIdx >= i && step.date)">
+                                    <p class="text-[10px] text-slate-300 mt-0.5">—</p>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
                 </div>
-                @endforeach
             </div>
         </div>
-    </div>
-    @else
-    <div class="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
-        <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </template>
+    <template x-if="currentStatus === 'cancelled'">
+        <div class="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </div>
+            <div>
+                <p class="font-semibold text-red-800">Commande annulée</p>
+                <p class="text-sm text-red-600">Cette commande a été annulée</p>
+            </div>
         </div>
-        <div>
-            <p class="font-semibold text-red-800">Commande annulée</p>
-            <p class="text-sm text-red-600">Cette commande a été annulée le {{ $order->updated_at->format('d/m/Y à H:i') }}</p>
-        </div>
-    </div>
-    @endif
+    </template>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- ===== COLONNE PRINCIPALE ===== -->
@@ -557,7 +525,50 @@
 @push('scripts')
 <script>
 function orderShow() {
-    return {};
+    const statusOrder = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
+    return {
+        currentStatus: '{{ $order->status }}',
+        get currentIdx() {
+            const idx = statusOrder.indexOf(this.currentStatus);
+            return idx >= 0 ? idx : -1;
+        },
+        statusLabels: {
+            pending: 'En attente', confirmed: 'Confirmée', processing: 'En préparation',
+            shipped: 'Expédiée', delivered: 'Livrée', cancelled: 'Annulée'
+        },
+        badgeClasses: {
+            pending:    'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
+            confirmed:  'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
+            processing: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200',
+            shipped:    'bg-purple-50 text-purple-700 ring-1 ring-purple-200',
+            delivered:  'bg-green-50 text-green-700 ring-1 ring-green-200',
+            cancelled:  'bg-red-50 text-red-700 ring-1 ring-red-200',
+        },
+        dotClasses: {
+            pending: 'bg-amber-500', confirmed: 'bg-blue-500', processing: 'bg-indigo-500',
+            shipped: 'bg-purple-500', delivered: 'bg-green-500', cancelled: 'bg-red-500',
+        },
+        steps: [
+            { key: 'pending',    label: 'En attente',      color: 'amber',  icon: '{{ $statusIcons["pending"] }}',    date: '{{ $order->created_at->format("d/m/Y H:i") }}' },
+            { key: 'confirmed',  label: 'Confirmée',       color: 'blue',   icon: '{{ $statusIcons["confirmed"] }}',  date: {{ $order->status !== 'pending' ? "'" . $order->created_at->format('d/m/Y H:i') . "'" : 'null' }} },
+            { key: 'processing', label: 'En préparation',  color: 'indigo', icon: '{{ $statusIcons["processing"] }}', date: {{ in_array($order->status, ['processing','shipped','delivered']) ? "'" . $order->updated_at->format('d/m/Y H:i') . "'" : 'null' }} },
+            { key: 'shipped',    label: 'Expédiée',        color: 'purple', icon: '{{ $statusIcons["shipped"] }}',    date: {!! $order->shipped_at ? "'" . $order->shipped_at->format('d/m/Y H:i') . "'" : 'null' !!} },
+            { key: 'delivered',  label: 'Livrée',          color: 'green',  icon: '{{ $statusIcons["delivered"] }}',   date: {!! $order->delivered_at ? "'" . $order->delivered_at->format('d/m/Y H:i') . "'" : 'null' !!} },
+        ],
+        updateFromServer(data) {
+            this.currentStatus = data.status;
+            // Mettre à jour les dates dans les steps
+            if (data.shipped_at) this.steps[3].date = data.shipped_at;
+            if (data.delivered_at) this.steps[4].date = data.delivered_at;
+            // Mettre à jour les dates intermédiaires
+            const now = new Date();
+            const nowStr = now.toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + now.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
+            const idx = statusOrder.indexOf(data.status);
+            for (let i = 1; i <= idx; i++) {
+                if (!this.steps[i].date) this.steps[i].date = nowStr;
+            }
+        }
+    };
 }
 
 function noteForm() {
@@ -632,8 +643,10 @@ function statusForm() {
                 if (data.success !== false) {
                     this.saved = true;
                     if (window.Alpine?.store('notify')) window.Alpine.store('notify').success('Statut mis à jour');
-                    // Recharger la page pour mettre à jour la timeline et le badge
-                    setTimeout(() => window.location.reload(), 600);
+                    // Mettre à jour la timeline et le badge dynamiquement
+                    const parent = Alpine.$data(document.querySelector('[x-data="orderShow()"]'));
+                    if (parent) parent.updateFromServer(data);
+                    setTimeout(() => this.saved = false, 3000);
                 } else {
                     if (window.Alpine?.store('notify')) window.Alpine.store('notify').error(data.message || 'Erreur');
                 }

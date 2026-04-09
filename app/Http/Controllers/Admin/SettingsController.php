@@ -42,6 +42,7 @@ class SettingsController extends Controller
             'social_instagram' => 'nullable|url',
             'social_twitter' => 'nullable|url',
             'social_whatsapp' => 'nullable|string|max:50',
+            'social_tiktok' => 'nullable|url',
             // Couleurs du thème
             'primary_color' => 'nullable|string|max:7',
             'secondary_color' => 'nullable|string|max:7',

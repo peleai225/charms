@@ -21,7 +21,7 @@ class ResetPassword extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        MailConfigService::configureMailFromSettings();
+        MailConfigService::configureFromSettings();
         return new Envelope(
             subject: 'Réinitialisation de votre mot de passe',
         );

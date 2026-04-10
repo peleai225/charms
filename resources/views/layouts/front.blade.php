@@ -2,7 +2,7 @@
 <html lang="fr" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     @php
@@ -1482,13 +1482,128 @@
     </div>
     @endif
 
-    {{-- Service Worker Registration --}}
+    {{-- PWA Install Banner --}}
+    <div x-data="pwaInstall()" x-show="showBanner" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="translate-y-full opacity-0" x-transition:enter-end="translate-y-0 opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-y-0 opacity-100" x-transition:leave-end="translate-y-full opacity-0" x-cloak class="fixed bottom-0 inset-x-0 z-[200]" style="padding-bottom: env(safe-area-inset-bottom, 0px);">
+        <div class="mx-auto max-w-lg px-4 pb-4">
+            <div class="bg-white rounded-2xl shadow-2xl shadow-slate-900/20 border border-slate-200 p-4 sm:p-5">
+                {{-- Android / Chrome --}}
+                <template x-if="platform === 'android'">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/30">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-sm font-bold text-slate-900">Installer l'application</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Accès rapide depuis votre écran d'accueil, mode plein écran.</p>
+                            <div class="flex items-center gap-2 mt-3">
+                                <button @click="installApp()" class="px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-xs font-semibold rounded-xl shadow-sm hover:shadow-md transition-all">
+                                    Installer
+                                </button>
+                                <button @click="dismiss()" class="px-4 py-2 text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors">
+                                    Plus tard
+                                </button>
+                            </div>
+                        </div>
+                        <button @click="dismiss()" class="flex-shrink-0 p-1 text-slate-400 hover:text-slate-600 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                </template>
+
+                {{-- iOS Safari --}}
+                <template x-if="platform === 'ios'">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-sm font-bold text-slate-900">Installer l'application</h3>
+                            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                                Appuyez sur
+                                <svg class="inline w-4 h-4 text-blue-500 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                puis <strong>"Sur l'écran d'accueil"</strong>
+                            </p>
+                            <div class="mt-3">
+                                <button @click="dismiss()" class="px-4 py-2 text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors">
+                                    J'ai compris
+                                </button>
+                            </div>
+                        </div>
+                        <button @click="dismiss()" class="flex-shrink-0 p-1 text-slate-400 hover:text-slate-600 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    {{-- Service Worker + PWA Install Script --}}
     <script>
+        // Service Worker Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js', { scope: '/' })
                     .catch(() => {});
             });
+        }
+
+        // PWA Install prompt
+        let pwaInstallPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            pwaInstallPrompt = e;
+            window.dispatchEvent(new CustomEvent('pwa-installable'));
+        });
+
+        function pwaInstall() {
+            return {
+                showBanner: false,
+                platform: 'android',
+
+                init() {
+                    // Already installed as PWA?
+                    if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) return;
+                    // Dismissed recently?
+                    const dismissed = localStorage.getItem('pwa-dismiss');
+                    if (dismissed && (Date.now() - parseInt(dismissed)) < 3 * 24 * 60 * 60 * 1000) return;
+
+                    // Detect platform
+                    const ua = navigator.userAgent;
+                    const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                    const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua);
+
+                    if (isIOS && isSafari) {
+                        this.platform = 'ios';
+                        setTimeout(() => { this.showBanner = true; }, 3000);
+                    } else {
+                        this.platform = 'android';
+                        if (pwaInstallPrompt) {
+                            setTimeout(() => { this.showBanner = true; }, 2000);
+                        }
+                        window.addEventListener('pwa-installable', () => {
+                            setTimeout(() => { this.showBanner = true; }, 2000);
+                        });
+                    }
+                },
+
+                async installApp() {
+                    if (!pwaInstallPrompt) return;
+                    pwaInstallPrompt.prompt();
+                    const { outcome } = await pwaInstallPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        this.showBanner = false;
+                        localStorage.setItem('pwa-installed', '1');
+                    }
+                    pwaInstallPrompt = null;
+                },
+
+                dismiss() {
+                    this.showBanner = false;
+                    localStorage.setItem('pwa-dismiss', Date.now().toString());
+                }
+            };
         }
     </script>
 </body>

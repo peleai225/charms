@@ -198,6 +198,69 @@
         $popupBanner = \App\Models\Banner::active()->position('popup_center')->orderBy('order')->first();
     @endphp
 
+    {{-- Barre admin rapide (visible uniquement pour les utilisateurs admin/manager/staff) --}}
+    @auth
+        @if(in_array(auth()->user()->role, ['admin', 'manager', 'staff']))
+        <div id="admin-bar" class="fixed top-0 inset-x-0 z-[300] bg-slate-900 text-white text-xs" style="height: 36px;">
+            <div class="max-w-7xl mx-auto px-3 h-full flex items-center justify-between gap-3">
+                {{-- Gauche : logo + rôle --}}
+                <div class="flex items-center gap-2 min-w-0">
+                    <div class="w-5 h-5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-md flex items-center justify-center shrink-0">
+                        <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <span class="text-slate-400 hidden sm:inline truncate">Connecté en tant que</span>
+                    <span class="font-semibold text-indigo-300">{{ auth()->user()->name }}</span>
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase
+                        @if(auth()->user()->role === 'admin') bg-red-500/20 text-red-300
+                        @elseif(auth()->user()->role === 'manager') bg-amber-500/20 text-amber-300
+                        @else bg-slate-500/20 text-slate-300 @endif">
+                        {{ auth()->user()->role }}
+                    </span>
+                </div>
+
+                {{-- Centre : raccourcis rapides --}}
+                <div class="flex items-center gap-1 overflow-x-auto scrollbar-none">
+                    <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-700 text-slate-300 hover:text-white transition-colors whitespace-nowrap">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                        <span class="hidden sm:inline">Tableau de bord</span>
+                    </a>
+                    <a href="{{ route('admin.orders.index') }}" class="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-700 text-slate-300 hover:text-white transition-colors whitespace-nowrap">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                        <span class="hidden sm:inline">Commandes</span>
+                    </a>
+                    @if(in_array(auth()->user()->role, ['admin', 'manager']))
+                    <a href="{{ route('admin.products.index') }}" class="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-700 text-slate-300 hover:text-white transition-colors whitespace-nowrap">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        <span class="hidden sm:inline">Produits</span>
+                    </a>
+                    @endif
+                    <a href="{{ route('admin.stock.index') }}" class="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-700 text-slate-300 hover:text-white transition-colors whitespace-nowrap">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+                        <span class="hidden sm:inline">Stock</span>
+                    </a>
+                    <a href="{{ route('admin.scanner.index') }}" class="flex items-center gap-1 px-2 py-1 rounded hover:bg-indigo-700 bg-indigo-600/30 text-indigo-300 hover:text-white transition-colors whitespace-nowrap">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                        <span class="hidden sm:inline">Caisse</span>
+                    </a>
+                </div>
+
+                {{-- Droite : fermer --}}
+                <button onclick="document.getElementById('admin-bar').remove(); document.body.style.paddingTop=''"
+                    class="shrink-0 p-1 text-slate-500 hover:text-slate-300 transition-colors ml-1" title="Masquer la barre">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+        </div>
+        <script>
+            // Pousser le contenu vers le bas pour éviter que la barre overlay le header
+            document.addEventListener('DOMContentLoaded', function() {
+                var bar = document.getElementById('admin-bar');
+                if (bar) document.body.style.paddingTop = '36px';
+            });
+        </script>
+        @endif
+    @endauth
+
     @if(!$hideSiteChrome)
     <!-- Notification Container -->
     <div x-data="notification" class="fixed top-4 right-4 z-[100] space-y-2">

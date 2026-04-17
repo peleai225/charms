@@ -568,6 +568,14 @@ if ($product->category) {
 
 @push('scripts')
 <script>
+// Pixels — ViewContent au chargement de la page produit
+document.addEventListener('DOMContentLoaded', function() {
+    var _p = { id: {{ $product->id }}, name: {{ Js::from($product->name) }}, price: {{ $product->sale_price ?? $product->price }} };
+    if (window.trackPixel) window.trackPixel.viewContent(_p);
+    if (window.trackGA4) window.trackGA4.viewItem(_p);
+    if (window.ttq) window.ttq.track('ViewContent', { content_id: String(_p.id), content_name: _p.name, value: _p.price, currency: 'XOF' });
+});
+
 function productGallery() {
     return {
         // Images
@@ -810,9 +818,13 @@ function productGallery() {
                     }
 
                     this.showSuccess = true;
-                    setTimeout(() => {
-                        this.showSuccess = false;
-                    }, 3000);
+                    setTimeout(() => { this.showSuccess = false; }, 3000);
+
+                    // Pixels — AddToCart
+                    const _p = { id: {{ $product->id }}, name: {{ Js::from($product->name) }}, price: {{ $product->sale_price ?? $product->price }} };
+                    if (window.trackPixel) window.trackPixel.addToCart(_p, this.quantity);
+                    if (window.trackGA4) window.trackGA4.addToCart(_p, this.quantity);
+                    if (window.ttq) window.ttq.track('AddToCart', { content_id: String(_p.id), content_name: _p.name, value: _p.price * this.quantity, currency: 'XOF' });
                 } else {
                     alert(data.message || 'Erreur lors de l\'ajout au panier');
                 }

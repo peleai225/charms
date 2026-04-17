@@ -490,6 +490,14 @@
 
 @push('scripts')
 <script>
+// Pixels — InitiateCheckout
+document.addEventListener('DOMContentLoaded', function() {
+    var _total = {{ $cart->total }}, _items = {{ $cart->items_count }};
+    if (window.trackPixel) window.trackPixel.initiateCheckout(_total, _items);
+    if (window.trackGA4) window.trackGA4.beginCheckout(_total);
+    if (window.ttq) window.ttq.track('InitiateCheckout', { value: _total, currency: 'XOF' });
+});
+
 function checkoutForm() {
     return {
         isSubmitting: false,

@@ -229,4 +229,19 @@
         <p class="text-center text-xs text-slate-400 mt-6">Besoin d'aide ? <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', config('app.whatsapp_number', '2250506805382')) }}" class="text-primary-600 hover:underline font-medium">Contactez-nous sur WhatsApp</a></p>
     </div>
 </div>
+
+@push('scripts')
+<script>
+// Pixels — Purchase (sessionStorage évite le double-fire en cas de refresh)
+document.addEventListener('DOMContentLoaded', function() {
+    var _key = 'pixel_purchase_{{ $order->id }}';
+    if (sessionStorage.getItem(_key)) return;
+    sessionStorage.setItem(_key, '1');
+    var _v = {{ $order->total }}, _id = {{ Js::from($order->order_number) }};
+    if (window.trackPixel) window.trackPixel.purchase(_id, _v);
+    if (window.trackGA4) window.trackGA4.purchase(_id, _v);
+    if (window.ttq) window.ttq.track('PlaceAnOrder', { order_id: _id, value: _v, currency: 'XOF' });
+});
+</script>
+@endpush
 @endsection

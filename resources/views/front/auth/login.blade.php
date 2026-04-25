@@ -3,8 +3,18 @@
 @section('title', 'Connexion')
 @section('hide_site_chrome', '1')
 
+@php
+    $siteName = \App\Models\Setting::get('site_name', config('app.name', '{{ $siteName }}'));
+    $testimonials = [
+        ['text' => 'Service excellent, livraison rapide et produits de qualité. Je recommande vivement !', 'name' => 'Aminata K.', 'city' => 'Abidjan'],
+        ['text' => 'Très bonne expérience d\'achat. Le SAV répond rapidement sur WhatsApp.', 'name' => 'Moussa D.', 'city' => 'Yopougon'],
+        ['text' => 'Prix imbattables et livraison ponctuelle. Je commande régulièrement.', 'name' => 'Fatou B.', 'city' => 'Marcory'],
+    ];
+@endphp
+
 @section('content')
-<div class="min-h-screen flex" x-data="{ showPass: false }">
+<div class="min-h-screen flex" x-data="{ showPass: false, testIndex: 0 }"
+     x-init="setInterval(() => testIndex = (testIndex + 1) % {{ count($testimonials) }}, 5000)">
 
     {{-- Panneau gauche : visuel immersif --}}
     <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-slate-900 via-primary-950 to-slate-900 flex-col justify-between p-14">
@@ -31,7 +41,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                     </svg>
                 </div>
-                <span class="text-white font-bold text-lg tracking-tight">Le Grand Bazar</span>
+                <span class="text-white font-bold text-lg tracking-tight">{{ $siteName }}</span>
             </a>
         </div>
 
@@ -68,16 +78,33 @@
             </div>
         </div>
 
-        {{-- Témoignage --}}
-        <div class="relative z-10">
-            <div class="bg-white/8 backdrop-blur-sm border border-white/15 rounded-2xl p-5">
+        {{-- Témoignages rotatifs --}}
+        <div class="relative z-10 min-h-[140px]">
+            @foreach($testimonials as $i => $t)
+            <div x-show="testIndex === {{ $i }}" x-cloak
+                 x-transition:enter="transition ease-out duration-700"
+                 x-transition:enter-start="opacity-0 translate-y-2"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-300"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="bg-white/8 backdrop-blur-sm border border-white/15 rounded-2xl p-5">
                 <div class="flex items-center gap-1 mb-2">
-                    @for($i = 0; $i < 5; $i++)
+                    @for($s = 0; $s < 5; $s++)
                     <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
                     @endfor
                 </div>
-                <p class="text-white/80 text-sm italic leading-relaxed">"Service excellent, livraison rapide et produits de qualité. Je recommande vivement !"</p>
-                <p class="text-white/50 text-xs mt-2 font-medium">— Aminata K., Abidjan</p>
+                <p class="text-white/80 text-sm italic leading-relaxed">"{{ $t['text'] }}"</p>
+                <p class="text-white/50 text-xs mt-2 font-medium">— {{ $t['name'] }}, {{ $t['city'] }}</p>
+            </div>
+            @endforeach
+            {{-- Indicateurs --}}
+            <div class="flex gap-1.5 mt-3 justify-center">
+                @foreach($testimonials as $i => $t)
+                <button type="button" @click="testIndex = {{ $i }}"
+                    :class="testIndex === {{ $i }} ? 'w-6 bg-white' : 'w-1.5 bg-white/30 hover:bg-white/50'"
+                    class="h-1.5 rounded-full transition-all duration-300"></button>
+                @endforeach
             </div>
         </div>
     </div>
@@ -94,7 +121,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                         </svg>
                     </div>
-                    Le Grand Bazar
+                    {{ $siteName }}
                 </a>
             </div>
 
@@ -209,8 +236,8 @@
             {{-- Footer --}}
             <p class="mt-8 text-center text-xs text-slate-400">
                 En vous connectant vous acceptez nos
-                <a href="#" class="text-slate-600 hover:text-primary-600 underline underline-offset-2">CGV</a> et notre
-                <a href="#" class="text-slate-600 hover:text-primary-600 underline underline-offset-2">politique de confidentialité</a>
+                <a href="{{ route('legal', 'conditions-generales') }}" class="text-slate-600 hover:text-primary-600 underline underline-offset-2">CGV</a> et notre
+                <a href="{{ route('legal', 'politique-de-confidentialite') }}" class="text-slate-600 hover:text-primary-600 underline underline-offset-2">politique de confidentialité</a>
             </p>
         </div>
     </div>

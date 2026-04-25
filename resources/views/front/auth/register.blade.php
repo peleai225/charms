@@ -3,6 +3,8 @@
 @section('title', 'Créer un compte')
 @section('hide_site_chrome', '1')
 
+@php $siteName = \App\Models\Setting::get('site_name', config('app.name', '{{ $siteName }}')); @endphp
+
 @section('content')
 <div class="min-h-screen flex" x-data="{
     showPass: false,
@@ -44,7 +46,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                         </svg>
                     </div>
-                    Le Grand Bazar
+                    {{ $siteName }}
                 </a>
             </div>
 
@@ -202,7 +204,7 @@
                                 <svg class="absolute inset-0 w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity p-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
                             </div>
                             <span class="text-sm text-slate-600 select-none leading-relaxed">
-                                J'accepte les <a href="#" class="text-primary-600 hover:underline font-medium">conditions générales</a> et la <a href="#" class="text-primary-600 hover:underline font-medium">politique de confidentialité</a> <span class="text-red-500">*</span>
+                                J'accepte les <a href="{{ route('legal', 'conditions-generales') }}" target="_blank" class="text-primary-600 hover:underline font-medium">conditions générales</a> et la <a href="{{ route('legal', 'politique-de-confidentialite') }}" target="_blank" class="text-primary-600 hover:underline font-medium">politique de confidentialité</a> <span class="text-red-500">*</span>
                             </span>
                         </label>
                         @error('terms')
@@ -220,7 +222,7 @@
             </form>
 
             <p class="mt-6 text-center text-xs text-slate-400">
-                En créant un compte vous acceptez nos <a href="#" class="text-slate-600 hover:text-primary-600 underline underline-offset-2">CGV</a>
+                En créant un compte vous acceptez nos <a href="{{ route('legal', 'conditions-generales') }}" class="text-slate-600 hover:text-primary-600 underline underline-offset-2">CGV</a>
             </p>
         </div>
     </div>
@@ -248,7 +250,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                     </svg>
                 </div>
-                <span class="text-white font-bold text-lg tracking-tight">Le Grand Bazar</span>
+                <span class="text-white font-bold text-lg tracking-tight">{{ $siteName }}</span>
             </a>
         </div>
 
@@ -266,15 +268,21 @@
                 Des milliers de clients font confiance au Grand Bazar pour leurs achats quotidiens.
             </p>
 
-            {{-- Stats --}}
-            <div class="mt-10 grid grid-cols-3 gap-4">
-                @foreach([
-                    ['value' => '10K+', 'label' => 'Clients'],
-                    ['value' => '50K+', 'label' => 'Commandes'],
-                    ['value' => '98%', 'label' => 'Satisfaits'],
-                ] as $stat)
-                <div class="bg-white/8 backdrop-blur-sm border border-white/15 rounded-xl p-3 text-center">
-                    <div class="text-2xl font-black text-white">{{ $stat['value'] }}</div>
+            {{-- Stats animées --}}
+            <div class="mt-10 grid grid-cols-3 gap-4"
+                 x-data="{ stats: [{from:0,to:10,suffix:'K+'},{from:0,to:50,suffix:'K+'},{from:0,to:98,suffix:'%'}], display:[0,0,0] }"
+                 x-init="stats.forEach((s, i) => {
+                    let step = (s.to - s.from) / 60;
+                    let cur = s.from;
+                    let timer = setInterval(() => {
+                        cur += step;
+                        if (cur >= s.to) { cur = s.to; clearInterval(timer); }
+                        display[i] = Math.floor(cur);
+                    }, 25);
+                 })">
+                @foreach([['suffix' => 'K+', 'label' => 'Clients'], ['suffix' => 'K+', 'label' => 'Commandes'], ['suffix' => '%', 'label' => 'Satisfaits']] as $idx => $stat)
+                <div class="bg-white/8 backdrop-blur-sm border border-white/15 rounded-xl p-3 text-center hover:bg-white/12 transition-colors">
+                    <div class="text-2xl font-black text-white"><span x-text="display[{{ $idx }}]">0</span>{{ $stat['suffix'] }}</div>
                     <div class="text-xs text-white/60 mt-0.5">{{ $stat['label'] }}</div>
                 </div>
                 @endforeach

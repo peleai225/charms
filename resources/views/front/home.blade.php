@@ -186,39 +186,6 @@
 @endif
 
 {{-- ═══════════════════════════════════════════════
-     MARQUEE — Bandeau défilant
-═══════════════════════════════════════════════ --}}
-<section class="bg-slate-900 text-white py-3 overflow-hidden border-y border-slate-800">
-    <div class="flex animate-[marquee_40s_linear_infinite] whitespace-nowrap">
-        @php
-            $marqueeItems = [
-                ['icon' => '🚚', 'text' => 'Livraison express 24-48h en Côte d\'Ivoire'],
-                ['icon' => '💎', 'text' => 'Produits authentiques garantis'],
-                ['icon' => '💳', 'text' => 'Paiement Mobile Money sécurisé'],
-                ['icon' => '🎁', 'text' => 'Livraison gratuite dès 50 000 F CFA'],
-                ['icon' => '⭐', 'text' => 'Plus de 1 000 clients satisfaits'],
-                ['icon' => '🔄', 'text' => 'Retours faciles sous 30 jours'],
-            ];
-        @endphp
-        @for($i = 0; $i < 2; $i++)
-            @foreach($marqueeItems as $item)
-            <span class="inline-flex items-center gap-3 mx-8 text-sm font-medium">
-                <span class="text-base">{{ $item['icon'] }}</span>
-                <span class="text-slate-300">{{ $item['text'] }}</span>
-                <span class="text-primary-400">•</span>
-            </span>
-            @endforeach
-        @endfor
-    </div>
-</section>
-<style>
-    @keyframes marquee {
-        from { transform: translateX(0); }
-        to { transform: translateX(-50%); }
-    }
-</style>
-
-{{-- ═══════════════════════════════════════════════
      BARRE DE CONFIANCE - Floating
 ═══════════════════════════════════════════════ --}}
 <section class="relative z-20 -mt-6">
@@ -253,6 +220,39 @@
         </div>
     </div>
 </section>
+
+{{-- ═══════════════════════════════════════════════
+     MARQUEE — Bandeau défilant (placé après la trust bar)
+═══════════════════════════════════════════════ --}}
+<section class="bg-slate-900 text-white py-3 overflow-hidden border-y border-slate-800 mt-10">
+    <div class="flex animate-[marquee_40s_linear_infinite] whitespace-nowrap">
+        @php
+            $marqueeItems = [
+                ['icon' => '🚚', 'text' => 'Livraison express 24-48h en Côte d\'Ivoire'],
+                ['icon' => '💎', 'text' => 'Produits authentiques garantis'],
+                ['icon' => '💳', 'text' => 'Paiement Mobile Money sécurisé'],
+                ['icon' => '🎁', 'text' => 'Livraison gratuite dès 50 000 F CFA'],
+                ['icon' => '⭐', 'text' => 'Plus de 1 000 clients satisfaits'],
+                ['icon' => '🔄', 'text' => 'Retours faciles sous 30 jours'],
+            ];
+        @endphp
+        @for($i = 0; $i < 2; $i++)
+            @foreach($marqueeItems as $item)
+            <span class="inline-flex items-center gap-3 mx-8 text-sm font-medium">
+                <span class="text-base">{{ $item['icon'] }}</span>
+                <span class="text-slate-300">{{ $item['text'] }}</span>
+                <span class="text-primary-400">•</span>
+            </span>
+            @endforeach
+        @endfor
+    </div>
+</section>
+<style>
+    @keyframes marquee {
+        from { transform: translateX(0); }
+        to { transform: translateX(-50%); }
+    }
+</style>
 
 {{-- ═══════════════════════════════════════════════
      CATÉGORIES — Cards modernes avec image
@@ -519,9 +519,11 @@
         {{-- Grille témoignages --}}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             @foreach($testimonials as $i => $t)
-            <div class="group bg-white rounded-2xl border border-slate-200/60 p-6 hover:border-primary-300 hover:shadow-2xl hover:shadow-primary-500/10 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex flex-col">
-                {{-- Quote icon décoratif --}}
-                <svg class="absolute -top-3 -right-3 w-24 h-24 text-primary-50 group-hover:text-primary-100/80 group-hover:rotate-12 transition-all duration-500" fill="currentColor" viewBox="0 0 32 32"><path d="M9.352 4C4.456 7.456 1 13.12 1 19.36c0 5.088 3.072 8.064 6.624 8.064 3.36 0 5.856-2.688 5.856-5.856 0-3.168-2.208-5.472-5.088-5.472-.576 0-1.344.096-1.536.192.48-3.264 3.552-7.104 6.624-9.024L9.352 4zm16.512 0c-4.8 3.456-8.256 9.12-8.256 15.36 0 5.088 3.072 8.064 6.624 8.064 3.264 0 5.856-2.688 5.856-5.856 0-3.168-2.304-5.472-5.184-5.472-.576 0-1.248.096-1.44.192.48-3.264 3.456-7.104 6.528-9.024L25.864 4z"/></svg>
+            <div class="group bg-white rounded-2xl border border-slate-200/60 p-6 hover:border-primary-300 hover:shadow-2xl hover:shadow-primary-500/10 hover:-translate-y-1 transition-all duration-300 relative flex flex-col">
+                {{-- Petit indicateur citation discret en haut --}}
+                <div class="absolute top-4 right-4 w-7 h-7 rounded-full bg-primary-50 flex items-center justify-center opacity-60 group-hover:opacity-100 group-hover:bg-primary-100 transition-all">
+                    <svg class="w-3.5 h-3.5 text-primary-500" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
+                </div>
                 <div class="relative z-10 flex flex-col flex-1">
                     {{-- Étoiles --}}
                     <div class="flex items-center gap-0.5 mb-4">
@@ -530,7 +532,7 @@
                         @endfor
                     </div>
                     {{-- Texte --}}
-                    <p class="text-slate-600 text-sm leading-relaxed mb-5 flex-1">"{{ $t['text'] }}"</p>
+                    <p class="text-slate-600 text-sm leading-relaxed mb-5 flex-1 pr-6">"{{ $t['text'] }}"</p>
                     {{-- Auteur --}}
                     <div class="flex items-center gap-3 pt-4 border-t border-slate-100">
                         <div class="w-11 h-11 rounded-full bg-gradient-to-br {{ $avatarGradients[$i] }} flex items-center justify-center text-white font-black text-sm shadow-lg ring-2 ring-white">

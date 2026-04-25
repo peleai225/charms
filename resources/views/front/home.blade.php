@@ -186,6 +186,39 @@
 @endif
 
 {{-- ═══════════════════════════════════════════════
+     MARQUEE — Bandeau défilant
+═══════════════════════════════════════════════ --}}
+<section class="bg-slate-900 text-white py-3 overflow-hidden border-y border-slate-800">
+    <div class="flex animate-[marquee_40s_linear_infinite] whitespace-nowrap">
+        @php
+            $marqueeItems = [
+                ['icon' => '🚚', 'text' => 'Livraison express 24-48h en Côte d\'Ivoire'],
+                ['icon' => '💎', 'text' => 'Produits authentiques garantis'],
+                ['icon' => '💳', 'text' => 'Paiement Mobile Money sécurisé'],
+                ['icon' => '🎁', 'text' => 'Livraison gratuite dès 50 000 F CFA'],
+                ['icon' => '⭐', 'text' => 'Plus de 1 000 clients satisfaits'],
+                ['icon' => '🔄', 'text' => 'Retours faciles sous 30 jours'],
+            ];
+        @endphp
+        @for($i = 0; $i < 2; $i++)
+            @foreach($marqueeItems as $item)
+            <span class="inline-flex items-center gap-3 mx-8 text-sm font-medium">
+                <span class="text-base">{{ $item['icon'] }}</span>
+                <span class="text-slate-300">{{ $item['text'] }}</span>
+                <span class="text-primary-400">•</span>
+            </span>
+            @endforeach
+        @endfor
+    </div>
+</section>
+<style>
+    @keyframes marquee {
+        from { transform: translateX(0); }
+        to { transform: translateX(-50%); }
+    }
+</style>
+
+{{-- ═══════════════════════════════════════════════
      BARRE DE CONFIANCE - Floating
 ═══════════════════════════════════════════════ --}}
 <section class="relative z-20 -mt-6">
@@ -434,6 +467,53 @@
                 </div>
                 <h3 class="font-bold text-slate-900 text-sm mb-1.5">{{ $adv['title'] }}</h3>
                 <p class="text-xs text-slate-500 leading-relaxed">{{ $adv['desc'] }}</p>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</section>
+
+{{-- ═══════════════════════════════════════════════
+     TÉMOIGNAGES CLIENTS
+═══════════════════════════════════════════════ --}}
+<section class="py-14 bg-gradient-to-b from-slate-50/50 to-white">
+    <div class="container mx-auto px-6">
+        <div class="text-center mb-10">
+            <span class="text-primary-600 text-xs font-bold uppercase tracking-widest">Ils nous font confiance</span>
+            <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-1">Ce que disent nos clients</h2>
+        </div>
+        @php
+            $testimonials = [
+                ['name' => 'Aminata K.', 'city' => 'Abidjan, Cocody', 'text' => 'Service rapide et produits de qualité ! J\'ai reçu ma commande en moins de 24h. Le SAV est très réactif sur WhatsApp.', 'rating' => 5, 'avatar' => 'A'],
+                ['name' => 'Moussa D.', 'city' => 'Yopougon', 'text' => 'Je commande régulièrement et je n\'ai jamais été déçu. Les prix sont vraiment compétitifs et la livraison est ponctuelle.', 'rating' => 5, 'avatar' => 'M'],
+                ['name' => 'Fatou B.', 'city' => 'Marcory', 'text' => 'Excellent rapport qualité-prix. L\'équipe est professionnelle et toujours à l\'écoute. Je recommande vivement !', 'rating' => 5, 'avatar' => 'F'],
+            ];
+            $avatarColors = ['from-rose-400 to-pink-600', 'from-blue-400 to-indigo-600', 'from-amber-400 to-orange-600'];
+        @endphp
+        <div class="grid md:grid-cols-3 gap-5">
+            @foreach($testimonials as $i => $t)
+            <div class="group bg-white rounded-2xl border border-slate-100 p-6 hover:border-primary-200 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden">
+                {{-- Quote icon décoratif --}}
+                <svg class="absolute -top-2 -right-2 w-20 h-20 text-primary-50 group-hover:text-primary-100 transition-colors" fill="currentColor" viewBox="0 0 32 32"><path d="M9.352 4C4.456 7.456 1 13.12 1 19.36c0 5.088 3.072 8.064 6.624 8.064 3.36 0 5.856-2.688 5.856-5.856 0-3.168-2.208-5.472-5.088-5.472-.576 0-1.344.096-1.536.192.48-3.264 3.552-7.104 6.624-9.024L9.352 4zm16.512 0c-4.8 3.456-8.256 9.12-8.256 15.36 0 5.088 3.072 8.064 6.624 8.064 3.264 0 5.856-2.688 5.856-5.856 0-3.168-2.304-5.472-5.184-5.472-.576 0-1.248.096-1.44.192.48-3.264 3.456-7.104 6.528-9.024L25.864 4z"/></svg>
+                <div class="relative z-10">
+                    {{-- Étoiles --}}
+                    <div class="flex items-center gap-0.5 mb-3">
+                        @for($s = 0; $s < $t['rating']; $s++)
+                        <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 7.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        @endfor
+                    </div>
+                    <p class="text-slate-600 text-sm leading-relaxed mb-5">{{ $t['text'] }}</p>
+                    <div class="flex items-center gap-3 pt-4 border-t border-slate-100">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br {{ $avatarColors[$i] }} flex items-center justify-center text-white font-bold text-sm shadow-md">
+                            {{ $t['avatar'] }}
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-900 text-sm">{{ $t['name'] }}</p>
+                            <p class="text-xs text-slate-400">{{ $t['city'] }}</p>
+                        </div>
+                        <svg class="w-5 h-5 text-emerald-500 ml-auto" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                    </div>
+                </div>
             </div>
             @endforeach
         </div>

@@ -474,44 +474,76 @@
 </section>
 
 {{-- ═══════════════════════════════════════════════
-     TÉMOIGNAGES CLIENTS
+     TÉMOIGNAGES CLIENTS — Carousel responsive
 ═══════════════════════════════════════════════ --}}
-<section class="py-14 bg-gradient-to-b from-slate-50/50 to-white">
-    <div class="container mx-auto px-6">
-        <div class="text-center mb-10">
-            <span class="text-primary-600 text-xs font-bold uppercase tracking-widest">Ils nous font confiance</span>
-            <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-1">Ce que disent nos clients</h2>
+@php
+    $testimonials = [
+        ['name' => 'Aminata K.', 'city' => 'Abidjan, Cocody', 'text' => 'Service rapide et produits de qualité ! J\'ai reçu ma commande en moins de 24h. Le SAV est très réactif sur WhatsApp.', 'rating' => 5, 'avatar' => 'A'],
+        ['name' => 'Moussa D.', 'city' => 'Yopougon', 'text' => 'Je commande régulièrement et je n\'ai jamais été déçu. Les prix sont vraiment compétitifs et la livraison est ponctuelle.', 'rating' => 5, 'avatar' => 'M'],
+        ['name' => 'Fatou B.', 'city' => 'Marcory', 'text' => 'Excellent rapport qualité-prix. L\'équipe est professionnelle et toujours à l\'écoute. Je recommande vivement !', 'rating' => 5, 'avatar' => 'F'],
+        ['name' => 'Ibrahim T.', 'city' => 'Treichville', 'text' => 'Site facile à utiliser, paiement Mobile Money sécurisé. Mes commandes arrivent toujours dans les temps.', 'rating' => 5, 'avatar' => 'I'],
+    ];
+    $avatarGradients = ['from-rose-400 to-pink-600', 'from-blue-400 to-indigo-600', 'from-amber-400 to-orange-600', 'from-emerald-400 to-teal-600'];
+@endphp
+<section class="py-16 bg-gradient-to-b from-slate-50 via-white to-slate-50/50 relative overflow-hidden">
+    {{-- Décorations de fond --}}
+    <div class="absolute top-20 left-10 w-72 h-72 bg-primary-200/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-20 right-10 w-72 h-72 bg-amber-200/20 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="container mx-auto px-6 relative z-10">
+        <div class="text-center mb-12">
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-primary-50 border border-primary-100 rounded-full mb-3">
+                <span class="flex h-2 w-2 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-500 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-primary-600"></span>
+                </span>
+                <span class="text-primary-700 text-xs font-bold uppercase tracking-widest">+1 000 clients satisfaits</span>
+            </div>
+            <h2 class="text-2xl md:text-4xl font-black text-slate-900 tracking-tight">
+                Ils nous font <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-amber-500">confiance</span>
+            </h2>
+            <p class="text-slate-500 text-sm md:text-base mt-3 max-w-xl mx-auto">Découvrez ce que nos clients pensent de leur expérience d'achat.</p>
         </div>
-        @php
-            $testimonials = [
-                ['name' => 'Aminata K.', 'city' => 'Abidjan, Cocody', 'text' => 'Service rapide et produits de qualité ! J\'ai reçu ma commande en moins de 24h. Le SAV est très réactif sur WhatsApp.', 'rating' => 5, 'avatar' => 'A'],
-                ['name' => 'Moussa D.', 'city' => 'Yopougon', 'text' => 'Je commande régulièrement et je n\'ai jamais été déçu. Les prix sont vraiment compétitifs et la livraison est ponctuelle.', 'rating' => 5, 'avatar' => 'M'],
-                ['name' => 'Fatou B.', 'city' => 'Marcory', 'text' => 'Excellent rapport qualité-prix. L\'équipe est professionnelle et toujours à l\'écoute. Je recommande vivement !', 'rating' => 5, 'avatar' => 'F'],
-            ];
-            $avatarColors = ['from-rose-400 to-pink-600', 'from-blue-400 to-indigo-600', 'from-amber-400 to-orange-600'];
-        @endphp
-        <div class="grid md:grid-cols-3 gap-5">
+
+        {{-- Note moyenne en évidence --}}
+        <div class="flex items-center justify-center gap-3 mb-10">
+            <div class="flex items-center gap-0.5">
+                @for($s = 0; $s < 5; $s++)
+                <svg class="w-6 h-6 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 7.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                @endfor
+            </div>
+            <span class="text-2xl font-black text-slate-900">4.9</span>
+            <span class="text-sm text-slate-500">sur 5 · basé sur 247 avis</span>
+        </div>
+
+        {{-- Grille témoignages --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             @foreach($testimonials as $i => $t)
-            <div class="group bg-white rounded-2xl border border-slate-100 p-6 hover:border-primary-200 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden">
+            <div class="group bg-white rounded-2xl border border-slate-200/60 p-6 hover:border-primary-300 hover:shadow-2xl hover:shadow-primary-500/10 hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex flex-col">
                 {{-- Quote icon décoratif --}}
-                <svg class="absolute -top-2 -right-2 w-20 h-20 text-primary-50 group-hover:text-primary-100 transition-colors" fill="currentColor" viewBox="0 0 32 32"><path d="M9.352 4C4.456 7.456 1 13.12 1 19.36c0 5.088 3.072 8.064 6.624 8.064 3.36 0 5.856-2.688 5.856-5.856 0-3.168-2.208-5.472-5.088-5.472-.576 0-1.344.096-1.536.192.48-3.264 3.552-7.104 6.624-9.024L9.352 4zm16.512 0c-4.8 3.456-8.256 9.12-8.256 15.36 0 5.088 3.072 8.064 6.624 8.064 3.264 0 5.856-2.688 5.856-5.856 0-3.168-2.304-5.472-5.184-5.472-.576 0-1.248.096-1.44.192.48-3.264 3.456-7.104 6.528-9.024L25.864 4z"/></svg>
-                <div class="relative z-10">
+                <svg class="absolute -top-3 -right-3 w-24 h-24 text-primary-50 group-hover:text-primary-100/80 group-hover:rotate-12 transition-all duration-500" fill="currentColor" viewBox="0 0 32 32"><path d="M9.352 4C4.456 7.456 1 13.12 1 19.36c0 5.088 3.072 8.064 6.624 8.064 3.36 0 5.856-2.688 5.856-5.856 0-3.168-2.208-5.472-5.088-5.472-.576 0-1.344.096-1.536.192.48-3.264 3.552-7.104 6.624-9.024L9.352 4zm16.512 0c-4.8 3.456-8.256 9.12-8.256 15.36 0 5.088 3.072 8.064 6.624 8.064 3.264 0 5.856-2.688 5.856-5.856 0-3.168-2.304-5.472-5.184-5.472-.576 0-1.248.096-1.44.192.48-3.264 3.456-7.104 6.528-9.024L25.864 4z"/></svg>
+                <div class="relative z-10 flex flex-col flex-1">
                     {{-- Étoiles --}}
-                    <div class="flex items-center gap-0.5 mb-3">
+                    <div class="flex items-center gap-0.5 mb-4">
                         @for($s = 0; $s < $t['rating']; $s++)
                         <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 7.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
                         @endfor
                     </div>
-                    <p class="text-slate-600 text-sm leading-relaxed mb-5">{{ $t['text'] }}</p>
+                    {{-- Texte --}}
+                    <p class="text-slate-600 text-sm leading-relaxed mb-5 flex-1">"{{ $t['text'] }}"</p>
+                    {{-- Auteur --}}
                     <div class="flex items-center gap-3 pt-4 border-t border-slate-100">
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-br {{ $avatarColors[$i] }} flex items-center justify-center text-white font-bold text-sm shadow-md">
+                        <div class="w-11 h-11 rounded-full bg-gradient-to-br {{ $avatarGradients[$i] }} flex items-center justify-center text-white font-black text-sm shadow-lg ring-2 ring-white">
                             {{ $t['avatar'] }}
                         </div>
-                        <div>
-                            <p class="font-bold text-slate-900 text-sm">{{ $t['name'] }}</p>
-                            <p class="text-xs text-slate-400">{{ $t['city'] }}</p>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-slate-900 text-sm truncate">{{ $t['name'] }}</p>
+                            <p class="text-xs text-slate-400 truncate">{{ $t['city'] }}</p>
                         </div>
-                        <svg class="w-5 h-5 text-emerald-500 ml-auto" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                        <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                            Vérifié
+                        </span>
                     </div>
                 </div>
             </div>

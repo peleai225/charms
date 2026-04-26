@@ -41,12 +41,21 @@ class HomeController extends Controller
             });
         }
 
-        // Produits mis en avant
+        // Produits mis en avant — avec fallback vers les plus récents si aucun marqué
         $featuredProducts = Product::active()
             ->featured()
             ->with(['images', 'category'])
             ->take(8)
             ->get();
+
+        // Fallback : si aucun produit n'est marqué "featured", prendre les 8 plus récents actifs
+        if ($featuredProducts->isEmpty()) {
+            $featuredProducts = Product::active()
+                ->with(['images', 'category'])
+                ->latest()
+                ->take(8)
+                ->get();
+        }
 
         // Nouveautés
         $newProducts = Product::active()

@@ -128,4 +128,54 @@ if (file_exists($routesCache)) {
     echo "OK : bootstrap/cache/routes-v7.php n'existe plus, Laravel rechargera routes/web.php au prochain hit.\n";
 }
 
-echo "\nTerminé. SUPPRIMEZ CE FICHIER (public/__chamse-flush.php) une fois que tout marche.\n";
+// === DIAGNOSTIC : version du code déployé ===
+echo "\n==== Diagnostic : version du code sur le serveur ====\n";
+
+$webRoutes = $root . '/routes/web.php';
+if (file_exists($webRoutes)) {
+    $size  = filesize($webRoutes);
+    $mtime = date('Y-m-d H:i:s', filemtime($webRoutes));
+    echo "routes/web.php : {$size} octets, modifié le {$mtime}\n";
+
+    $content = file_get_contents($webRoutes);
+    $checks = [
+        'products.variants.image.update'  => "Route POST upload image variante",
+        'products.variants.image.destroy' => "Route DELETE image variante",
+        'updateVariantImage'              => "Méthode contrôleur updateVariantImage",
+        'destroyVariantImage'             => "Méthode contrôleur destroyVariantImage",
+    ];
+    foreach ($checks as $needle => $label) {
+        $found = strpos($content, $needle) !== false;
+        echo ($found ? "OK   " : "MANQ ") . $label . " (" . $needle . ")\n";
+    }
+} else {
+    echo "ATTENTION : routes/web.php introuvable à {$webRoutes}\n";
+}
+
+$controller = $root . '/app/Http/Controllers/Admin/ProductController.php';
+if (file_exists($controller)) {
+    $cmtime = date('Y-m-d H:i:s', filemtime($controller));
+    $csize  = filesize($controller);
+    echo "ProductController.php : {$csize} octets, modifié le {$cmtime}\n";
+    $ccontent = file_get_contents($controller);
+    foreach (['updateVariantImage', 'destroyVariantImage'] as $needle) {
+        $found = strpos($ccontent, "function {$needle}") !== false;
+        echo ($found ? "OK   " : "MANQ ") . "function {$needle}() dans le contrôleur\n";
+    }
+}
+
+// Git HEAD
+$gitHead = $root . '/.git/HEAD';
+if (file_exists($gitHead)) {
+    $head = trim(file_get_contents($gitHead));
+    if (strpos($head, 'ref: ') === 0) {
+        $ref = substr($head, 5);
+        $refFile = $root . '/.git/' . $ref;
+        if (file_exists($refFile)) {
+            $head = trim(file_get_contents($refFile));
+        }
+    }
+    echo "Git HEAD : {$head}\n";
+}
+
+echo "\nTerminé. SUPPRIMEZ CE FICHIER (public/chamseflush.php) une fois que tout marche.\n";

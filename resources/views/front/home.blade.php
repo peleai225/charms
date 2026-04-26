@@ -140,14 +140,28 @@
                 $heroProducts = $featuredProducts->take(6);
                 $heroLabels = ['Coup de cœur', 'Tendance', 'Populaire', 'Meilleure vente', 'Top recommandé', 'Best-seller'];
                 $heroBadgeColors = ['bg-amber-500', 'bg-rose-500', 'bg-emerald-500', 'bg-primary-500', 'bg-violet-500', 'bg-cyan-500'];
+                $heroSlideGradients = [
+                    'from-indigo-600 via-purple-600 to-pink-600',
+                    'from-rose-500 via-red-600 to-orange-600',
+                    'from-emerald-500 via-teal-600 to-cyan-700',
+                    'from-amber-500 via-orange-600 to-rose-600',
+                    'from-blue-600 via-indigo-700 to-violet-800',
+                    'from-cyan-500 via-blue-600 to-indigo-700',
+                ];
             @endphp
             <div class="hidden lg:block relative"
                  x-data="{ current: 0, total: {{ $heroProducts->count() }}, paused: false }"
                  x-init="setInterval(() => { if (!paused && total > 1) current = (current + 1) % total }, 4500)"
                  @mouseenter="paused = true" @mouseleave="paused = false">
-                <div class="relative h-[440px] rounded-3xl overflow-hidden">
+                <div class="relative h-[440px] rounded-3xl overflow-hidden shadow-2xl shadow-black/40 ring-1 ring-white/10">
                     @forelse($heroProducts as $i => $product)
-                    @php $img = $product->images->where('is_primary', true)->first() ?? $product->images->first(); @endphp
+                    @php
+                        $img = $product->images->where('is_primary', true)->first() ?? $product->images->first();
+                        $imgUrl = $img ? asset('storage/' . $img->path) : null;
+                        $bg = $heroSlideGradients[$i] ?? 'from-primary-600 via-primary-700 to-primary-900';
+                        $badge = $heroBadgeColors[$i] ?? 'bg-primary-500';
+                        $label = $heroLabels[$i] ?? 'Produit phare';
+                    @endphp
                     <div x-show="current === {{ $i }}" x-cloak
                          x-transition:enter="transition ease-out duration-700"
                          x-transition:enter-start="opacity-0 scale-105"
@@ -155,33 +169,42 @@
                          x-transition:leave="transition ease-in duration-500 absolute inset-0"
                          x-transition:leave-start="opacity-100"
                          x-transition:leave-end="opacity-0"
-                         class="absolute inset-0 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900">
-                        <a href="{{ route('shop.product', $product->slug) }}" class="block relative w-full h-full group/card">
-                            {{-- Image ou fallback avec lettre visible --}}
-                            @if($img)
-                                <img src="{{ asset('storage/' . $img->path) }}" alt="{{ $product->name }}"
-                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
-                                     class="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-700">
-                                <div style="display:none" class="absolute inset-0 bg-gradient-to-br from-primary-600 to-primary-900 flex items-center justify-center">
-                                    <span class="text-[180px] font-black text-white/20 select-none">{{ mb_substr($product->name, 0, 1) }}</span>
-                                </div>
-                            @else
-                                <div class="absolute inset-0 flex items-center justify-center">
-                                    <span class="text-[180px] font-black text-white/20 select-none">{{ mb_substr($product->name, 0, 1) }}</span>
-                                </div>
-                            @endif
-                            {{-- Overlay sombre pour lisibilité du texte --}}
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/30 pointer-events-none"></div>
+                         class="absolute inset-0">
+                        <a href="{{ route('shop.product', $product->slug) }}" class="relative block w-full h-full group/card overflow-hidden">
+                            {{-- 1. Fond coloré (toujours visible, même sans image) --}}
+                            <div class="absolute inset-0 bg-gradient-to-br {{ $bg }}"></div>
 
-                            {{-- Badge label --}}
+                            {{-- 2. Halos décoratifs --}}
+                            <div class="absolute inset-0 pointer-events-none"
+                                 style="background-image: radial-gradient(at 20% 80%, rgba(255,255,255,0.25) 0%, transparent 50%), radial-gradient(at 80% 15%, rgba(0,0,0,0.35) 0%, transparent 55%);"></div>
+
+                            {{-- 3. Initiale du produit en watermark (toujours visible) --}}
+                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <span class="text-[280px] leading-none font-black text-white/15 select-none drop-shadow-xl">{{ mb_substr($product->name, 0, 1) }}</span>
+                            </div>
+
+                            {{-- 4. Image produit (si dispo, supprimée automatiquement si 404) --}}
+                            @if($imgUrl)
+                                <img src="{{ $imgUrl }}"
+                                     alt="{{ $product->name }}"
+                                     loading="{{ $i === 0 ? 'eager' : 'lazy' }}"
+                                     onerror="this.remove()"
+                                     class="absolute inset-0 w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-700">
+                            @endif
+
+                            {{-- 5. Overlay sombre pour lisibilité du texte --}}
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/20 pointer-events-none"></div>
+
+                            {{-- 6. Badge label (toujours visible) --}}
                             <div class="absolute top-5 left-5 z-10">
-                                <span class="inline-block px-3 py-1.5 {{ $heroBadgeColors[$i] ?? 'bg-primary-500' }} text-white text-xs font-black rounded-xl shadow-2xl tracking-wide uppercase">
-                                    {{ $heroLabels[$i] ?? 'Produit phare' }}
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 {{ $badge }} text-white text-xs font-black rounded-xl shadow-2xl tracking-wide uppercase">
+                                    <span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+                                    {{ $label }}
                                 </span>
                             </div>
 
-                            {{-- Prix top-right --}}
-                            <div class="absolute top-5 right-5 z-10 bg-white/95 backdrop-blur-md rounded-2xl px-4 py-2.5 shadow-2xl">
+                            {{-- 7. Prix top-right (toujours visible) --}}
+                            <div class="absolute top-5 right-5 z-10 bg-white/95 backdrop-blur-md rounded-2xl px-4 py-2.5 shadow-2xl ring-1 ring-black/5">
                                 @if($product->sale_price && $product->sale_price < $product->price)
                                 <p class="text-[10px] text-slate-400 line-through font-medium leading-none mb-0.5">{{ format_price($product->price) }}</p>
                                 <p class="text-base font-black text-rose-600 leading-none">{{ format_price($product->sale_price) }}</p>
@@ -190,15 +213,15 @@
                                 @endif
                             </div>
 
-                            {{-- Info en bas --}}
+                            {{-- 8. Bloc d'info en bas (toujours visible) --}}
                             <div class="absolute bottom-0 inset-x-0 p-6 z-10">
-                                <h3 class="text-white text-2xl font-black leading-tight mb-1.5 line-clamp-2 drop-shadow-lg group-hover/card:text-primary-300 transition-colors">
+                                <h3 class="text-white text-2xl font-black leading-tight mb-1.5 line-clamp-2 drop-shadow-2xl group-hover/card:text-amber-300 transition-colors">
                                     {{ $product->name }}
                                 </h3>
                                 @if($product->short_description)
-                                <p class="text-white/70 text-xs line-clamp-1 mb-3 drop-shadow">{{ $product->short_description }}</p>
+                                <p class="text-white/85 text-xs line-clamp-1 mb-3 drop-shadow">{{ $product->short_description }}</p>
                                 @endif
-                                <span class="inline-flex items-center gap-2 text-white text-sm font-semibold backdrop-blur-sm bg-white/15 px-4 py-2 rounded-xl border border-white/30 group-hover/card:bg-white group-hover/card:text-slate-900 transition-all">
+                                <span class="inline-flex items-center gap-2 text-white text-sm font-semibold backdrop-blur-md bg-white/20 px-4 py-2 rounded-xl border border-white/30 group-hover/card:bg-white group-hover/card:text-slate-900 transition-all">
                                     Voir le produit
                                     <svg class="w-4 h-4 group-hover/card:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                                 </span>
@@ -206,8 +229,8 @@
                         </a>
                     </div>
                     @empty
-                    <div class="absolute inset-0 rounded-3xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center">
-                        <p class="text-white/30 text-sm">Produits à venir</p>
+                    <div class="absolute inset-0 rounded-3xl bg-gradient-to-br from-primary-700 to-primary-900 flex items-center justify-center">
+                        <p class="text-white/60 text-sm">Produits à venir</p>
                     </div>
                     @endforelse
                 </div>

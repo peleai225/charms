@@ -1621,12 +1621,19 @@
 
     {{-- Service Worker + PWA Install Script --}}
     <script>
-        // Service Worker Registration
+        // Kill-switch : on désinscrit tout SW existant et on purge les caches.
+        // Le fichier /sw.js a été temporairement remplacé par un SW d'auto-nettoyage,
+        // mais on agit aussi côté client au cas où le SW expiré ne serait pas re-fetch.
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .catch(() => {});
-            });
+            navigator.serviceWorker.getRegistrations().then((registrations) => {
+                registrations.forEach((registration) => registration.unregister());
+            }).catch(() => {});
+
+            if (window.caches && caches.keys) {
+                caches.keys().then((keys) => {
+                    keys.forEach((key) => caches.delete(key));
+                }).catch(() => {});
+            }
         }
 
         // PWA Install prompt

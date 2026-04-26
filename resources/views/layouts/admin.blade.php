@@ -592,9 +592,18 @@
 
                     <!-- Toggle son notifications -->
                     <button
-                        x-data="{ enabled: true }"
-                        x-init="try { enabled = localStorage.getItem('admin_sound_enabled') !== 'false' } catch(e) {}"
-                        @click="enabled = !enabled; try { localStorage.setItem('admin_sound_enabled', enabled) } catch(e) {}; if (window.adminToggleSound) window.adminToggleSound();"
+                        x-data="{
+                            enabled: true,
+                            init() {
+                                try { this.enabled = localStorage.getItem('admin_sound_enabled') !== 'false'; } catch (e) {}
+                            },
+                            toggle() {
+                                this.enabled = !this.enabled;
+                                try { localStorage.setItem('admin_sound_enabled', this.enabled); } catch (e) {}
+                                if (window.adminToggleSound) window.adminToggleSound();
+                            }
+                        }"
+                        @click="toggle()"
                         class="p-2 rounded-lg transition-colors"
                         :class="enabled ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' : 'text-slate-300 hover:text-slate-500 hover:bg-slate-100'"
                         :title="enabled ? 'Son activé (cliquer pour désactiver)' : 'Son désactivé (cliquer pour activer)'"

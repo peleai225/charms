@@ -528,6 +528,62 @@ class ProductController extends Controller
     }
 
     /**
+     * Uploader / remplacer l'image d'une variante (AJAX-friendly).
+     */
+    public function updateVariantImage(Request $request, Product $product, ProductVariant $variant)
+    {
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
+        ]);
+
+        if ($variant->product_id !== $product->id) {
+            abort(404);
+        }
+
+        // Supprimer l'ancienne image si présente
+        if ($variant->image) {
+            Storage::disk('public')->delete($variant->image);
+        }
+
+        $path = $this->resizeAndStoreImage($request->file('image'), 'products/' . $product->id . '/variants');
+        $variant->update(['image' => $path]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success'   => true,
+                'image_url' => asset('storage/' . $path),
+                'message'   => 'Image de la variante mise à jour.',
+            ]);
+        }
+
+        return back()->with('success', 'Image de la variante mise à jour.');
+    }
+
+    /**
+     * Retirer l'image d'une variante sans supprimer la variante.
+     */
+    public function destroyVariantImage(Request $request, Product $product, ProductVariant $variant)
+    {
+        if ($variant->product_id !== $product->id) {
+            abort(404);
+        }
+
+        if ($variant->image) {
+            Storage::disk('public')->delete($variant->image);
+            $variant->update(['image' => null]);
+        }
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Image retirée.',
+            ]);
+        }
+
+        return back()->with('success', 'Image retirée.');
+    }
+
+    /**
      * Supprimer une image
      */
     public function destroyImage(Product $product, ProductImage $image)

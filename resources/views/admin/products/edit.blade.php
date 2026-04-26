@@ -656,6 +656,10 @@
         {{-- ===== PANEL : LISTE / GESTION ===== --}}
         <div x-show="panel==='list'" class="p-6">
             @if($product->variants->count() > 0)
+            <div class="mb-3 flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Cliquez sur la miniature pour ajouter ou modifier l'image d'une variante. Stock et prix sont éditables en cliquant dessus.</span>
+            </div>
             <div class="overflow-x-auto rounded-xl border border-slate-200">
                 <table class="w-full text-sm">
                     <thead class="bg-slate-50 border-b border-slate-200">
@@ -676,13 +680,82 @@
                         <tr class="hover:bg-slate-50 group" x-data="{ editing: false, stock: {{ $variant->stock_quantity }}, saving: false }">
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
-                                    @if($variant->image)
-                                        <img src="{{ asset('storage/' . $variant->image) }}" class="w-9 h-9 rounded-lg object-cover">
-                                    @elseif($vColor && $vColor->color_code)
-                                        <span class="w-9 h-9 rounded-lg border border-slate-200 flex-shrink-0 inline-block" style="background:{{ $vColor->color_code }}"></span>
-                                    @else
-                                        <span class="w-9 h-9 rounded-lg bg-slate-100 flex-shrink-0 inline-block"></span>
-                                    @endif
+                                    {{-- Miniature interactive : upload / remplacement / suppression --}}
+                                    <div x-data="{
+                                            imgUrl: @js($variant->image ? asset('storage/' . $variant->image) : null),
+                                            uploading: false,
+                                            async upload(e) {
+                                                const file = e.target.files[0];
+                                                if (!file) return;
+                                                if (file.size > 5 * 1024 * 1024) {
+                                                    alert('Image trop lourde (max 5 Mo).');
+                                                    e.target.value = '';
+                                                    return;
+                                                }
+                                                this.uploading = true;
+                                                const fd = new FormData();
+                                                fd.append('image', file);
+                                                try {
+                                                    const r = await fetch('{{ route('admin.products.variants.image.update', [$product, $variant]) }}', {
+                                                        method: 'POST',
+                                                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                                                        body: fd
+                                                    });
+                                                    const d = await r.json();
+                                                    if (d && d.success) {
+                                                        this.imgUrl = d.image_url + '?t=' + Date.now();
+                                                    } else {
+                                                        alert('Échec de l\'upload.');
+                                                    }
+                                                } catch (err) { alert('Erreur réseau.'); }
+                                                this.uploading = false;
+                                                e.target.value = '';
+                                            },
+                                            async remove() {
+                                                if (!confirm('Retirer cette image ?')) return;
+                                                this.uploading = true;
+                                                try {
+                                                    await fetch('{{ route('admin.products.variants.image.destroy', [$product, $variant]) }}', {
+                                                        method: 'DELETE',
+                                                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                                                    });
+                                                    this.imgUrl = null;
+                                                } catch (err) {}
+                                                this.uploading = false;
+                                            }
+                                         }"
+                                         class="relative group/img flex-shrink-0">
+                                        <label class="w-9 h-9 rounded-lg border border-slate-200 cursor-pointer flex items-center justify-center overflow-hidden bg-slate-50 hover:border-blue-400 hover:ring-2 hover:ring-blue-100 transition-all relative block"
+                                               :class="uploading && 'opacity-60 pointer-events-none'"
+                                               title="Cliquer pour ajouter / modifier l'image">
+                                            <template x-if="imgUrl">
+                                                <img :src="imgUrl" class="absolute inset-0 w-full h-full object-cover" alt="">
+                                            </template>
+                                            <template x-if="!imgUrl">
+                                                <span class="w-full h-full flex items-center justify-center"
+                                                      @if($vColor && $vColor->color_code) style="background:{{ $vColor->color_code }}" @endif>
+                                                    @if(!$vColor || !$vColor->color_code)
+                                                    <svg class="w-4 h-4 text-slate-400 group-hover/img:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                                    </svg>
+                                                    @endif
+                                                </span>
+                                            </template>
+                                            <template x-if="uploading">
+                                                <span class="absolute inset-0 bg-white/70 flex items-center justify-center">
+                                                    <svg class="w-4 h-4 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle><path fill="currentColor" class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                                </span>
+                                            </template>
+                                            <input type="file" accept="image/jpeg,image/png,image/jpg,image/webp" class="hidden" @change="upload($event)">
+                                        </label>
+                                        <template x-if="imgUrl && !uploading">
+                                            <button type="button" @click.prevent="remove()"
+                                                    class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity shadow"
+                                                    title="Retirer l'image">
+                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            </button>
+                                        </template>
+                                    </div>
                                     <div>
                                         @if($vColor)<span class="font-medium text-slate-900">{{ $vColor->value }}</span>@endif
                                         @if($vSize)<span class="ml-1 text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{{ $vSize->value }}</span>@endif

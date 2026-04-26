@@ -371,6 +371,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('products/{product}/variants', [\App\Http\Controllers\Admin\ProductController::class, 'storeVariant'])->name('products.variants.store');
             Route::post('products/{product}/variants/bulk', [\App\Http\Controllers\Admin\ProductController::class, 'bulkStoreVariants'])->name('products.variants.bulk');
             Route::patch('products/{product}/variants/{variant}', [\App\Http\Controllers\Admin\ProductController::class, 'updateVariant'])->name('products.variants.update');
+            Route::post('products/{product}/variants/{variant}/image', [\App\Http\Controllers\Admin\ProductController::class, 'updateVariantImage'])->name('products.variants.image.update');
+            Route::delete('products/{product}/variants/{variant}/image', [\App\Http\Controllers\Admin\ProductController::class, 'destroyVariantImage'])->name('products.variants.image.destroy');
             Route::delete('products/{product}/variants/{variant}', [\App\Http\Controllers\Admin\ProductController::class, 'destroyVariant'])->name('products.variants.destroy');
             Route::delete('products/{product}/images/{image}', [\App\Http\Controllers\Admin\ProductController::class, 'destroyImage'])->name('products.images.destroy');
             Route::post('products/{product}/images/{image}/primary', [\App\Http\Controllers\Admin\ProductController::class, 'setPrimaryImage'])->name('products.images.primary');

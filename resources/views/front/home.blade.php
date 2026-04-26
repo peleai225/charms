@@ -137,7 +137,10 @@
 
             {{-- Carousel produits vedettes (auto-rotation) --}}
             @php
-                $heroProducts = $featuredProducts->take(6);
+                // Priorité aux produits qui ont au moins une image, complétés si besoin par les autres
+                $withImages    = $featuredProducts->filter(fn($p) => $p->images->isNotEmpty());
+                $withoutImages = $featuredProducts->filter(fn($p) => $p->images->isEmpty());
+                $heroProducts  = $withImages->concat($withoutImages)->take(6)->values();
                 $heroLabels = ['Coup de cœur', 'Tendance', 'Populaire', 'Meilleure vente', 'Top recommandé', 'Best-seller'];
                 $heroBadgeColors = ['bg-amber-500', 'bg-rose-500', 'bg-emerald-500', 'bg-primary-500', 'bg-violet-500', 'bg-cyan-500'];
                 $heroSlideGradients = [

@@ -79,6 +79,36 @@ if (is_dir($appCacheDir)) {
     $cleared[] = "OK   {$count} fichier(s) de cache applicatif supprimé(s)";
 }
 
+// 4. OPcache : crucial sur les hébergements PHP-FPM
+//    Même après avoir supprimé routes-v7.php, OPcache garde l'ancienne version
+//    en mémoire jusqu'au redémarrage de PHP-FPM. On force la réinit ici.
+if (function_exists('opcache_reset')) {
+    if (@opcache_reset()) {
+        $cleared[] = "OK   OPcache réinitialisé (mémoire PHP)";
+    } else {
+        $cleared[] = "WARN opcache_reset() a échoué (peut-être désactivé via opcache.restrict_api)";
+    }
+} else {
+    $cleared[] = "SKIP OPcache n'est pas chargé sur ce serveur";
+}
+
+// 5. Forcer la réinit ciblée des fichiers Laravel encore en mémoire OPcache
+if (function_exists('opcache_invalidate')) {
+    $toInvalidate = [
+        $root . '/routes/web.php',
+        $root . '/routes/api.php',
+        $root . '/routes/console.php',
+        $root . '/bootstrap/app.php',
+        $root . '/app/Http/Controllers/Admin/ProductController.php',
+    ];
+    foreach ($toInvalidate as $f) {
+        if (file_exists($f)) {
+            @opcache_invalidate($f, true);
+        }
+    }
+    $cleared[] = "OK   Fichiers source invalidés dans OPcache";
+}
+
 echo "==== Cache clear effectué à " . date('Y-m-d H:i:s') . " ====\n\n";
 foreach ($cleared as $line) {
     echo $line . "\n";
@@ -89,4 +119,13 @@ if (!empty($errors)) {
         echo $err . "\n";
     }
 }
-echo "\nTerminé. SUPPRIMEZ CE FICHIER (public/__clear-cache.php) une fois utilisé.\n";
+
+echo "\n==== Vérification : routes admin produit/variant ====\n";
+$routesCache = $root . '/bootstrap/cache/routes-v7.php';
+if (file_exists($routesCache)) {
+    echo "ATTENTION : bootstrap/cache/routes-v7.php existe TOUJOURS — la suppression a échoué.\n";
+} else {
+    echo "OK : bootstrap/cache/routes-v7.php n'existe plus, Laravel rechargera routes/web.php au prochain hit.\n";
+}
+
+echo "\nTerminé. SUPPRIMEZ CE FICHIER (public/__chamse-flush.php) une fois que tout marche.\n";

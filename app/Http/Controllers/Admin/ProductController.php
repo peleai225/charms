@@ -490,19 +490,35 @@ class ProductController extends Controller
     }
 
     /**
-     * Modifier le stock / prix d'une variante (AJAX inline)
+     * Modifier le stock / prix / état d'une variante (AJAX inline, updates partiels acceptés).
      */
     public function updateVariant(Request $request, Product $product, ProductVariant $variant)
     {
+        if ($variant->product_id !== $product->id) {
+            abort(404);
+        }
+
         $validated = $request->validate([
-            'stock_quantity' => 'required|integer|min:0',
-            'sale_price'     => 'nullable|numeric|min:0',
+            'stock_quantity' => 'sometimes|required|integer|min:0',
+            'sale_price'     => 'sometimes|nullable|numeric|min:0',
+            'is_active'      => 'sometimes|boolean',
         ]);
+
+        if (empty($validated)) {
+            return $request->wantsJson() || $request->ajax()
+                ? response()->json(['success' => false, 'message' => 'Aucun champ à mettre à jour.'], 422)
+                : back()->with('error', 'Aucun champ à mettre à jour.');
+        }
 
         $variant->update($validated);
 
         if ($request->wantsJson() || $request->ajax()) {
-            return response()->json(['success' => true, 'stock_quantity' => $variant->stock_quantity]);
+            return response()->json([
+                'success'        => true,
+                'stock_quantity' => $variant->stock_quantity,
+                'sale_price'     => $variant->sale_price,
+                'is_active'      => (bool) $variant->is_active,
+            ]);
         }
 
         return back()->with('success', 'Variante mise à jour.');

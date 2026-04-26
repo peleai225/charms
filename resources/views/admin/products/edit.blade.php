@@ -677,19 +677,74 @@
                             $vColor = $variant->attributeValues->firstWhere(fn($v) => $v->attribute->slug === 'couleur');
                             $vSize  = $variant->attributeValues->firstWhere(fn($v) => $v->attribute->slug === 'taille');
                         @endphp
-                        <tr class="hover:bg-slate-50 group" x-data="{ editing: false, stock: {{ $variant->stock_quantity }}, saving: false }">
+                        <tr class="hover:bg-slate-50 group transition-opacity" x-data="{
+                                active: {{ $variant->is_active ? 'true' : 'false' }},
+                                stock: {{ $variant->stock_quantity }},
+                                price: {{ $variant->sale_price !== null ? $variant->sale_price : 'null' }},
+                                editingStock: false,
+                                editingPrice: false,
+                                priceInput: {{ $variant->sale_price !== null ? $variant->sale_price : 'null' }},
+                                saving: false,
+                                togglingActive: false,
+                                currency: @js(\App\Models\Setting::get('currency_symbol') ?: 'F CFA'),
+                                formatPrice(v) {
+                                    if (v === null || v === '' || v === undefined) return '—';
+                                    const n = parseFloat(v);
+                                    if (isNaN(n)) return '—';
+                                    return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(n) + ' ' + this.currency;
+                                },
+                                async patch(payload) {
+                                    this.saving = true;
+                                    try {
+                                        const r = await fetch('{{ route('admin.products.variants.update', [$product, $variant]) }}', {
+                                            method: 'PATCH',
+                                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                                            body: JSON.stringify(payload)
+                                        });
+                                        const d = await r.json();
+                                        if (d && d.success) {
+                                            if ('stock_quantity' in d) this.stock = parseInt(d.stock_quantity);
+                                            if ('sale_price' in d) this.price = d.sale_price !== null ? parseFloat(d.sale_price) : null;
+                                            if ('is_active' in d) this.active = !!d.is_active;
+                                            return true;
+                                        }
+                                    } catch (e) {}
+                                    finally { this.saving = false; }
+                                    return false;
+                                },
+                                async toggleActive() {
+                                    this.togglingActive = true;
+                                    await this.patch({ is_active: !this.active });
+                                    this.togglingActive = false;
+                                },
+                                async saveStock() {
+                                    const v = parseInt(this.stock);
+                                    const ok = await this.patch({ stock_quantity: isNaN(v) ? 0 : v });
+                                    if (ok) this.editingStock = false;
+                                },
+                                async savePrice() {
+                                    const raw = (this.priceInput === '' || this.priceInput === null || this.priceInput === undefined) ? null : parseFloat(this.priceInput);
+                                    if (raw !== null && (isNaN(raw) || raw < 0)) { alert('Prix invalide'); return; }
+                                    const ok = await this.patch({ sale_price: raw });
+                                    if (ok) this.editingPrice = false;
+                                }
+                             }"
+                            :class="active ? '' : 'opacity-60'">
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
                                     {{-- Miniature interactive : upload / remplacement / suppression --}}
                                     <div x-data="{
                                             imgUrl: @js($variant->image ? asset('storage/' . $variant->image) : null),
                                             uploading: false,
-                                            async upload(e) {
-                                                const file = e.target.files[0];
+                                            dragging: false,
+                                            async sendFile(file) {
                                                 if (!file) return;
+                                                if (!/^image\/(jpeg|jpg|png|webp)$/i.test(file.type)) {
+                                                    alert('Format non supporté (jpeg, png, webp uniquement).');
+                                                    return;
+                                                }
                                                 if (file.size > 5 * 1024 * 1024) {
                                                     alert('Image trop lourde (max 5 Mo).');
-                                                    e.target.value = '';
                                                     return;
                                                 }
                                                 this.uploading = true;
@@ -709,7 +764,15 @@
                                                     }
                                                 } catch (err) { alert('Erreur réseau.'); }
                                                 this.uploading = false;
+                                            },
+                                            async upload(e) {
+                                                await this.sendFile(e.target.files[0]);
                                                 e.target.value = '';
+                                            },
+                                            async onDrop(e) {
+                                                this.dragging = false;
+                                                const file = e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files[0] : null;
+                                                await this.sendFile(file);
                                             },
                                             async remove() {
                                                 if (!confirm('Retirer cette image ?')) return;
@@ -726,8 +789,12 @@
                                          }"
                                          class="relative group/img flex-shrink-0">
                                         <label class="w-9 h-9 rounded-lg border border-slate-200 cursor-pointer flex items-center justify-center overflow-hidden bg-slate-50 hover:border-blue-400 hover:ring-2 hover:ring-blue-100 transition-all relative block"
-                                               :class="uploading && 'opacity-60 pointer-events-none'"
-                                               title="Cliquer pour ajouter / modifier l'image">
+                                               :class="{ 'opacity-60 pointer-events-none': uploading, 'border-blue-500 ring-2 ring-blue-200 scale-110': dragging }"
+                                               @dragover.prevent="dragging = true"
+                                               @dragenter.prevent="dragging = true"
+                                               @dragleave.prevent="dragging = false"
+                                               @drop.prevent="onDrop($event)"
+                                               title="Cliquer ou glisser une image">
                                             <template x-if="imgUrl">
                                                 <img :src="imgUrl" class="absolute inset-0 w-full h-full object-cover" alt="">
                                             </template>
@@ -763,14 +830,45 @@
                                 </div>
                             </td>
                             <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ $variant->sku }}</td>
-                            <td class="px-4 py-3 font-medium text-slate-900">
-                                {{ format_price($variant->sale_price ?? $product->sale_price) }}
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <template x-if="!editingPrice">
+                                        <span @click="priceInput = (price === null ? '' : price); editingPrice = true"
+                                              class="font-medium text-slate-900 cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-1"
+                                              title="Cliquer pour modifier le prix">
+                                            <span x-text="price === null ? '{{ format_price($product->sale_price, false) }} ' + currency : formatPrice(price)"></span>
+                                            <span x-show="price === null" class="text-xs text-slate-400 font-normal">(produit)</span>
+                                            <svg class="w-3 h-3 opacity-0 group-hover:opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                        </span>
+                                    </template>
+                                    <template x-if="editingPrice">
+                                        <form @submit.prevent="savePrice()" class="flex items-center gap-1">
+                                            <input type="number" x-model="priceInput" min="0" step="any" placeholder="Prix produit"
+                                                   class="w-28 px-2 py-1 border-2 border-blue-400 rounded-lg text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                   @keydown.escape="editingPrice=false" @click.stop x-init="$nextTick(() => $el.focus())">
+                                            <button type="submit" :disabled="saving"
+                                                    class="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                            </button>
+                                            <button type="button" @click="editingPrice=false"
+                                                    class="p-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors"
+                                                    title="Annuler">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            </button>
+                                            <button type="button" @click="priceInput=''; savePrice()" :disabled="saving"
+                                                    class="p-1.5 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg transition-colors"
+                                                    title="Utiliser le prix du produit (vider)">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7l16 0M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+                                            </button>
+                                        </form>
+                                    </template>
+                                </div>
                             </td>
                             {{-- Stock : édition inline --}}
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
-                                    <template x-if="!editing">
-                                        <span @click="editing=true"
+                                    <template x-if="!editingStock">
+                                        <span @click="editingStock=true"
                                               :class="stock <= 0 ? 'bg-red-100 text-red-700' : (stock <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700')"
                                               class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full cursor-pointer hover:opacity-80 transition-opacity"
                                               title="Cliquer pour modifier">
@@ -778,23 +876,16 @@
                                             <svg class="w-3 h-3 ml-1 opacity-0 group-hover:opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                         </span>
                                     </template>
-                                    <template x-if="editing">
-                                        <form @submit.prevent="
-                                            saving=true;
-                                            fetch('{{ route('admin.products.variants.update', [$product, $variant]) }}', {
-                                                method: 'PATCH',
-                                                headers: {'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}','X-Requested-With':'XMLHttpRequest'},
-                                                body: JSON.stringify({stock_quantity: parseInt(stock)})
-                                            }).then(r=>r.json()).then(d=>{ if(d.success){ editing=false; } }).finally(()=>{ saving=false; });
-                                        " class="flex items-center gap-1">
+                                    <template x-if="editingStock">
+                                        <form @submit.prevent="saveStock()" class="flex items-center gap-1">
                                             <input type="number" x-model="stock" min="0"
                                                    class="w-20 px-2 py-1 border-2 border-blue-400 rounded-lg text-sm text-center font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                   @keydown.escape="editing=false" @click.stop>
+                                                   @keydown.escape="editingStock=false" @click.stop>
                                             <button type="submit" :disabled="saving"
                                                     class="p-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                                             </button>
-                                            <button type="button" @click="editing=false"
+                                            <button type="button" @click="editingStock=false"
                                                     class="p-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
                                             </button>
@@ -802,14 +893,31 @@
                                     </template>
                                 </div>
                             </td>
-                            <td class="px-4 py-3 text-right">
-                                <form method="POST" action="{{ route('admin.products.variants.destroy', [$product, $variant]) }}" class="inline no-ajax" onsubmit="return confirm('Supprimer cette variante ?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            <td class="px-4 py-3">
+                                <div class="flex items-center justify-end gap-1">
+                                    {{-- Toggle Active / Inactive --}}
+                                    <button type="button" @click="toggleActive()" :disabled="togglingActive"
+                                            :title="active ? 'Désactiver la variante' : 'Activer la variante'"
+                                            :class="active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-slate-200 text-slate-500 hover:bg-slate-300'"
+                                            class="px-2 py-1 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1 disabled:opacity-50">
+                                        <span class="relative inline-flex h-3 w-6 rounded-full transition-colors"
+                                              :class="active ? 'bg-green-500' : 'bg-slate-400'">
+                                            <span class="absolute top-0.5 h-2 w-2 rounded-full bg-white transition-all"
+                                                  :class="active ? 'left-3.5' : 'left-0.5'"></span>
+                                        </span>
+                                        <span x-text="active ? 'Active' : 'Inactive'"></span>
                                     </button>
-                                </form>
+
+                                    {{-- Suppression --}}
+                                    <form method="POST" action="{{ route('admin.products.variants.destroy', [$product, $variant]) }}" class="inline no-ajax" onsubmit="return confirm('Supprimer cette variante ?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Supprimer la variante">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         @endforeach

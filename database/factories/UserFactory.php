@@ -23,12 +23,29 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $password = static::$password ??= Hash::make('password');
+        $remember = Str::random(10);
+
+        if ($this->faker !== null) {
+            return [
+                'name' => $this->faker->name(),
+                'email' => $this->faker->unique()->safeEmail(),
+                'email_verified_at' => now(),
+                'password' => $password,
+                'remember_token' => $remember,
+                'role' => 'customer',
+                'is_active' => true,
+            ];
+        }
+
+        $suffix = Str::lower(Str::random(12));
+
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
+            'name' => 'User '.$suffix,
+            'email' => 'user.'.$suffix.'@seed.local',
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'password' => $password,
+            'remember_token' => $remember,
             'role' => 'customer',
             'is_active' => true,
         ];

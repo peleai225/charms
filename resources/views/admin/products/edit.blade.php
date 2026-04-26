@@ -737,10 +737,20 @@
                                             imgUrl: @js($variant->image ? asset('storage/' . $variant->image) : null),
                                             uploading: false,
                                             dragging: false,
+                                            extractError(data, status) {
+                                                if (data && data.errors) {
+                                                    const firstField = Object.keys(data.errors)[0];
+                                                    if (firstField && data.errors[firstField] && data.errors[firstField][0]) {
+                                                        return data.errors[firstField][0];
+                                                    }
+                                                }
+                                                if (data && data.message) return data.message;
+                                                return 'Échec de l\'upload (HTTP ' + status + ').';
+                                            },
                                             async sendFile(file) {
                                                 if (!file) return;
                                                 if (!/^image\/(jpeg|jpg|png|webp)$/i.test(file.type)) {
-                                                    alert('Format non supporté (jpeg, png, webp uniquement).');
+                                                    alert('Format non supporté (JPEG, PNG ou WebP uniquement).');
                                                     return;
                                                 }
                                                 if (file.size > 5 * 1024 * 1024) {
@@ -756,13 +766,18 @@
                                                         headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
                                                         body: fd
                                                     });
-                                                    const d = await r.json();
-                                                    if (d && d.success) {
+                                                    let d = null;
+                                                    try { d = await r.json(); } catch (e) {}
+                                                    if (r.ok && d && d.success) {
                                                         this.imgUrl = d.image_url + '?t=' + Date.now();
                                                     } else {
-                                                        alert('Échec de l\'upload.');
+                                                        console.error('[variant image upload]', r.status, d);
+                                                        alert(this.extractError(d, r.status));
                                                     }
-                                                } catch (err) { alert('Erreur réseau.'); }
+                                                } catch (err) {
+                                                    console.error('[variant image upload]', err);
+                                                    alert('Erreur réseau : ' + (err && err.message ? err.message : 'inconnue'));
+                                                }
                                                 this.uploading = false;
                                             },
                                             async upload(e) {
@@ -778,12 +793,20 @@
                                                 if (!confirm('Retirer cette image ?')) return;
                                                 this.uploading = true;
                                                 try {
-                                                    await fetch('{{ route('admin.products.variants.image.destroy', [$product, $variant]) }}', {
+                                                    const r = await fetch('{{ route('admin.products.variants.image.destroy', [$product, $variant]) }}', {
                                                         method: 'DELETE',
                                                         headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
                                                     });
-                                                    this.imgUrl = null;
-                                                } catch (err) {}
+                                                    if (r.ok) {
+                                                        this.imgUrl = null;
+                                                    } else {
+                                                        let d = null; try { d = await r.json(); } catch (e) {}
+                                                        alert(this.extractError(d, r.status));
+                                                    }
+                                                } catch (err) {
+                                                    console.error('[variant image remove]', err);
+                                                    alert('Erreur réseau : ' + (err && err.message ? err.message : 'inconnue'));
+                                                }
                                                 this.uploading = false;
                                             }
                                          }"

@@ -548,21 +548,42 @@ class ProductController extends Controller
      */
     public function updateVariantImage(Request $request, Product $product, ProductVariant $variant)
     {
-        $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
-        ]);
-
         if ($variant->product_id !== $product->id) {
             abort(404);
         }
 
-        // Supprimer l'ancienne image si présente
-        if ($variant->image) {
-            Storage::disk('public')->delete($variant->image);
-        }
+        $request->validate([
+            'image' => 'required|file|mimetypes:image/jpeg,image/png,image/webp|max:5120',
+        ], [
+            'image.required'  => 'Aucune image n\'a été reçue.',
+            'image.file'      => 'Le fichier envoyé n\'est pas valide.',
+            'image.mimetypes' => 'Format non supporté (JPEG, PNG ou WebP uniquement).',
+            'image.max'       => 'Image trop lourde (5 Mo maximum).',
+        ]);
 
-        $path = $this->resizeAndStoreImage($request->file('image'), 'products/' . $product->id . '/variants');
-        $variant->update(['image' => $path]);
+        try {
+            if ($variant->image) {
+                Storage::disk('public')->delete($variant->image);
+            }
+
+            $path = $this->resizeAndStoreImage($request->file('image'), 'products/' . $product->id . '/variants');
+            $variant->update(['image' => $path]);
+        } catch (\Throwable $e) {
+            \Log::error('updateVariantImage failed', [
+                'product_id' => $product->id,
+                'variant_id' => $variant->id,
+                'error'      => $e->getMessage(),
+            ]);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur serveur : ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->with('error', 'Erreur lors de l\'upload : ' . $e->getMessage());
+        }
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([

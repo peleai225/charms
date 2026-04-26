@@ -39,6 +39,13 @@ self.addEventListener('fetch', (event) => {
     // Skip non-GET and admin/api requests
     if (request.method !== 'GET') return;
     const url = new URL(request.url);
+
+    // Skip schemes that can't be cached (chrome-extension, data:, blob:, etc.)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+
+    // Skip cross-origin requests (only cache same-origin)
+    if (url.origin !== self.location.origin) return;
+
     if (url.pathname.startsWith('/admin') || url.pathname.startsWith('/api')) return;
 
     // Static assets: cache-first
@@ -49,7 +56,7 @@ self.addEventListener('fetch', (event) => {
                 return fetch(request).then((response) => {
                     if (response.ok) {
                         const clone = response.clone();
-                        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+                        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone).catch(() => {}));
                     }
                     return response;
                 }).catch(() => caches.match('/favicon.ico'));

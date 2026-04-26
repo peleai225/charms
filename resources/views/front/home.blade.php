@@ -83,8 +83,8 @@
     <div class="absolute top-1/2 left-1/4 -translate-y-1/2 w-[500px] h-[500px] bg-primary-600/10 rounded-full blur-3xl"></div>
     <div class="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-violet-600/8 rounded-full blur-3xl"></div>
 
-    <div class="container mx-auto px-6 py-16 lg:py-20 relative z-10">
-        <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+    <div class="container mx-auto px-4 sm:px-6 py-12 md:py-16 lg:py-20 relative z-10">
+        <div class="grid lg:grid-cols-2 gap-10 md:gap-12 lg:gap-16 items-center">
             {{-- Texte gauche --}}
             <div class="max-w-xl">
                 <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-white/[0.06] border border-white/[0.08] text-primary-300 rounded-full text-xs font-semibold mb-6 backdrop-blur-sm">
@@ -117,20 +117,20 @@
                     @endif
                 </div>
                 {{-- Stats --}}
-                <div class="flex items-center gap-8 mt-10 pt-8 border-t border-white/[0.06]">
+                <div class="flex items-center gap-5 sm:gap-8 mt-8 md:mt-10 pt-6 md:pt-8 border-t border-white/[0.06]">
                     <div>
-                        <p class="text-3xl font-black text-white tracking-tight">{{ number_format($productCount, 0, ',', ' ') }}<span class="text-primary-400">+</span></p>
-                        <p class="text-xs text-slate-500 mt-0.5">Produits</p>
+                        <p class="text-2xl sm:text-3xl font-black text-white tracking-tight">{{ number_format($productCount, 0, ',', ' ') }}<span class="text-primary-400">+</span></p>
+                        <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5">Produits</p>
                     </div>
-                    <div class="w-px h-10 bg-white/[0.06]"></div>
+                    <div class="w-px h-9 sm:h-10 bg-white/[0.06]"></div>
                     <div>
-                        <p class="text-3xl font-black text-white tracking-tight">24<span class="text-primary-400">h</span></p>
-                        <p class="text-xs text-slate-500 mt-0.5">Livraison</p>
+                        <p class="text-2xl sm:text-3xl font-black text-white tracking-tight">24<span class="text-primary-400">h</span></p>
+                        <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5">Livraison</p>
                     </div>
-                    <div class="w-px h-10 bg-white/[0.06]"></div>
+                    <div class="w-px h-9 sm:h-10 bg-white/[0.06]"></div>
                     <div>
-                        <p class="text-3xl font-black text-white tracking-tight">98<span class="text-primary-400">%</span></p>
-                        <p class="text-xs text-slate-500 mt-0.5">Satisfaits</p>
+                        <p class="text-2xl sm:text-3xl font-black text-white tracking-tight">98<span class="text-primary-400">%</span></p>
+                        <p class="text-[11px] sm:text-xs text-slate-500 mt-0.5">Satisfaits</p>
                     </div>
                 </div>
             </div>
@@ -152,11 +152,11 @@
                     'from-cyan-500 via-blue-600 to-indigo-700',
                 ];
             @endphp
-            <div class="hidden lg:block relative"
+            <div class="relative"
                  x-data="{ current: 0, total: {{ $heroProducts->count() }}, paused: false }"
                  x-init="setInterval(() => { if (!paused && total > 1) current = (current + 1) % total }, 4500)"
                  @mouseenter="paused = true" @mouseleave="paused = false">
-                <div class="relative h-[440px] rounded-3xl overflow-hidden shadow-2xl shadow-black/40 ring-1 ring-white/10">
+                <div class="relative h-[300px] sm:h-[360px] md:h-[420px] lg:h-[440px] rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl shadow-black/40 ring-1 ring-white/10">
                     @forelse($heroProducts as $i => $product)
                     @php
                         $img = $product->images->where('is_primary', true)->first() ?? $product->images->first();
@@ -183,7 +183,7 @@
 
                             {{-- 3. Initiale du produit en watermark (toujours visible) --}}
                             <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <span class="text-[280px] leading-none font-black text-white/15 select-none drop-shadow-xl">{{ mb_substr($product->name, 0, 1) }}</span>
+                                <span class="text-[140px] sm:text-[180px] md:text-[220px] lg:text-[280px] leading-none font-black text-white/15 select-none drop-shadow-xl">{{ mb_substr($product->name, 0, 1) }}</span>
                             </div>
 
                             {{-- 4. Image produit (si dispo, supprimée automatiquement si 404) --}}
@@ -217,16 +217,16 @@
                             </div>
 
                             {{-- 8. Bloc d'info en bas (toujours visible) --}}
-                            <div class="absolute bottom-0 inset-x-0 p-6 z-10">
-                                <h3 class="text-white text-2xl font-black leading-tight mb-1.5 line-clamp-2 drop-shadow-2xl group-hover/card:text-amber-300 transition-colors">
+                            <div class="absolute bottom-0 inset-x-0 p-4 sm:p-5 md:p-6 z-10">
+                                <h3 class="text-white text-lg sm:text-xl md:text-2xl font-black leading-tight mb-1.5 line-clamp-2 drop-shadow-2xl group-hover/card:text-amber-300 transition-colors">
                                     {{ $product->name }}
                                 </h3>
                                 @if($product->short_description)
-                                <p class="text-white/85 text-xs line-clamp-1 mb-3 drop-shadow">{{ $product->short_description }}</p>
+                                <p class="text-white/85 text-[11px] sm:text-xs line-clamp-1 mb-3 drop-shadow">{{ $product->short_description }}</p>
                                 @endif
-                                <span class="inline-flex items-center gap-2 text-white text-sm font-semibold backdrop-blur-md bg-white/20 px-4 py-2 rounded-xl border border-white/30 group-hover/card:bg-white group-hover/card:text-slate-900 transition-all">
+                                <span class="inline-flex items-center gap-2 text-white text-xs sm:text-sm font-semibold backdrop-blur-md bg-white/20 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border border-white/30 group-hover/card:bg-white group-hover/card:text-slate-900 transition-all">
                                     Voir le produit
-                                    <svg class="w-4 h-4 group-hover/card:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 group-hover/card:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                                 </span>
                             </div>
                         </a>
@@ -249,14 +249,14 @@
                 </div>
                 @endif
 
-                {{-- Boutons précédent/suivant --}}
+                {{-- Boutons précédent/suivant (cachés sur mobile pour éviter overflow) --}}
                 @if($heroProducts->count() > 1)
                 <button type="button" @click="current = (current - 1 + total) % total"
-                        class="absolute top-1/2 -left-4 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white hover:text-slate-900 transition-all flex items-center justify-center z-10">
+                        class="hidden md:flex absolute top-1/2 -left-4 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white hover:text-slate-900 transition-all items-center justify-center z-10">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
                 </button>
                 <button type="button" @click="current = (current + 1) % total"
-                        class="absolute top-1/2 -right-4 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white hover:text-slate-900 transition-all flex items-center justify-center z-10">
+                        class="hidden md:flex absolute top-1/2 -right-4 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white hover:text-slate-900 transition-all items-center justify-center z-10">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                 </button>
                 @endif
@@ -270,9 +270,9 @@
      BARRE DE CONFIANCE - Floating
 ═══════════════════════════════════════════════ --}}
 <section class="relative z-20 -mt-6">
-    <div class="container mx-auto px-6">
-        <div class="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100">
-            <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-100">
+    <div class="container mx-auto px-4 sm:px-6">
+        <div class="bg-white rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+            <div class="grid grid-cols-2 md:grid-cols-4 md:divide-x divide-slate-100">
                 @php
                     $trustItems = [
                         ['icon' => 'M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0', 'color' => 'blue', 'title' => 'Livraison rapide', 'sub' => '24–48h partout'],

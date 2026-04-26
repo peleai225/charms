@@ -173,7 +173,7 @@
     {{-- Schemas additionnels injectés par les pages enfants --}}
     @stack('schema')
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen" 
+<body class="bg-slate-50 text-slate-900 font-sans antialiased min-h-screen overflow-x-hidden" 
       x-data="{ 
           mobileMenuOpen: false, 
           searchOpen: false,

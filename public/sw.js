@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lgb-cache-v1';
+const CACHE_NAME = 'lgb-cache-v2';
 const OFFLINE_URL = '/offline';
 
 // Assets to pre-cache on install

@@ -520,6 +520,18 @@
                         </a>
                         <div x-show="sidebarCollapsed" class="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-slate-800 text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">Paramètres</div>
                     </div>
+
+                    <div class="relative group">
+                        <a href="{{ route('admin.system.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300 hover:bg-white/5 hover:text-white transition-all {{ request()->routeIs('admin.system.*') ? 'menu-active bg-white/10 text-white' : '' }}" :class="sidebarCollapsed ? 'justify-center px-2' : ''">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                            <span x-show="!sidebarCollapsed" x-transition.opacity.duration.200ms>Système</span>
+                        </a>
+                        <div x-show="sidebarCollapsed" class="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-3 py-1.5 bg-slate-800 text-white text-sm rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">Système</div>
+                    </div>
                 </div>
                 @endif
 

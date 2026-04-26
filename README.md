@@ -94,6 +94,80 @@ Pour les commandes expirées et alertes stock :
 * * * * * cd /chemin/vers/chamse && php artisan schedule:run >> /dev/null 2>&1
 ```
 
+## Déploiement & mise à jour
+
+### Workflow recommandé (avec accès SSH)
+
+Le projet fournit un script `deploy.sh` qui automatise tout le pipeline post-pull :
+
+```bash
+# Sur le serveur, dans le dossier du projet :
+chmod +x deploy.sh
+./deploy.sh
+```
+
+Ce qu'il fait :
+1. Met le site en mode maintenance (`php artisan down`)
+2. `git pull --rebase`
+3. `composer install --no-dev --optimize-autoloader`
+4. Lance `php artisan deploy:after-pull` qui s'occupe de :
+   - Vider et regénérer tous les caches Laravel (route, view, config, event)
+   - Supprimer les fichiers cache résiduels (bootstrap/cache/*.php)
+   - Exécuter les migrations en attente
+   - Vérifier le lien `public/storage`
+   - Réinitialiser OPcache si disponible
+5. Sort du mode maintenance (`php artisan up`)
+
+**Options utiles :**
+```bash
+./deploy.sh --no-pull          # Si tu as déjà pull manuellement
+./deploy.sh --no-composer      # Pas de mise à jour composer
+./deploy.sh --no-maintenance   # Sans mode maintenance
+```
+
+### Déploiement depuis l'admin (sans SSH)
+
+Si tu n'as pas SSH (hébergement mutualisé), un panneau admin est disponible :
+
+**Admin → Système** (`/admin/system`)
+
+Tu y trouveras :
+- L'état complet du système (PHP, OPcache, caches Laravel, stockage)
+- La version Git actuellement déployée
+- Un bouton **"Lancer le déploiement"** qui exécute `deploy:after-pull` directement
+
+> ⚠️ Avant de cliquer sur le bouton, fais d'abord ton `git pull` côté FTP/SSH/cPanel.
+> Le bouton ne pull pas le code, il ne fait que les tâches post-pull.
+
+### Commande Artisan dédiée
+
+```bash
+# Tout faire d'un coup
+php artisan deploy:after-pull
+
+# Sans migrations (déconseillé en prod après un pull qui en contient)
+php artisan deploy:after-pull --skip-migrate
+
+# Sans regénérer les caches de prod (utile en debug)
+php artisan deploy:after-pull --skip-cache
+```
+
+### OPcache
+
+OPcache est **fortement recommandé** en production (gain de perfs ~3x à 5x).
+Sans lui, chaque requête recompile tous les fichiers PHP.
+
+Vérifie son état dans **Admin → Système**. Si désactivé, demande à ton hébergeur d'activer
+l'extension `opcache` dans `php.ini` :
+
+```ini
+[opcache]
+opcache.enable=1
+opcache.memory_consumption=128
+opcache.max_accelerated_files=10000
+opcache.revalidate_freq=2
+```
+
 ## Documentation
 
 - [Configuration imprimante caisse POS](docs/CAISSE_POS_IMPRIMANTE.md)

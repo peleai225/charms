@@ -434,6 +434,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/settings/emails/test', [\App\Http\Controllers\Admin\SettingsController::class, 'testEmail'])->name('settings.emails.test');
             Route::post('/settings/payment/test-lygos', [\App\Http\Controllers\Admin\SettingsController::class, 'testLygosPay'])->name('settings.payment.test-lygos');
 
+            // Système / Déploiement (admin uniquement)
+            Route::get('/system', [\App\Http\Controllers\Admin\SystemController::class, 'index'])->name('system.index');
+            Route::post('/system/deploy', [\App\Http\Controllers\Admin\SystemController::class, 'deploy'])->name('system.deploy');
+
             // Comptabilité
             Route::get('/accounting', [\App\Http\Controllers\Admin\AccountingController::class, 'index'])->name('accounting.index');
             Route::get('/accounting/entries', [\App\Http\Controllers\Admin\AccountingController::class, 'entries'])->name('accounting.entries');

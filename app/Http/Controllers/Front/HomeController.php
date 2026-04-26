@@ -42,9 +42,11 @@ class HomeController extends Controller
         }
 
         // Produits mis en avant — avec fallback vers les plus récents si aucun marqué
+        // Ordre: par date de mise à jour décroissante (les plus récemment mis en vedette en premier)
         $featuredProducts = Product::active()
             ->featured()
             ->with(['images', 'category'])
+            ->latest('updated_at')
             ->take(8)
             ->get();
 

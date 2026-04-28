@@ -342,63 +342,58 @@ class ProductController extends Controller
     }
 
     /**
-     * Ajouter une variante
+     * Ajouter une variante (générique : N attributs).
+     *
+     * Le formulaire envoie :
+     *   attributes[<attribute_id>] = <attribute_value_id>
+     * (plus les anciens champs color_id / size_id pour rétro-compatibilité)
      */
     public function storeVariant(Request $request, Product $product)
     {
         $validated = $request->validate([
-            'color_id' => 'required|exists:attribute_values,id',
-            'size_id' => 'nullable|exists:attribute_values,id',
-            'sku' => 'required|string|unique:product_variants',
-            'stock_quantity' => 'required|integer|min:0',
-            'sale_price' => 'nullable|numeric|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'attributes'        => 'nullable|array',
+            'attributes.*'      => 'nullable|integer|exists:attribute_values,id',
+            'color_id'          => 'nullable|exists:attribute_values,id',
+            'size_id'           => 'nullable|exists:attribute_values,id',
+            'sku'               => 'required|string|unique:product_variants',
+            'stock_quantity'    => 'required|integer|min:0',
+            'sale_price'        => 'nullable|numeric|min:0',
+            'image'             => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
         ]);
+
+        // Construit la liste des paires (attribute_id → attribute_value_id)
+        $pairs = $this->normalizeAttributePairs($request);
+
+        if (empty($pairs)) {
+            return back()->with('error', 'Vous devez sélectionner au moins une valeur d\'attribut pour la variante.');
+        }
 
         DB::beginTransaction();
 
         try {
-            // Créer la variante
             $variant = ProductVariant::create([
-                'product_id' => $product->id,
-                'sku' => $validated['sku'],
+                'product_id'     => $product->id,
+                'sku'            => $validated['sku'],
                 'stock_quantity' => $validated['stock_quantity'],
-                'sale_price' => $validated['sale_price'],
-                'is_active' => true,
+                'sale_price'     => $validated['sale_price'] ?? null,
+                'is_active'      => true,
             ]);
 
-            // Associer la couleur
-            $colorAttribute = Attribute::where('slug', 'couleur')->first();
-            if ($colorAttribute) {
+            foreach ($pairs as $attributeId => $attributeValueId) {
                 DB::table('product_variant_values')->insert([
                     'product_variant_id' => $variant->id,
-                    'attribute_id' => $colorAttribute->id,
-                    'attribute_value_id' => $validated['color_id'],
+                    'attribute_id'       => $attributeId,
+                    'attribute_value_id' => $attributeValueId,
                 ]);
             }
 
-            // Associer la taille si fournie
-            if (!empty($validated['size_id'])) {
-                $sizeAttribute = Attribute::where('slug', 'taille')->first();
-                if ($sizeAttribute) {
-                    DB::table('product_variant_values')->insert([
-                        'product_variant_id' => $variant->id,
-                        'attribute_id' => $sizeAttribute->id,
-                        'attribute_value_id' => $validated['size_id'],
-                    ]);
-                }
-            }
-
-            // Générer le nom de la variante
             $variant->generateName();
 
-            // Upload de l'image de la variante
             if ($request->hasFile('image')) {
                 $path = $this->resizeAndStoreImage($request->file('image'), 'products/' . $product->id . '/variants');
                 $variant->update(['image' => $path]);
             }
 
-            // Marquer le produit comme ayant des variantes
             if (!$product->has_variants) {
                 $product->update(['has_variants' => true]);
             }
@@ -414,7 +409,13 @@ class ProductController extends Controller
     }
 
     /**
-     * Créer plusieurs variantes en une seule soumission (grille)
+     * Créer plusieurs variantes en une seule soumission (grille / produit cartésien).
+     *
+     * Chaque ligne envoie :
+     *   rows[i][sku]
+     *   rows[i][stock_quantity]
+     *   rows[i][sale_price]
+     *   rows[i][attributes][<attribute_id>] = <attribute_value_id>
      */
     public function bulkStoreVariants(Request $request, Product $product)
     {
@@ -423,14 +424,18 @@ class ProductController extends Controller
             'rows.*.sku'              => 'required|string|max:100',
             'rows.*.stock_quantity'   => 'required|integer|min:0',
             'rows.*.sale_price'       => 'nullable|numeric|min:0',
+            'rows.*.attributes'       => 'nullable|array',
+            'rows.*.attributes.*'     => 'nullable|integer|exists:attribute_values,id',
+            // Rétro-compat : anciens champs s'ils sont encore envoyés
             'rows.*.size_id'          => 'nullable|exists:attribute_values,id',
             'rows.*.color_id'         => 'nullable|exists:attribute_values,id',
         ]);
 
-        $sizeAttr  = Attribute::where('slug', 'taille')->first();
-        $colorAttr = Attribute::where('slug', 'couleur')->first();
-        $created   = 0;
-        $skipped   = 0;
+        // Vérifie que chaque clé d'attribut est bien un attribute_id valide
+        $validAttributeIds = Attribute::pluck('id')->all();
+
+        $created = 0;
+        $skipped = 0;
 
         DB::beginTransaction();
         try {
@@ -438,8 +443,16 @@ class ProductController extends Controller
                 $sku = trim($row['sku'] ?? '');
                 if ($sku === '') continue;
 
-                // SKU déjà pris → ignorer
                 if (ProductVariant::where('sku', $sku)->exists()) {
+                    $skipped++;
+                    continue;
+                }
+
+                // Construire la liste des paires pour cette ligne
+                $pairs = $this->buildPairsFromRow($row, $validAttributeIds);
+
+                if (empty($pairs)) {
+                    // Une variante sans aucun attribut n'a pas de sens → on ignore
                     $skipped++;
                     continue;
                 }
@@ -452,19 +465,11 @@ class ProductController extends Controller
                     'is_active'      => true,
                 ]);
 
-                if (!empty($row['color_id']) && $colorAttr) {
+                foreach ($pairs as $attributeId => $attributeValueId) {
                     DB::table('product_variant_values')->insert([
                         'product_variant_id' => $variant->id,
-                        'attribute_id'       => $colorAttr->id,
-                        'attribute_value_id' => $row['color_id'],
-                    ]);
-                }
-
-                if (!empty($row['size_id']) && $sizeAttr) {
-                    DB::table('product_variant_values')->insert([
-                        'product_variant_id' => $variant->id,
-                        'attribute_id'       => $sizeAttr->id,
-                        'attribute_value_id' => $row['size_id'],
+                        'attribute_id'       => $attributeId,
+                        'attribute_value_id' => $attributeValueId,
                     ]);
                 }
 
@@ -479,7 +484,7 @@ class ProductController extends Controller
             DB::commit();
 
             $msg = "{$created} variante(s) créée(s)";
-            if ($skipped > 0) $msg .= ", {$skipped} ignorée(s) (SKU déjà existant)";
+            if ($skipped > 0) $msg .= ", {$skipped} ignorée(s) (SKU déjà existant ou ligne invalide)";
 
             return back()->with('success', $msg . '.');
 
@@ -487,6 +492,77 @@ class ProductController extends Controller
             DB::rollBack();
             return back()->with('error', 'Erreur : ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Construit le tableau [attribute_id => attribute_value_id] pour la création
+     * d'une variante unique, en agrégeant les nouveaux et anciens champs.
+     */
+    private function normalizeAttributePairs(Request $request): array
+    {
+        $pairs = [];
+
+        // Nouveau format : tableau attributes[attribute_id] = value_id
+        if (is_array($request->input('attributes'))) {
+            foreach ($request->input('attributes') as $attributeId => $valueId) {
+                if (!empty($valueId)) {
+                    $pairs[(int) $attributeId] = (int) $valueId;
+                }
+            }
+        }
+
+        // Rétro-compat : color_id / size_id
+        if ($request->filled('color_id')) {
+            $colorAttr = Attribute::where('slug', 'couleur')->first();
+            if ($colorAttr) {
+                $pairs[(int) $colorAttr->id] = (int) $request->input('color_id');
+            }
+        }
+        if ($request->filled('size_id')) {
+            $sizeAttr = Attribute::where('slug', 'taille')->first();
+            if ($sizeAttr) {
+                $pairs[(int) $sizeAttr->id] = (int) $request->input('size_id');
+            }
+        }
+
+        return $pairs;
+    }
+
+    /**
+     * Idem mais pour une ligne de la grille bulk.
+     *
+     * @param  array  $row
+     * @param  array<int>  $validAttributeIds
+     */
+    private function buildPairsFromRow(array $row, array $validAttributeIds): array
+    {
+        $pairs = [];
+
+        if (!empty($row['attributes']) && is_array($row['attributes'])) {
+            foreach ($row['attributes'] as $attributeId => $valueId) {
+                $aid = (int) $attributeId;
+                $vid = (int) $valueId;
+                if ($vid > 0 && in_array($aid, $validAttributeIds, true)) {
+                    $pairs[$aid] = $vid;
+                }
+            }
+        }
+
+        // Rétro-compat
+        if (!empty($row['color_id'])) {
+            $colorAttr = Attribute::where('slug', 'couleur')->first();
+            if ($colorAttr) {
+                $pairs[(int) $colorAttr->id] = (int) $row['color_id'];
+            }
+        }
+        if (!empty($row['size_id'])) {
+            $sizeAttr = Attribute::where('slug', 'taille')->first();
+            if ($sizeAttr) {
+                $pairs[(int) $sizeAttr->id] = (int) $row['size_id'];
+            }
+        }
+
+        return $pairs;
     }
 
     /**

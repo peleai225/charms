@@ -238,10 +238,10 @@ if ($product->category) {
             </div>
             @endif
 
-            <!-- Sélecteur de taille (si applicable) -->
+            <!-- Sélecteur d'attribut secondaire (taille, pointure, capacité, matière...) -->
             <div x-show="availableSizes.length > 0" x-cloak>
                 <label class="block text-sm font-medium text-gray-900 mb-3">
-                    Taille : <span class="font-normal text-gray-600" x-text="selectedSizeName || 'Choisir'"></span>
+                    {{ $secondaryAttributeName ?? 'Taille' }} : <span class="font-normal text-gray-600" x-text="selectedSizeName || 'Choisir'"></span>
                 </label>
                 <div class="flex flex-wrap gap-2">
                     <template x-for="size in availableSizes" :key="size.id">
@@ -611,11 +611,16 @@ function productGallery() {
         // Variants data from PHP
         variantsByColor: @php
             $variantsData = [];
+            $secondarySlug = $secondaryAttributeSlug ?? null;
             foreach ($variantsByColor as $colorId => $variants) {
                 $variantsData[$colorId] = [];
                 foreach ($variants as $v) {
-                    $sizeAttr = $v->attributeValues->first(function($av) {
-                        return $av->attribute && $av->attribute->slug === 'taille';
+                    // Attribut secondaire : par défaut le slug détecté côté contrôleur,
+                    // sinon premier attribut non-couleur trouvé sur cette variante
+                    $sizeAttr = $v->attributeValues->first(function($av) use ($secondarySlug) {
+                        if (!$av->attribute) return false;
+                        if ($secondarySlug) return $av->attribute->slug === $secondarySlug;
+                        return $av->attribute->slug !== 'couleur';
                     });
                     $variantsData[$colorId][] = [
                         'id' => $v->id,

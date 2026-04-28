@@ -301,37 +301,98 @@
         </div>
     </form>
 
-    {{-- ===== SECTION VARIANTES ===== --}}
+    {{-- ===== SECTION VARIANTES (générique : N attributs) ===== --}}
     @php
-        $allSizes  = $attributes->where('slug', 'taille')->first()?->values ?? collect();
-        $allColors = $attributes->where('slug', 'couleur')->first()?->values ?? collect();
+        // Tous les attributs définis (couleur, taille, pointure, capacité, matière, ...)
+        $variantAttributes = $attributes->filter(fn($a) => $a->values->count() > 0)->values();
         $productSlug = strtoupper(preg_replace('/[^A-Za-z0-9]+/', '-', $product->name));
+
+        // Dictionnaire id_valeur → libellé court (utilisé côté JS pour les SKU)
+        $valueLabels = [];
+        foreach ($variantAttributes as $attr) {
+            foreach ($attr->values as $val) {
+                $valueLabels[$val->id] = $val->value;
+            }
+        }
+
+        // Couleur historique (pour rétro-compat affichage liste)
+        $colorAttribute = $variantAttributes->firstWhere('slug', 'couleur');
     @endphp
 
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"
          x-show="tab==='variants'"
          x-data="{
             panel: 'bulk',
-            mode: 'sizes',
-            selectedSizes: [],
-            selectedColors: [],
-            productSlug: '{{ $productSlug }}',
+            productSlug: @js($productSlug),
+            valueLabels: @js($valueLabels),
+            attributeNames: @js($variantAttributes->pluck('name', 'id')->all()),
 
-            toggleSize(id) {
-                const idx = this.selectedSizes.indexOf(id);
-                if (idx >= 0) this.selectedSizes.splice(idx, 1);
-                else this.selectedSizes.push(id);
+            // État de sélection : { attributeId: bool } et { attributeId: [valueId, ...] }
+            selectedAttributes: {},
+            selectedValues: {},
+
+            toggleAttribute(attrId) {
+                this.selectedAttributes[attrId] = !this.selectedAttributes[attrId];
+                if (!this.selectedAttributes[attrId]) {
+                    this.selectedValues[attrId] = [];
+                } else if (!this.selectedValues[attrId]) {
+                    this.selectedValues[attrId] = [];
+                }
             },
-            toggleColor(id) {
-                const idx = this.selectedColors.indexOf(id);
-                if (idx >= 0) this.selectedColors.splice(idx, 1);
-                else this.selectedColors.push(id);
+            isAttributeSelected(attrId) {
+                return !!this.selectedAttributes[attrId];
             },
-            autoSku(val, extra) {
+            toggleValue(attrId, valId) {
+                if (!this.selectedValues[attrId]) this.selectedValues[attrId] = [];
+                const idx = this.selectedValues[attrId].indexOf(valId);
+                if (idx >= 0) this.selectedValues[attrId].splice(idx, 1);
+                else this.selectedValues[attrId].push(valId);
+            },
+            hasValueSelected(attrId, valId) {
+                return (this.selectedValues[attrId] || []).includes(valId);
+            },
+            activeAttributeIds() {
+                return Object.keys(this.selectedAttributes)
+                    .filter(k => this.selectedAttributes[k])
+                    .map(k => parseInt(k));
+            },
+            // Produit cartésien des valeurs sélectionnées par attribut
+            get combinations() {
+                const activeIds = this.activeAttributeIds();
+                if (activeIds.length === 0) return [];
+
+                const lists = activeIds.map(aid => {
+                    const vals = this.selectedValues[aid] || [];
+                    return vals.map(vid => ({ attribute_id: aid, value_id: vid }));
+                });
+
+                if (lists.some(l => l.length === 0)) return [];
+
+                let result = [[]];
+                for (const list of lists) {
+                    const next = [];
+                    for (const combo of result) {
+                        for (const item of list) {
+                            next.push([...combo, item]);
+                        }
+                    }
+                    result = next;
+                }
+                return result;
+            },
+            comboKey(combo) {
+                return combo.map(it => it.attribute_id + '-' + it.value_id).join('|');
+            },
+            comboLabels(combo) {
+                return combo.map(it => this.valueLabels[it.value_id] || '');
+            },
+            autoSku(combo) {
                 const base = this.productSlug.substring(0, 12);
-                const v = val.replace(/\s+/g, '').toUpperCase().substring(0, 6);
-                const e = extra ? '-' + extra.replace(/\s+/g, '').toUpperCase().substring(0, 5) : '';
-                return base + '-' + v + e;
+                const parts = combo.map(it => {
+                    const lbl = this.valueLabels[it.value_id] || '';
+                    return lbl.replace(/\s+/g, '').toUpperCase().substring(0, 6);
+                });
+                return base + '-' + parts.join('-');
             }
          }">
 
@@ -360,277 +421,173 @@
             </div>
         </div>
 
-        {{-- ===== PANEL : AJOUT EN MASSE ===== --}}
+        {{-- ===== PANEL : AJOUT EN MASSE (multi-attributs générique) ===== --}}
         <div x-show="panel==='bulk'" class="p-6 space-y-5">
 
-            {{-- Sélection du mode --}}
-            <div class="flex flex-wrap gap-3">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" x-model="mode" value="sizes" class="text-blue-600">
-                    <span class="text-sm font-medium text-slate-700">Tailles seulement</span>
-                    <span class="text-xs text-slate-400">(vêtements enfant, âge...)</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" x-model="mode" value="colors" class="text-blue-600">
-                    <span class="text-sm font-medium text-slate-700">Couleurs seulement</span>
-                </label>
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" x-model="mode" value="matrix" class="text-blue-600">
-                    <span class="text-sm font-medium text-slate-700">Tailles × Couleurs</span>
-                    <span class="text-xs text-slate-400">(grille complète)</span>
-                </label>
-            </div>
+            @if($variantAttributes->isEmpty())
+                <div class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                    Aucun attribut n'a encore de valeurs.
+                    <a href="{{ route('admin.attributes.index') }}" class="underline font-medium">Définir des attributs</a>
+                    (couleur, taille, pointure, capacité, matière...) avant de créer des variantes.
+                </div>
+            @else
 
-            {{-- Sélection des tailles (modes sizes + matrix) --}}
-            <div x-show="mode==='sizes' || mode==='matrix'">
-                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Sélectionner les tailles</p>
+            {{-- 1) Choisir quels attributs utiliser pour ce produit --}}
+            <div>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                    1. Quels attributs utiliser pour ce produit ?
+                </p>
                 <div class="flex flex-wrap gap-2">
-                    @foreach($allSizes as $size)
+                    @foreach($variantAttributes as $attr)
                     <button type="button"
-                        @click="toggleSize({{ $size->id }})"
-                        :class="selectedSizes.includes({{ $size->id }}) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-300 hover:border-blue-400'"
-                        class="px-3 py-1.5 rounded-lg border text-sm font-medium transition-all">
-                        {{ $size->value }}
+                        @click="toggleAttribute({{ $attr->id }})"
+                        :class="isAttributeSelected({{ $attr->id }}) ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-600/20' : 'bg-white text-slate-700 border-slate-300 hover:border-blue-400'"
+                        class="px-3 py-1.5 rounded-lg border text-sm font-medium transition-all inline-flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full"
+                              :class="isAttributeSelected({{ $attr->id }}) ? 'bg-white' : 'bg-slate-300'"></span>
+                        {{ $attr->name }}
+                        <span class="text-[10px] opacity-70">({{ $attr->values->count() }})</span>
                     </button>
                     @endforeach
-                    @if($allSizes->isEmpty())
-                        <p class="text-sm text-slate-400 italic">Aucune taille définie en base.</p>
-                    @endif
                 </div>
+                <p class="text-xs text-slate-400 mt-2 italic">Astuce : ne sélectionnez que les attributs pertinents pour ce produit (ex. <em>pointure</em> + <em>couleur</em> pour des chaussures).</p>
             </div>
 
-            {{-- Sélection des couleurs (modes colors + matrix) --}}
-            <div x-show="mode==='colors' || mode==='matrix'">
-                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Sélectionner les couleurs</p>
+            {{-- 2) Pour chaque attribut sélectionné, choisir les valeurs --}}
+            @foreach($variantAttributes as $attr)
+            <div x-show="isAttributeSelected({{ $attr->id }})" x-cloak>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                    Valeurs pour <span class="text-slate-700">{{ $attr->name }}</span>
+                </p>
                 <div class="flex flex-wrap gap-2">
-                    @foreach($allColors as $color)
+                    @foreach($attr->values as $val)
                     <button type="button"
-                        @click="toggleColor({{ $color->id }})"
-                        :class="selectedColors.includes({{ $color->id }}) ? 'ring-2 ring-offset-1 ring-blue-600 opacity-100' : 'opacity-60 hover:opacity-90'"
-                        class="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-sm font-medium transition-all">
-                        @if($color->color_code)
-                            <span class="w-4 h-4 rounded-full border border-slate-200 inline-block" style="background:{{ $color->color_code }}"></span>
+                        @click="toggleValue({{ $attr->id }}, {{ $val->id }})"
+                        :class="hasValueSelected({{ $attr->id }}, {{ $val->id }}) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-300 hover:border-blue-400'"
+                        class="px-3 py-1.5 rounded-lg border text-sm font-medium transition-all inline-flex items-center gap-1.5">
+                        @if($attr->type === 'color' && $val->color_code)
+                            <span class="w-3.5 h-3.5 rounded-full border border-white/30" style="background:{{ $val->color_code }}"></span>
                         @endif
-                        {{ $color->value }}
+                        {{ $val->value }}
                     </button>
                     @endforeach
-                    @if($allColors->isEmpty())
-                        <p class="text-sm text-slate-400 italic">Aucune couleur définie.</p>
-                    @endif
                 </div>
             </div>
+            @endforeach
 
-            {{-- ===== GRILLE : MODE TAILLES ===== --}}
-            <form method="POST" action="{{ route('admin.products.variants.bulk', $product) }}" class="no-ajax" x-show="mode==='sizes'">
-                @csrf
-                <template x-if="selectedSizes.length > 0">
-                    <div class="overflow-x-auto rounded-xl border border-slate-200">
-                        <table class="w-full text-sm">
-                            <thead class="bg-slate-50 border-b border-slate-200">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase w-28">Taille</th>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase w-28">Stock *</th>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase w-36">Prix spécial (FCFA)</th>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">SKU (modifiable)</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                @foreach($allSizes as $i => $size)
-                                <tr x-show="selectedSizes.includes({{ $size->id }})" class="hover:bg-blue-50/30">
-                                    <td class="px-4 py-3">
-                                        <input type="hidden" name="rows[{{ $i }}][size_id]" value="{{ $size->id }}" :disabled="!selectedSizes.includes({{ $size->id }})">
-                                        <span class="font-semibold text-slate-800">{{ $size->value }}</span>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <input type="number" name="rows[{{ $i }}][stock_quantity]" min="0" value="0"
-                                               :disabled="!selectedSizes.includes({{ $size->id }})"
-                                               class="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <input type="number" name="rows[{{ $i }}][sale_price]" min="0" step="1"
-                                               placeholder="{{ intval($product->sale_price) }}"
-                                               :disabled="!selectedSizes.includes({{ $size->id }})"
-                                               class="w-32 px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <input type="text" name="rows[{{ $i }}][sku]"
-                                               :value="autoSku('{{ addslashes($size->value) }}')"
-                                               :disabled="!selectedSizes.includes({{ $size->id }})"
-                                               class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </template>
-                <template x-if="selectedSizes.length === 0">
-                    <p class="text-sm text-slate-400 italic py-2">Sélectionnez au moins une taille ci-dessus.</p>
-                </template>
-                <div class="flex justify-end mt-4">
-                    <button type="submit"
-                        x-bind:disabled="selectedSizes.length === 0"
-                        :class="selectedSizes.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'"
-                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-xl transition-colors shadow-sm shadow-blue-600/20 text-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        Créer <span x-text="selectedSizes.length"></span> variante(s)
-                    </button>
-                </div>
-            </form>
+            {{-- 3) Tableau dynamique : produit cartésien des combinaisons --}}
+            <div>
+                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                    2. Variantes générées
+                    <span class="ml-1 text-slate-400 font-normal" x-text="combinations.length > 0 ? '— ' + combinations.length + ' combinaison(s)' : ''"></span>
+                </p>
 
-            {{-- ===== GRILLE : MODE COULEURS ===== --}}
-            <form method="POST" action="{{ route('admin.products.variants.bulk', $product) }}" class="no-ajax" x-show="mode==='colors'">
-                @csrf
-                <template x-if="selectedColors.length > 0">
-                    <div class="overflow-x-auto rounded-xl border border-slate-200">
-                        <table class="w-full text-sm">
-                            <thead class="bg-slate-50 border-b border-slate-200">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase w-36">Couleur</th>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase w-28">Stock *</th>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase w-36">Prix spécial (FCFA)</th>
-                                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">SKU</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                @foreach($allColors as $i => $color)
-                                <tr x-show="selectedColors.includes({{ $color->id }})" class="hover:bg-blue-50/30">
-                                    <td class="px-4 py-3">
-                                        <input type="hidden" name="rows[{{ $i }}][color_id]" value="{{ $color->id }}" :disabled="!selectedColors.includes({{ $color->id }})">
-                                        <div class="flex items-center gap-2">
-                                            @if($color->color_code)
-                                                <span class="w-5 h-5 rounded-full border border-slate-200 flex-shrink-0" style="background:{{ $color->color_code }}"></span>
-                                            @endif
-                                            <span class="font-semibold text-slate-800">{{ $color->value }}</span>
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <input type="number" name="rows[{{ $i }}][stock_quantity]" min="0" value="0"
-                                               :disabled="!selectedColors.includes({{ $color->id }})"
-                                               class="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <input type="number" name="rows[{{ $i }}][sale_price]" min="0" step="1"
-                                               placeholder="{{ intval($product->sale_price) }}"
-                                               :disabled="!selectedColors.includes({{ $color->id }})"
-                                               class="w-32 px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <input type="text" name="rows[{{ $i }}][sku]"
-                                               :value="autoSku('{{ addslashes($color->value) }}')"
-                                               :disabled="!selectedColors.includes({{ $color->id }})"
-                                               class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                <template x-if="combinations.length === 0">
+                    <p class="text-sm text-slate-400 italic py-2">
+                        Sélectionnez au moins un attribut et une valeur par attribut pour générer les combinaisons.
+                    </p>
                 </template>
-                <template x-if="selectedColors.length === 0">
-                    <p class="text-sm text-slate-400 italic py-2">Sélectionnez au moins une couleur ci-dessus.</p>
-                </template>
-                <div class="flex justify-end mt-4">
-                    <button type="submit"
-                        x-bind:disabled="selectedColors.length === 0"
-                        :class="selectedColors.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'"
-                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-xl transition-colors shadow-sm shadow-blue-600/20 text-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                        Créer <span x-text="selectedColors.length"></span> variante(s)
-                    </button>
-                </div>
-            </form>
 
-            {{-- ===== GRILLE : MODE MATRICE Taille × Couleur ===== --}}
-            <div x-show="mode==='matrix'">
-                @php $matrixSizes = $allSizes; $matrixColors = $allColors; @endphp
-                <template x-if="selectedSizes.length > 0 && selectedColors.length > 0">
-                    <form method="POST" action="{{ route('admin.products.variants.bulk', $product) }}" class="no-ajax" x-data="{ rows: [] }">
+                <template x-if="combinations.length > 0">
+                    <form method="POST" action="{{ route('admin.products.variants.bulk', $product) }}" class="no-ajax">
                         @csrf
-                        @php $rowIdx = 0; @endphp
                         <div class="overflow-x-auto rounded-xl border border-slate-200">
                             <table class="w-full text-sm">
                                 <thead class="bg-slate-50 border-b border-slate-200">
                                     <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Taille</th>
-                                        @foreach($matrixColors as $color)
-                                        <th class="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase" x-show="selectedColors.includes({{ $color->id }})">
-                                            <div class="flex items-center justify-center gap-1">
-                                                @if($color->color_code)<span class="w-3 h-3 rounded-full" style="background:{{ $color->color_code }}"></span>@endif
-                                                {{ $color->value }}
-                                            </div>
-                                        </th>
-                                        @endforeach
+                                        <template x-for="aid in activeAttributeIds()" :key="aid">
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase"
+                                                x-text="attributeNames[aid] || ('Attribut ' + aid)"></th>
+                                        </template>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase w-28">Stock *</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase w-36">Prix spécial (FCFA)</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">SKU (modifiable)</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    @foreach($matrixSizes as $size)
-                                    <tr x-show="selectedSizes.includes({{ $size->id }})" class="hover:bg-blue-50/30">
-                                        <td class="px-4 py-3 font-semibold text-slate-800 w-28">{{ $size->value }}</td>
-                                        @foreach($matrixColors as $color)
-                                        <td class="px-3 py-3 text-center" x-show="selectedColors.includes({{ $color->id }})">
-                                            <input type="hidden" name="rows[{{ $rowIdx }}][size_id]" value="{{ $size->id }}"
-                                                   :disabled="!selectedSizes.includes({{ $size->id }}) || !selectedColors.includes({{ $color->id }})">
-                                            <input type="hidden" name="rows[{{ $rowIdx }}][color_id]" value="{{ $color->id }}"
-                                                   :disabled="!selectedSizes.includes({{ $size->id }}) || !selectedColors.includes({{ $color->id }})">
-                                            <input type="hidden" name="rows[{{ $rowIdx }}][sku]"
-                                                   :value="autoSku('{{ addslashes($size->value) }}', '{{ addslashes($color->value) }}')"
-                                                   :disabled="!selectedSizes.includes({{ $size->id }}) || !selectedColors.includes({{ $color->id }})">
-                                            <input type="hidden" name="rows[{{ $rowIdx }}][sale_price]" value=""
-                                                   :disabled="!selectedSizes.includes({{ $size->id }}) || !selectedColors.includes({{ $color->id }})">
-                                            <input type="number" name="rows[{{ $rowIdx }}][stock_quantity]" min="0" value="0"
-                                                   placeholder="qté"
-                                                   :disabled="!selectedSizes.includes({{ $size->id }}) || !selectedColors.includes({{ $color->id }})"
-                                                   class="w-20 px-2 py-1.5 border border-slate-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                        </td>
-                                        @php $rowIdx++; @endphp
-                                        @endforeach
-                                    </tr>
-                                    @endforeach
+                                    <template x-for="(combo, i) in combinations" :key="comboKey(combo)">
+                                        <tr class="hover:bg-blue-50/30">
+                                            {{-- Colonnes : libellés des valeurs --}}
+                                            <template x-for="(item, k) in combo" :key="item.attribute_id">
+                                                <td class="px-4 py-3">
+                                                    <span class="font-semibold text-slate-800" x-text="valueLabels[item.value_id]"></span>
+                                                    <input type="hidden"
+                                                           :name="'rows[' + i + '][attributes][' + item.attribute_id + ']'"
+                                                           :value="item.value_id">
+                                                </td>
+                                            </template>
+
+                                            {{-- Stock --}}
+                                            <td class="px-4 py-3">
+                                                <input type="number" :name="'rows[' + i + '][stock_quantity]'" min="0" value="0"
+                                                       class="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            </td>
+
+                                            {{-- Prix spécial --}}
+                                            <td class="px-4 py-3">
+                                                <input type="number" :name="'rows[' + i + '][sale_price]'" min="0" step="1"
+                                                       placeholder="{{ intval($product->sale_price) }}"
+                                                       class="w-32 px-2 py-1.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            </td>
+
+                                            {{-- SKU auto --}}
+                                            <td class="px-4 py-3">
+                                                <input type="text" :name="'rows[' + i + '][sku]'"
+                                                       :value="autoSku(combo)"
+                                                       class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            </td>
+                                        </tr>
+                                    </template>
                                 </tbody>
                             </table>
                         </div>
-                        <p class="text-xs text-slate-400 mt-2">Saisir 0 pour créer la variante sans stock. Les SKUs sont générés automatiquement.</p>
+                        <p class="text-xs text-slate-400 mt-2">Le SKU est généré automatiquement (modifiable). Saisir 0 dans le stock pour créer la variante sans inventaire.</p>
                         <div class="flex justify-end mt-3">
-                            <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors shadow-sm shadow-blue-600/20 text-sm">
+                            <button type="submit"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors shadow-sm shadow-blue-600/20 text-sm">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                                Créer la matrice
+                                Créer <span x-text="combinations.length"></span> variante(s)
                             </button>
                         </div>
                     </form>
                 </template>
-                <template x-if="selectedSizes.length === 0 || selectedColors.length === 0">
-                    <p class="text-sm text-slate-400 italic py-2">Sélectionnez au moins une taille et une couleur.</p>
-                </template>
             </div>
+
+            @endif
         </div>
 
-        {{-- ===== PANEL : VARIANTE UNIQUE ===== --}}
+        {{-- ===== PANEL : VARIANTE UNIQUE (multi-attributs générique) ===== --}}
         <div x-show="panel==='single'" class="p-6">
+            @if($variantAttributes->isEmpty())
+                <div class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                    Aucun attribut n'a encore de valeurs.
+                    <a href="{{ route('admin.attributes.index') }}" class="underline font-medium">Définir des attributs</a>.
+                </div>
+            @else
             <form method="POST" action="{{ route('admin.products.variants.store', $product) }}" enctype="multipart/form-data" class="no-ajax space-y-4">
                 @csrf
+
+                {{-- Un select par attribut --}}
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    @foreach($variantAttributes as $attr)
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Couleur</label>
-                        <select name="color_id" required class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
-                            <option value="">Choisir...</option>
-                            @foreach($colors as $color)
-                                <option value="{{ $color->id }}" data-color="{{ $color->color_code }}">{{ $color->value }}</option>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+                            {{ $attr->name }}
+                        </label>
+                        <select name="attributes[{{ $attr->id }}]" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                            <option value="">— Aucune —</option>
+                            @foreach($attr->values as $val)
+                                <option value="{{ $val->id }}">{{ $val->value }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Taille</label>
-                        <select name="size_id" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
-                            <option value="">Aucune</option>
-                            @foreach($allSizes as $size)
-                                <option value="{{ $size->id }}">{{ $size->value }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    @endforeach
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-100">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">SKU *</label>
-                        <input type="text" name="sku" required placeholder="EX: CARGO-ROUGE-4ANS" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono">
+                        <input type="text" name="sku" required placeholder="EX: CHAUS-NOIR-42" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-mono">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Stock *</label>
@@ -640,17 +597,21 @@
                         <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Prix spécial (FCFA)</label>
                         <input type="number" name="sale_price" step="1" min="0" placeholder="{{ intval($product->sale_price) }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Image couleur</label>
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1.5">Image de la variante (optionnelle)</label>
                         <input type="file" name="image" accept="image/*" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
                     </div>
                 </div>
+
+                <p class="text-xs text-slate-400 italic">Sélectionnez au moins une valeur d'attribut. Les attributs laissés sur « Aucune » seront ignorés.</p>
+
                 <div class="flex justify-end">
                     <button type="submit" class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors text-sm">
                         Ajouter la variante
                     </button>
                 </div>
             </form>
+            @endif
         </div>
 
         {{-- ===== PANEL : LISTE / GESTION ===== --}}
@@ -674,8 +635,10 @@
                     <tbody class="divide-y divide-slate-100">
                         @foreach($product->variants as $variant)
                         @php
-                            $vColor = $variant->attributeValues->firstWhere(fn($v) => $v->attribute->slug === 'couleur');
-                            $vSize  = $variant->attributeValues->firstWhere(fn($v) => $v->attribute->slug === 'taille');
+                            // Couleur conservée séparément pour la mini-pastille / fallback fond miniature
+                            $vColor    = $variant->attributeValues->firstWhere(fn($v) => $v->attribute && $v->attribute->slug === 'couleur');
+                            // Toutes les autres valeurs (taille, pointure, capacité, matière...)
+                            $vOtherVals = $variant->attributeValues->filter(fn($v) => $v->attribute && $v->attribute->slug !== 'couleur')->values();
                         @endphp
                         <tr class="hover:bg-slate-50 group transition-opacity" x-data="{
                                 active: {{ $variant->is_active ? 'true' : 'false' }},
@@ -846,9 +809,19 @@
                                             </button>
                                         </template>
                                     </div>
-                                    <div>
-                                        @if($vColor)<span class="font-medium text-slate-900">{{ $vColor->value }}</span>@endif
-                                        @if($vSize)<span class="ml-1 text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{{ $vSize->value }}</span>@endif
+                                    <div class="flex items-center gap-1 flex-wrap">
+                                        @if($vColor)
+                                            <span class="font-medium text-slate-900">{{ $vColor->value }}</span>
+                                        @endif
+                                        @foreach($vOtherVals as $av)
+                                            <span class="text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded"
+                                                  title="{{ $av->attribute->name }}">
+                                                {{ $av->value }}
+                                            </span>
+                                        @endforeach
+                                        @if(!$vColor && $vOtherVals->isEmpty())
+                                            <span class="text-xs text-slate-400 italic">{{ $variant->name ?: 'Variante' }}</span>
+                                        @endif
                                     </div>
                                 </div>
                             </td>

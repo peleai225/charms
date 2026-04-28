@@ -156,8 +156,22 @@ class ShopController extends Controller
         $availableColors = $product->variants
             ->pluck('attributeValues')
             ->flatten()
-            ->filter(fn($av) => $av->attribute->slug === 'couleur')
+            ->filter(fn($av) => $av->attribute && $av->attribute->slug === 'couleur')
             ->unique('id');
+
+        // Détecter dynamiquement l'attribut secondaire (le premier attribut
+        // non-couleur réellement utilisé sur les variantes : taille, pointure,
+        // capacité, matière...).
+        $secondaryAttribute = $product->variants
+            ->pluck('attributeValues')
+            ->flatten()
+            ->map(fn($av) => $av->attribute)
+            ->filter(fn($a) => $a && $a->slug !== 'couleur')
+            ->unique('id')
+            ->sortBy('order')
+            ->first();
+        $secondaryAttributeSlug = $secondaryAttribute?->slug;
+        $secondaryAttributeName = $secondaryAttribute?->name ?? 'Taille';
 
         // Cross-sell : produits de la même catégorie (prix similaire ±30%)
         $relatedProducts = Product::active()
@@ -186,6 +200,7 @@ class ShopController extends Controller
 
         return view('front.shop.product', compact(
             'product', 'variantsByColor', 'availableColors',
+            'secondaryAttributeSlug', 'secondaryAttributeName',
             'relatedProducts', 'upsellProducts', 'pointsToEarn'
         ));
     }

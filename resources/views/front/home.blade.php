@@ -48,16 +48,21 @@
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
              class="absolute inset-0">
+            {{-- Fond fallback chaleureux (visible si image absente ou 404) --}}
+            <div class="absolute inset-0 bg-gradient-to-br from-amber-800 via-stone-800 to-stone-900"></div>
+            {{-- Lettre de marque en watermark, visible si pas d'image --}}
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span class="font-serif-display text-white/[0.08] text-[280px] sm:text-[400px] md:text-[500px] leading-none -mt-12 select-none">{{ mb_substr($siteName, 0, 1) }}</span>
+            </div>
             @if($banner->image)
                 <img src="{{ asset('storage/' . $banner->image) }}" alt="{{ $banner->title }}"
-                     class="w-full h-full object-cover"
+                     class="relative w-full h-full object-cover"
                      loading="{{ $i === 0 ? 'eager' : 'lazy' }}"
-                     fetchpriority="{{ $i === 0 ? 'high' : 'auto' }}">
-            @else
-                <div class="w-full h-full bg-stone-300"></div>
+                     fetchpriority="{{ $i === 0 ? 'high' : 'auto' }}"
+                     onerror="this.remove()">
             @endif
             {{-- Voile très léger pour la lisibilité, pas un overlay brutal --}}
-            <div class="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent md:from-black/40 md:via-transparent"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-transparent md:from-black/50 md:via-black/10"></div>
         </div>
         @endforeach
 
@@ -123,41 +128,65 @@
     </div>
 </section>
 @else
-{{-- Hero éditorial par défaut --}}
-<section class="relative bg-stone-50 overflow-hidden">
-    <div class="container mx-auto px-5 sm:px-8 lg:px-12 max-w-7xl py-20 sm:py-28 md:py-36">
-        <div class="grid lg:grid-cols-12 gap-8 lg:gap-16 items-center">
-            <div class="lg:col-span-7">
-                <p class="text-stone-500 text-xs font-medium uppercase tracking-[0.3em] mb-5">Édition {{ date('Y') }}</p>
-                <h1 class="font-serif-display text-5xl sm:text-6xl md:text-7xl lg:text-[88px] font-medium text-stone-900 leading-[0.98] tracking-tight mb-6 sm:mb-8">
-                    Des objets choisis,<br>
-                    <em class="not-italic text-stone-500">une vie meilleure.</em>
+{{-- Hero éditorial par défaut — chaleur + asymétrie --}}
+<section class="relative bg-gradient-to-br from-stone-50 via-amber-50/40 to-stone-100 overflow-hidden">
+    {{-- Décorations subtiles --}}
+    <div class="absolute -top-32 -right-32 w-[500px] h-[500px] bg-amber-100/40 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-32 -left-32 w-[500px] h-[500px] bg-stone-200/40 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="container mx-auto px-5 sm:px-8 lg:px-12 max-w-7xl py-16 sm:py-20 md:py-28 lg:py-32 relative">
+        <div class="grid lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+            <div class="lg:col-span-7 min-w-0">
+                <div class="inline-flex items-center gap-2 px-3 py-1 mb-6 bg-white/70 backdrop-blur-sm rounded-full border border-amber-200/50">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                    <span class="text-amber-800 text-[11px] font-medium uppercase tracking-[0.2em]">Édition {{ date('Y') }} · {{ $productCount }} produits</span>
+                </div>
+                <h1 class="font-serif-display text-5xl sm:text-6xl md:text-7xl lg:text-[80px] xl:text-[96px] font-medium text-stone-900 leading-[0.98] tracking-tight mb-6 sm:mb-8">
+                    Des objets<br>choisis,<br>
+                    <em class="not-italic text-amber-700">une vie meilleure.</em>
                 </h1>
-                <p class="text-stone-600 text-base sm:text-lg leading-relaxed max-w-md mb-8">
-                    La sélection {{ $siteName }} — qualité, prix justes, livraison rapide en Côte d'Ivoire.
+                <p class="text-stone-700 text-base sm:text-lg md:text-xl leading-relaxed max-w-md mb-8 md:mb-10">
+                    La sélection {{ $siteName }} — qualité, prix justes, livraison rapide partout en Côte d'Ivoire.
                 </p>
                 <div class="flex flex-wrap items-center gap-5 sm:gap-7">
-                    <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-3 px-6 py-3 bg-stone-900 text-white text-sm font-medium rounded-full hover:bg-stone-800 transition-colors">
+                    <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-3 px-7 py-3.5 bg-stone-900 hover:bg-amber-800 text-white text-sm font-medium rounded-full transition-colors">
                         Explorer la boutique
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                     </a>
                     @if($whatsapp)
-                    <a href="https://wa.me/{{ preg_replace('/\D/', '', $whatsapp) }}" target="_blank" class="text-stone-700 text-sm font-medium border-b border-stone-300 hover:border-stone-700 pb-0.5 transition-colors">
+                    <a href="https://wa.me/{{ preg_replace('/\D/', '', $whatsapp) }}" target="_blank" class="text-stone-700 text-sm font-medium border-b border-amber-700/40 hover:border-stone-900 pb-0.5 transition-colors">
                         Nous écrire
                     </a>
                     @endif
                 </div>
             </div>
             <div class="lg:col-span-5 hidden lg:block">
-                <div class="relative aspect-[4/5] bg-stone-200 rounded overflow-hidden">
-                    @php $heroProduct = $featuredProducts->first(); @endphp
-                    @if($heroProduct && $heroProduct->images->isNotEmpty())
-                        <img src="{{ asset('storage/' . $heroProduct->images->first()->path) }}"
-                             alt="{{ $heroProduct->name }}"
-                             class="w-full h-full object-cover">
-                    @else
-                        <div class="w-full h-full bg-gradient-to-br from-stone-300 to-stone-500"></div>
-                    @endif
+                <div class="relative">
+                    {{-- Carte produit avec décoration --}}
+                    <div class="relative aspect-[4/5] rounded-lg overflow-hidden shadow-2xl shadow-amber-900/10">
+                        @php $heroProduct = $featuredProducts->first(); @endphp
+                        @if($heroProduct && $heroProduct->images->isNotEmpty())
+                            <img src="{{ asset('storage/' . $heroProduct->images->first()->path) }}"
+                                 alt="{{ $heroProduct->name }}"
+                                 class="absolute inset-0 w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+                            <div class="absolute bottom-0 inset-x-0 p-6">
+                                <p class="text-white/70 text-xs uppercase tracking-widest mb-1">Coup de cœur</p>
+                                <p class="font-serif-display text-white text-2xl font-medium leading-tight">{{ $heroProduct->name }}</p>
+                            </div>
+                        @else
+                            <div class="absolute inset-0 bg-gradient-to-br from-amber-700 via-orange-800 to-stone-900 flex items-end p-6">
+                                <p class="font-serif-display text-white/20 text-[200px] absolute -top-12 -right-4 leading-none">{{ mb_substr($siteName, 0, 1) }}</p>
+                                <p class="relative font-serif-display text-white text-2xl font-medium leading-tight">{{ $siteName }}</p>
+                            </div>
+                        @endif
+                    </div>
+                    {{-- Badge décoratif --}}
+                    <div class="absolute -top-4 -left-4 w-20 h-20 rounded-full bg-amber-100 border-4 border-white flex items-center justify-center text-amber-900 text-center shadow-lg rotate-[-6deg]">
+                        <div class="text-[10px] leading-tight font-medium uppercase tracking-wider">
+                            Made<br>in CI<br>★
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -208,16 +237,27 @@
             </a>
         </div>
 
-        @php $cats = $featuredCategories->take(6); @endphp
+        @php
+            $cats = $featuredCategories->take(6);
+            // Palette warm pour les catégories sans image
+            $fallbackColors = [
+                ['from' => 'from-amber-700', 'via' => 'via-orange-700', 'to' => 'to-red-800'],
+                ['from' => 'from-stone-700', 'via' => 'via-stone-800', 'to' => 'to-stone-900'],
+                ['from' => 'from-emerald-700', 'via' => 'via-teal-800', 'to' => 'to-slate-900'],
+                ['from' => 'from-indigo-700', 'via' => 'via-blue-800', 'to' => 'to-slate-900'],
+                ['from' => 'from-rose-700', 'via' => 'via-pink-800', 'to' => 'to-purple-900'],
+                ['from' => 'from-amber-800', 'via' => 'via-yellow-900', 'to' => 'to-stone-900'],
+            ];
+        @endphp
         @if($cats->count() > 0)
         <div class="grid grid-cols-2 md:grid-cols-6 gap-3 md:gap-5">
             @foreach($cats as $i => $category)
             @php
-                // Layout asymétrique : la 1ère prend 2x2, les suivantes simples
                 $isHero = $i === 0;
-                $colClass = $isHero ? 'col-span-2 md:col-span-3 md:row-span-2 aspect-square md:aspect-auto' : 'col-span-1 md:col-span-3 aspect-[4/3]';
+                $colClass = 'col-span-1 md:col-span-1 aspect-[4/5]';
+                if ($isHero) $colClass = 'col-span-2 md:col-span-3 md:row-span-2 aspect-square md:aspect-auto';
                 if ($i === 1) $colClass = 'col-span-2 md:col-span-3 aspect-[16/9] md:aspect-[3/2]';
-                if ($i > 1) $colClass = 'col-span-1 md:col-span-1 aspect-[4/5]';
+                $palette = $fallbackColors[$i % 6];
             @endphp
             <a href="{{ route('shop.category', $category->slug) }}"
                class="group relative overflow-hidden rounded-sm {{ $colClass }}">
@@ -225,12 +265,25 @@
                     <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}"
                          class="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-1000 ease-out" loading="lazy">
                 @else
-                    <div class="absolute inset-0 bg-stone-300"></div>
+                    {{-- Fallback warm avec lettre stylée --}}
+                    <div class="absolute inset-0 bg-gradient-to-br {{ $palette['from'] }} {{ $palette['via'] }} {{ $palette['to'] }}"></div>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="font-serif-display text-white/20 text-[200px] md:text-[280px] {{ $isHero ? 'md:text-[360px]' : '' }} font-medium leading-none -mt-8">{{ mb_substr($category->name, 0, 1) }}</span>
+                    </div>
+                    {{-- Texture grain subtile --}}
+                    <div class="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay"
+                         style="background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)'/%3E%3C/svg%3E&quot;)"></div>
                 @endif
-                <div class="absolute inset-0 bg-gradient-to-t {{ $isHero ? 'from-black/60' : 'from-black/55' }} via-black/10 to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-t {{ $isHero ? 'from-black/70' : 'from-black/60' }} via-black/10 to-transparent"></div>
                 <div class="absolute bottom-0 inset-x-0 p-4 md:p-6">
                     <p class="text-white/70 text-[10px] md:text-xs font-medium tracking-widest uppercase mb-1">{{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }} · {{ $category->products_count ?? 0 }} pcs</p>
                     <h3 class="font-serif-display text-white text-xl md:text-2xl {{ $isHero ? 'lg:text-3xl' : '' }} font-medium leading-none">{{ $category->name }}</h3>
+                </div>
+                {{-- Petit indicateur en haut à droite --}}
+                <div class="absolute top-4 right-4 md:top-5 md:right-5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white text-stone-900">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                    </span>
                 </div>
             </a>
             @endforeach
@@ -280,56 +333,69 @@
 @endif
 
 {{-- ═══════════════════════════════════════════════════════════════════
-     04 / MANIFESTE — Split éditorial avec image
+     04 / MANIFESTE — Split éditorial avec couleur d'accent
 ═══════════════════════════════════════════════════════════════════ --}}
-<section class="bg-stone-100 py-16 md:py-24 lg:py-32 overflow-hidden">
-    <div class="container mx-auto px-5 sm:px-8 lg:px-12 max-w-7xl">
-        <div class="grid lg:grid-cols-12 gap-10 lg:gap-16 xl:gap-24 items-center">
-            <div class="lg:col-span-5">
-                <p class="text-stone-500 text-xs font-medium uppercase tracking-[0.3em] mb-4">— Notre approche</p>
-                <h2 class="font-serif-display text-4xl sm:text-5xl md:text-6xl font-medium text-stone-900 tracking-tight leading-[1.02] mb-6 md:mb-8">
+<section class="bg-amber-50 py-16 md:py-24 lg:py-28 overflow-hidden relative">
+    {{-- Subtile texture de fond --}}
+    <div class="absolute top-0 right-0 w-1/2 h-full opacity-30 pointer-events-none"
+         style="background-image: radial-gradient(circle at 30% 50%, rgba(180, 83, 9, 0.08) 0%, transparent 70%);"></div>
+
+    <div class="container mx-auto px-5 sm:px-8 lg:px-12 max-w-7xl relative">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+
+            {{-- COLONNE GAUCHE : Manifeste --}}
+            <div class="min-w-0">
+                <p class="text-amber-700 text-xs font-medium uppercase tracking-[0.3em] mb-4">— Notre approche</p>
+                <h2 class="font-serif-display text-4xl sm:text-5xl md:text-6xl font-medium text-stone-900 tracking-tight leading-[1.02] mb-6 md:mb-8 break-words">
                     Chaque produit,<br>une décision.
                 </h2>
-                <p class="text-stone-600 text-base md:text-lg leading-relaxed mb-6">
+                <p class="text-stone-700 text-base md:text-lg leading-relaxed mb-5">
                     Nous ne vendons pas tout. Nous choisissons. Chaque article est testé, évalué, approuvé — pour qu'il mérite sa place dans votre panier.
                 </p>
-                <p class="text-stone-500 text-sm md:text-base leading-relaxed mb-8 md:mb-10">
+                <p class="text-stone-600 text-sm md:text-base leading-relaxed mb-8 md:mb-10">
                     Quand vous achetez chez nous, vous achetez le résultat de ce travail.
                 </p>
-                <a href="{{ route('about') }}" class="inline-flex items-center gap-3 text-sm font-medium text-stone-900 border-b border-stone-400 hover:border-stone-900 pb-1 transition-colors">
+                <a href="{{ route('about') }}" class="inline-flex items-center gap-3 text-sm font-medium text-stone-900 border-b border-amber-700/50 hover:border-stone-900 pb-1 transition-colors">
                     En savoir plus sur nous
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                 </a>
             </div>
 
-            <div class="lg:col-span-7 relative">
-                {{-- Témoignage en évidence comme une citation magazine --}}
-                <div x-data="{ t: 0, items: [
-                    { name: 'Aminata K.', city: 'Cocody, Abidjan', text: 'Service rapide, produits conformes à la description. Mon premier achat ne sera pas le dernier.' },
-                    { name: 'Moussa D.', city: 'Yopougon', text: 'Je commande pour ma boutique. Toujours dans les délais, qualité constante.' },
-                    { name: 'Fatou B.', city: 'Marcory', text: 'L\'équipe répond en quelques minutes sur WhatsApp. Un vrai professionnalisme.' }
-                ] }"
-                     x-init="setInterval(() => t = (t + 1) % items.length, 7000)"
-                     class="relative">
-                    <template x-for="(item, i) in items" :key="i">
-                        <blockquote x-show="t === i" x-cloak
-                                    x-transition:enter="transition-opacity ease-out duration-700 delay-200"
-                                    x-transition:enter-start="opacity-0"
-                                    x-transition:enter-end="opacity-100"
-                                    x-transition:leave="transition-opacity ease-in duration-300"
-                                    class="relative">
-                            <p class="font-serif-display text-3xl sm:text-4xl md:text-5xl lg:text-[44px] xl:text-[54px] font-medium text-stone-900 leading-[1.1] tracking-tight mb-8 md:mb-10" x-text="'« ' + item.text + ' »'"></p>
-                            <footer class="flex items-center gap-3 text-sm">
-                                <p class="font-medium text-stone-900" x-text="item.name"></p>
-                                <span class="text-stone-400">—</span>
-                                <p class="text-stone-500" x-text="item.city"></p>
-                            </footer>
-                        </blockquote>
-                    </template>
+            {{-- COLONNE DROITE : Témoignages — taille raisonnable + min-w-0 --}}
+            <div class="min-w-0 relative">
+                <div class="bg-white/60 backdrop-blur-sm border border-amber-200/50 rounded-lg p-8 md:p-10 lg:p-12 shadow-sm"
+                     x-data="{ t: 0, items: [
+                        { name: 'Aminata K.', city: 'Cocody, Abidjan', text: 'Service rapide, produits conformes à la description. Mon premier achat ne sera pas le dernier.' },
+                        { name: 'Moussa D.', city: 'Yopougon', text: 'Je commande pour ma boutique. Toujours dans les délais, qualité constante.' },
+                        { name: 'Fatou B.', city: 'Marcory', text: 'L équipe répond en quelques minutes sur WhatsApp. Un vrai professionnalisme.' }
+                     ] }"
+                     x-init="setInterval(() => t = (t + 1) % items.length, 7000)">
 
-                    <div class="flex items-center gap-2 mt-8 md:mt-10">
+                    <svg class="w-10 h-10 text-amber-600/40 mb-6" fill="currentColor" viewBox="0 0 32 32">
+                        <path d="M9.352 4C4.456 7.456 1 13.12 1 19.36c0 5.088 3.072 8.064 6.624 8.064 3.36 0 5.856-2.688 5.856-5.856 0-3.168-2.208-5.472-5.088-5.472-.576 0-1.344.096-1.536.192.48-3.264 3.552-7.104 6.624-9.024L9.352 4zm16.512 0c-4.8 3.456-8.256 9.12-8.256 15.36 0 5.088 3.072 8.064 6.624 8.064 3.264 0 5.856-2.688 5.856-5.856 0-3.168-2.304-5.472-5.184-5.472-.576 0-1.248.096-1.44.192.48-3.264 3.456-7.104 6.528-9.024L25.864 4z"/>
+                    </svg>
+
+                    <div class="relative min-h-[150px] sm:min-h-[180px]">
                         <template x-for="(item, i) in items" :key="i">
-                            <button @click="t = i" :class="t === i ? 'bg-stone-900 w-10' : 'bg-stone-300 hover:bg-stone-400 w-3'"
+                            <blockquote x-show="t === i" x-cloak
+                                        x-transition:enter="transition-opacity ease-out duration-700 delay-200"
+                                        x-transition:enter-start="opacity-0"
+                                        x-transition:enter-end="opacity-100"
+                                        x-transition:leave="transition-opacity ease-in duration-300 absolute inset-0">
+                                <p class="font-serif-display text-xl sm:text-2xl md:text-3xl font-medium text-stone-900 leading-[1.3] tracking-tight mb-6" x-text="'« ' + item.text + ' »'"></p>
+                                <footer class="flex items-center gap-3 text-sm pt-4 border-t border-amber-200/40">
+                                    <p class="font-semibold text-stone-900" x-text="item.name"></p>
+                                    <span class="text-amber-700/50">·</span>
+                                    <p class="text-stone-500" x-text="item.city"></p>
+                                </footer>
+                            </blockquote>
+                        </template>
+                    </div>
+
+                    <div class="flex items-center gap-2 mt-8">
+                        <template x-for="(item, i) in items" :key="i">
+                            <button @click="t = i" :aria-label="'Témoignage ' + (i + 1)"
+                                    :class="t === i ? 'bg-amber-700 w-8' : 'bg-amber-700/30 hover:bg-amber-700/50 w-2'"
                                     class="h-px transition-all duration-500"></button>
                         </template>
                     </div>

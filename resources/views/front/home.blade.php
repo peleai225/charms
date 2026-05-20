@@ -21,35 +21,43 @@
      HERO SECTION
 ═══════════════════════════════════════════════ --}}
 @if($heroBanners->count() > 0)
-<section class="relative"
-         x-data="{ slide: 0, total: {{ $heroBanners->count() }}, progress: 0 }"
-         x-init="setInterval(() => { progress += 0.5; if (progress >= 100) { progress = 0; slide = (slide + 1) % total; } }, 30)">
-    <div class="relative overflow-hidden">
+<section class="relative bg-slate-900"
+         x-data="{ slide: 0, total: {{ $heroBanners->count() }}, progress: 0, paused: false }"
+         x-init="setInterval(() => { if (paused) return; progress += 0.5; if (progress >= 100) { progress = 0; slide = (slide + 1) % total; } }, 40)"
+         @mouseenter="paused = true" @mouseleave="paused = false">
+    {{-- Container avec hauteur fixe pour éviter tout décalage --}}
+    <div class="relative overflow-hidden h-[360px] sm:h-[440px] md:h-[500px] lg:h-[560px]">
         @foreach($heroBanners as $i => $banner)
         <div x-show="slide === {{ $i }}" x-cloak
              x-transition:enter="transition ease-out duration-700"
-             x-transition:enter-start="opacity-0 scale-105"
-             x-transition:enter-end="opacity-100 scale-100"
-             x-transition:leave="transition ease-in duration-500"
-             x-transition:leave-start="opacity-100 scale-100"
-             x-transition:leave-end="opacity-0 scale-95"
-             class="relative h-[420px] md:h-[500px] lg:h-[560px]">
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-500 absolute inset-0"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="absolute inset-0">
             @if($banner->image)
-                <img src="{{ asset('storage/' . $banner->image) }}" alt="{{ $banner->title }}" class="w-full h-full object-cover">
+                <img src="{{ asset('storage/' . $banner->image) }}" alt="{{ $banner->title }}"
+                     class="w-full h-full object-cover"
+                     loading="{{ $i === 0 ? 'eager' : 'lazy' }}"
+                     fetchpriority="{{ $i === 0 ? 'high' : 'auto' }}">
             @else
                 <div class="w-full h-full bg-gradient-to-br from-slate-900 via-primary-950 to-slate-900"></div>
             @endif
-            <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent">
-                <div class="container mx-auto px-6 h-full flex items-center">
+            {{-- Overlay --}}
+            <div class="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/20 md:to-transparent"></div>
+            {{-- Contenu --}}
+            <div class="absolute inset-0 flex items-center">
+                <div class="container mx-auto px-4 sm:px-6">
                     <div class="max-w-xl">
                         @if($banner->title)
-                        <h1 class="text-3xl md:text-5xl lg:text-6xl font-black text-white leading-[1.1] mb-4 tracking-tight">{!! nl2br(e($banner->title)) !!}</h1>
+                        <h1 class="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black text-white leading-[1.1] mb-3 md:mb-4 tracking-tight drop-shadow-2xl">{!! nl2br(e($banner->title)) !!}</h1>
                         @endif
                         @if($banner->subtitle)
-                        <p class="text-white/70 text-base md:text-lg mb-6 leading-relaxed max-w-md">{{ $banner->subtitle }}</p>
+                        <p class="text-white/85 text-sm md:text-lg mb-5 md:mb-6 leading-relaxed max-w-md drop-shadow-lg">{{ $banner->subtitle }}</p>
                         @endif
                         @if($banner->link && $banner->button_text)
-                        <a href="{{ $banner->link }}" class="inline-flex items-center gap-2 px-8 py-4 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-2xl transition-all text-sm shadow-xl shadow-primary-600/30 hover:-translate-y-0.5">
+                        <a href="{{ $banner->link }}" class="inline-flex items-center gap-2 px-6 md:px-8 py-3.5 md:py-4 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-2xl transition-all text-sm shadow-xl shadow-primary-600/30 hover:-translate-y-0.5">
                             {{ $banner->button_text }}
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                         </a>
@@ -60,13 +68,16 @@
         </div>
         @endforeach
     </div>
+
     @if($heroBanners->count() > 1)
+    {{-- Barre de progression --}}
     <div class="absolute bottom-0 left-0 right-0 z-20 h-1 bg-white/10">
-        <div class="h-full bg-gradient-to-r from-primary-400 to-primary-600 transition-all duration-75 rounded-r-full" :style="'width:' + progress + '%'"></div>
+        <div class="h-full bg-gradient-to-r from-primary-400 to-primary-600 rounded-r-full" :style="'width:' + progress + '%'" style="transition: none;"></div>
     </div>
-    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+    {{-- Indicateurs --}}
+    <div class="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
         @foreach($heroBanners as $i => $banner)
-        <button @click="slide = {{ $i }}; progress = 0"
+        <button @click="slide = {{ $i }}; progress = 0" aria-label="Slide {{ $i + 1 }}"
                 :class="slide === {{ $i }} ? 'w-8 bg-white' : 'w-2.5 bg-white/40 hover:bg-white/60'"
                 class="h-2 rounded-full transition-all duration-300"></button>
         @endforeach

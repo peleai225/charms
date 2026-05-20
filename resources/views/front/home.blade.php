@@ -21,47 +21,101 @@
      HERO SECTION
 ═══════════════════════════════════════════════ --}}
 @if($heroBanners->count() > 0)
-<section class="relative bg-slate-900"
-         x-data="{ slide: 0, total: {{ $heroBanners->count() }}, progress: 0, paused: false }"
-         x-init="setInterval(() => { if (paused) return; progress += 0.5; if (progress >= 100) { progress = 0; slide = (slide + 1) % total; } }, 40)"
-         @mouseenter="paused = true" @mouseleave="paused = false">
+<section class="relative bg-slate-900 group/hero"
+         x-data="{
+            slide: 0,
+            total: {{ $heroBanners->count() }},
+            progress: 0,
+            paused: false,
+            touchStart: 0,
+            next() { this.slide = (this.slide + 1) % this.total; this.progress = 0; },
+            prev() { this.slide = (this.slide - 1 + this.total) % this.total; this.progress = 0; },
+            goTo(i) { this.slide = i; this.progress = 0; }
+         }"
+         x-init="setInterval(() => { if (paused) return; progress += 0.5; if (progress >= 100) next(); }, 50)"
+         @mouseenter="paused = true"
+         @mouseleave="paused = false"
+         @touchstart="touchStart = $event.touches[0].clientX; paused = true"
+         @touchend="
+            const dx = $event.changedTouches[0].clientX - touchStart;
+            if (dx < -40) next();
+            else if (dx > 40) prev();
+            paused = false;
+         ">
     {{-- Container avec hauteur fixe pour éviter tout décalage --}}
-    <div class="relative overflow-hidden h-[360px] sm:h-[440px] md:h-[500px] lg:h-[560px]">
+    <div class="relative overflow-hidden h-[380px] sm:h-[460px] md:h-[520px] lg:h-[600px]">
         @foreach($heroBanners as $i => $banner)
         <div x-show="slide === {{ $i }}" x-cloak
-             x-transition:enter="transition ease-out duration-700"
+             x-transition:enter="transition ease-out duration-1000"
              x-transition:enter-start="opacity-0"
              x-transition:enter-end="opacity-100"
-             x-transition:leave="transition ease-in duration-500 absolute inset-0"
+             x-transition:leave="transition ease-in duration-700 absolute inset-0"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
              class="absolute inset-0">
-            @if($banner->image)
-                <img src="{{ asset('storage/' . $banner->image) }}" alt="{{ $banner->title }}"
-                     class="w-full h-full object-cover"
-                     loading="{{ $i === 0 ? 'eager' : 'lazy' }}"
-                     fetchpriority="{{ $i === 0 ? 'high' : 'auto' }}">
-            @else
-                <div class="w-full h-full bg-gradient-to-br from-slate-900 via-primary-950 to-slate-900"></div>
-            @endif
-            {{-- Overlay --}}
-            <div class="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/20 md:to-transparent"></div>
-            {{-- Contenu --}}
+            {{-- Image avec effet Ken Burns (zoom lent) --}}
+            <div class="absolute inset-0 overflow-hidden">
+                @if($banner->image)
+                    <img src="{{ asset('storage/' . $banner->image) }}" alt="{{ $banner->title }}"
+                         class="w-full h-full object-cover hero-kenburns"
+                         :class="slide === {{ $i }} ? 'hero-kenburns-active' : ''"
+                         loading="{{ $i === 0 ? 'eager' : 'lazy' }}"
+                         fetchpriority="{{ $i === 0 ? 'high' : 'auto' }}">
+                @else
+                    <div class="w-full h-full bg-gradient-to-br from-slate-900 via-primary-950 to-slate-900"></div>
+                @endif
+            </div>
+            {{-- Vignettes décoratives sur les bords --}}
+            <div class="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/30 md:via-black/40 md:to-black/10"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+
+            {{-- Contenu avec animations stagger --}}
             <div class="absolute inset-0 flex items-center">
-                <div class="container mx-auto px-4 sm:px-6">
-                    <div class="max-w-xl">
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="max-w-xl"
+                         :class="slide === {{ $i }} ? 'hero-content-active' : ''"
+                         x-cloak>
+                        {{-- Petit badge "Promotion" --}}
+                        <div class="hero-stagger-1 inline-flex items-center gap-2 px-3 py-1.5 mb-4 sm:mb-5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full">
+                            <span class="relative flex h-2 w-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+                            </span>
+                            <span class="text-white text-xs font-bold uppercase tracking-wider">Offre exclusive</span>
+                        </div>
+
                         @if($banner->title)
-                        <h1 class="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black text-white leading-[1.1] mb-3 md:mb-4 tracking-tight drop-shadow-2xl">{!! nl2br(e($banner->title)) !!}</h1>
+                        <h1 class="hero-stagger-2 text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-white leading-[1.05] mb-3 sm:mb-4 tracking-tight drop-shadow-2xl">
+                            {!! nl2br(e($banner->title)) !!}
+                        </h1>
                         @endif
                         @if($banner->subtitle)
-                        <p class="text-white/85 text-sm md:text-lg mb-5 md:mb-6 leading-relaxed max-w-md drop-shadow-lg">{{ $banner->subtitle }}</p>
+                        <p class="hero-stagger-3 text-white/90 text-sm sm:text-base md:text-lg lg:text-xl mb-5 md:mb-7 leading-relaxed max-w-md drop-shadow-lg">
+                            {{ $banner->subtitle }}
+                        </p>
                         @endif
-                        @if($banner->link && $banner->button_text)
-                        <a href="{{ $banner->link }}" class="inline-flex items-center gap-2 px-6 md:px-8 py-3.5 md:py-4 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-2xl transition-all text-sm shadow-xl shadow-primary-600/30 hover:-translate-y-0.5">
-                            {{ $banner->button_text }}
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-                        </a>
-                        @endif
+
+                        {{-- CTAs --}}
+                        <div class="hero-stagger-4 flex flex-wrap gap-2.5 sm:gap-3">
+                            @if($banner->link && $banner->button_text)
+                            <a href="{{ $banner->link }}"
+                               class="group/btn inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold rounded-2xl text-sm shadow-2xl shadow-primary-600/40 hover:shadow-primary-600/60 hover:-translate-y-0.5 transition-all duration-300">
+                                {{ $banner->button_text }}
+                                <svg class="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                            </a>
+                            @else
+                            <a href="{{ route('shop.index') }}"
+                               class="group/btn inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold rounded-2xl text-sm shadow-2xl shadow-primary-600/40 hover:shadow-primary-600/60 hover:-translate-y-0.5 transition-all duration-300">
+                                Découvrir la boutique
+                                <svg class="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                            </a>
+                            @endif
+                            <a href="{{ route('shop.index') }}"
+                               class="inline-flex items-center gap-2 px-5 sm:px-6 py-3 sm:py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-semibold rounded-2xl text-sm border border-white/20 hover:border-white/40 transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                Voir tous les produits
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -70,20 +124,63 @@
     </div>
 
     @if($heroBanners->count() > 1)
+    {{-- Flèches latérales (desktop) --}}
+    <button @click="prev()" aria-label="Slide précédent"
+            class="hidden md:flex absolute left-4 lg:left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white/10 hover:bg-white backdrop-blur-md border border-white/20 hover:border-white text-white hover:text-slate-900 items-center justify-center transition-all opacity-0 group-hover/hero:opacity-100">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+    </button>
+    <button @click="next()" aria-label="Slide suivant"
+            class="hidden md:flex absolute right-4 lg:right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-white/10 hover:bg-white backdrop-blur-md border border-white/20 hover:border-white text-white hover:text-slate-900 items-center justify-center transition-all opacity-0 group-hover/hero:opacity-100">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+    </button>
+
+    {{-- Compteur (desktop) --}}
+    <div class="hidden md:flex absolute top-6 right-6 z-20 items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md border border-white/10 rounded-full">
+        <span class="text-white font-bold text-sm tabular-nums" x-text="String(slide + 1).padStart(2, '0')"></span>
+        <span class="text-white/40 text-sm">/</span>
+        <span class="text-white/60 text-sm tabular-nums">{{ str_pad($heroBanners->count(), 2, '0', STR_PAD_LEFT) }}</span>
+    </div>
+
     {{-- Barre de progression --}}
     <div class="absolute bottom-0 left-0 right-0 z-20 h-1 bg-white/10">
-        <div class="h-full bg-gradient-to-r from-primary-400 to-primary-600 rounded-r-full" :style="'width:' + progress + '%'" style="transition: none;"></div>
+        <div class="h-full bg-gradient-to-r from-primary-400 via-amber-400 to-primary-600 rounded-r-full" :style="'width:' + progress + '%'" style="transition: none; box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);"></div>
     </div>
+
     {{-- Indicateurs --}}
-    <div class="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+    <div class="absolute bottom-5 sm:bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-1.5 sm:gap-2 px-4 py-2 bg-black/30 backdrop-blur-md rounded-full border border-white/10">
         @foreach($heroBanners as $i => $banner)
-        <button @click="slide = {{ $i }}; progress = 0" aria-label="Slide {{ $i + 1 }}"
-                :class="slide === {{ $i }} ? 'w-8 bg-white' : 'w-2.5 bg-white/40 hover:bg-white/60'"
-                class="h-2 rounded-full transition-all duration-300"></button>
+        <button @click="goTo({{ $i }})" aria-label="Slide {{ $i + 1 }}"
+                :class="slide === {{ $i }} ? 'w-8 sm:w-10 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'"
+                class="h-2 rounded-full transition-all duration-500 ease-out"></button>
         @endforeach
     </div>
     @endif
 </section>
+
+<style>
+    /* Ken Burns effect - subtle zoom on active slide */
+    .hero-kenburns {
+        transform: scale(1.05);
+        transition: transform 8s ease-out;
+    }
+    .hero-kenburns-active {
+        transform: scale(1.15);
+    }
+
+    /* Stagger content animation */
+    .hero-stagger-1,
+    .hero-stagger-2,
+    .hero-stagger-3,
+    .hero-stagger-4 {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+    }
+    .hero-content-active .hero-stagger-1 { opacity: 1; transform: translateY(0); transition-delay: 100ms; }
+    .hero-content-active .hero-stagger-2 { opacity: 1; transform: translateY(0); transition-delay: 250ms; }
+    .hero-content-active .hero-stagger-3 { opacity: 1; transform: translateY(0); transition-delay: 400ms; }
+    .hero-content-active .hero-stagger-4 { opacity: 1; transform: translateY(0); transition-delay: 550ms; }
+</style>
 @else
 {{-- Hero par défaut avec grille produits --}}
 <section class="relative overflow-hidden min-h-[520px] lg:min-h-[580px]">
@@ -317,22 +414,34 @@
      CATÉGORIES — Cards modernes avec image
 ═══════════════════════════════════════════════ --}}
 @if($featuredCategories->count() > 0)
-<section class="py-14 bg-white">
-    <div class="container mx-auto px-6">
-        <div class="flex items-end justify-between mb-8">
+<section class="py-10 md:py-16 bg-white relative overflow-hidden">
+    {{-- Décorations subtiles --}}
+    <div class="absolute top-0 right-0 w-72 h-72 bg-gradient-to-bl from-primary-100/60 to-transparent rounded-full blur-3xl pointer-events-none -translate-y-1/3 translate-x-1/3"></div>
+    <div class="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-amber-100/40 to-transparent rounded-full blur-3xl pointer-events-none translate-y-1/3 -translate-x-1/3"></div>
+
+    <div class="container mx-auto px-4 sm:px-6 relative">
+        <div class="flex items-end justify-between mb-6 md:mb-10">
             <div>
-                <span class="text-primary-600 text-xs font-bold uppercase tracking-widest">Explorer</span>
-                <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-1">Nos catégories</h2>
+                <div class="inline-flex items-center gap-2 px-3 py-1 mb-2 bg-primary-50 border border-primary-100 rounded-full">
+                    <svg class="w-3 h-3 text-primary-600" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>
+                    <span class="text-primary-700 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Explorer</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
+                    Nos <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-amber-500">catégories</span>
+                </h2>
+                <p class="text-slate-500 text-xs sm:text-sm mt-2">Trouvez ce que vous cherchez en un clic</p>
             </div>
-            <a href="{{ route('shop.index') }}" class="text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors flex items-center gap-1.5 group">
+            <a href="{{ route('shop.index') }}" class="hidden sm:inline-flex text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors items-center gap-1.5 group">
                 Tout voir
                 <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
             </a>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+
+        {{-- Grille : 2 cols mobile, 3 sm, 5 desktop --}}
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             @foreach($featuredCategories as $category)
             <a href="{{ route('shop.category', $category->slug) }}"
-               class="group relative rounded-2xl overflow-hidden bg-slate-100 aspect-[4/3] flex items-end hover:-translate-y-1 transition-all duration-500 hover:shadow-xl">
+               class="group relative rounded-2xl overflow-hidden aspect-[4/5] sm:aspect-[4/3] flex items-end hover:-translate-y-1 active:scale-95 transition-all duration-300 sm:duration-500 shadow-md hover:shadow-2xl">
                 @if($category->image)
                     <img src="{{ asset('storage/' . $category->image) }}" alt="{{ $category->name }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy">
                 @else
@@ -346,20 +455,39 @@
                         @else bg-gradient-to-br from-violet-500 to-purple-600
                         @endif">
                         <div class="absolute inset-0 flex items-center justify-center">
-                            <span class="text-6xl font-black text-white/[0.08]">{{ mb_substr($category->name, 0, 1) }}</span>
+                            <span class="text-7xl sm:text-8xl font-black text-white/15">{{ mb_substr($category->name, 0, 1) }}</span>
                         </div>
                     </div>
                 @endif
-                <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-                <div class="relative z-10 p-4 w-full">
-                    <h3 class="font-bold text-white text-sm leading-tight">{{ $category->name }}</h3>
-                    <p class="text-white/60 text-[11px] mt-0.5">{{ $category->products_count ?? 0 }} produits</p>
+                {{-- Overlay gradient --}}
+                <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent group-hover:from-black/90 transition-all duration-500"></div>
+
+                {{-- Contenu --}}
+                <div class="relative z-10 p-3 sm:p-4 w-full">
+                    <h3 class="font-black text-white text-sm sm:text-base leading-tight mb-0.5">{{ $category->name }}</h3>
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="text-white/70 text-[10px] sm:text-xs font-medium">{{ $category->products_count ?? 0 }} produit{{ ($category->products_count ?? 0) > 1 ? 's' : '' }}</p>
+                        <span class="inline-flex items-center gap-1 text-white text-[10px] sm:text-xs font-bold opacity-80 group-hover:opacity-100">
+                            Voir
+                            <svg class="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                        </span>
+                    </div>
                 </div>
-                <div class="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 group-hover:rotate-45">
-                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+
+                {{-- Badge "+" en coin (visible au hover desktop, toujours sur mobile) --}}
+                <div class="absolute top-2 sm:top-3 right-2 sm:right-3 z-10 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300 group-hover:rotate-45 group-hover:bg-primary-500">
+                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
                 </div>
             </a>
             @endforeach
+        </div>
+
+        {{-- CTA mobile (en bas) --}}
+        <div class="sm:hidden flex justify-center mt-6">
+            <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-colors text-sm shadow-lg">
+                Voir toutes les catégories
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </a>
         </div>
     </div>
 </section>
@@ -369,23 +497,37 @@
      PRODUITS VEDETTES
 ═══════════════════════════════════════════════ --}}
 @if($featuredProducts->count() > 0)
-<section class="py-14 bg-slate-50/80">
-    <div class="container mx-auto px-6">
-        <div class="flex items-end justify-between mb-8">
+<section class="py-10 md:py-16 bg-gradient-to-b from-slate-50/80 via-white to-slate-50/80 relative overflow-hidden">
+    <div class="absolute top-10 left-1/2 -translate-x-1/2 w-96 h-96 bg-gradient-to-b from-amber-200/20 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="container mx-auto px-4 sm:px-6 relative">
+        <div class="flex items-end justify-between mb-6 md:mb-10">
             <div>
-                <span class="text-primary-600 text-xs font-bold uppercase tracking-widest">Tendances</span>
-                <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-1">Produits populaires</h2>
-                <p class="text-slate-400 text-sm mt-1">Les plus demandés par nos clients</p>
+                <div class="inline-flex items-center gap-2 px-3 py-1 mb-2 bg-amber-50 border border-amber-200 rounded-full">
+                    <svg class="w-3 h-3 text-amber-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+                    <span class="text-amber-700 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Tendances</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
+                    Produits <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 to-rose-500">populaires</span>
+                </h2>
+                <p class="text-slate-500 text-xs sm:text-sm mt-2">Les plus demandés par nos clients ce mois-ci</p>
             </div>
-            <a href="{{ route('shop.index') }}" class="text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors flex items-center gap-1.5 group">
+            <a href="{{ route('shop.index') }}" class="hidden sm:inline-flex text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors items-center gap-1.5 group">
                 Tout voir
                 <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
             </a>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            @foreach($featuredProducts as $product)
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+            @foreach($featuredProducts->take(8) as $product)
                 @include('front.shop.partials.product-card', ['product' => $product])
             @endforeach
+        </div>
+        {{-- CTA mobile --}}
+        <div class="sm:hidden flex justify-center mt-6">
+            <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-colors text-sm shadow-lg">
+                Voir tous les produits
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </a>
         </div>
     </div>
 </section>
@@ -428,10 +570,14 @@
      VENTES FLASH — avec produits et urgence
 ═══════════════════════════════════════════════ --}}
 @if($saleProducts->count() > 0)
-<section class="py-14 bg-gradient-to-br from-red-50/50 via-white to-orange-50/30">
-    <div class="container mx-auto px-6">
+<section class="py-10 md:py-16 bg-gradient-to-br from-red-50 via-orange-50/40 to-white relative overflow-hidden">
+    {{-- Flammes décoratives --}}
+    <div class="absolute top-10 left-10 w-72 h-72 bg-red-400/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-10 right-10 w-72 h-72 bg-orange-400/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="container mx-auto px-4 sm:px-6 relative">
         {{-- Header avec countdown --}}
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8"
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 md:mb-10"
              x-data="{
                 h: 0, m: 0, s: 0,
                 init() {
@@ -446,31 +592,52 @@
                     tick(); setInterval(tick, 1000);
                 }
              }">
-            <div>
-                <span class="text-red-500 text-xs font-bold uppercase tracking-widest">Offres limitées</span>
-                <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-1">Ventes Flash</h2>
-            </div>
-            <div class="flex items-center gap-4">
-                <span class="text-xs text-slate-500 font-semibold hidden sm:block">Se termine dans</span>
-                <div class="flex items-center gap-1.5">
-                    <div class="bg-slate-900 text-white text-lg font-black px-3 py-2 rounded-xl min-w-[48px] text-center shadow-lg" x-text="String(h).padStart(2,'0')">00</div>
-                    <span class="text-slate-300 font-black text-lg">:</span>
-                    <div class="bg-slate-900 text-white text-lg font-black px-3 py-2 rounded-xl min-w-[48px] text-center shadow-lg" x-text="String(m).padStart(2,'0')">00</div>
-                    <span class="text-slate-300 font-black text-lg">:</span>
-                    <div class="bg-gradient-to-b from-red-500 to-red-600 text-white text-lg font-black px-3 py-2 rounded-xl min-w-[48px] text-center shadow-lg shadow-red-500/30 animate-pulse" x-text="String(s).padStart(2,'0')">00</div>
+            <div class="flex-1">
+                <div class="inline-flex items-center gap-2 px-3 py-1 mb-2 bg-red-100 border border-red-200 rounded-full">
+                    <span class="text-base">🔥</span>
+                    <span class="text-red-700 text-[10px] sm:text-xs font-black uppercase tracking-widest">Offres limitées</span>
                 </div>
-                <a href="{{ route('shop.index', ['sale' => 1]) }}" class="text-sm font-bold text-red-600 hover:text-red-700 flex items-center gap-1 ml-2 group">
-                    Tout voir
-                    <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
-                </a>
+                <h2 class="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
+                    Ventes <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-500">Flash</span>
+                </h2>
+                <p class="text-slate-600 text-xs sm:text-sm mt-2">Profitez de prix imbattables — quantités limitées</p>
+            </div>
+
+            {{-- Countdown --}}
+            <div class="flex flex-col items-center sm:items-end gap-2 w-full md:w-auto">
+                <span class="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider">⏰ Se termine dans</span>
+                <div class="flex items-center gap-1 sm:gap-1.5">
+                    <div class="flex flex-col items-center">
+                        <div class="bg-slate-900 text-white text-base sm:text-lg md:text-xl font-black px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl min-w-[44px] sm:min-w-[52px] text-center shadow-lg tabular-nums" x-text="String(h).padStart(2,'0')">00</div>
+                        <span class="text-[9px] text-slate-500 font-bold mt-1">Heures</span>
+                    </div>
+                    <span class="text-slate-400 font-black text-lg sm:text-xl pb-4">:</span>
+                    <div class="flex flex-col items-center">
+                        <div class="bg-slate-900 text-white text-base sm:text-lg md:text-xl font-black px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl min-w-[44px] sm:min-w-[52px] text-center shadow-lg tabular-nums" x-text="String(m).padStart(2,'0')">00</div>
+                        <span class="text-[9px] text-slate-500 font-bold mt-1">Min</span>
+                    </div>
+                    <span class="text-slate-400 font-black text-lg sm:text-xl pb-4">:</span>
+                    <div class="flex flex-col items-center">
+                        <div class="bg-gradient-to-b from-red-500 to-red-600 text-white text-base sm:text-lg md:text-xl font-black px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl min-w-[44px] sm:min-w-[52px] text-center shadow-lg shadow-red-500/30 animate-pulse tabular-nums" x-text="String(s).padStart(2,'0')">00</div>
+                        <span class="text-[9px] text-red-600 font-bold mt-1">Sec</span>
+                    </div>
+                </div>
             </div>
         </div>
 
         {{-- Produits en promo --}}
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            @foreach($saleProducts as $product)
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+            @foreach($saleProducts->take(8) as $product)
                 @include('front.shop.partials.product-card', ['product' => $product])
             @endforeach
+        </div>
+
+        {{-- CTA --}}
+        <div class="flex justify-center mt-6 md:mt-8">
+            <a href="{{ route('shop.index', ['sale' => 1]) }}" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white font-bold rounded-xl transition-all text-sm shadow-xl shadow-red-500/30 hover:-translate-y-0.5">
+                Voir toutes les promotions
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            </a>
         </div>
     </div>
 </section>
@@ -480,22 +647,34 @@
      NOUVEAUTÉS
 ═══════════════════════════════════════════════ --}}
 @if($newProducts->count() > 0)
-<section class="py-14 bg-white">
-    <div class="container mx-auto px-6">
-        <div class="flex items-end justify-between mb-8">
+<section class="py-10 md:py-16 bg-white">
+    <div class="container mx-auto px-4 sm:px-6">
+        <div class="flex items-end justify-between mb-6 md:mb-10">
             <div>
-                <span class="text-emerald-600 text-xs font-bold uppercase tracking-widest">Fraîchement ajoutés</span>
-                <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-1">Nouveautés</h2>
+                <div class="inline-flex items-center gap-2 px-3 py-1 mb-2 bg-emerald-50 border border-emerald-200 rounded-full">
+                    <span class="text-base">✨</span>
+                    <span class="text-emerald-700 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Nouveautés</span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
+                    Fraîchement <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500">ajoutés</span>
+                </h2>
+                <p class="text-slate-500 text-xs sm:text-sm mt-2">Découvrez les derniers arrivages</p>
             </div>
-            <a href="{{ route('shop.index', ['sort' => 'newest']) }}" class="text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors flex items-center gap-1.5 group">
+            <a href="{{ route('shop.index', ['sort' => 'newest']) }}" class="hidden sm:inline-flex text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors items-center gap-1.5 group">
                 Tout voir
                 <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
             </a>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            @foreach($newProducts as $product)
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+            @foreach($newProducts->take(8) as $product)
                 @include('front.shop.partials.product-card', ['product' => $product])
             @endforeach
+        </div>
+        <div class="sm:hidden flex justify-center mt-6">
+            <a href="{{ route('shop.index', ['sort' => 'newest']) }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl transition-colors text-sm shadow-lg">
+                Voir toutes les nouveautés
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </a>
         </div>
     </div>
 </section>
@@ -504,28 +683,40 @@
 {{-- ═══════════════════════════════════════════════
      POURQUOI NOUS CHOISIR
 ═══════════════════════════════════════════════ --}}
-<section class="py-14 bg-white">
-    <div class="container mx-auto px-6">
-        <div class="text-center mb-10">
-            <span class="text-primary-600 text-xs font-bold uppercase tracking-widest">Nos engagements</span>
-            <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-1">Pourquoi nous choisir ?</h2>
+<section class="py-12 md:py-20 bg-gradient-to-b from-slate-900 to-slate-950 relative overflow-hidden">
+    {{-- Décorations --}}
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-primary-500/50 to-transparent"></div>
+    <div class="absolute top-20 left-10 w-72 h-72 bg-primary-600/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-20 right-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="container mx-auto px-4 sm:px-6 relative">
+        <div class="text-center mb-8 md:mb-12">
+            <div class="inline-flex items-center gap-2 px-3 py-1 mb-3 bg-white/5 border border-white/10 rounded-full backdrop-blur-sm">
+                <svg class="w-3 h-3 text-primary-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+                <span class="text-primary-300 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Nos engagements</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
+                Pourquoi nous <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-amber-400">choisir ?</span>
+            </h2>
+            <p class="text-slate-400 text-sm sm:text-base mt-3 max-w-xl mx-auto">4 raisons qui font de nous le partenaire idéal pour vos achats en ligne</p>
         </div>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             @php
                 $advantages = [
-                    ['icon' => 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z', 'color' => 'text-blue-500', 'bg' => 'bg-blue-50', 'title' => 'Qualité garantie', 'desc' => 'Produits vérifiés et sélectionnés avec soin'],
-                    ['icon' => 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', 'color' => 'text-emerald-500', 'bg' => 'bg-emerald-50', 'title' => 'Meilleurs prix', 'desc' => 'Promotions exclusives chaque semaine'],
-                    ['icon' => 'M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0', 'color' => 'text-amber-500', 'bg' => 'bg-amber-50', 'title' => 'Livraison express', 'desc' => '24-48h en Afrique de l\'Ouest'],
-                    ['icon' => 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z', 'color' => 'text-violet-500', 'bg' => 'bg-violet-50', 'title' => 'SAV réactif', 'desc' => 'WhatsApp & téléphone 7j/7'],
+                    ['icon' => 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z', 'gradient' => 'from-blue-400 to-cyan-500', 'title' => 'Qualité garantie', 'desc' => 'Produits vérifiés et sélectionnés avec soin'],
+                    ['icon' => 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', 'gradient' => 'from-emerald-400 to-teal-500', 'title' => 'Meilleurs prix', 'desc' => 'Promotions exclusives chaque semaine'],
+                    ['icon' => 'M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0', 'gradient' => 'from-amber-400 to-orange-500', 'title' => 'Livraison express', 'desc' => '24-48h en Afrique de l\'Ouest'],
+                    ['icon' => 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z', 'gradient' => 'from-violet-400 to-purple-500', 'title' => 'SAV réactif', 'desc' => 'WhatsApp & téléphone 7j/7'],
                 ];
             @endphp
             @foreach($advantages as $adv)
-            <div class="group text-center p-6 rounded-2xl bg-white border border-slate-100 hover:border-slate-200 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-                <div class="w-12 h-12 mx-auto rounded-full {{ $adv['bg'] }} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <svg class="w-6 h-6 {{ $adv['color'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="{{ $adv['icon'] }}"/></svg>
+            <div class="group relative p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-white/[0.07] to-white/[0.02] border border-white/10 hover:border-white/20 hover:-translate-y-1 transition-all duration-300 backdrop-blur-sm overflow-hidden">
+                <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br {{ $adv['gradient'] }} flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg">
+                    <svg class="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $adv['icon'] }}"/></svg>
                 </div>
-                <h3 class="font-bold text-slate-900 text-sm mb-1.5">{{ $adv['title'] }}</h3>
-                <p class="text-xs text-slate-500 leading-relaxed">{{ $adv['desc'] }}</p>
+                <h3 class="font-black text-white text-sm sm:text-base mb-1">{{ $adv['title'] }}</h3>
+                <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed">{{ $adv['desc'] }}</p>
             </div>
             @endforeach
         </div>

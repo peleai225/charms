@@ -327,27 +327,31 @@ class CheckoutController extends Controller
         $order = Order::findOrFail($orderId);
         $this->authorizeOrderAccess($order);
 
-        // Vérifier le statut du paiement
-        if ($order->payment_status === 'pending') {
-            // Essayer de vérifier le statut via l'API
+        // Vérifier le statut du paiement via l'API
+        if ($order->payment_status === 'pending' && $order->payment_method === 'moneyfusion') {
             $payment = $order->payments()->latest()->first();
             if ($payment && $payment->transaction_id) {
-                if ($order->payment_method === 'moneyfusion') {
-                    $status = $this->moneyFusion->checkPaymentStatus($payment->transaction_id);
+                $status = $this->moneyFusion->checkPaymentStatus($payment->transaction_id);
 
-                    if ($status['success'] && $status['status'] === 'paid') {
-                        $payment->update([
-                            'status' => 'completed',
-                            'paid_at' => now(),
-                        ]);
-                        $order->update([
-                            'payment_status' => 'paid',
-                            'status' => 'processing',
-                            'paid_at' => now(),
-                        ]);
-                    }
+                if ($status['success'] && $status['status'] === 'paid') {
+                    $payment->update([
+                        'status' => 'completed',
+                        'paid_at' => now(),
+                    ]);
+                    $order->update([
+                        'payment_status' => 'paid',
+                        'status' => 'processing',
+                        'paid_at' => now(),
+                    ]);
+
+                    event(new \App\Events\OrderPaid($order, $payment));
                 }
             }
+        }
+
+        // Si déjà payé, rediriger directement vers la page succès
+        if ($order->payment_status === 'paid') {
+            return redirect()->route('checkout.success', ['order' => $order->id]);
         }
 
         return view('front.checkout.confirmation', compact('order'));

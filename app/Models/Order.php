@@ -79,6 +79,7 @@ class Order extends Model
     public const STATUS_CONFIRMED = 'confirmed';
     public const STATUS_PROCESSING = 'processing';
     public const STATUS_SHIPPED = 'shipped';
+    public const STATUS_DELIVERY_IN_PROGRESS = 'delivery_in_progress';
     public const STATUS_DELIVERED = 'delivered';
     public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_REFUNDED = 'refunded';
@@ -240,6 +241,7 @@ class Order extends Model
             self::STATUS_CONFIRMED => 'Confirmée',
             self::STATUS_PROCESSING => 'En préparation',
             self::STATUS_SHIPPED => 'Expédiée',
+            self::STATUS_DELIVERY_IN_PROGRESS => 'Livreur en route',
             self::STATUS_DELIVERED => 'Livrée',
             self::STATUS_CANCELLED => 'Annulée',
             self::STATUS_REFUNDED => 'Remboursée',
@@ -253,6 +255,7 @@ class Order extends Model
             self::STATUS_PENDING => 'warning',
             self::STATUS_CONFIRMED, self::STATUS_PROCESSING => 'info',
             self::STATUS_SHIPPED => 'primary',
+            self::STATUS_DELIVERY_IN_PROGRESS => 'purple',
             self::STATUS_DELIVERED => 'success',
             self::STATUS_CANCELLED, self::STATUS_REFUNDED => 'danger',
             default => 'secondary',

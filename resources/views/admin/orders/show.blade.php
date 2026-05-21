@@ -13,41 +13,45 @@
 
 @section('content')
 @php
-    $statusOrder = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
+    $statusOrder = ['pending', 'confirmed', 'processing', 'shipped', 'delivery_in_progress', 'delivered'];
     $statusLabels = [
-        'pending'    => 'En attente',
-        'confirmed'  => 'Confirmée',
-        'processing' => 'En préparation',
-        'shipped'    => 'Expédiée',
-        'delivered'  => 'Livrée',
-        'cancelled'  => 'Annulée',
+        'pending'               => 'Commande reçue',
+        'confirmed'             => 'Paiement confirmé',
+        'processing'            => 'En préparation',
+        'shipped'               => 'Expédiée',
+        'delivery_in_progress'  => 'Livreur en route',
+        'delivered'             => 'Livrée',
+        'cancelled'             => 'Annulée',
     ];
     $statusIcons = [
-        'pending'    => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
-        'confirmed'  => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
-        'processing' => 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z',
-        'shipped'    => 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4',
-        'delivered'  => 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
+        'pending'               => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+        'confirmed'             => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
+        'processing'            => 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z',
+        'shipped'               => 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4',
+        'delivery_in_progress'  => 'M13 10V3L4 14h7v7l9-11h-7z',
+        'delivered'             => 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
     ];
     $statusColors = [
-        'pending'    => 'amber',
-        'confirmed'  => 'blue',
-        'processing' => 'indigo',
-        'shipped'    => 'purple',
-        'delivered'  => 'green',
-        'cancelled'  => 'red',
+        'pending'               => 'amber',
+        'confirmed'             => 'blue',
+        'processing'            => 'indigo',
+        'shipped'               => 'purple',
+        'delivery_in_progress'  => 'orange',
+        'delivered'             => 'green',
+        'cancelled'             => 'red',
     ];
 
     $isCancelled = $order->status === 'cancelled';
     $currentIdx  = $isCancelled ? -1 : (array_search($order->status, $statusOrder) ?? 0);
 
-    // Date stamps per step (only shipped_at and delivered_at exist on the model)
+    // Date stamps per step
     $stepDates = [
-        'pending'    => $order->created_at,
-        'confirmed'  => $currentIdx >= 1 ? $order->created_at : null,
-        'processing' => $currentIdx >= 2 ? $order->created_at : null,
-        'shipped'    => $order->shipped_at ?? ($currentIdx >= 3 ? $order->updated_at : null),
-        'delivered'  => $order->delivered_at ?? ($currentIdx >= 4 ? $order->updated_at : null),
+        'pending'              => $order->created_at,
+        'confirmed'            => $currentIdx >= 1 ? $order->created_at : null,
+        'processing'           => $currentIdx >= 2 ? $order->created_at : null,
+        'shipped'              => $order->shipped_at ?? ($currentIdx >= 3 ? $order->updated_at : null),
+        'delivery_in_progress' => $currentIdx >= 4 ? $order->updated_at : null,
+        'delivered'            => $order->delivered_at ?? ($currentIdx >= 5 ? $order->updated_at : null),
     ];
 @endphp
 
@@ -87,37 +91,84 @@
         </div>
     </div>
 
-    {{-- ===== TIMELINE (Alpine réactif) ===== --}}
+    {{-- ===== TIMELINE PREMIUM (Alpine réactif) ===== --}}
     <template x-if="currentStatus !== 'cancelled'">
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-x-auto">
-            <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-6">Suivi de la commande</h3>
-            <div class="relative min-w-[560px]">
-                <div class="absolute top-6 left-6 right-6 h-1 bg-slate-100 rounded-full"></div>
-                <div class="absolute top-6 left-6 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-700"
-                     :style="'width: calc(' + (currentIdx * 25) + '% - ' + (currentIdx * 12) + 'px)'"></div>
+        <div class="bg-gradient-to-br from-white via-slate-50/30 to-white rounded-2xl shadow-lg border border-slate-200 p-6 md:p-8 overflow-x-auto">
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900 mb-1">Suivi de livraison en temps réel</h3>
+                    <p class="text-sm text-slate-500">Progression actuelle de votre commande</p>
+                </div>
+                <div class="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                    <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                    <span class="text-sm font-semibold text-blue-700" x-text="statusLabels[currentStatus]"></span>
+                </div>
+            </div>
+
+            <div class="relative min-w-[640px]">
+                {{-- Progress Bar Background --}}
+                <div class="absolute top-7 left-8 right-8 h-2 bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 rounded-full shadow-inner"></div>
+
+                {{-- Progress Bar Foreground with Gradient Animation --}}
+                <div class="absolute top-7 left-8 h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-full shadow-lg shadow-blue-500/30 transition-all duration-1000 ease-out"
+                     :style="'width: calc(' + (currentIdx * (100 / 5)) + '% - ' + (currentIdx * 12) + 'px); transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);'"
+                     style="background-size: 200% 100%; animation: shimmer 3s infinite linear;">
+                </div>
 
                 <div class="relative flex justify-between">
                     <template x-for="(step, i) in steps" :key="step.key">
-                        <div class="flex flex-col items-center gap-2 flex-1">
-                            <div class="w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-500 z-10"
+                        <div class="flex flex-col items-center gap-3 flex-1">
+                            {{-- Icon Circle avec animation premium --}}
+                            <div class="relative w-14 h-14 rounded-full flex items-center justify-center border-3 transition-all duration-700 z-10 group"
                                  :class="currentIdx >= i
-                                    ? 'border-' + step.color + '-500 bg-' + step.color + '-500 text-white shadow-lg shadow-' + step.color + '-500/30'
-                                    : 'border-slate-200 bg-white text-slate-300'">
-                                <div x-show="currentIdx === i" class="w-3 h-3 rounded-full bg-white animate-ping absolute"></div>
-                                <svg class="w-5 h-5 relative" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="step.icon"/>
-                                </svg>
+                                    ? 'border-' + step.color + '-500 bg-gradient-to-br from-' + step.color + '-500 to-' + step.color + '-600 text-white shadow-xl shadow-' + step.color + '-500/40 scale-110'
+                                    : 'border-slate-200 bg-white text-slate-300 hover:border-slate-300 hover:scale-105'"
+                                 :style="currentIdx === i ? 'animation: pulse-glow 2s infinite;' : ''">
+
+                                {{-- Pulse Animation pour étape active --}}
+                                <div x-show="currentIdx === i" class="absolute inset-0 rounded-full animate-ping opacity-30"
+                                     :class="'bg-' + step.color + '-400'"></div>
+
+                                {{-- Checkmark pour étapes complétées --}}
+                                <template x-if="currentIdx > i">
+                                    <div class="absolute inset-0 rounded-full flex items-center justify-center">
+                                        <svg class="w-7 h-7 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                    </div>
+                                </template>
+
+                                {{-- Icon pour étape actuelle ou future --}}
+                                <template x-if="currentIdx <= i">
+                                    <svg class="w-6 h-6 relative transition-transform duration-300 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                         :class="currentIdx === i ? 'animate-bounce-subtle' : ''">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="step.icon"/>
+                                    </svg>
+                                </template>
+
+                                {{-- Glow effect actif --}}
+                                <div x-show="currentIdx === i" class="absolute -inset-2 rounded-full blur-lg opacity-50 transition-opacity"
+                                     :class="'bg-' + step.color + '-400'"></div>
                             </div>
-                            <div class="text-center">
-                                <p class="text-xs font-semibold" :class="currentIdx >= i ? 'text-slate-900' : 'text-slate-400'" x-text="step.label"></p>
+
+                            {{-- Label et date --}}
+                            <div class="text-center max-w-[90px]">
+                                <p class="text-xs font-bold transition-all duration-300 leading-tight"
+                                   :class="currentIdx >= i ? 'text-slate-900 scale-105' : 'text-slate-400'" x-text="step.label"></p>
+
                                 <template x-if="currentIdx >= i && step.date">
-                                    <div>
-                                        <p class="text-[10px] text-slate-400 mt-0.5" x-text="step.date.split(' ')[0]"></p>
-                                        <p class="text-[10px] text-slate-400" x-text="step.date.split(' ')[1] || ''"></p>
+                                    <div class="mt-1.5 space-y-0.5">
+                                        <div class="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 rounded-md">
+                                            <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                            <p class="text-[10px] font-semibold text-slate-600" x-text="step.date.split(' ')[0]"></p>
+                                        </div>
+                                        <p class="text-[9px] font-medium text-slate-400" x-text="step.date.split(' ')[1] || ''"></p>
                                     </div>
                                 </template>
                                 <template x-if="!(currentIdx >= i && step.date)">
-                                    <p class="text-[10px] text-slate-300 mt-0.5">—</p>
+                                    <p class="text-xs text-slate-300 mt-1.5 font-medium">En attente</p>
                                 </template>
                             </div>
                         </div>
@@ -335,10 +386,11 @@
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Statut</label>
                         <select x-model="formData.status" class="w-full px-3 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 text-sm">
-                            <option value="pending">En attente</option>
-                            <option value="confirmed">Confirmée</option>
+                            <option value="pending">Commande reçue</option>
+                            <option value="confirmed">Paiement confirmé</option>
                             <option value="processing">En préparation</option>
                             <option value="shipped">Expédiée</option>
+                            <option value="delivery_in_progress">Livreur en route</option>
                             <option value="delivered">Livrée</option>
                             <option value="cancelled">Annulée</option>
                         </select>
@@ -525,7 +577,7 @@
 @push('scripts')
 <script>
 function orderShow() {
-    const statusOrder = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
+    const statusOrder = ['pending', 'confirmed', 'processing', 'shipped', 'delivery_in_progress', 'delivered'];
     return {
         currentStatus: '{{ $order->status }}',
         get currentIdx() {
@@ -533,33 +585,40 @@ function orderShow() {
             return idx >= 0 ? idx : -1;
         },
         statusLabels: {
-            pending: 'En attente', confirmed: 'Confirmée', processing: 'En préparation',
-            shipped: 'Expédiée', delivered: 'Livrée', cancelled: 'Annulée'
+            pending: 'Commande reçue',
+            confirmed: 'Paiement confirmé',
+            processing: 'En préparation',
+            shipped: 'Expédiée',
+            delivery_in_progress: 'Livreur en route',
+            delivered: 'Livrée',
+            cancelled: 'Annulée'
         },
         badgeClasses: {
-            pending:    'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
-            confirmed:  'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
-            processing: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200',
-            shipped:    'bg-purple-50 text-purple-700 ring-1 ring-purple-200',
-            delivered:  'bg-green-50 text-green-700 ring-1 ring-green-200',
-            cancelled:  'bg-red-50 text-red-700 ring-1 ring-red-200',
+            pending:              'bg-amber-50 text-amber-700 ring-2 ring-amber-200 shadow-lg shadow-amber-500/20',
+            confirmed:            'bg-blue-50 text-blue-700 ring-2 ring-blue-200 shadow-lg shadow-blue-500/20',
+            processing:           'bg-indigo-50 text-indigo-700 ring-2 ring-indigo-200 shadow-lg shadow-indigo-500/20',
+            shipped:              'bg-purple-50 text-purple-700 ring-2 ring-purple-200 shadow-lg shadow-purple-500/20',
+            delivery_in_progress: 'bg-orange-50 text-orange-700 ring-2 ring-orange-200 shadow-lg shadow-orange-500/20',
+            delivered:            'bg-green-50 text-green-700 ring-2 ring-green-200 shadow-lg shadow-green-500/20',
+            cancelled:            'bg-red-50 text-red-700 ring-2 ring-red-200 shadow-lg shadow-red-500/20',
         },
         dotClasses: {
             pending: 'bg-amber-500', confirmed: 'bg-blue-500', processing: 'bg-indigo-500',
-            shipped: 'bg-purple-500', delivered: 'bg-green-500', cancelled: 'bg-red-500',
+            shipped: 'bg-purple-500', delivery_in_progress: 'bg-orange-500', delivered: 'bg-green-500', cancelled: 'bg-red-500',
         },
         steps: [
-            { key: 'pending',    label: 'En attente',      color: 'amber',  icon: '{{ $statusIcons["pending"] }}',    date: '{{ $order->created_at->format("d/m/Y H:i") }}' },
-            { key: 'confirmed',  label: 'Confirmée',       color: 'blue',   icon: '{{ $statusIcons["confirmed"] }}',  date: {{ $order->status !== 'pending' ? "'" . $order->created_at->format('d/m/Y H:i') . "'" : 'null' }} },
-            { key: 'processing', label: 'En préparation',  color: 'indigo', icon: '{{ $statusIcons["processing"] }}', date: {{ in_array($order->status, ['processing','shipped','delivered']) ? "'" . $order->updated_at->format('d/m/Y H:i') . "'" : 'null' }} },
-            { key: 'shipped',    label: 'Expédiée',        color: 'purple', icon: '{{ $statusIcons["shipped"] }}',    date: {!! $order->shipped_at ? "'" . $order->shipped_at->format('d/m/Y H:i') . "'" : 'null' !!} },
-            { key: 'delivered',  label: 'Livrée',          color: 'green',  icon: '{{ $statusIcons["delivered"] }}',   date: {!! $order->delivered_at ? "'" . $order->delivered_at->format('d/m/Y H:i') . "'" : 'null' !!} },
+            { key: 'pending',             label: 'Commande reçue',      color: 'amber',  icon: '{{ $statusIcons["pending"] }}',              date: '{{ $order->created_at->format("d/m/Y H:i") }}' },
+            { key: 'confirmed',           label: 'Paiement confirmé',   color: 'blue',   icon: '{{ $statusIcons["confirmed"] }}',            date: {{ $order->status !== 'pending' ? "'" . $order->created_at->format('d/m/Y H:i') . "'" : 'null' }} },
+            { key: 'processing',          label: 'En préparation',      color: 'indigo', icon: '{{ $statusIcons["processing"] }}',           date: {{ in_array($order->status, ['processing','shipped','delivery_in_progress','delivered']) ? "'" . $order->updated_at->format('d/m/Y H:i') . "'" : 'null' }} },
+            { key: 'shipped',             label: 'Expédiée',            color: 'purple', icon: '{{ $statusIcons["shipped"] }}',              date: {!! $order->shipped_at ? "'" . $order->shipped_at->format('d/m/Y H:i') . "'" : 'null' !!} },
+            { key: 'delivery_in_progress', label: 'Livreur en route',   color: 'orange', icon: '{{ $statusIcons["delivery_in_progress"] }}', date: {{ in_array($order->status, ['delivery_in_progress','delivered']) ? "'" . $order->updated_at->format('d/m/Y H:i') . "'" : 'null' }} },
+            { key: 'delivered',           label: 'Livrée',              color: 'green',  icon: '{{ $statusIcons["delivered"] }}',            date: {!! $order->delivered_at ? "'" . $order->delivered_at->format('d/m/Y H:i') . "'" : 'null' !!} },
         ],
         updateFromServer(data) {
             this.currentStatus = data.status;
             // Mettre à jour les dates dans les steps
             if (data.shipped_at) this.steps[3].date = data.shipped_at;
-            if (data.delivered_at) this.steps[4].date = data.delivered_at;
+            if (data.delivered_at) this.steps[5].date = data.delivered_at;
             // Mettre à jour les dates intermédiaires
             const now = new Date();
             const nowStr = now.toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric'}) + ' ' + now.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
@@ -659,5 +718,75 @@ function statusForm() {
     };
 }
 </script>
+
+<style>
+/* ===== ANIMATIONS PREMIUM ===== */
+@keyframes shimmer {
+    0% { background-position: 200% center; }
+    100% { background-position: -200% center; }
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+        transform: scale(1.1);
+    }
+    50% {
+        box-shadow: 0 0 35px rgba(59, 130, 246, 0.6);
+        transform: scale(1.15);
+    }
+}
+
+@keyframes bounce-subtle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+.animate-bounce-subtle {
+    animation: bounce-subtle 1.5s ease-in-out infinite;
+}
+
+/* ===== RESPONSIVE MOBILE ===== */
+@media (max-width: 640px) {
+    .relative.min-w-\[640px\] {
+        min-width: 100%;
+        padding: 0 0.5rem;
+    }
+
+    .relative.min-w-\[640px\] > .flex {
+        gap: 0.25rem;
+    }
+
+    .relative.min-w-\[640px\] .w-14 {
+        width: 2.75rem;
+        height: 2.75rem;
+    }
+
+    .relative.min-w-\[640px\] .max-w-\[90px\] {
+        max-width: 65px;
+    }
+
+    .relative.min-w-\[640px\] .text-xs {
+        font-size: 0.625rem;
+    }
+}
+
+/* ===== GRADIENT BORDERS ===== */
+.border-3 {
+    border-width: 3px;
+}
+
+/* ===== SCROLL SNAP FOR MOBILE ===== */
+@media (max-width: 768px) {
+    .overflow-x-auto {
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .overflow-x-auto > * {
+        scroll-snap-align: start;
+    }
+}
+</style>
 @endpush
 @endsection

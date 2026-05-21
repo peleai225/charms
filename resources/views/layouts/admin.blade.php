@@ -1015,14 +1015,13 @@
     </div>
 
     {{-- =====================================================
-         MOBILE BOTTOM NAVIGATION — Premium Native App Style
-         Ultra-polished iOS/Android-style navigation with:
-         - Glassmorphism + backdrop blur
-         - Framer Motion tactile animations
-         - Modern color hierarchy
-         - iPhone safe-area support
-         - Interactive bottom sheet with drag
+         MOBILE NAVIGATION SYSTEM - Ultra Premium Native Style
+         Composants modulaires pour une expérience mobile parfaite
     ====================================================== --}}
+    <x-admin.mobile-bottom-nav />
+    <x-admin.mobile-menu-drawer />
+
+    {{-- ANCIENNE VERSION - Gardée en commentaire pour référence
     @php $mobileNavPendingOrders = \App\Models\Order::whereIn('status', ['pending', 'confirmed'])->count(); @endphp
     <nav x-data="{
         moreSheet: false,
@@ -1031,7 +1030,7 @@
         pressedTab: null,
         tapStart(id) { this.pressedTab = id; },
         tapEnd() { setTimeout(() => { this.pressedTab = null; }, 100); }
-    }" class="fixed bottom-0 inset-x-0 z-40 lg:hidden" x-cloak>
+    }" class="fixed bottom-0 inset-x-0 z-40 lg:hidden hidden" x-cloak>
         <!-- Main Navigation Bar - Clean Icon Layout -->
         <div class="relative bg-white/85 backdrop-blur-3xl backdrop-saturate-[1.8] border-t border-slate-900/[0.05]"
              style="box-shadow: 0 -2px 20px rgba(0,0,0,0.03), 0 -1px 0 rgba(0,0,0,0.02);">

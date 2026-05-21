@@ -19,41 +19,13 @@
 </div>
 
 <div class="container mx-auto px-4 pb-8">
-    <!-- Indicateur de progression -->
-    <div class="mb-8 overflow-x-auto">
-        <div class="flex items-center min-w-max max-w-2xl mx-auto">
-            <!-- Panier (completed) -->
-            <div class="flex items-center">
-                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-green-500 text-white ring-4 ring-green-100 text-sm font-semibold">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                </div>
-                <span class="ml-2 text-sm font-medium text-gray-700 hidden sm:inline">Panier</span>
-            </div>
-            <div class="flex-1 h-0.5 mx-3 bg-green-500"></div>
-            <!-- Contact (active) -->
-            <div class="flex items-center">
-                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-primary-600 text-white ring-4 ring-primary-100 animate-pulse text-sm font-semibold">1</div>
-                <span class="ml-2 text-sm font-semibold text-gray-900 hidden sm:inline">Contact</span>
-            </div>
-            <div class="flex-1 h-0.5 mx-3 bg-slate-200"></div>
-            <!-- Livraison (pending) -->
-            <div class="flex items-center">
-                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 text-slate-400 text-sm font-semibold">2</div>
-                <span class="ml-2 text-sm font-medium text-slate-400 hidden sm:inline">Livraison</span>
-            </div>
-            <div class="flex-1 h-0.5 mx-3 bg-slate-200"></div>
-            <!-- Facturation (pending) -->
-            <div class="flex items-center">
-                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 text-slate-400 text-sm font-semibold">3</div>
-                <span class="ml-2 text-sm font-medium text-slate-400 hidden sm:inline">Facturation</span>
-            </div>
-            <div class="flex-1 h-0.5 mx-3 bg-slate-200"></div>
-            <!-- Paiement (pending) -->
-            <div class="flex items-center">
-                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 text-slate-400 text-sm font-semibold">4</div>
-                <span class="ml-2 text-sm font-medium text-slate-400 hidden sm:inline">Paiement</span>
-            </div>
-        </div>
+    <!-- Indicateur simple -->
+    <div class="mb-8 flex items-center justify-center gap-2 text-sm text-slate-500">
+        <a href="{{ route('cart.index') }}" class="hover:text-primary-600 transition-colors">Panier</a>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span class="font-semibold text-primary-600">Commande</span>
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <span class="text-slate-400">Confirmation</span>
     </div>
 
     <form method="POST" action="{{ route('checkout.store') }}" x-data="checkoutForm()" x-init="init()" @submit="isSubmitting = true" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -61,54 +33,15 @@
 
         <!-- Formulaire -->
         <div class="lg:col-span-2 space-y-6">
-            <!-- Informations de contact -->
+            <!-- Vos informations + Livraison (fusionnés) -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <span class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-xl shadow-lg shadow-primary-500/25 flex items-center justify-center text-sm font-bold">1</span>
-                    Informations de contact
-                </h2>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="md:col-span-2">
-                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                        <input type="email" name="email" id="email" required
-                            value="{{ old('email', $customer?->email ?? auth()->user()?->email) }}"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
-                        @error('email')
-                            <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Téléphone *</label>
-                        <input type="tel" name="phone" id="phone" required
-                            value="{{ old('phone', $customer?->phone) }}"
-                            placeholder="+225 XX XX XX XX XX"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
-                        @error('phone')
-                            <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div class="flex items-center">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="newsletter" value="1" {{ old('newsletter') ? 'checked' : '' }}
-                                class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
-                            <span class="text-sm text-gray-600">Recevoir les offres par email</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Adresse de livraison -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <span class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-xl shadow-lg shadow-primary-500/25 flex items-center justify-center text-sm font-bold">2</span>
-                    Adresse de livraison
+                <h2 class="text-lg font-semibold text-gray-900 mb-5 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                    Vos informations
                 </h2>
 
                 @if($addresses->where('type', 'shipping')->count() > 0)
-                <div class="mb-4">
+                <div class="mb-5">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Adresses enregistrées</label>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         @foreach($addresses->where('type', 'shipping') as $addr)
@@ -118,7 +51,7 @@
                             <div class="peer-checked:border-primary-500 absolute inset-0 rounded-xl border-2 border-transparent"></div>
                             <p class="font-medium">{{ $addr->first_name }} {{ $addr->last_name }}</p>
                             <p class="text-sm text-gray-600">{{ $addr->address }}</p>
-                            <p class="text-sm text-gray-600">{{ $addr->postal_code }} {{ $addr->city }}</p>
+                            <p class="text-sm text-gray-600">{{ $addr->city }}</p>
                         </label>
                         @endforeach
                     </div>
@@ -142,132 +75,99 @@
                             class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
                     </div>
 
-                    <div class="md:col-span-2">
-                        <label for="shipping_address" class="block text-sm font-medium text-gray-700 mb-1">Adresse *</label>
-                        <input type="text" name="shipping_address" id="shipping_address" required
-                            x-model="shipping.address"
-                            placeholder="Numéro et nom de rue"
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Téléphone *</label>
+                        <input type="tel" name="phone" id="phone" required
+                            value="{{ old('phone', $customer?->phone) }}"
+                            placeholder="+225 07 XX XX XX XX"
                             class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label for="shipping_address_2" class="block text-sm font-medium text-gray-700 mb-1">Complément d'adresse</label>
-                        <input type="text" name="shipping_address_2" id="shipping_address_2"
-                            x-model="shipping.address_2"
-                            placeholder="Appartement, étage, bâtiment..."
-                            class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
+                        @error('phone')
+                            <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div>
-                        <label for="shipping_city" class="block text-sm font-medium text-gray-700 mb-1">Ville *</label>
-                        <input type="text" name="shipping_city" id="shipping_city" required
-                            x-model="shipping.city" @input.debounce.500ms="calculateEstimatedShipping()"
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email <span class="text-gray-400 font-normal">(optionnel)</span></label>
+                        <input type="email" name="email" id="email"
+                            value="{{ old('email', $customer?->email ?? auth()->user()?->email) }}"
+                            placeholder="pour recevoir la confirmation"
                             class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
-                    </div>
-
-                    <div>
-                        <label for="shipping_postal_code" class="block text-sm font-medium text-gray-700 mb-1">Code postal *</label>
-                        <input type="text" name="shipping_postal_code" id="shipping_postal_code" required
-                            x-model="shipping.postal_code"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label for="shipping_country" class="block text-sm font-medium text-gray-700 mb-1">Pays *</label>
-                        <select name="shipping_country" id="shipping_country" required x-model="shipping.country" @change="calculateEstimatedShipping()"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
-                            <option value="">Sélectionner un pays</option>
-                            <option value="CI" selected>🇨🇮 Côte d'Ivoire</option>
-                            <option value="SN">🇸🇳 Sénégal</option>
-                            <option value="ML">🇲🇱 Mali</option>
-                            <option value="BF">🇧🇫 Burkina Faso</option>
-                            <option value="TG">🇹🇬 Togo</option>
-                            <option value="BJ">🇧🇯 Bénin</option>
-                            <option value="GN">🇬🇳 Guinée</option>
-                            <option value="CM">🇨🇲 Cameroun</option>
-                            <option value="GA">🇬🇦 Gabon</option>
-                            <option value="CG">🇨🇬 Congo</option>
-                            <option value="FR">🇫🇷 France</option>
-                            <option value="BE">🇧🇪 Belgique</option>
-                            <option value="CH">🇨🇭 Suisse</option>
-                        </select>
+                        @error('email')
+                            <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
             </div>
 
-            <!-- Adresse de facturation -->
+            <!-- Adresse de livraison -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <span class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-xl shadow-lg shadow-primary-500/25 flex items-center justify-center text-sm font-bold">3</span>
-                    Adresse de facturation
+                <h2 class="text-lg font-semibold text-gray-900 mb-5 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Adresse de livraison
                 </h2>
 
-                <label class="flex items-center gap-2 mb-4 cursor-pointer">
-                    <input type="checkbox" name="same_billing" value="1" x-model="sameBilling" checked
-                        class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
-                    <span class="text-sm text-gray-700">Identique à l'adresse de livraison</span>
-                </label>
-
-                <div x-show="!sameBilling" x-collapse class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="billing_first_name" class="block text-sm font-medium text-gray-700 mb-1">Prénom *</label>
-                        <input type="text" name="billing_first_name" id="billing_first_name"
-                            :required="!sameBilling"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
-                    </div>
-
-                    <div>
-                        <label for="billing_last_name" class="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
-                        <input type="text" name="billing_last_name" id="billing_last_name"
-                            :required="!sameBilling"
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label for="shipping_address" class="block text-sm font-medium text-gray-700 mb-1">Adresse / Quartier *</label>
+                        <input type="text" name="shipping_address" id="shipping_address" required
+                            x-model="shipping.address"
+                            placeholder="Ex: Cocody Riviera 3, près de la pharmacie"
                             class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
                     </div>
 
                     <div class="md:col-span-2">
-                        <label for="billing_address" class="block text-sm font-medium text-gray-700 mb-1">Adresse *</label>
-                        <input type="text" name="billing_address" id="billing_address"
-                            :required="!sameBilling"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label for="billing_address_2" class="block text-sm font-medium text-gray-700 mb-1">Complément</label>
-                        <input type="text" name="billing_address_2" id="billing_address_2"
+                        <label for="shipping_address_2" class="block text-sm font-medium text-gray-700 mb-1">Complément <span class="text-gray-400 font-normal">(optionnel)</span></label>
+                        <input type="text" name="shipping_address_2" id="shipping_address_2"
+                            x-model="shipping.address_2"
+                            placeholder="Bâtiment, étage, point de repère..."
                             class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
                     </div>
 
                     <div>
-                        <label for="billing_city" class="block text-sm font-medium text-gray-700 mb-1">Ville *</label>
-                        <input type="text" name="billing_city" id="billing_city"
-                            :required="!sameBilling"
+                        <label for="shipping_city" class="block text-sm font-medium text-gray-700 mb-1">Ville / Commune *</label>
+                        <input type="text" name="shipping_city" id="shipping_city" required
+                            x-model="shipping.city" @input.debounce.500ms="calculateEstimatedShipping()"
+                            placeholder="Ex: Abidjan"
                             class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
                     </div>
 
                     <div>
-                        <label for="billing_postal_code" class="block text-sm font-medium text-gray-700 mb-1">Code postal *</label>
-                        <input type="text" name="billing_postal_code" id="billing_postal_code"
-                            :required="!sameBilling"
+                        <label for="shipping_country" class="block text-sm font-medium text-gray-700 mb-1">Pays *</label>
+                        <select name="shipping_country" id="shipping_country" required x-model="shipping.country" @change="calculateEstimatedShipping()"
                             class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label for="billing_country" class="block text-sm font-medium text-gray-700 mb-1">Pays *</label>
-                        <select name="billing_country" id="billing_country" :required="!sameBilling"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
-                            <option value="">Sélectionner un pays</option>
-                            <option value="CI">🇨🇮 Côte d'Ivoire</option>
-                            <option value="SN">🇸🇳 Sénégal</option>
-                            <option value="FR">🇫🇷 France</option>
+                            <option value="CI" selected>Côte d'Ivoire</option>
+                            <option value="SN">Sénégal</option>
+                            <option value="ML">Mali</option>
+                            <option value="BF">Burkina Faso</option>
+                            <option value="TG">Togo</option>
+                            <option value="BJ">Bénin</option>
+                            <option value="GN">Guinée</option>
+                            <option value="CM">Cameroun</option>
+                            <option value="GA">Gabon</option>
+                            <option value="CG">Congo</option>
+                            <option value="FR">France</option>
+                            <option value="BE">Belgique</option>
+                            <option value="CH">Suisse</option>
                         </select>
                     </div>
+
+                    <div>
+                        <label for="shipping_postal_code" class="block text-sm font-medium text-gray-700 mb-1">Code postal <span class="text-gray-400 font-normal">(optionnel)</span></label>
+                        <input type="text" name="shipping_postal_code" id="shipping_postal_code"
+                            x-model="shipping.postal_code"
+                            placeholder="Si vous le connaissez"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
+                    </div>
                 </div>
+
+                <input type="hidden" name="same_billing" value="1">
             </div>
 
             <!-- Mode de paiement -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <span class="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 text-white rounded-xl shadow-lg shadow-primary-500/25 flex items-center justify-center text-sm font-bold">4</span>
-                    Mode de paiement
+                    <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                    Comment payer ?
                 </h2>
 
                 <div class="space-y-3">
@@ -371,19 +271,19 @@
                 </div>
             </div>
 
-            <!-- Notes -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                <h2 class="text-lg font-semibold text-gray-900 mb-4">Notes de commande (optionnel)</h2>
-                <textarea name="notes" rows="3" placeholder="Instructions spéciales pour la livraison..."
-                    class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">{{ old('notes') }}</textarea>
-            </div>
+            <!-- Notes (petit, discret) -->
+            <details class="group">
+                <summary class="text-sm text-gray-500 cursor-pointer hover:text-gray-700 transition-colors">
+                    + Ajouter une note pour la livraison
+                </summary>
+                <div class="mt-2">
+                    <textarea name="notes" rows="2" placeholder="Instructions spéciales, point de repère..."
+                        class="w-full px-4 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">{{ old('notes') }}</textarea>
+                </div>
+            </details>
 
             @if(auth()->check())
-            <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" name="save_address" value="1" checked
-                    class="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500">
-                <span class="text-sm text-gray-600">Sauvegarder cette adresse pour mes prochaines commandes</span>
-            </label>
+            <input type="hidden" name="save_address" value="1">
             @endif
         </div>
 
@@ -526,8 +426,7 @@ function checkoutForm() {
     return {
         isSubmitting: false,
         isCalculatingShipping: false,
-        sameBilling: true,
-        paymentMethod: '{{ (($settings['payment_cinetpay_enabled'] ?? '0') === '1') ? 'cinetpay' : ((($settings['payment_lygos_enabled'] ?? '0') === '1') ? 'lygos' : ((($settings['payment_moneyfusion_enabled'] ?? '0') === '1') ? 'moneyfusion' : 'cod')) }}',
+        paymentMethod: '{{ (($settings['payment_moneyfusion_enabled'] ?? '0') === '1') ? 'moneyfusion' : ((($settings['payment_cinetpay_enabled'] ?? '0') === '1') ? 'cinetpay' : ((($settings['payment_lygos_enabled'] ?? '0') === '1') ? 'lygos' : 'cod')) }}',
         shippingText: 'Selon destination',
         estimatedShipping: 0,
         estimatedTotal: {{ $cart->total }},

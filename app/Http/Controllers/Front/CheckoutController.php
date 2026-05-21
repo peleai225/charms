@@ -81,18 +81,18 @@ class CheckoutController extends Controller
         // Valider les données
         $validated = $request->validate([
             // Informations client
-            'email' => 'required|email',
+            'email' => 'nullable|email',
             'phone' => 'required|string|max:20',
-            
+
             // Adresse de livraison
             'shipping_first_name' => 'required|string|max:100',
             'shipping_last_name' => 'required|string|max:100',
             'shipping_address' => 'required|string|max:255',
             'shipping_address_2' => 'nullable|string|max:255',
             'shipping_city' => 'required|string|max:100',
-            'shipping_postal_code' => 'required|string|max:20',
+            'shipping_postal_code' => 'nullable|string|max:20',
             'shipping_country' => 'required|string|size:2',
-            
+
             // Adresse de facturation
             'same_billing' => 'boolean',
             'billing_first_name' => 'required_if:same_billing,false|nullable|string|max:100',
@@ -100,9 +100,9 @@ class CheckoutController extends Controller
             'billing_address' => 'required_if:same_billing,false|nullable|string|max:255',
             'billing_address_2' => 'nullable|string|max:255',
             'billing_city' => 'required_if:same_billing,false|nullable|string|max:100',
-            'billing_postal_code' => 'required_if:same_billing,false|nullable|string|max:20',
+            'billing_postal_code' => 'nullable|string|max:20',
             'billing_country' => 'required_if:same_billing,false|nullable|string|size:2',
-            
+
             // Options
             'notes' => 'nullable|string|max:500',
             'save_address' => 'boolean',
@@ -185,27 +185,27 @@ class CheckoutController extends Controller
             $order = Order::create([
                 'order_number' => $this->generateOrderNumber(),
                 'customer_id' => $customer?->id,
-                
+
                 // Adresse de livraison
                 'shipping_first_name' => $validated['shipping_first_name'],
                 'shipping_last_name' => $validated['shipping_last_name'],
-                'shipping_email' => $validated['email'],
+                'shipping_email' => $validated['email'] ?? null,
                 'shipping_phone' => $validated['phone'],
                 'shipping_address' => $validated['shipping_address'],
                 'shipping_address_2' => $validated['shipping_address_2'] ?? null,
                 'shipping_city' => $validated['shipping_city'],
-                'shipping_postal_code' => $validated['shipping_postal_code'],
+                'shipping_postal_code' => $validated['shipping_postal_code'] ?? '',
                 'shipping_country' => $validated['shipping_country'],
                 
                 // Adresse de facturation
                 'billing_first_name' => $sameBilling ? $validated['shipping_first_name'] : $validated['billing_first_name'],
                 'billing_last_name' => $sameBilling ? $validated['shipping_last_name'] : $validated['billing_last_name'],
-                'billing_email' => $validated['email'],
+                'billing_email' => $validated['email'] ?? null,
                 'billing_phone' => $validated['phone'],
                 'billing_address' => $sameBilling ? $validated['shipping_address'] : $validated['billing_address'],
                 'billing_address_2' => $sameBilling ? ($validated['shipping_address_2'] ?? null) : ($validated['billing_address_2'] ?? null),
                 'billing_city' => $sameBilling ? $validated['shipping_city'] : $validated['billing_city'],
-                'billing_postal_code' => $sameBilling ? $validated['shipping_postal_code'] : $validated['billing_postal_code'],
+                'billing_postal_code' => $sameBilling ? ($validated['shipping_postal_code'] ?? '') : ($validated['billing_postal_code'] ?? ''),
                 'billing_country' => $sameBilling ? $validated['shipping_country'] : $validated['billing_country'],
                 
                 // Montants
@@ -481,38 +481,51 @@ class CheckoutController extends Controller
     protected function getOrCreateCustomer(array $data): ?Customer
     {
         if (auth()->check()) {
-            // Chercher d'abord par user_id
             $customer = Customer::where('user_id', auth()->id())->first();
             if ($customer) {
                 return $customer;
             }
-            // Sinon chercher par email et lier au compte
-            $customer = Customer::where('email', $data['email'])->first();
-            if ($customer) {
-                $customer->update(['user_id' => auth()->id()]);
-                return $customer;
+            if (!empty($data['email'])) {
+                $customer = Customer::where('email', $data['email'])->first();
+                if ($customer) {
+                    $customer->update(['user_id' => auth()->id()]);
+                    return $customer;
+                }
             }
             return Customer::create([
                 'user_id' => auth()->id(),
                 'first_name' => $data['shipping_first_name'],
                 'last_name' => $data['shipping_last_name'],
-                'email' => $data['email'],
+                'email' => $data['email'] ?? null,
                 'phone' => $data['phone'],
                 'status' => 'active',
                 'type' => 'individual',
             ]);
         }
 
-        // Client invité : firstOrCreate pour éviter le doublon sur l'email unique
+        // Client invité : chercher par email ou téléphone
+        if (!empty($data['email'])) {
+            return Customer::firstOrCreate(
+                ['email' => $data['email']],
+                [
+                    'first_name' => $data['shipping_first_name'],
+                    'last_name' => $data['shipping_last_name'],
+                    'phone' => $data['phone'],
+                    'status' => 'active',
+                    'type' => 'individual',
+                ]
+            );
+        }
+
+        // Sans email, chercher par téléphone
         return Customer::firstOrCreate(
-            ['email' => $data['email']],
+            ['phone' => $data['phone']],
             [
                 'first_name' => $data['shipping_first_name'],
                 'last_name' => $data['shipping_last_name'],
-                'phone' => $data['phone'],
+                'email' => null,
                 'status' => 'active',
                 'type' => 'individual',
-                'user_id' => null,
             ]
         );
     }

@@ -57,7 +57,7 @@ Route::get('storage/{path}', function (string $path) {
 Route::get('/setup', function () {
     $token = request('token');
     $expected = config('app.deploy_token');
-    if (!$expected || $token !== $expected) {
+    if (!$expected || !$token || !hash_equals($expected, $token)) {
         abort(404);
     }
     $results = [];
@@ -188,31 +188,6 @@ Route::get('/commande/succes', [App\Http\Controllers\Front\CheckoutController::c
 Route::get('/suivi-commande', [App\Http\Controllers\Front\OrderTrackingController::class, 'index'])->name('order-tracking.index');
 Route::get('/suivi-commande/resultat', [App\Http\Controllers\Front\OrderTrackingController::class, 'show'])->name('order-tracking.show');
 
-// Webhook CinetPay (sans CSRF, throttle anti-abus)
-Route::post('/webhook/cinetpay', [App\Http\Controllers\Webhook\CinetPayWebhookController::class, 'handle'])
-    ->middleware('throttle:60,1')
-    ->name('webhook.cinetpay')
-    ->withoutMiddleware(['web']);
-Route::get('/webhook/cinetpay', function () {
-    return response()->json([
-        'status' => 'ok',
-        'message' => 'CinetPay Webhook Endpoint',
-        'info' => 'Ce endpoint accepte uniquement les requêtes POST de CinetPay.',
-    ]);
-})->withoutMiddleware(['web']);
-
-// Webhook Lygos Pay (sans CSRF, throttle anti-abus)
-Route::post('/webhook/lygos', [App\Http\Controllers\Webhook\LygosPayWebhookController::class, 'handle'])
-    ->middleware('throttle:60,1')
-    ->name('webhook.lygos')
-    ->withoutMiddleware(['web']);
-Route::get('/webhook/lygos', function () {
-    return response()->json([
-        'status' => 'ok',
-        'message' => 'Lygos Pay Webhook Endpoint',
-        'info' => 'Ce endpoint accepte uniquement les requêtes POST de Lygos Pay.',
-    ]);
-})->withoutMiddleware(['web']);
 
 // Webhook MoneyFusion (sans CSRF, throttle anti-abus)
 Route::post('/webhook/moneyfusion', [App\Http\Controllers\Webhook\MoneyFusionWebhookController::class, 'handle'])
@@ -445,7 +420,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/settings/emails', [\App\Http\Controllers\Admin\SettingsController::class, 'emails'])->name('settings.emails');
             Route::post('/settings/emails', [\App\Http\Controllers\Admin\SettingsController::class, 'updateEmails'])->name('settings.emails.update');
             Route::post('/settings/emails/test', [\App\Http\Controllers\Admin\SettingsController::class, 'testEmail'])->name('settings.emails.test');
-            Route::post('/settings/payment/test-lygos', [\App\Http\Controllers\Admin\SettingsController::class, 'testLygosPay'])->name('settings.payment.test-lygos');
             Route::post('/settings/payment/test-moneyfusion', [\App\Http\Controllers\Admin\SettingsController::class, 'testMoneyFusion'])->name('settings.payment.test-moneyfusion');
 
             // Système / Déploiement (admin uniquement)

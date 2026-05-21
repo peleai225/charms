@@ -18,6 +18,7 @@ use App\Listeners\IncrementCouponUsage;
 use App\Listeners\RestoreStockOnCancel;
 use App\Listeners\RestoreStockOnRefund;
 use App\Listeners\SendInvoiceOnPayment;
+use App\Listeners\SendPushOnOrderUpdate;
 use App\Listeners\UpdateCustomerStats;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
@@ -31,23 +32,24 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         // Événements de commande
         OrderCreated::class => [
-            BroadcastNewOrderNotification::class,  // Notification temps réel admin (Pusher)
-            AssignOrderToSuppliers::class,  // Attribution automatique aux fournisseurs (dropshipping)
-            // Le stock n'est plus décrémenté ici pour la sécurité du paiement
-            // La décrémentation se fait après paiement confirmé (OrderPaid)
+            BroadcastNewOrderNotification::class,
+            AssignOrderToSuppliers::class,
+            SendPushOnOrderUpdate::class,
         ],
 
         OrderPaid::class => [
-            DecrementStockOnOrder::class,  // Stock décrémenté après paiement confirmé
+            DecrementStockOnOrder::class,
             CreateAccountingEntryOnPayment::class,
             UpdateCustomerStats::class,
-            SendInvoiceOnPayment::class,  // Envoi de la facture par email après paiement
-            IncrementCouponUsage::class,  // Incrémenter l'usage du coupon
-            AwardLoyaltyPointsOnPayment::class, // Points de fidélité
+            SendInvoiceOnPayment::class,
+            IncrementCouponUsage::class,
+            AwardLoyaltyPointsOnPayment::class,
+            SendPushOnOrderUpdate::class,
         ],
 
         OrderCancelled::class => [
             RestoreStockOnCancel::class,
+            SendPushOnOrderUpdate::class,
         ],
 
         OrderRefunded::class => [

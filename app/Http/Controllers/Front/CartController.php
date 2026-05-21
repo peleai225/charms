@@ -79,8 +79,8 @@ class CartController extends Controller
             $cart->refresh();
             return response()->json([
                 'success' => true,
-                'subtotal' => number_format($cart->subtotal, 2, ',', ' ') . ' €',
-                'total' => number_format($cart->total, 2, ',', ' ') . ' €',
+                'subtotal' => number_format($cart->subtotal, 0, ',', ' ') . ' F CFA',
+                'total' => number_format($cart->total, 0, ',', ' ') . ' F CFA',
                 'cart_count' => $cart->items_count,
             ]);
         }

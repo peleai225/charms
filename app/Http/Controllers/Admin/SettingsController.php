@@ -139,41 +139,14 @@ class SettingsController extends Controller
     {
         $validated = $request->validate([
             'payment_cod_enabled' => 'boolean',
-            'payment_cinetpay_enabled' => 'boolean',
-            'payment_lygos_enabled' => 'boolean',
             'payment_moneyfusion_enabled' => 'boolean',
-            'cinetpay_site_id' => 'nullable|string',
-            'cinetpay_api_key' => 'nullable|string',
-            'cinetpay_secret_key' => 'nullable|string',
-            'cinetpay_mode' => 'nullable|in:sandbox,live',
-            'lygos_api_key' => 'nullable|string',
             'moneyfusion_api_url' => 'nullable|url',
             'moneyfusion_api_key' => 'nullable|string',
         ]);
 
         $this->setSetting('payment_cod_enabled', $request->boolean('payment_cod_enabled') ? '1' : '0');
-        $this->setSetting('payment_cinetpay_enabled', $request->boolean('payment_cinetpay_enabled') ? '1' : '0');
-        $this->setSetting('payment_lygos_enabled', $request->boolean('payment_lygos_enabled') ? '1' : '0');
         $this->setSetting('payment_moneyfusion_enabled', $request->boolean('payment_moneyfusion_enabled') ? '1' : '0');
 
-        if (!empty($validated['cinetpay_site_id'])) {
-            $this->setSetting('cinetpay_site_id', $validated['cinetpay_site_id']);
-        }
-        if (!empty($validated['cinetpay_api_key'])) {
-            $this->setSetting('cinetpay_api_key', $validated['cinetpay_api_key']);
-        }
-        if (!empty($validated['cinetpay_secret_key'])) {
-            $this->setSetting('cinetpay_secret_key', $validated['cinetpay_secret_key']);
-        }
-        $this->setSetting('cinetpay_mode', $validated['cinetpay_mode'] ?? 'sandbox');
-
-        // Lygos Pay
-        if (!empty($validated['lygos_api_key'])) {
-            $this->setSetting('lygos_api_key', $validated['lygos_api_key']);
-            config(['lygos.api_key' => $validated['lygos_api_key']]);
-        }
-
-        // MoneyFusion
         if (!empty($validated['moneyfusion_api_url'])) {
             $this->setSetting('moneyfusion_api_url', $validated['moneyfusion_api_url']);
         }
@@ -181,10 +154,9 @@ class SettingsController extends Controller
             $this->setSetting('moneyfusion_api_key', $validated['moneyfusion_api_key']);
         }
 
-        // Vider tous les caches pour application immédiate
         Setting::clearCache();
 
-        return back()->with('success', 'Paramètres de paiement mis à jour et appliqués en temps réel.');
+        return back()->with('success', 'Paramètres de paiement mis à jour.');
     }
 
     /**
@@ -228,22 +200,6 @@ class SettingsController extends Controller
     /**
      * Tester la connexion Lygos Pay
      */
-    public function testLygosPay(Request $request)
-    {
-        try {
-            $lygosService = new \App\Services\LygosPayService();
-            $result = $lygosService->testConnection();
-            
-            if ($result['success']) {
-                return back()->with('success', $result['message']);
-            } else {
-                return back()->with('error', $result['message']);
-            }
-        } catch (\Exception $e) {
-            \Log::error('Test Lygos Pay error: ' . $e->getMessage());
-            return back()->with('error', 'Erreur lors du test: ' . $e->getMessage());
-        }
-    }
 
     /**
      * Tester la connexion MoneyFusion

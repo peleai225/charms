@@ -171,56 +171,6 @@
                 </h2>
 
                 <div class="space-y-3">
-                    <!-- CinetPay -->
-                    @if(($settings['payment_cinetpay_enabled'] ?? '0') === '1')
-                    <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200"
-                        :class="paymentMethod === 'cinetpay' ? 'border-primary-500 bg-primary-50 scale-[1.02] shadow-md' : 'border-gray-200 hover:border-gray-300'">
-                        <input type="radio" name="payment_method" value="cinetpay" x-model="paymentMethod" class="sr-only" {{ (($settings['payment_cinetpay_enabled'] ?? '0') === '1' && ($settings['payment_lygos_enabled'] ?? '0') !== '1' && ($settings['payment_cod_enabled'] ?? '1') !== '1') ? 'checked' : '' }}>
-                        <div class="flex items-center gap-4 flex-1">
-                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors"
-                                :class="paymentMethod === 'cinetpay' ? 'border-primary-500' : 'border-gray-300'">
-                                <div class="w-2.5 h-2.5 rounded-full transition-colors"
-                                    :class="paymentMethod === 'cinetpay' ? 'bg-primary-500' : 'bg-transparent'"></div>
-                            </div>
-                            <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                                <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-900">Mobile Money / Carte bancaire</p>
-                                <p class="text-sm text-gray-500">Orange Money, MTN, Wave, Moov, Visa, Mastercard</p>
-                            </div>
-                        </div>
-                        <div class="flex gap-1">
-                            <img src="https://cinetpay.com/assets/images/logo-orange-money.png" alt="Orange Money" class="h-6 object-contain">
-                            <img src="https://cinetpay.com/assets/images/logo-mtn.png" alt="MTN" class="h-6 object-contain">
-                        </div>
-                    </label>
-                    @endif
-
-                    <!-- Lygos Pay -->
-                    @if(($settings['payment_lygos_enabled'] ?? '0') === '1')
-                    <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200"
-                        :class="paymentMethod === 'lygos' ? 'border-primary-500 bg-primary-50 scale-[1.02] shadow-md' : 'border-gray-200 hover:border-gray-300'">
-                        <input type="radio" name="payment_method" value="lygos" x-model="paymentMethod" class="sr-only" {{ (($settings['payment_cinetpay_enabled'] ?? '0') !== '1' && ($settings['payment_lygos_enabled'] ?? '0') === '1' && ($settings['payment_cod_enabled'] ?? '1') !== '1') ? 'checked' : '' }}>
-                        <div class="flex items-center gap-4 flex-1">
-                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors"
-                                :class="paymentMethod === 'lygos' ? 'border-primary-500' : 'border-gray-300'">
-                                <div class="w-2.5 h-2.5 rounded-full transition-colors"
-                                    :class="paymentMethod === 'lygos' ? 'bg-primary-500' : 'bg-transparent'"></div>
-                            </div>
-                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <img src="https://lygosapp.com/favicon.ico" alt="Lygos Pay" class="w-8 h-8">
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-900">Lygos Pay</p>
-                                <p class="text-sm text-gray-500">Mobile Money et paiements internationaux</p>
-                            </div>
-                        </div>
-                    </label>
-                    @endif
-
                     <!-- MoneyFusion -->
                     @if(($settings['payment_moneyfusion_enabled'] ?? '0') === '1')
                     <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200"
@@ -249,7 +199,7 @@
                     @if(($settings['payment_cod_enabled'] ?? '1') === '1')
                     <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200"
                         :class="paymentMethod === 'cod' ? 'border-primary-500 bg-primary-50 scale-[1.02] shadow-md' : 'border-gray-200 hover:border-gray-300'">
-                        <input type="radio" name="payment_method" value="cod" x-model="paymentMethod" class="sr-only" {{ (($settings['payment_cinetpay_enabled'] ?? '0') !== '1' && ($settings['payment_lygos_enabled'] ?? '0') !== '1' && ($settings['payment_moneyfusion_enabled'] ?? '0') !== '1' && ($settings['payment_cod_enabled'] ?? '1') === '1') ? 'checked' : '' }}>
+                        <input type="radio" name="payment_method" value="cod" x-model="paymentMethod" class="sr-only">
                         <div class="flex items-center gap-4 flex-1">
                             <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors"
                                 :class="paymentMethod === 'cod' ? 'border-primary-500' : 'border-gray-300'">

@@ -86,8 +86,38 @@
             </div>
         </template>
 
+        <!-- État: Timeout -->
+        <template x-if="timedOut">
+            <div>
+                <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900 mb-4">Vérification en attente</h1>
+                <p class="text-gray-600 mb-6">
+                    Le paiement n'a pas encore été confirmé. Cela peut prendre quelques minutes.
+                    Vous recevrez un message WhatsApp dès que le paiement sera validé.
+                </p>
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+                    <p class="text-sm text-blue-800">
+                        Votre commande <strong>{{ $order->order_number }}</strong> est enregistrée.
+                        Ne payez pas une seconde fois.
+                    </p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="{{ route('home') }}" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-colors">
+                        Retour à la boutique
+                    </a>
+                    <a href="{{ route('order-tracking.index') }}" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-colors">
+                        Suivre ma commande
+                    </a>
+                </div>
+            </div>
+        </template>
+
         <!-- État: En attente -->
-        <template x-if="status === 'pending'">
+        <template x-if="status === 'pending' && !timedOut">
             <div>
                 <!-- Icône animée -->
                 <div class="w-24 h-24 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6 relative">
@@ -112,7 +142,7 @@
                         <div class="text-left">
                             <p class="text-amber-800 font-medium">Sécurité du paiement</p>
                             <p class="text-amber-700 text-sm mt-1">
-                                Nous vérifions votre paiement directement auprès de CinetPay pour garantir la sécurité de votre transaction.
+                                Nous vérifions votre paiement auprès de MoneyFusion pour garantir la sécurité de votre transaction.
                             </p>
                         </div>
                     </div>
@@ -171,55 +201,53 @@ function paymentChecker(orderId, initialStatus) {
         status: initialStatus,
         isChecking: false,
         checkCount: 0,
+        maxChecks: 60,
         countdown: 5,
         redirectUrl: null,
         pollInterval: null,
         countdownInterval: null,
+        timedOut: false,
 
         startPolling() {
             if (this.status !== 'pending') return;
-            
-            // Vérifier immédiatement
+
             this.checkStatus();
-            
-            // Puis toutes les 5 secondes
+
             this.pollInterval = setInterval(() => {
+                if (this.checkCount >= this.maxChecks) {
+                    this.timedOut = true;
+                    this.stopPolling();
+                    return;
+                }
                 this.checkStatus();
             }, 5000);
 
-            // Compte à rebours visuel
             this.countdownInterval = setInterval(() => {
                 this.countdown--;
-                if (this.countdown <= 0) {
-                    this.countdown = 5;
-                }
+                if (this.countdown <= 0) this.countdown = 5;
             }, 1000);
         },
 
         async checkStatus() {
             if (this.isChecking) return;
-            
+
             this.isChecking = true;
             this.checkCount++;
-            
+
             try {
                 const response = await fetch(`/api/orders/${this.orderId}/status`);
                 const data = await response.json();
-                
+
                 if (data.is_paid) {
                     this.status = 'paid';
                     this.redirectUrl = data.redirect_url;
                     this.stopPolling();
-                    
-                    // Notification sonore (optionnel)
-                    this.playSuccessSound();
-                    
                 } else if (data.is_failed) {
                     this.status = 'failed';
                     this.stopPolling();
                 }
             } catch (error) {
-                console.error('Erreur lors de la vérification:', error);
+                console.error('Erreur vérification:', error);
             } finally {
                 this.isChecking = false;
             }
@@ -228,15 +256,6 @@ function paymentChecker(orderId, initialStatus) {
         stopPolling() {
             if (this.pollInterval) clearInterval(this.pollInterval);
             if (this.countdownInterval) clearInterval(this.countdownInterval);
-        },
-
-        playSuccessSound() {
-            // Son de succès optionnel
-            try {
-                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleVQxIHi07PGGUhMC');
-                audio.volume = 0.3;
-                audio.play().catch(() => {});
-            } catch(e) {}
         }
     }
 }

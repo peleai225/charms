@@ -564,20 +564,20 @@
         ></div>
 
         <!-- Contenu principal -->
-        <div class="flex-1 transition-all duration-300 pb-20 lg:pb-0" :class="sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'">
+        <div class="flex-1 transition-all duration-300 pb-16 lg:pb-0" :class="sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'">
             <!-- Header -->
-            <header class="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-30 shadow-sm">
-                <div class="h-16 flex items-center justify-between px-6">
+            <header class="bg-white/70 backdrop-blur-2xl backdrop-saturate-150 border-b border-slate-200/40 sticky top-0 z-30">
+                <div class="h-14 lg:h-16 flex items-center justify-between px-4 lg:px-6">
                 <!-- Menu mobile + Titre -->
-                <div class="flex items-center gap-4">
-                    <button @click="mobileMenuOpen = true" class="lg:hidden text-slate-600 hover:text-slate-900 p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                <div class="flex items-center gap-3">
+                    <button @click="mobileMenuOpen = true" class="lg:hidden text-slate-600 hover:text-slate-900 p-1.5 hover:bg-slate-100 rounded-lg transition-all duration-200 active:scale-90">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                         </svg>
                     </button>
                     <div>
-                        <h1 class="text-lg font-bold text-slate-900">@yield('page-title', 'Dashboard')</h1>
-                        <p class="text-xs text-slate-500 hidden sm:block">{{ now()->locale('fr')->isoFormat('dddd D MMMM YYYY') }}</p>
+                        <h1 class="text-base lg:text-lg font-bold text-slate-900 leading-tight">@yield('page-title', 'Dashboard')</h1>
+                        <p class="text-[10px] lg:text-xs text-slate-500 hidden sm:block">{{ now()->locale('fr')->isoFormat('dddd D MMMM YYYY') }}</p>
                     </div>
                 </div>
 
@@ -1023,51 +1023,55 @@
     @endphp
     <nav x-data="{ moreSheet: false }" class="fixed bottom-0 inset-x-0 z-40 lg:hidden" x-cloak>
         <!-- Bottom Nav Bar -->
-        <div class="bg-white border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-            <div class="flex items-center justify-around px-1 pb-[env(safe-area-inset-bottom,8px)] pt-1">
+        <div class="bg-white/90 backdrop-blur-xl border-t border-slate-200/60 shadow-[0_-2px_16px_rgba(0,0,0,0.06)]">
+            <div class="flex items-center justify-around px-2 pb-[env(safe-area-inset-bottom,6px)] pt-1.5">
                 {{-- Dashboard --}}
-                <a href="{{ route('admin.dashboard') }}" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-1 py-1.5 rounded-xl transition-colors {{ request()->routeIs('admin.dashboard') ? 'text-indigo-600' : 'text-slate-400' }}">
-                    <svg class="w-[22px] h-[22px]" fill="{{ request()->routeIs('admin.dashboard') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="{{ request()->routeIs('admin.dashboard') ? '0' : '1.8' }}">
+                <a href="{{ route('admin.dashboard') }}" class="group flex flex-col items-center justify-center min-w-[48px] min-h-[40px] px-1 py-1 rounded-xl transition-all duration-200 active:scale-90 {{ request()->routeIs('admin.dashboard') ? 'text-indigo-600' : 'text-slate-400' }}">
+                    @if(request()->routeIs('admin.dashboard'))<span class="absolute -top-0.5 w-5 h-0.5 bg-indigo-600 rounded-full"></span>@endif
+                    <svg class="w-5 h-5 transition-transform duration-200 group-active:scale-90" fill="{{ request()->routeIs('admin.dashboard') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="{{ request()->routeIs('admin.dashboard') ? '0' : '1.8' }}">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                     </svg>
-                    <span class="text-[10px] mt-0.5 leading-tight {{ request()->routeIs('admin.dashboard') ? 'font-bold' : 'font-medium' }}">Accueil</span>
+                    <span class="text-[9px] mt-0.5 leading-none {{ request()->routeIs('admin.dashboard') ? 'font-semibold' : 'font-medium' }}">Accueil</span>
                 </a>
 
                 {{-- Commandes --}}
-                <a href="{{ route('admin.orders.index') }}" class="relative flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-1 py-1.5 rounded-xl transition-colors {{ request()->routeIs('admin.orders.*') ? 'text-indigo-600' : 'text-slate-400' }}">
+                <a href="{{ route('admin.orders.index') }}" class="group relative flex flex-col items-center justify-center min-w-[48px] min-h-[40px] px-1 py-1 rounded-xl transition-all duration-200 active:scale-90 {{ request()->routeIs('admin.orders.*') ? 'text-indigo-600' : 'text-slate-400' }}">
+                    @if(request()->routeIs('admin.orders.*'))<span class="absolute -top-0.5 w-5 h-0.5 bg-indigo-600 rounded-full"></span>@endif
                     <span class="relative">
-                        <svg class="w-[22px] h-[22px]" fill="{{ request()->routeIs('admin.orders.*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="{{ request()->routeIs('admin.orders.*') ? '0' : '1.8' }}">
+                        <svg class="w-5 h-5 transition-transform duration-200 group-active:scale-90" fill="{{ request()->routeIs('admin.orders.*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="{{ request()->routeIs('admin.orders.*') ? '0' : '1.8' }}">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
                         </svg>
                         @if($mobileNavPendingOrders > 0)
-                            <span class="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-1 text-[9px] font-bold text-white bg-red-500 rounded-full flex items-center justify-center ring-2 ring-white">{{ $mobileNavPendingOrders > 99 ? '99+' : $mobileNavPendingOrders }}</span>
+                            <span class="absolute -top-1 -right-1.5 min-w-[14px] h-[14px] px-0.5 text-[8px] font-bold text-white bg-red-500 rounded-full flex items-center justify-center ring-[1.5px] ring-white">{{ $mobileNavPendingOrders > 99 ? '99' : $mobileNavPendingOrders }}</span>
                         @endif
                     </span>
-                    <span class="text-[10px] mt-0.5 leading-tight {{ request()->routeIs('admin.orders.*') ? 'font-bold' : 'font-medium' }}">Commandes</span>
+                    <span class="text-[9px] mt-0.5 leading-none {{ request()->routeIs('admin.orders.*') ? 'font-semibold' : 'font-medium' }}">Commandes</span>
                 </a>
 
                 {{-- Produits --}}
-                <a href="{{ route('admin.products.index') }}" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-1 py-1.5 rounded-xl transition-colors {{ request()->routeIs('admin.products.*') ? 'text-indigo-600' : 'text-slate-400' }}">
-                    <svg class="w-[22px] h-[22px]" fill="{{ request()->routeIs('admin.products.*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="{{ request()->routeIs('admin.products.*') ? '0' : '1.8' }}">
+                <a href="{{ route('admin.products.index') }}" class="group flex flex-col items-center justify-center min-w-[48px] min-h-[40px] px-1 py-1 rounded-xl transition-all duration-200 active:scale-90 {{ request()->routeIs('admin.products.*') ? 'text-indigo-600' : 'text-slate-400' }}">
+                    @if(request()->routeIs('admin.products.*'))<span class="absolute -top-0.5 w-5 h-0.5 bg-indigo-600 rounded-full"></span>@endif
+                    <svg class="w-5 h-5 transition-transform duration-200 group-active:scale-90" fill="{{ request()->routeIs('admin.products.*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="{{ request()->routeIs('admin.products.*') ? '0' : '1.8' }}">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                     </svg>
-                    <span class="text-[10px] mt-0.5 leading-tight {{ request()->routeIs('admin.products.*') ? 'font-bold' : 'font-medium' }}">Produits</span>
+                    <span class="text-[9px] mt-0.5 leading-none {{ request()->routeIs('admin.products.*') ? 'font-semibold' : 'font-medium' }}">Produits</span>
                 </a>
 
                 {{-- Clients --}}
-                <a href="{{ route('admin.customers.index') }}" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-1 py-1.5 rounded-xl transition-colors {{ request()->routeIs('admin.customers.*') ? 'text-indigo-600' : 'text-slate-400' }}">
-                    <svg class="w-[22px] h-[22px]" fill="{{ request()->routeIs('admin.customers.*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="{{ request()->routeIs('admin.customers.*') ? '0' : '1.8' }}">
+                <a href="{{ route('admin.customers.index') }}" class="group flex flex-col items-center justify-center min-w-[48px] min-h-[40px] px-1 py-1 rounded-xl transition-all duration-200 active:scale-90 {{ request()->routeIs('admin.customers.*') ? 'text-indigo-600' : 'text-slate-400' }}">
+                    @if(request()->routeIs('admin.customers.*'))<span class="absolute -top-0.5 w-5 h-0.5 bg-indigo-600 rounded-full"></span>@endif
+                    <svg class="w-5 h-5 transition-transform duration-200 group-active:scale-90" fill="{{ request()->routeIs('admin.customers.*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="{{ request()->routeIs('admin.customers.*') ? '0' : '1.8' }}">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                     </svg>
-                    <span class="text-[10px] mt-0.5 leading-tight {{ request()->routeIs('admin.customers.*') ? 'font-bold' : 'font-medium' }}">Clients</span>
+                    <span class="text-[9px] mt-0.5 leading-none {{ request()->routeIs('admin.customers.*') ? 'font-semibold' : 'font-medium' }}">Clients</span>
                 </a>
 
-                {{-- Plus (ouvre le bottom sheet) --}}
-                <button @click="moreSheet = true" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-1 py-1.5 rounded-xl transition-colors text-slate-400 active:text-indigo-600">
-                    <svg class="w-[22px] h-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                {{-- Plus --}}
+                <button @click="moreSheet = true" class="group flex flex-col items-center justify-center min-w-[48px] min-h-[40px] px-1 py-1 rounded-xl transition-all duration-200 active:scale-90 text-slate-400">
+                    <svg class="w-5 h-5 transition-transform duration-200 group-active:scale-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
                     </svg>
-                    <span class="text-[10px] mt-0.5 leading-tight font-medium">Plus</span>
+                    <span class="text-[9px] mt-0.5 leading-none font-medium">Plus</span>
                 </button>
             </div>
         </div>
@@ -1251,16 +1255,30 @@
     </nav>
 
     <style>
-        /* Bottom nav spring animation for sheet */
+        /* iOS-like spring for bottom sheet */
         @keyframes slideUpSpring {
             0% { transform: translateY(100%); }
-            60% { transform: translateY(-3%); }
-            80% { transform: translateY(1%); }
+            60% { transform: translateY(-2%); }
+            80% { transform: translateY(0.5%); }
             100% { transform: translateY(0); }
         }
-        /* Safe area support for bottom nav */
+        /* Safe area */
         @supports (padding-bottom: env(safe-area-inset-bottom)) {
             .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        }
+        /* Mobile: tap highlight removal */
+        @media (max-width: 1023px) {
+            * { -webkit-tap-highlight-color: transparent; }
+            a, button { touch-action: manipulation; }
+        }
+        /* Smooth page transitions */
+        @view-transition { navigation: auto; }
+        /* Cards: reduce spacing on mobile */
+        @media (max-width: 767px) {
+            .space-y-6 > * + * { margin-top: 1rem; }
+            .p-6 { padding: 1rem; }
+            .rounded-2xl { border-radius: 1rem; }
+            .gap-6 { gap: 1rem; }
         }
     </style>
 </body>

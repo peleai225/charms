@@ -256,13 +256,18 @@ class CheckoutController extends Controller
             // Envoyer l'email de confirmation
             if ($order->billing_email) {
                 try {
-                    // Configurer la connexion mail depuis les paramètres
                     \App\Services\MailConfigService::configureFromSettings();
-                    
                     Mail::to($order->billing_email)->send(new OrderConfirmation($order));
                 } catch (\Exception $e) {
-                    \Log::error('Failed to send order confirmation: ' . $e->getMessage());
+                    \Log::error('Failed to send order confirmation email: ' . $e->getMessage());
                 }
+            }
+
+            // Envoyer la confirmation WhatsApp
+            try {
+                \App\Services\WhatsAppService::sendOrderConfirmation($order);
+            } catch (\Exception $e) {
+                \Log::error('Failed to send WhatsApp order confirmation: ' . $e->getMessage());
             }
 
             // Pour COD, mettre à jour le statut avant le commit

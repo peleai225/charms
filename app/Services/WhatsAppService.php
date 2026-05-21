@@ -70,6 +70,45 @@ class WhatsAppService
         ]);
     }
 
+    public static function sendOrderConfirmation(Order $order): void
+    {
+        $phone = $order->shipping_phone ?? $order->billing_phone;
+        if (!$phone) return;
+
+        $siteName = Setting::get('site_name', config('app.name'));
+        $items = $order->items->map(fn($i) => "• {$i->name} x{$i->quantity} — " . format_price($i->total))->join("\n");
+
+        $paymentLabel = match ($order->payment_method) {
+            'moneyfusion' => 'MoneyFusion (Mobile Money)',
+            'cinetpay' => 'CinetPay',
+            'lygos' => 'Lygos Pay',
+            'cod' => 'Paiement à la livraison',
+            default => $order->payment_method,
+        };
+
+        $message = "✅ *Commande confirmée !*\n\n"
+            . "Bonjour {$order->shipping_first_name},\n"
+            . "Merci pour votre commande sur *{$siteName}* !\n\n"
+            . "📦 *Commande #{$order->order_number}*\n"
+            . "{$items}\n\n"
+            . "💰 *Total : " . format_price($order->total) . "*\n"
+            . "💳 Paiement : {$paymentLabel}\n"
+            . "📍 Livraison : {$order->shipping_address}, {$order->shipping_city}\n\n"
+            . "Vous pouvez suivre votre commande ici :\n"
+            . route('order-tracking.index') . "\n\n"
+            . "Merci et à bientôt ! 🙏";
+
+        WhatsAppMessage::create([
+            'customer_id' => $order->customer_id,
+            'order_id' => $order->id,
+            'phone' => $phone,
+            'direction' => 'outgoing',
+            'type' => 'order_confirmation',
+            'message' => $message,
+            'status' => 'pending',
+        ]);
+    }
+
     public static function sendPostDeliveryMessage(Order $order): void
     {
         $phone = $order->billing_phone ?? $order->shipping_phone;

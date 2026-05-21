@@ -135,28 +135,67 @@
         @endphp
     @endif
     
-    <!-- Couleurs dynamiques du thème -->
+    <!-- Couleurs dynamiques du thème (depuis Paramètres > Couleurs) -->
     <style>
         :root {
-            --color-primary-500: {{ $primaryColor }};
-            --color-primary-600: {{ $primaryColor }};
-            --color-secondary-500: {{ $secondaryColor }};
-            --color-accent-500: {{ $accentColor }};
+            --color-primary: {{ $primaryColor }};
+            --color-primary-dark: color-mix(in srgb, {{ $primaryColor }} 85%, black);
+            --color-primary-darker: color-mix(in srgb, {{ $primaryColor }} 70%, black);
+            --color-primary-light: color-mix(in srgb, {{ $primaryColor }} 12%, white);
+            --color-primary-soft: color-mix(in srgb, {{ $primaryColor }} 6%, white);
+            --color-secondary: {{ $secondaryColor }};
+            --color-secondary-dark: color-mix(in srgb, {{ $secondaryColor }} 85%, black);
+            --color-secondary-light: color-mix(in srgb, {{ $secondaryColor }} 12%, white);
+            --color-accent: {{ $accentColor }};
+            --color-accent-dark: color-mix(in srgb, {{ $accentColor }} 85%, black);
+            --color-accent-light: color-mix(in srgb, {{ $accentColor }} 14%, white);
+            --color-accent-soft: color-mix(in srgb, {{ $accentColor }} 8%, white);
         }
-        
-        /* Override Tailwind primary colors with custom color */
-        .bg-primary-500, .bg-primary-600 { background-color: {{ $primaryColor }} !important; }
-        .bg-primary-700 { background-color: color-mix(in srgb, {{ $primaryColor }} 85%, black) !important; }
-        .text-primary-500, .text-primary-600 { color: {{ $primaryColor }} !important; }
-        .text-primary-700 { color: color-mix(in srgb, {{ $primaryColor }} 85%, black) !important; }
-        .border-primary-500, .border-primary-600 { border-color: {{ $primaryColor }} !important; }
-        .ring-primary-500 { --tw-ring-color: {{ $primaryColor }} !important; }
-        .hover\:bg-primary-600:hover { background-color: {{ $primaryColor }} !important; }
-        .hover\:bg-primary-700:hover { background-color: color-mix(in srgb, {{ $primaryColor }} 85%, black) !important; }
-        .hover\:text-primary-600:hover { color: {{ $primaryColor }} !important; }
-        .from-primary-500, .from-primary-600 { --tw-gradient-from: {{ $primaryColor }} !important; }
-        .to-primary-700, .to-primary-800 { --tw-gradient-to: color-mix(in srgb, {{ $primaryColor }} 70%, black) !important; }
-        .shadow-primary-500\/30, .shadow-primary-600\/30 { --tw-shadow-color: {{ $primaryColor }}4d !important; }
+
+        /* PRIMARY — Override Tailwind primary classes avec la couleur des paramètres */
+        .bg-primary-50  { background-color: var(--color-primary-soft) !important; }
+        .bg-primary-100 { background-color: var(--color-primary-light) !important; }
+        .bg-primary-500, .bg-primary-600 { background-color: var(--color-primary) !important; }
+        .bg-primary-700, .bg-primary-800 { background-color: var(--color-primary-dark) !important; }
+        .bg-primary-900, .bg-primary-950 { background-color: var(--color-primary-darker) !important; }
+        .text-primary-300 { color: color-mix(in srgb, var(--color-primary) 60%, white) !important; }
+        .text-primary-400 { color: color-mix(in srgb, var(--color-primary) 75%, white) !important; }
+        .text-primary-500, .text-primary-600 { color: var(--color-primary) !important; }
+        .text-primary-700, .text-primary-800 { color: var(--color-primary-dark) !important; }
+        .border-primary-100 { border-color: var(--color-primary-light) !important; }
+        .border-primary-200 { border-color: color-mix(in srgb, var(--color-primary) 22%, white) !important; }
+        .border-primary-500, .border-primary-600 { border-color: var(--color-primary) !important; }
+        .ring-primary-500, .ring-primary-600 { --tw-ring-color: var(--color-primary) !important; }
+        .hover\:bg-primary-50:hover { background-color: var(--color-primary-soft) !important; }
+        .hover\:bg-primary-500:hover, .hover\:bg-primary-600:hover { background-color: var(--color-primary) !important; }
+        .hover\:bg-primary-700:hover, .hover\:bg-primary-800:hover { background-color: var(--color-primary-dark) !important; }
+        .hover\:text-primary-500:hover, .hover\:text-primary-600:hover, .hover\:text-primary-700:hover { color: var(--color-primary) !important; }
+        .hover\:border-primary-500:hover, .hover\:border-primary-600:hover { border-color: var(--color-primary) !important; }
+        .from-primary-400 { --tw-gradient-from: color-mix(in srgb, var(--color-primary) 75%, white) !important; --tw-gradient-to: rgba(0,0,0,0) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+        .from-primary-500, .from-primary-600 { --tw-gradient-from: var(--color-primary) !important; --tw-gradient-to: rgba(0,0,0,0) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+        .from-primary-700 { --tw-gradient-from: var(--color-primary-dark) !important; --tw-gradient-to: rgba(0,0,0,0) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
+        .to-primary-500 { --tw-gradient-to: var(--color-primary) !important; }
+        .to-primary-700, .to-primary-800 { --tw-gradient-to: var(--color-primary-dark) !important; }
+        .via-primary-700, .via-primary-800 { --tw-gradient-via: var(--color-primary-dark) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to) !important; }
+        .shadow-primary-500\/25, .shadow-primary-500\/30, .shadow-primary-600\/25, .shadow-primary-600\/30, .shadow-primary-600\/40 { --tw-shadow-color: color-mix(in srgb, var(--color-primary) 30%, transparent) !important; }
+
+        /* ACCENT — Couleur d'accent (par défaut amber) */
+        .bg-accent-50  { background-color: var(--color-accent-soft) !important; }
+        .bg-accent-100 { background-color: var(--color-accent-light) !important; }
+        .bg-accent-500, .bg-accent-600 { background-color: var(--color-accent) !important; }
+        .bg-accent-700 { background-color: var(--color-accent-dark) !important; }
+        .text-accent-400 { color: color-mix(in srgb, var(--color-accent) 70%, white) !important; }
+        .text-accent-500, .text-accent-600 { color: var(--color-accent) !important; }
+        .text-accent-700, .text-accent-800 { color: var(--color-accent-dark) !important; }
+        .border-accent-200 { border-color: color-mix(in srgb, var(--color-accent) 25%, white) !important; }
+        .border-accent-500 { border-color: var(--color-accent) !important; }
+        .hover\:text-accent-500:hover, .hover\:text-accent-600:hover { color: var(--color-accent) !important; }
+        .hover\:bg-accent-600:hover { background-color: var(--color-accent) !important; }
+
+        /* SECONDARY */
+        .bg-secondary-500, .bg-secondary-600 { background-color: var(--color-secondary) !important; }
+        .text-secondary-500, .text-secondary-600 { color: var(--color-secondary) !important; }
+        .from-secondary-500, .from-secondary-600 { --tw-gradient-from: var(--color-secondary) !important; }
 
         @keyframes gradient { 0%,100% { background-position: 0% center; } 50% { background-position: 100% center; } }
         .animate-gradient { animation: gradient 6s ease infinite; }

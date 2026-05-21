@@ -42,74 +42,76 @@
             else if (dx > 40) prev();
             paused = false;
          ">
-    {{-- Container avec hauteur fixe pour éviter tout décalage --}}
+    {{-- Container avec hauteur fixe + fallback gradient toujours visible --}}
     <div class="relative overflow-hidden h-[380px] sm:h-[460px] md:h-[520px] lg:h-[600px]">
+        {{-- Fond de secours toujours présent --}}
+        <div class="absolute inset-0 bg-gradient-to-br from-primary-700 via-primary-900 to-slate-900"></div>
+
         @foreach($heroBanners as $i => $banner)
         <div x-show="slide === {{ $i }}" x-cloak
-             x-transition:enter="transition ease-out duration-1000"
+             x-transition:enter="transition-opacity ease-out duration-700"
              x-transition:enter-start="opacity-0"
              x-transition:enter-end="opacity-100"
-             x-transition:leave="transition ease-in duration-700 absolute inset-0"
+             x-transition:leave="transition-opacity ease-in duration-500 absolute inset-0"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
              class="absolute inset-0">
-            {{-- Image avec effet Ken Burns (zoom lent) --}}
-            <div class="absolute inset-0 overflow-hidden">
-                @if($banner->image)
-                    <img src="{{ asset('storage/' . $banner->image) }}" alt="{{ $banner->title }}"
-                         class="w-full h-full object-cover hero-kenburns"
-                         :class="slide === {{ $i }} ? 'hero-kenburns-active' : ''"
-                         loading="{{ $i === 0 ? 'eager' : 'lazy' }}"
-                         fetchpriority="{{ $i === 0 ? 'high' : 'auto' }}">
-                @else
-                    <div class="w-full h-full bg-gradient-to-br from-slate-900 via-primary-950 to-slate-900"></div>
-                @endif
-            </div>
-            {{-- Vignettes décoratives sur les bords --}}
-            <div class="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-black/30 md:via-black/40 md:to-black/10"></div>
-            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+            {{-- Image avec Ken Burns --}}
+            @if($banner->image)
+                <img src="{{ asset('storage/' . $banner->image) }}" alt="{{ $banner->title }}"
+                     class="absolute inset-0 w-full h-full object-cover hero-kenburns"
+                     :class="slide === {{ $i }} ? 'hero-kenburns-active' : ''"
+                     loading="{{ $i === 0 ? 'eager' : 'lazy' }}"
+                     fetchpriority="{{ $i === 0 ? 'high' : 'auto' }}"
+                     onerror="this.style.display='none'">
+            @endif
 
-            {{-- Contenu avec animations stagger --}}
+            {{-- Overlay sombre fort pour la lisibilité du texte blanc --}}
+            <div class="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/35 md:via-black/45 md:to-black/15"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20"></div>
+
+            {{-- Contenu --}}
             <div class="absolute inset-0 flex items-center">
                 <div class="container mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="max-w-xl"
-                         :class="slide === {{ $i }} ? 'hero-content-active' : ''"
-                         x-cloak>
-                        {{-- Petit badge "Promotion" --}}
-                        <div class="hero-stagger-1 inline-flex items-center gap-2 px-3.5 py-1.5 mb-5 sm:mb-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-full">
-                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                            <span class="text-white text-[11px] font-medium uppercase tracking-[0.2em]">Sélection exclusive</span>
+                         :class="slide === {{ $i }} ? 'hero-content-active' : ''">
+                        {{-- Badge --}}
+                        <div class="hero-stagger-1 inline-flex items-center gap-2 px-3.5 py-1.5 mb-5 sm:mb-6 bg-white/15 backdrop-blur-md border border-white/25 rounded-full">
+                            <span class="w-1.5 h-1.5 rounded-full bg-accent-500"></span>
+                            <span class="text-white text-[11px] font-medium uppercase tracking-[0.2em]">{{ $banner->subtitle ?? 'Sélection' }}</span>
                         </div>
 
                         @if($banner->title)
-                        <h1 class="hero-stagger-2 font-serif-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-[80px] font-medium text-white leading-[1.02] mb-4 sm:mb-5 tracking-tight drop-shadow-2xl">
+                        <h1 class="hero-stagger-2 font-serif-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-[80px] font-medium text-white leading-[1.02] mb-4 sm:mb-5 tracking-tight"
+                            style="text-shadow: 0 4px 24px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.4);">
                             {!! nl2br(e($banner->title)) !!}
                         </h1>
                         @endif
+
                         @if($banner->subtitle)
-                        <p class="hero-stagger-3 text-white/90 text-sm sm:text-base md:text-lg lg:text-xl mb-5 md:mb-7 leading-relaxed max-w-md drop-shadow-lg">
+                        <p class="hero-stagger-3 text-white text-base sm:text-lg md:text-xl mb-6 md:mb-8 leading-relaxed max-w-md font-medium"
+                           style="text-shadow: 0 2px 12px rgba(0,0,0,0.6);">
                             {{ $banner->subtitle }}
                         </p>
                         @endif
 
                         {{-- CTAs --}}
-                        <div class="hero-stagger-4 flex flex-wrap gap-2.5 sm:gap-3">
+                        <div class="hero-stagger-4 flex flex-wrap gap-3">
                             @if($banner->link && $banner->button_text)
                             <a href="{{ $banner->link }}"
-                               class="group/btn inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold rounded-2xl text-sm shadow-2xl shadow-primary-600/40 hover:shadow-primary-600/60 hover:-translate-y-0.5 transition-all duration-300">
+                               class="group/btn inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-full text-sm shadow-xl shadow-primary-600/30 hover:-translate-y-0.5 transition-all">
                                 {{ $banner->button_text }}
-                                <svg class="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                                <svg class="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                             </a>
                             @else
                             <a href="{{ route('shop.index') }}"
-                               class="group/btn inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-bold rounded-2xl text-sm shadow-2xl shadow-primary-600/40 hover:shadow-primary-600/60 hover:-translate-y-0.5 transition-all duration-300">
+                               class="group/btn inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-full text-sm shadow-xl shadow-primary-600/30 hover:-translate-y-0.5 transition-all">
                                 Découvrir la boutique
-                                <svg class="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                                <svg class="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                             </a>
                             @endif
                             <a href="{{ route('shop.index') }}"
-                               class="inline-flex items-center gap-2 px-5 sm:px-6 py-3 sm:py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-semibold rounded-2xl text-sm border border-white/20 hover:border-white/40 transition-all">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                               class="inline-flex items-center gap-2 px-5 sm:px-6 py-3 sm:py-3.5 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-medium rounded-full text-sm border border-white/30 hover:border-white/50 transition-all">
                                 Voir tous les produits
                             </a>
                         </div>
@@ -140,7 +142,7 @@
 
     {{-- Barre de progression --}}
     <div class="absolute bottom-0 left-0 right-0 z-20 h-1 bg-white/10">
-        <div class="h-full bg-gradient-to-r from-primary-400 via-amber-400 to-primary-600 rounded-r-full" :style="'width:' + progress + '%'" style="transition: none; box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);"></div>
+        <div class="h-full bg-primary-500 rounded-r-full" :style="'width:' + progress + '%'" style="transition: none;"></div>
     </div>
 
     {{-- Indicateurs --}}
@@ -192,13 +194,13 @@
         <div class="grid lg:grid-cols-2 gap-10 md:gap-12 lg:gap-16 items-center">
             {{-- Texte gauche --}}
             <div class="max-w-xl">
-                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-amber-300 text-[11px] font-medium uppercase tracking-[0.2em] mb-6">
-                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-accent-400 text-[11px] font-medium uppercase tracking-[0.2em] mb-6">
+                    <span class="w-1.5 h-1.5 rounded-full bg-accent-500"></span>
                     Bienvenue chez {{ $siteName }}
                 </div>
                 <h1 class="font-serif-display text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-medium text-white leading-[1.02] mb-5 tracking-tight">
                     Découvrez nos<br>
-                    <em class="not-italic text-amber-300">meilleurs produits.</em>
+                    <em class="not-italic text-accent-400">meilleurs produits.</em>
                 </h1>
                 <p class="text-slate-400 text-base md:text-lg leading-relaxed mb-8 max-w-md">
                     Qualité premium, prix imbattables et livraison express partout en Afrique de l'Ouest.
@@ -318,7 +320,7 @@
 
                             {{-- 8. Bloc d'info en bas (toujours visible) --}}
                             <div class="absolute bottom-0 inset-x-0 p-4 sm:p-5 md:p-6 z-10">
-                                <h3 class="text-white text-lg sm:text-xl md:text-2xl font-black leading-tight mb-1.5 line-clamp-2 drop-shadow-2xl group-hover/card:text-amber-300 transition-colors">
+                                <h3 class="text-white text-lg sm:text-xl md:text-2xl font-black leading-tight mb-1.5 line-clamp-2 drop-shadow-2xl group-hover/card:text-accent-400 transition-colors">
                                     {{ $product->name }}
                                 </h3>
                                 @if($product->short_description)
@@ -343,7 +345,7 @@
                 <div class="flex items-center justify-center gap-2 mt-5">
                     @foreach($heroProducts as $i => $product)
                     <button type="button" @click="current = {{ $i }}"
-                            :class="current === {{ $i }} ? 'w-8 bg-gradient-to-r from-primary-400 to-amber-400' : 'w-2 bg-white/20 hover:bg-white/40'"
+                            :class="current === {{ $i }} ? 'w-8 bg-primary-500' : 'w-2 bg-white/30 hover:bg-white/50'"
                             class="h-2 rounded-full transition-all duration-300"></button>
                     @endforeach
                 </div>
@@ -419,7 +421,7 @@
                     <span class="text-primary-700 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Explorer</span>
                 </div>
                 <h2 class="font-serif-display text-3xl sm:text-4xl md:text-5xl font-medium text-stone-900 tracking-tight leading-[1.02]">
-                    Nos <em class="not-italic text-amber-700">catégories</em>
+                    Nos <em class="not-italic text-accent-600">catégories</em>
                 </h2>
                 <p class="text-slate-500 text-xs sm:text-sm mt-2">Trouvez ce que vous cherchez en un clic</p>
             </div>
@@ -490,17 +492,14 @@
 ═══════════════════════════════════════════════ --}}
 @if($featuredProducts->count() > 0)
 <section class="py-10 md:py-16 bg-gradient-to-b from-slate-50/80 via-white to-slate-50/80 relative overflow-hidden">
-    <div class="absolute top-10 left-1/2 -translate-x-1/2 w-96 h-96 bg-gradient-to-b from-amber-200/20 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute top-10 left-1/2 -translate-x-1/2 w-96 h-96 bg-gradient-to-b from-accent-100/30 to-transparent rounded-full blur-3xl pointer-events-none"></div>
 
     <div class="container mx-auto px-4 sm:px-6 relative">
         <div class="flex items-end justify-between mb-6 md:mb-10">
             <div>
-                <div class="inline-flex items-center gap-2 px-3 py-1 mb-2 bg-amber-50 border border-amber-200 rounded-full">
-                    <svg class="w-3 h-3 text-amber-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 6.477V16h2a1 1 0 110 2H7a1 1 0 110-2h2V6.477L6.237 7.582l1.715 5.349a1 1 0 01-.285 1.05A3.989 3.989 0 015 15a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.738-5.42-1.233-.617a1 1 0 01.894-1.788l1.599.799L9 4.323V3a1 1 0 011-1z" clip-rule="evenodd"/></svg>
-                    <span class="text-amber-700 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Tendances</span>
-                </div>
+                <p class="text-stone-500 text-[10px] sm:text-xs font-medium uppercase tracking-[0.25em] mb-3">— Tendances</p>
                 <h2 class="font-serif-display text-3xl sm:text-4xl md:text-5xl font-medium text-stone-900 tracking-tight leading-[1.02]">
-                    Produits <em class="not-italic text-amber-700">populaires</em>
+                    Produits <em class="not-italic text-accent-600">populaires</em>
                 </h2>
                 <p class="text-slate-500 text-xs sm:text-sm mt-2">Les plus demandés par nos clients ce mois-ci</p>
             </div>
@@ -562,10 +561,9 @@
      VENTES FLASH — avec produits et urgence
 ═══════════════════════════════════════════════ --}}
 @if($saleProducts->count() > 0)
-<section class="py-10 md:py-16 bg-gradient-to-br from-red-50 via-orange-50/40 to-white relative overflow-hidden">
-    {{-- Flammes décoratives --}}
-    <div class="absolute top-10 left-10 w-72 h-72 bg-red-400/10 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute bottom-10 right-10 w-72 h-72 bg-orange-400/10 rounded-full blur-3xl pointer-events-none"></div>
+<section class="py-10 md:py-16 bg-stone-50 relative overflow-hidden">
+    <div class="absolute top-10 left-10 w-72 h-72 bg-primary-100/40 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-10 right-10 w-72 h-72 bg-accent-100/40 rounded-full blur-3xl pointer-events-none"></div>
 
     <div class="container mx-auto px-4 sm:px-6 relative">
         {{-- Header avec countdown --}}
@@ -585,14 +583,11 @@
                 }
              }">
             <div class="flex-1">
-                <div class="inline-flex items-center gap-2 px-3 py-1 mb-2 bg-red-100 border border-red-200 rounded-full">
-                    <span class="text-base">🔥</span>
-                    <span class="text-red-700 text-[10px] sm:text-xs font-black uppercase tracking-widest">Offres limitées</span>
-                </div>
+                <p class="text-stone-500 text-[10px] sm:text-xs font-medium uppercase tracking-[0.25em] mb-3">— Offres limitées</p>
                 <h2 class="font-serif-display text-3xl sm:text-4xl md:text-5xl font-medium text-stone-900 tracking-tight leading-[1.02]">
-                    Ventes <em class="not-italic text-red-600">Flash</em>
+                    Ventes <em class="not-italic text-primary-600">Flash</em>
                 </h2>
-                <p class="text-slate-600 text-xs sm:text-sm mt-2">Profitez de prix imbattables — quantités limitées</p>
+                <p class="text-stone-600 text-xs sm:text-sm mt-2">Profitez de prix imbattables — quantités limitées</p>
             </div>
 
             {{-- Countdown --}}
@@ -610,8 +605,8 @@
                     </div>
                     <span class="text-slate-400 font-black text-lg sm:text-xl pb-4">:</span>
                     <div class="flex flex-col items-center">
-                        <div class="bg-gradient-to-b from-red-500 to-red-600 text-white text-base sm:text-lg md:text-xl font-black px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl min-w-[44px] sm:min-w-[52px] text-center shadow-lg shadow-red-500/30 animate-pulse tabular-nums" x-text="String(s).padStart(2,'0')">00</div>
-                        <span class="text-[9px] text-red-600 font-bold mt-1">Sec</span>
+                        <div class="bg-primary-600 text-white text-base sm:text-lg md:text-xl font-bold px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl min-w-[44px] sm:min-w-[52px] text-center shadow-lg shadow-primary-600/30 tabular-nums" x-text="String(s).padStart(2,'0')">00</div>
+                        <span class="text-[9px] text-primary-600 font-bold mt-1">Sec</span>
                     </div>
                 </div>
             </div>
@@ -626,9 +621,9 @@
 
         {{-- CTA --}}
         <div class="flex justify-center mt-6 md:mt-8">
-            <a href="{{ route('shop.index', ['sale' => 1]) }}" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-700 hover:to-orange-600 text-white font-bold rounded-xl transition-all text-sm shadow-xl shadow-red-500/30 hover:-translate-y-0.5">
+            <a href="{{ route('shop.index', ['sale' => 1]) }}" class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-full transition-all text-sm shadow-xl shadow-primary-600/30 hover:-translate-y-0.5">
                 Voir toutes les promotions
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
             </a>
         </div>
     </div>
@@ -643,12 +638,9 @@
     <div class="container mx-auto px-4 sm:px-6">
         <div class="flex items-end justify-between mb-6 md:mb-10">
             <div>
-                <div class="inline-flex items-center gap-2 px-3 py-1 mb-2 bg-emerald-50 border border-emerald-200 rounded-full">
-                    <span class="text-base">✨</span>
-                    <span class="text-emerald-700 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Nouveautés</span>
-                </div>
+                <p class="text-stone-500 text-[10px] sm:text-xs font-medium uppercase tracking-[0.25em] mb-3">— Nouveautés</p>
                 <h2 class="font-serif-display text-3xl sm:text-4xl md:text-5xl font-medium text-stone-900 tracking-tight leading-[1.02]">
-                    Fraîchement <em class="not-italic text-emerald-700">ajoutés</em>
+                    Fraîchement <em class="not-italic text-accent-600">ajoutés</em>
                 </h2>
                 <p class="text-slate-500 text-xs sm:text-sm mt-2">Découvrez les derniers arrivages</p>
             </div>
@@ -679,7 +671,7 @@
     {{-- Décorations --}}
     <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-primary-500/50 to-transparent"></div>
     <div class="absolute top-20 left-10 w-72 h-72 bg-primary-600/10 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute bottom-20 right-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-20 right-10 w-72 h-72 bg-accent-500/15 rounded-full blur-3xl pointer-events-none"></div>
 
     <div class="container mx-auto px-4 sm:px-6 relative">
         <div class="text-center mb-8 md:mb-12">
@@ -688,7 +680,7 @@
                 <span class="text-primary-300 text-[10px] sm:text-xs font-bold uppercase tracking-widest">Nos engagements</span>
             </div>
             <h2 class="font-serif-display text-3xl sm:text-4xl md:text-5xl font-medium text-white tracking-tight leading-[1.02]">
-                Pourquoi nous <em class="not-italic text-amber-400">choisir ?</em>
+                Pourquoi nous <em class="not-italic text-accent-400">choisir ?</em>
             </h2>
             <p class="text-slate-400 text-sm sm:text-base mt-3 max-w-xl mx-auto">4 raisons qui font de nous le partenaire idéal pour vos achats en ligne</p>
         </div>
@@ -730,16 +722,13 @@
 <section class="py-16 bg-gradient-to-b from-slate-50 via-white to-slate-50/50 relative overflow-hidden">
     {{-- Décorations de fond --}}
     <div class="absolute top-20 left-10 w-72 h-72 bg-primary-200/20 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute bottom-20 right-10 w-72 h-72 bg-amber-200/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute bottom-20 right-10 w-72 h-72 bg-accent-100/30 rounded-full blur-3xl pointer-events-none"></div>
 
     <div class="container mx-auto px-6 relative z-10">
         <div class="text-center mb-12">
-            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-amber-50 border border-amber-200/60 rounded-full mb-4">
-                <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
-                <span class="text-amber-800 text-[11px] font-medium uppercase tracking-[0.2em]">Avis clients</span>
-            </div>
+            <p class="text-stone-500 text-[10px] sm:text-xs font-medium uppercase tracking-[0.25em] mb-3">— Avis clients</p>
             <h2 class="font-serif-display text-3xl sm:text-4xl md:text-5xl font-medium text-stone-900 tracking-tight leading-[1.02]">
-                Ils nous font <em class="not-italic text-amber-700">confiance</em>
+                Ils nous font <em class="not-italic text-accent-600">confiance</em>
             </h2>
             <p class="text-slate-500 text-sm md:text-base mt-3 max-w-xl mx-auto">Découvrez ce que nos clients pensent de leur expérience d'achat.</p>
         </div>

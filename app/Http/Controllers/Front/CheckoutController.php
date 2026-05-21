@@ -585,6 +585,16 @@ class CheckoutController extends Controller
             return;
         }
 
+        // Token de paiement dans l'URL (retour depuis MoneyFusion)
+        $token = request('token');
+        if ($token) {
+            $payment = $order->payments()->where('transaction_id', $token)->first();
+            if ($payment) {
+                session()->push('checkout_order_ids', $order->id);
+                return;
+            }
+        }
+
         abort(403, 'Vous n\'avez pas accès à cette commande.');
     }
 

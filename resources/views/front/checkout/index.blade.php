@@ -321,11 +321,35 @@
                     </label>
                     @endif
 
+                    <!-- MoneyFusion -->
+                    @if(($settings['payment_moneyfusion_enabled'] ?? '0') === '1')
+                    <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200"
+                        :class="paymentMethod === 'moneyfusion' ? 'border-primary-500 bg-primary-50 scale-[1.02] shadow-md' : 'border-gray-200 hover:border-gray-300'">
+                        <input type="radio" name="payment_method" value="moneyfusion" x-model="paymentMethod" class="sr-only">
+                        <div class="flex items-center gap-4 flex-1">
+                            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+                                :class="paymentMethod === 'moneyfusion' ? 'border-primary-500' : 'border-gray-300'">
+                                <div class="w-2.5 h-2.5 rounded-full transition-colors"
+                                    :class="paymentMethod === 'moneyfusion' ? 'bg-primary-500' : 'bg-transparent'"></div>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                <svg class="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900">MoneyFusion</p>
+                                <p class="text-sm text-gray-500">Orange Money, MTN, Wave, Moov</p>
+                            </div>
+                        </div>
+                    </label>
+                    @endif
+
                     <!-- Paiement à la livraison -->
                     @if(($settings['payment_cod_enabled'] ?? '1') === '1')
                     <label class="relative flex items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200"
                         :class="paymentMethod === 'cod' ? 'border-primary-500 bg-primary-50 scale-[1.02] shadow-md' : 'border-gray-200 hover:border-gray-300'">
-                        <input type="radio" name="payment_method" value="cod" x-model="paymentMethod" class="sr-only" {{ (($settings['payment_cinetpay_enabled'] ?? '0') !== '1' && ($settings['payment_lygos_enabled'] ?? '0') !== '1' && ($settings['payment_cod_enabled'] ?? '1') === '1') ? 'checked' : '' }}>
+                        <input type="radio" name="payment_method" value="cod" x-model="paymentMethod" class="sr-only" {{ (($settings['payment_cinetpay_enabled'] ?? '0') !== '1' && ($settings['payment_lygos_enabled'] ?? '0') !== '1' && ($settings['payment_moneyfusion_enabled'] ?? '0') !== '1' && ($settings['payment_cod_enabled'] ?? '1') === '1') ? 'checked' : '' }}>
                         <div class="flex items-center gap-4 flex-1">
                             <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors"
                                 :class="paymentMethod === 'cod' ? 'border-primary-500' : 'border-gray-300'">
@@ -503,7 +527,7 @@ function checkoutForm() {
         isSubmitting: false,
         isCalculatingShipping: false,
         sameBilling: true,
-        paymentMethod: '{{ (($settings['payment_cinetpay_enabled'] ?? '0') === '1') ? 'cinetpay' : ((($settings['payment_lygos_enabled'] ?? '0') === '1') ? 'lygos' : 'cod') }}',
+        paymentMethod: '{{ (($settings['payment_cinetpay_enabled'] ?? '0') === '1') ? 'cinetpay' : ((($settings['payment_lygos_enabled'] ?? '0') === '1') ? 'lygos' : ((($settings['payment_moneyfusion_enabled'] ?? '0') === '1') ? 'moneyfusion' : 'cod')) }}',
         shippingText: 'Selon destination',
         estimatedShipping: 0,
         estimatedTotal: {{ $cart->total }},

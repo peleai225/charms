@@ -14,6 +14,7 @@ use App\Models\OrderItem;
 use App\Models\Setting;
 use App\Services\CinetPayService;
 use App\Services\LygosPayService;
+use App\Services\MoneyFusionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -22,11 +23,13 @@ class CheckoutController extends Controller
 {
     protected CinetPayService $cinetPay;
     protected LygosPayService $lygosPay;
+    protected MoneyFusionService $moneyFusion;
 
-    public function __construct(CinetPayService $cinetPay, LygosPayService $lygosPay)
+    public function __construct(CinetPayService $cinetPay, LygosPayService $lygosPay, MoneyFusionService $moneyFusion)
     {
         $this->cinetPay = $cinetPay;
         $this->lygosPay = $lygosPay;
+        $this->moneyFusion = $moneyFusion;
     }
 
     /**
@@ -57,6 +60,7 @@ class CheckoutController extends Controller
         $settings = [
             'payment_cinetpay_enabled' => Setting::get('payment_cinetpay_enabled', '0'),
             'payment_lygos_enabled' => Setting::get('payment_lygos_enabled', '0'),
+            'payment_moneyfusion_enabled' => Setting::get('payment_moneyfusion_enabled', '0'),
             'payment_cod_enabled' => Setting::get('payment_cod_enabled', '1'),
         ];
 
@@ -109,9 +113,10 @@ class CheckoutController extends Controller
                     $settings = [
                         'payment_cinetpay_enabled' => Setting::get('payment_cinetpay_enabled', '0'),
                         'payment_lygos_enabled' => Setting::get('payment_lygos_enabled', '0'),
+                        'payment_moneyfusion_enabled' => Setting::get('payment_moneyfusion_enabled', '0'),
                         'payment_cod_enabled' => Setting::get('payment_cod_enabled', '1'),
                     ];
-                    
+
                     $allowedMethods = [];
                     if ($settings['payment_cinetpay_enabled'] === '1') {
                         $allowedMethods[] = 'cinetpay';
@@ -119,14 +124,17 @@ class CheckoutController extends Controller
                     if ($settings['payment_lygos_enabled'] === '1') {
                         $allowedMethods[] = 'lygos';
                     }
+                    if ($settings['payment_moneyfusion_enabled'] === '1') {
+                        $allowedMethods[] = 'moneyfusion';
+                    }
                     if ($settings['payment_cod_enabled'] === '1') {
                         $allowedMethods[] = 'cod';
                     }
-                    
+
                     if (empty($allowedMethods)) {
                         $fail('Aucune méthode de paiement n\'est configurée. Veuillez activer au moins une méthode dans les paramètres.');
                     }
-                    
+
                     if (!in_array($value, $allowedMethods)) {
                         $fail('La méthode de paiement sélectionnée n\'est pas disponible.');
                     }
@@ -274,7 +282,7 @@ class CheckoutController extends Controller
             session()->push('checkout_order_ids', $order->id);
 
             // Rediriger vers le paiement en ligne
-            if (in_array($validated['payment_method'], ['cinetpay', 'lygos'])) {
+            if (in_array($validated['payment_method'], ['cinetpay', 'lygos', 'moneyfusion'])) {
                 return $this->redirectToPayment($order, $validated['payment_method']);
             }
 
@@ -293,6 +301,27 @@ class CheckoutController extends Controller
      */
     protected function redirectToPayment(Order $order, string $method = 'cinetpay')
     {
+        if ($method === 'moneyfusion') {
+            if (!$this->moneyFusion->isConfigured()) {
+                return redirect()->route('checkout.payment', ['order' => $order->id])
+                    ->with('error', 'MoneyFusion n\'est pas configuré.');
+            }
+
+            $result = $this->moneyFusion->initializePayment($order, [
+                'name' => $order->billing_first_name,
+                'surname' => $order->billing_last_name,
+                'email' => $order->billing_email,
+                'phone' => $order->billing_phone,
+            ]);
+
+            if ($result['success']) {
+                return redirect()->away($result['payment_url']);
+            }
+
+            return redirect()->route('checkout.payment', ['order' => $order->id])
+                ->with('error', $result['message'] ?? 'Erreur lors de l\'initialisation du paiement MoneyFusion.');
+        }
+
         if ($method === 'lygos') {
             if (!$this->lygosPay->isConfigured()) {
                 return redirect()->route('checkout.payment', ['order' => $order->id])
@@ -369,7 +398,7 @@ class CheckoutController extends Controller
             if ($payment && $payment->transaction_id) {
                 if ($order->payment_method === 'cinetpay') {
                     $status = $this->cinetPay->checkPaymentStatus($payment->transaction_id);
-                    
+
                     if ($status['success'] && $status['status'] === 'ACCEPTED') {
                         $payment->update([
                             'status' => 'completed',
@@ -383,7 +412,21 @@ class CheckoutController extends Controller
                     }
                 } elseif ($order->payment_method === 'lygos') {
                     $status = $this->lygosPay->checkPaymentStatus($payment->transaction_id);
-                    
+
+                    if ($status['success'] && $status['status'] === 'paid') {
+                        $payment->update([
+                            'status' => 'completed',
+                            'paid_at' => now(),
+                        ]);
+                        $order->update([
+                            'payment_status' => 'paid',
+                            'status' => 'processing',
+                            'paid_at' => now(),
+                        ]);
+                    }
+                } elseif ($order->payment_method === 'moneyfusion') {
+                    $status = $this->moneyFusion->checkPaymentStatus($payment->transaction_id);
+
                     if ($status['success'] && $status['status'] === 'paid') {
                         $payment->update([
                             'status' => 'completed',
@@ -583,7 +626,7 @@ class CheckoutController extends Controller
         $this->authorizeOrderAccess($order);
 
         $validated = $request->validate([
-            'method' => 'nullable|string|in:cinetpay,lygos,cod',
+            'method' => 'nullable|string|in:cinetpay,lygos,moneyfusion,cod',
         ]);
         $method = $validated['method'] ?? 'cinetpay';
 

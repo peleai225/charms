@@ -214,6 +214,19 @@ Route::get('/webhook/lygos', function () {
     ]);
 })->withoutMiddleware(['web']);
 
+// Webhook MoneyFusion (sans CSRF, throttle anti-abus)
+Route::post('/webhook/moneyfusion', [App\Http\Controllers\Webhook\MoneyFusionWebhookController::class, 'handle'])
+    ->middleware('throttle:60,1')
+    ->name('webhook.moneyfusion')
+    ->withoutMiddleware(['web']);
+Route::get('/webhook/moneyfusion', function () {
+    return response()->json([
+        'status' => 'ok',
+        'message' => 'MoneyFusion Webhook Endpoint',
+        'info' => 'Ce endpoint accepte uniquement les requêtes POST de MoneyFusion.',
+    ]);
+})->withoutMiddleware(['web']);
+
 // Pages statiques
 Route::get('/contact', [\App\Http\Controllers\Front\ContactController::class, 'index'])->name('contact');
 Route::post('/contact', [\App\Http\Controllers\Front\ContactController::class, 'store'])->middleware('throttle:5,5')->name('contact.store');
@@ -433,6 +446,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/settings/emails', [\App\Http\Controllers\Admin\SettingsController::class, 'updateEmails'])->name('settings.emails.update');
             Route::post('/settings/emails/test', [\App\Http\Controllers\Admin\SettingsController::class, 'testEmail'])->name('settings.emails.test');
             Route::post('/settings/payment/test-lygos', [\App\Http\Controllers\Admin\SettingsController::class, 'testLygosPay'])->name('settings.payment.test-lygos');
+            Route::post('/settings/payment/test-moneyfusion', [\App\Http\Controllers\Admin\SettingsController::class, 'testMoneyFusion'])->name('settings.payment.test-moneyfusion');
 
             // Système / Déploiement (admin uniquement)
             Route::get('/system', [\App\Http\Controllers\Admin\SystemController::class, 'index'])->name('system.index');

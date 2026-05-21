@@ -106,6 +106,45 @@
             </div>
         </div>
 
+        <!-- MoneyFusion -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-xs">MF</span>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-900">MoneyFusion</h3>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="payment_moneyfusion_enabled" value="1" {{ ($settings['payment_moneyfusion_enabled'] ?? '0') === '1' ? 'checked' : '' }} class="sr-only peer" id="moneyfusionToggle">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                </label>
+            </div>
+            <p class="text-sm text-slate-500 mb-4">Solution de paiement mobile money (Orange Money, MTN, Wave, Moov) pour l'Afrique.</p>
+
+            <div id="moneyfusionSettings" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">URL API</label>
+                    <input type="text" name="moneyfusion_api_url" value="{{ $settings['moneyfusion_api_url'] ?? '' }}" class="w-full px-4 py-2 border border-slate-300 rounded-xl" placeholder="https://...">
+                    <p class="mt-1 text-xs text-slate-500">Récupérez votre URL API sur votre tableau de bord MoneyFusion.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Clé API (optionnel)</label>
+                    <input type="password" name="moneyfusion_api_key" value="{{ $settings['moneyfusion_api_key'] ?? '' }}" class="w-full px-4 py-2 border border-slate-300 rounded-xl" placeholder="Votre clé API MoneyFusion">
+                    <p class="mt-1 text-xs text-slate-500">Si votre compte nécessite une clé API, renseignez-la ici.</p>
+                </div>
+                <div class="p-4 bg-green-50 border border-green-200 rounded-xl space-y-2">
+                    <p class="text-sm text-green-800">
+                        <strong>URL de Webhook :</strong> Configurez cette URL dans votre tableau de bord MoneyFusion :<br>
+                        <code class="bg-green-100 px-2 py-1 rounded">{{ route('webhook.moneyfusion') }}</code>
+                    </p>
+                    <p class="text-sm text-green-800">
+                        <strong>URL de retour :</strong> Le client sera redirigé automatiquement vers votre site après le paiement.
+                    </p>
+                </div>
+            </div>
+        </div>
+
         <button type="submit" class="px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors">
             Enregistrer
         </button>
@@ -137,16 +176,24 @@ VITE_PUSHER_APP_CLUSTER="${PUSHER_APP_CLUSTER}"</pre>
         </div>
     </div>
 
-    <!-- Test Lygos (formulaire séparé, hors du formulaire principal) -->
+    <!-- Test des connexions (formulaires séparés, hors du formulaire principal) -->
     <div class="mt-6 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-        <h4 class="font-medium text-slate-900 mb-2">Tester Lygos Pay</h4>
-        <p class="text-sm text-slate-600 mb-3">Enregistrez d'abord vos paramètres ci-dessus, puis testez la connexion API.</p>
-        <form method="POST" action="{{ route('admin.settings.payment.test-lygos') }}" class="inline">
-            @csrf
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors">
-                Tester la connexion API
-            </button>
-        </form>
+        <h4 class="font-medium text-slate-900 mb-2">Tester les connexions API</h4>
+        <p class="text-sm text-slate-600 mb-3">Enregistrez d'abord vos paramètres ci-dessus, puis testez les connexions.</p>
+        <div class="flex flex-wrap gap-3">
+            <form method="POST" action="{{ route('admin.settings.payment.test-lygos') }}" class="inline">
+                @csrf
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                    Tester Lygos Pay
+                </button>
+            </form>
+            <form method="POST" action="{{ route('admin.settings.payment.test-moneyfusion') }}" class="inline">
+                @csrf
+                <button type="submit" class="px-4 py-2 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition-colors">
+                    Tester MoneyFusion
+                </button>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -158,16 +205,23 @@ VITE_PUSHER_APP_CLUSTER="${PUSHER_APP_CLUSTER}"</pre>
     document.getElementById('lygosToggle')?.addEventListener('change', function() {
         document.getElementById('lygosSettings').style.display = this.checked ? 'block' : 'none';
     });
-    
+    document.getElementById('moneyfusionToggle')?.addEventListener('change', function() {
+        document.getElementById('moneyfusionSettings').style.display = this.checked ? 'block' : 'none';
+    });
+
     // Initialiser l'affichage au chargement
     document.addEventListener('DOMContentLoaded', function() {
         const cinetpayToggle = document.getElementById('cinetpayToggle');
         const lygosToggle = document.getElementById('lygosToggle');
+        const moneyfusionToggle = document.getElementById('moneyfusionToggle');
         if (cinetpayToggle) {
             document.getElementById('cinetpaySettings').style.display = cinetpayToggle.checked ? 'block' : 'none';
         }
         if (lygosToggle) {
             document.getElementById('lygosSettings').style.display = lygosToggle.checked ? 'block' : 'none';
+        }
+        if (moneyfusionToggle) {
+            document.getElementById('moneyfusionSettings').style.display = moneyfusionToggle.checked ? 'block' : 'none';
         }
     });
 </script>

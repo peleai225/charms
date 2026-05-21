@@ -1032,17 +1032,17 @@
         tapStart(id) { this.pressedTab = id; },
         tapEnd() { setTimeout(() => { this.pressedTab = null; }, 100); }
     }" class="fixed bottom-0 inset-x-0 z-40 lg:hidden" x-cloak>
-        <!-- Main Navigation Bar -->
-        <div class="relative bg-white/80 backdrop-blur-3xl backdrop-saturate-[1.8] border-t border-slate-900/[0.06]"
-             style="box-shadow: 0 -2px 24px rgba(0,0,0,0.04), 0 -1px 0 rgba(0,0,0,0.02);">
+        <!-- Main Navigation Bar - Clean Icon Layout -->
+        <div class="relative bg-white/85 backdrop-blur-3xl backdrop-saturate-[1.8] border-t border-slate-900/[0.05]"
+             style="box-shadow: 0 -2px 20px rgba(0,0,0,0.03), 0 -1px 0 rgba(0,0,0,0.02);">
 
-            <div class="grid grid-cols-5 px-2 pt-1.5 pb-[max(env(safe-area-inset-bottom,6px),6px)]">
+            <div class="flex items-center justify-around px-4 py-2 pb-[max(env(safe-area-inset-bottom,8px),8px)]">
                 @php
                     $tabs = [
-                        ['route' => 'admin.dashboard', 'match' => 'admin.dashboard', 'label' => 'Accueil', 'icon' => 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', 'color' => 'text-blue-600'],
-                        ['route' => 'admin.orders.index', 'match' => 'admin.orders.*', 'label' => 'Commandes', 'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', 'color' => 'text-orange-600'],
-                        ['route' => 'admin.products.index', 'match' => 'admin.products.*', 'label' => 'Produits', 'icon' => 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', 'color' => 'text-emerald-600'],
-                        ['route' => 'admin.customers.index', 'match' => 'admin.customers.*', 'label' => 'Clients', 'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', 'color' => 'text-pink-600'],
+                        ['route' => 'admin.dashboard', 'match' => 'admin.dashboard', 'label' => 'Accueil', 'icon' => 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', 'color' => 'text-blue-600', 'bgColor' => 'bg-blue-600'],
+                        ['route' => 'admin.orders.index', 'match' => 'admin.orders.*', 'label' => 'Commandes', 'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', 'color' => 'text-orange-600', 'bgColor' => 'bg-orange-600'],
+                        ['route' => 'admin.products.index', 'match' => 'admin.products.*', 'label' => 'Produits', 'icon' => 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', 'color' => 'text-emerald-600', 'bgColor' => 'bg-emerald-600'],
+                        ['route' => 'admin.customers.index', 'match' => 'admin.customers.*', 'label' => 'Clients', 'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', 'color' => 'text-pink-600', 'bgColor' => 'bg-pink-600'],
                     ];
                 @endphp
                 @foreach($tabs as $index => $tab)
@@ -1052,82 +1052,70 @@
                        @touchend="tapEnd()"
                        @mousedown="tapStart('tab-{{ $index }}')"
                        @mouseup="tapEnd()"
-                       class="relative flex flex-col items-center justify-center py-2.5 rounded-xl transition-all duration-200"
-                       :class="pressedTab === 'tab-{{ $index }}' ? 'scale-[0.88]' : 'scale-100'"
+                       class="relative flex flex-col items-center gap-1 min-w-[60px] py-1.5 transition-all duration-200"
+                       :class="pressedTab === 'tab-{{ $index }}' ? 'scale-90' : 'scale-100'"
                        style="transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);">
 
-                        <!-- Icon Container with micro-interaction -->
-                        <span class="relative flex items-center justify-center mb-1 transition-all duration-200"
-                              :class="pressedTab === 'tab-{{ $index }}' ? 'scale-95' : 'scale-100'">
-
-                            <!-- Active background pill -->
+                        <!-- Icon Container -->
+                        <div class="relative flex items-center justify-center w-11 h-11">
+                            <!-- Active background with color -->
                             @if($isActive)
-                            <span class="absolute inset-0 w-full h-full bg-gradient-to-br {{ $tab['color'] }}/10 rounded-xl scale-110"></span>
+                            <div class="absolute inset-0 {{ $tab['bgColor'] }}/10 rounded-[14px] scale-100"></div>
                             @endif
 
-                            <!-- Icon SVG -->
-                            <svg class="w-[22px] h-[22px] relative z-10 transition-all duration-200 {{ $isActive ? $tab['color'] : 'text-slate-400' }}"
+                            <!-- Icon -->
+                            <svg class="w-6 h-6 relative z-10 transition-all duration-300 {{ $isActive ? $tab['color'] : 'text-slate-400' }}"
                                  fill="{{ $isActive ? 'currentColor' : 'none' }}"
                                  stroke="currentColor"
                                  viewBox="0 0 24 24"
-                                 stroke-width="{{ $isActive ? '0' : '1.8' }}"
-                                 :class="pressedTab === 'tab-{{ $index }}' ? 'brightness-75' : ''">
+                                 stroke-width="{{ $isActive ? '0' : '2' }}"
+                                 :class="pressedTab === 'tab-{{ $index }}' ? 'scale-90' : ''">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="{{ $tab['icon'] }}"></path>
                             </svg>
 
                             <!-- Badge for orders -->
                             @if($tab['match'] === 'admin.orders.*' && $mobileNavPendingOrders > 0)
-                                <span class="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 text-[9px] font-bold text-white bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg shadow-red-500/30 ring-[1.5px] ring-white">
+                                <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-[9px] font-extrabold text-white bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg shadow-red-500/40 ring-2 ring-white">
                                     {{ $mobileNavPendingOrders > 9 ? '9+' : $mobileNavPendingOrders }}
                                 </span>
                             @endif
-                        </span>
+                        </div>
 
                         <!-- Label -->
-                        <span class="text-[10px] leading-none tracking-tight transition-all duration-200
-                                   {{ $isActive ? 'font-semibold ' . $tab['color'] : 'font-medium text-slate-500' }}">
+                        <span class="text-[10px] font-medium leading-none tracking-tight transition-all duration-200 {{ $isActive ? 'font-semibold ' . $tab['color'] : 'text-slate-500' }}">
                             {{ $tab['label'] }}
                         </span>
-
-                        <!-- Active indicator dot -->
-                        @if($isActive)
-                        <span class="absolute -top-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full {{ $tab['color'] }} opacity-90"></span>
-                        @endif
                     </a>
                 @endforeach
 
-                {{-- Plus Button with special styling --}}
+                {{-- Plus Button --}}
                 <button @click="moreSheet = true"
                         @touchstart="tapStart('tab-plus')"
                         @touchend="tapEnd()"
                         @mousedown="tapStart('tab-plus')"
                         @mouseup="tapEnd()"
-                        class="relative flex flex-col items-center justify-center py-2.5 rounded-xl transition-all duration-200"
-                        :class="[
-                            pressedTab === 'tab-plus' ? 'scale-[0.88]' : 'scale-100',
-                            moreSheet ? 'text-indigo-600' : 'text-slate-400'
-                        ]"
+                        class="relative flex flex-col items-center gap-1 min-w-[60px] py-1.5 transition-all duration-200"
+                        :class="pressedTab === 'tab-plus' ? 'scale-90' : 'scale-100'"
                         style="transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);">
 
-                    <span class="relative flex items-center justify-center mb-1"
-                          :class="pressedTab === 'tab-plus' ? 'scale-95' : 'scale-100'">
-                        <span x-show="moreSheet" class="absolute inset-0 w-full h-full bg-indigo-600/10 rounded-xl scale-110"></span>
-                        <svg class="w-[22px] h-[22px] relative z-10 transition-all duration-200"
-                             :class="moreSheet ? 'text-indigo-600 rotate-90' : 'text-slate-400'"
+                    <div class="relative flex items-center justify-center w-11 h-11">
+                        <div x-show="moreSheet" class="absolute inset-0 bg-slate-900/8 rounded-[14px]"></div>
+                        <svg class="w-6 h-6 relative z-10 transition-all duration-300"
+                             :class="moreSheet ? 'text-slate-900' : 'text-slate-400'"
                              fill="none"
                              stroke="currentColor"
                              viewBox="0 0 24 24"
-                             stroke-width="1.8">
+                             stroke-width="2">
                             <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
                             <circle cx="12" cy="5" r="1.5" fill="currentColor"/>
                             <circle cx="12" cy="19" r="1.5" fill="currentColor"/>
                             <circle cx="5" cy="12" r="1.5" fill="currentColor"/>
                             <circle cx="19" cy="12" r="1.5" fill="currentColor"/>
                         </svg>
-                    </span>
+                    </div>
 
-                    <span class="text-[10px] leading-none tracking-tight transition-all duration-200"
-                          :class="moreSheet ? 'font-semibold text-indigo-600' : 'font-medium text-slate-500'">
+                    <span class="text-[10px] font-medium leading-none tracking-tight transition-all duration-200"
+                          :class="moreSheet ? 'font-semibold text-slate-900' : 'text-slate-500'">
                         Plus
                     </span>
                 </button>

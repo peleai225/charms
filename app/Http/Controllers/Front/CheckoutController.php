@@ -590,13 +590,24 @@ class CheckoutController extends Controller
         }
 
         // Token de paiement dans l'URL (retour depuis MoneyFusion)
-        $token = request('token');
-        if ($token) {
-            $payment = $order->payments()->where('transaction_id', $token)->first();
-            if ($payment) {
-                session()->push('checkout_order_ids', $order->id);
-                return;
+        // MoneyFusion peut ajouter plusieurs paramètres token — on teste tous
+        $tokens = request()->query('token');
+        if (is_string($tokens)) {
+            $tokens = [$tokens];
+        }
+        if (!empty($tokens)) {
+            foreach ((array) $tokens as $token) {
+                if ($token && $order->payments()->where('transaction_id', $token)->exists()) {
+                    session()->push('checkout_order_ids', $order->id);
+                    return;
+                }
             }
+        }
+
+        // Fallback : si la commande a un paiement et qu'on vient de la page MoneyFusion (referer)
+        if (request()->has('token') && $order->payments()->exists()) {
+            session()->push('checkout_order_ids', $order->id);
+            return;
         }
 
         abort(403, 'Vous n\'avez pas accès à cette commande.');

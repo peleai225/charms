@@ -23,13 +23,49 @@
 @endphp
 
 {{-- ═══════════════════════════════════════════════
-     HERO BOUTIQUE — Éditorial sobre + couleurs settings
+     HERO BOUTIQUE — Éditorial riche + couleurs settings
 ═══════════════════════════════════════════════ --}}
-<section class="relative bg-stone-900 text-white overflow-hidden">
-    <div class="absolute -top-32 -right-32 w-96 h-96 bg-primary-600/20 rounded-full blur-3xl pointer-events-none"></div>
-    <div class="absolute -bottom-32 -left-32 w-96 h-96 bg-accent-500/10 rounded-full blur-3xl pointer-events-none"></div>
+@php
+    // Récupère 4 produits aléatoires avec image pour la mosaïque hero
+    $heroMosaic = $products->getCollection()
+        ->filter(fn($p) => $p->images->isNotEmpty())
+        ->take(4);
+    if ($heroMosaic->count() < 4) {
+        $heroMosaic = \App\Models\Product::active()->with('images')
+            ->whereHas('images')->inRandomOrder()->limit(4)->get();
+    }
+@endphp
+<section class="relative bg-stone-900 text-white overflow-hidden"
+         style="background-color: #1c1917;">
+    {{-- Mosaïque de produits en fond (très subtile) --}}
+    @if($heroMosaic->count() >= 4)
+    <div class="absolute inset-0 grid grid-cols-4 opacity-25 pointer-events-none">
+        @foreach($heroMosaic as $i => $p)
+        @php $img = $p->images->where('is_primary', true)->first() ?? $p->images->first(); @endphp
+        @if($img)
+        <div class="relative overflow-hidden">
+            <img src="{{ asset('storage/' . $img->path) }}" alt=""
+                 class="w-full h-full object-cover {{ $i % 2 == 0 ? 'grayscale' : '' }}"
+                 loading="lazy">
+        </div>
+        @endif
+        @endforeach
+    </div>
+    @endif
 
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16 lg:py-20 relative">
+    {{-- Voile sombre par dessus la mosaïque --}}
+    <div class="absolute inset-0 bg-gradient-to-r from-stone-900 via-stone-900/95 to-stone-900/80"></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-stone-900 via-transparent to-stone-900/40"></div>
+
+    {{-- Halos d'accent --}}
+    <div class="absolute -top-40 -right-40 w-[500px] h-[500px] bg-primary-600/25 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-accent-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+    {{-- Grain texture subtile --}}
+    <div class="absolute inset-0 opacity-[0.04] pointer-events-none mix-blend-overlay"
+         style="background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E&quot;);"></div>
+
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 lg:py-24 relative">
         {{-- Fil d'Ariane --}}
         <nav class="text-xs sm:text-sm text-stone-400 mb-5 sm:mb-7 flex items-center gap-2">
             <a href="{{ route('home') }}" class="hover:text-white transition-colors flex items-center gap-1.5">
@@ -40,30 +76,37 @@
             <span class="text-white">Boutique</span>
         </nav>
 
-        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-8">
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-6 md:gap-8">
             <div class="flex-1 min-w-0">
                 <p class="text-stone-400 text-[10px] sm:text-xs font-medium uppercase tracking-[0.25em] mb-3">— Notre catalogue</p>
-                <h1 class="font-serif-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-medium text-white leading-[1.02] tracking-tight">
+                <h1 class="font-serif-display text-5xl sm:text-6xl md:text-7xl lg:text-[80px] font-medium text-white leading-[0.98] tracking-tight"
+                    style="text-shadow: 0 4px 24px rgba(0,0,0,0.5);">
                     La <em class="not-italic text-accent-400">boutique.</em>
                 </h1>
-                <p class="text-stone-300 text-sm sm:text-base mt-3 sm:mt-4">
-                    <span class="font-medium text-white">{{ $products->total() }}</span> produit{{ $products->total() > 1 ? 's' : '' }} sélectionné{{ $products->total() > 1 ? 's' : '' }} pour vous
+                <p class="text-stone-300 text-sm sm:text-base md:text-lg mt-4 sm:mt-5 max-w-xl">
+                    <span class="font-semibold text-white">{{ $products->total() }}</span> produit{{ $products->total() > 1 ? 's' : '' }} sélectionné{{ $products->total() > 1 ? 's' : '' }} avec soin, livré{{ $products->total() > 1 ? 's' : '' }} chez vous en 24-48h.
                 </p>
             </div>
 
             {{-- Trust signals desktop --}}
-            <div class="hidden md:flex items-center gap-5 lg:gap-8 text-xs lg:text-sm text-stone-300">
-                <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 rounded-full bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center">
+            <div class="hidden md:flex flex-col gap-3 text-xs lg:text-sm text-stone-300">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center">
                         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1"/></svg>
                     </div>
-                    <span>Livraison 24-48h</span>
+                    <div>
+                        <p class="text-white font-medium leading-tight">Livraison 24-48h</p>
+                        <p class="text-stone-400 text-[11px]">Partout en Côte d'Ivoire</p>
+                    </div>
                 </div>
-                <div class="flex items-center gap-2.5">
-                    <div class="w-9 h-9 rounded-full bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center">
                         <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                     </div>
-                    <span>Retours 30 jours</span>
+                    <div>
+                        <p class="text-white font-medium leading-tight">Retours 30 jours</p>
+                        <p class="text-stone-400 text-[11px]">Satisfait ou remboursé</p>
+                    </div>
                 </div>
             </div>
         </div>

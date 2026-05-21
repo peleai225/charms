@@ -564,7 +564,7 @@
         ></div>
 
         <!-- Contenu principal -->
-        <div class="flex-1 transition-all duration-300" :class="sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'">
+        <div class="flex-1 transition-all duration-300 pb-20 lg:pb-0" :class="sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'">
             <!-- Header -->
             <header class="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-30 shadow-sm">
                 <div class="h-16 flex items-center justify-between px-6">
@@ -1006,12 +1006,262 @@
     </script>
 
     {{-- Branding peleAi --}}
-    <div class="fixed bottom-0 right-0 p-3 z-10">
+    <div class="fixed bottom-0 right-0 p-3 z-10 hidden lg:block">
         <a href="https://peleai.online" target="_blank" rel="noopener"
            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800/80 backdrop-blur-sm rounded-full text-[10px] font-medium text-slate-400 hover:text-white transition-colors border border-slate-700/50">
             <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
             Propulsé par peleAi
         </a>
     </div>
+
+    {{-- =====================================================
+         MOBILE BOTTOM NAVIGATION BAR
+         Visible on screens < lg only
+    ====================================================== --}}
+    @php
+        $mobileNavPendingOrders = \App\Models\Order::whereIn('status', ['pending', 'confirmed'])->count();
+    @endphp
+    <nav x-data="{ moreSheet: false }" class="fixed bottom-0 inset-x-0 z-40 lg:hidden" x-cloak>
+        <!-- Bottom Nav Bar -->
+        <div class="bg-white border-t border-slate-200/80 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+            <div class="flex items-center justify-around px-1 pb-[env(safe-area-inset-bottom,8px)] pt-1">
+                {{-- Dashboard --}}
+                <a href="{{ route('admin.dashboard') }}" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-1 py-1.5 rounded-xl transition-colors {{ request()->routeIs('admin.dashboard') ? 'text-indigo-600' : 'text-slate-400' }}">
+                    <svg class="w-[22px] h-[22px]" fill="{{ request()->routeIs('admin.dashboard') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="{{ request()->routeIs('admin.dashboard') ? '0' : '1.8' }}">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    <span class="text-[10px] mt-0.5 leading-tight {{ request()->routeIs('admin.dashboard') ? 'font-bold' : 'font-medium' }}">Accueil</span>
+                </a>
+
+                {{-- Commandes --}}
+                <a href="{{ route('admin.orders.index') }}" class="relative flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-1 py-1.5 rounded-xl transition-colors {{ request()->routeIs('admin.orders.*') ? 'text-indigo-600' : 'text-slate-400' }}">
+                    <span class="relative">
+                        <svg class="w-[22px] h-[22px]" fill="{{ request()->routeIs('admin.orders.*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="{{ request()->routeIs('admin.orders.*') ? '0' : '1.8' }}">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        </svg>
+                        @if($mobileNavPendingOrders > 0)
+                            <span class="absolute -top-1.5 -right-2 min-w-[16px] h-[16px] px-1 text-[9px] font-bold text-white bg-red-500 rounded-full flex items-center justify-center ring-2 ring-white">{{ $mobileNavPendingOrders > 99 ? '99+' : $mobileNavPendingOrders }}</span>
+                        @endif
+                    </span>
+                    <span class="text-[10px] mt-0.5 leading-tight {{ request()->routeIs('admin.orders.*') ? 'font-bold' : 'font-medium' }}">Commandes</span>
+                </a>
+
+                {{-- Produits --}}
+                <a href="{{ route('admin.products.index') }}" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-1 py-1.5 rounded-xl transition-colors {{ request()->routeIs('admin.products.*') ? 'text-indigo-600' : 'text-slate-400' }}">
+                    <svg class="w-[22px] h-[22px]" fill="{{ request()->routeIs('admin.products.*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="{{ request()->routeIs('admin.products.*') ? '0' : '1.8' }}">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                    <span class="text-[10px] mt-0.5 leading-tight {{ request()->routeIs('admin.products.*') ? 'font-bold' : 'font-medium' }}">Produits</span>
+                </a>
+
+                {{-- Clients --}}
+                <a href="{{ route('admin.customers.index') }}" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-1 py-1.5 rounded-xl transition-colors {{ request()->routeIs('admin.customers.*') ? 'text-indigo-600' : 'text-slate-400' }}">
+                    <svg class="w-[22px] h-[22px]" fill="{{ request()->routeIs('admin.customers.*') ? 'currentColor' : 'none' }}" stroke="currentColor" viewBox="0 0 24 24" stroke-width="{{ request()->routeIs('admin.customers.*') ? '0' : '1.8' }}">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                    </svg>
+                    <span class="text-[10px] mt-0.5 leading-tight {{ request()->routeIs('admin.customers.*') ? 'font-bold' : 'font-medium' }}">Clients</span>
+                </a>
+
+                {{-- Plus (ouvre le bottom sheet) --}}
+                <button @click="moreSheet = true" class="flex flex-col items-center justify-center min-w-[56px] min-h-[44px] px-1 py-1.5 rounded-xl transition-colors text-slate-400 active:text-indigo-600">
+                    <svg class="w-[22px] h-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                    </svg>
+                    <span class="text-[10px] mt-0.5 leading-tight font-medium">Plus</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- "Plus" Bottom Sheet Overlay -->
+        <div x-show="moreSheet" x-cloak class="fixed inset-0 z-50" @keydown.escape.window="moreSheet = false">
+            <!-- Backdrop -->
+            <div x-show="moreSheet"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 @click="moreSheet = false"
+                 class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+            <!-- Sheet -->
+            <div x-show="moreSheet"
+                 x-transition:enter="transition ease-out duration-300 transform"
+                 x-transition:enter-start="translate-y-full"
+                 x-transition:enter-end="translate-y-0"
+                 x-transition:leave="transition ease-in duration-200 transform"
+                 x-transition:leave-start="translate-y-0"
+                 x-transition:leave-end="translate-y-full"
+                 class="absolute bottom-0 inset-x-0 bg-white rounded-t-3xl shadow-2xl max-h-[75vh] overflow-y-auto"
+                 @touchstart.passive="
+                    $el._touchStartY = $event.touches[0].clientY;
+                 "
+                 @touchmove.passive="
+                    const diff = $event.touches[0].clientY - $el._touchStartY;
+                    if (diff > 80) { moreSheet = false; }
+                 ">
+                <!-- Drag handle -->
+                <div class="sticky top-0 bg-white rounded-t-3xl pt-3 pb-2 flex justify-center z-10">
+                    <div class="w-10 h-1 rounded-full bg-slate-300"></div>
+                </div>
+
+                <!-- Sheet title -->
+                <div class="px-6 pb-4">
+                    <h3 class="text-lg font-bold text-slate-900">Menu</h3>
+                    <p class="text-xs text-slate-500">Accès rapide à toutes les sections</p>
+                </div>
+
+                <!-- Grid of items -->
+                <div class="px-4 pb-8 grid grid-cols-3 gap-2">
+                    {{-- Stock --}}
+                    <a href="{{ route('admin.stock.index') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition-colors {{ request()->routeIs('admin.stock.*') ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600' }}">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-teal-50 to-emerald-50 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                            </svg>
+                        </div>
+                        <span class="text-[11px] font-medium text-center leading-tight">Stock</span>
+                    </a>
+
+                    {{-- Rapports --}}
+                    <a href="{{ route('admin.reports.index') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition-colors {{ request()->routeIs('admin.reports.*') ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600' }}">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-[11px] font-medium text-center leading-tight">Rapports</span>
+                    </a>
+
+                    {{-- Comptabilité --}}
+                    @if(auth()->user()->role === 'admin')
+                    <a href="{{ route('admin.accounting.index') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition-colors {{ request()->routeIs('admin.accounting.*') ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600' }}">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-[11px] font-medium text-center leading-tight">Comptabilité</span>
+                    </a>
+                    @endif
+
+                    {{-- Coupons --}}
+                    @if(in_array(auth()->user()->role, ['admin', 'manager']))
+                    <a href="{{ route('admin.coupons.index') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition-colors {{ request()->routeIs('admin.coupons.*') ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600' }}">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-yellow-50 to-orange-50 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-[11px] font-medium text-center leading-tight">Coupons</span>
+                    </a>
+
+                    {{-- Bannières --}}
+                    <a href="{{ route('admin.banners.index') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition-colors {{ request()->routeIs('admin.banners.*') ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600' }}">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-50 to-pink-50 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-[11px] font-medium text-center leading-tight">Bannières</span>
+                    </a>
+
+                    {{-- Fournisseurs --}}
+                    <a href="{{ route('admin.suppliers.index') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition-colors {{ request()->routeIs('admin.suppliers.*') ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600' }}">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                            </svg>
+                        </div>
+                        <span class="text-[11px] font-medium text-center leading-tight">Fournisseurs</span>
+                    </a>
+                    @endif
+
+                    {{-- WhatsApp --}}
+                    <a href="{{ route('admin.whatsapp.index') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition-colors {{ request()->routeIs('admin.whatsapp.*') ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600' }}">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                            </svg>
+                        </div>
+                        <span class="text-[11px] font-medium text-center leading-tight">WhatsApp</span>
+                    </a>
+
+                    {{-- Paramètres --}}
+                    @if(auth()->user()->role === 'admin')
+                    <a href="{{ route('admin.settings.index') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition-colors {{ request()->routeIs('admin.settings.*') ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600' }}">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-slate-50 to-zinc-100 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-[11px] font-medium text-center leading-tight">Paramètres</span>
+                    </a>
+
+                    {{-- Utilisateurs --}}
+                    <a href="{{ route('admin.users.index') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition-colors {{ request()->routeIs('admin.users.*') ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600' }}">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-[11px] font-medium text-center leading-tight">Utilisateurs</span>
+                    </a>
+
+                    {{-- Import/Export --}}
+                    <a href="{{ route('admin.import-export.index') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition-colors {{ request()->routeIs('admin.import-export.*') ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600' }}">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                            </svg>
+                        </div>
+                        <span class="text-[11px] font-medium text-center leading-tight">Import/Export</span>
+                    </a>
+                    @endif
+
+                    {{-- Scanner / Caisse --}}
+                    <a href="{{ route('admin.scanner.index') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition-colors {{ request()->routeIs('admin.scanner.*') ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600' }}">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-lime-50 to-green-50 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-lime-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-[11px] font-medium text-center leading-tight">Scanner</span>
+                    </a>
+
+                    {{-- Système --}}
+                    @if(auth()->user()->role === 'admin')
+                    <a href="{{ route('admin.system.index') }}" class="flex flex-col items-center gap-1.5 p-3 rounded-2xl hover:bg-slate-50 active:bg-slate-100 transition-colors {{ request()->routeIs('admin.system.*') ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600' }}">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-[11px] font-medium text-center leading-tight">Système</span>
+                    </a>
+                    @endif
+                </div>
+
+                <!-- Bottom safe area padding -->
+                <div class="h-[env(safe-area-inset-bottom,0px)]"></div>
+            </div>
+        </div>
+    </nav>
+
+    <style>
+        /* Bottom nav spring animation for sheet */
+        @keyframes slideUpSpring {
+            0% { transform: translateY(100%); }
+            60% { transform: translateY(-3%); }
+            80% { transform: translateY(1%); }
+            100% { transform: translateY(0); }
+        }
+        /* Safe area support for bottom nav */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        }
+    </style>
 </body>
 </html>

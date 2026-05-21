@@ -1,181 +1,300 @@
-{{-- Bottom Navigation Mobile Type Application Native --}}
+{{-- Bottom Navigation Mobile Type Application Native iOS/Shopify --}}
 <nav
     x-data="mobileBottomNav()"
     x-cloak
-    class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-200/60 shadow-2xl shadow-slate-900/10"
-    style="padding-bottom: env(safe-area-inset-bottom);"
+    class="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-white/85 backdrop-blur-2xl backdrop-saturate-150 border-t border-slate-900/[0.08] shadow-[0_-2px_16px_rgba(0,0,0,0.08)]"
+    style="padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);"
 >
-    <div class="grid grid-cols-5 h-16 px-2">
+    <div class="grid grid-cols-5 px-1 safe-area-wrapper">
         {{-- Dashboard --}}
         <a
             href="{{ route('admin.dashboard') }}"
             @click="setActive('dashboard')"
-            class="flex flex-col items-center justify-center gap-1 relative group transition-all duration-300 rounded-xl {{ request()->routeIs('admin.dashboard') ? 'active-tab' : '' }}"
+            @touchstart="tapFeedback($event)"
+            class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}"
         >
-            <div class="relative">
-                <div class="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl scale-0 group-hover:scale-100 {{ request()->routeIs('admin.dashboard') ? 'scale-100' : '' }} transition-transform duration-300"></div>
-                <svg class="w-6 h-6 relative transition-all duration-300 {{ request()->routeIs('admin.dashboard') ? 'text-blue-600 scale-110' : 'text-slate-400 group-hover:text-slate-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="{{ request()->routeIs('admin.dashboard') ? '2.5' : '2' }}" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+            <div class="nav-icon-wrapper">
+                <svg class="nav-icon {{ request()->routeIs('admin.dashboard') ? 'text-blue-600' : 'text-slate-400' }}"
+                     fill="{{ request()->routeIs('admin.dashboard') ? 'currentColor' : 'none' }}"
+                     stroke="currentColor" viewBox="0 0 24 24"
+                     stroke-width="{{ request()->routeIs('admin.dashboard') ? '0' : '2' }}">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>
             </div>
-            <span class="text-[10px] font-semibold tracking-tight transition-all duration-300 {{ request()->routeIs('admin.dashboard') ? 'text-blue-600 scale-105' : 'text-slate-500 group-hover:text-slate-700' }}">
-                Dashboard
+            <span class="nav-label {{ request()->routeIs('admin.dashboard') ? 'text-blue-600' : 'text-slate-500' }}">
+                Accueil
             </span>
-            @if(request()->routeIs('admin.dashboard'))
-                <div class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-full"></div>
-            @endif
         </a>
 
         {{-- Commandes --}}
         <a
             href="{{ route('admin.orders.index') }}"
             @click="setActive('orders')"
-            class="flex flex-col items-center justify-center gap-1 relative group transition-all duration-300 rounded-xl {{ request()->routeIs('admin.orders.*') ? 'active-tab' : '' }}"
+            @touchstart="tapFeedback($event)"
+            class="nav-item {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}"
         >
-            <div class="relative">
+            <div class="nav-icon-wrapper">
                 @php $pendingOrders = \App\Models\Order::whereIn('status', ['pending', 'confirmed'])->count(); @endphp
                 @if($pendingOrders > 0)
-                    <span class="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 text-[9px] font-extrabold text-white bg-gradient-to-br from-red-500 to-pink-600 rounded-full flex items-center justify-center ring-2 ring-white shadow-lg shadow-red-500/50 animate-pulse">
-                        {{ $pendingOrders }}
+                    <span class="nav-badge">
+                        {{ $pendingOrders > 9 ? '9+' : $pendingOrders }}
                     </span>
                 @endif
-                <div class="absolute inset-0 bg-gradient-to-br from-orange-500/20 to-amber-500/20 rounded-xl scale-0 group-hover:scale-100 {{ request()->routeIs('admin.orders.*') ? 'scale-100' : '' }} transition-transform duration-300"></div>
-                <svg class="w-6 h-6 relative transition-all duration-300 {{ request()->routeIs('admin.orders.*') ? 'text-orange-600 scale-110' : 'text-slate-400 group-hover:text-slate-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="{{ request()->routeIs('admin.orders.*') ? '2.5' : '2' }}" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                <svg class="nav-icon {{ request()->routeIs('admin.orders.*') ? 'text-orange-600' : 'text-slate-400' }}"
+                     fill="{{ request()->routeIs('admin.orders.*') ? 'currentColor' : 'none' }}"
+                     stroke="currentColor" viewBox="0 0 24 24"
+                     stroke-width="{{ request()->routeIs('admin.orders.*') ? '0' : '2' }}">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
                 </svg>
             </div>
-            <span class="text-[10px] font-semibold tracking-tight transition-all duration-300 {{ request()->routeIs('admin.orders.*') ? 'text-orange-600 scale-105' : 'text-slate-500 group-hover:text-slate-700' }}">
+            <span class="nav-label {{ request()->routeIs('admin.orders.*') ? 'text-orange-600' : 'text-slate-500' }}">
                 Commandes
             </span>
-            @if(request()->routeIs('admin.orders.*'))
-                <div class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-orange-600 to-amber-600 rounded-full"></div>
-            @endif
         </a>
 
         {{-- Produits --}}
         <a
             href="{{ route('admin.products.index') }}"
             @click="setActive('products')"
-            class="flex flex-col items-center justify-center gap-1 relative group transition-all duration-300 rounded-xl {{ request()->routeIs('admin.products.*') ? 'active-tab' : '' }}"
+            @touchstart="tapFeedback($event)"
+            class="nav-item {{ request()->routeIs('admin.products.*') ? 'active' : '' }}"
         >
-            <div class="relative">
-                <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/20 to-green-500/20 rounded-xl scale-0 group-hover:scale-100 {{ request()->routeIs('admin.products.*') ? 'scale-100' : '' }} transition-transform duration-300"></div>
-                <svg class="w-6 h-6 relative transition-all duration-300 {{ request()->routeIs('admin.products.*') ? 'text-emerald-600 scale-110' : 'text-slate-400 group-hover:text-slate-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="{{ request()->routeIs('admin.products.*') ? '2.5' : '2' }}" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+            <div class="nav-icon-wrapper">
+                <svg class="nav-icon {{ request()->routeIs('admin.products.*') ? 'text-emerald-600' : 'text-slate-400' }}"
+                     fill="{{ request()->routeIs('admin.products.*') ? 'currentColor' : 'none' }}"
+                     stroke="currentColor" viewBox="0 0 24 24"
+                     stroke-width="{{ request()->routeIs('admin.products.*') ? '0' : '2' }}">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                 </svg>
             </div>
-            <span class="text-[10px] font-semibold tracking-tight transition-all duration-300 {{ request()->routeIs('admin.products.*') ? 'text-emerald-600 scale-105' : 'text-slate-500 group-hover:text-slate-700' }}">
+            <span class="nav-label {{ request()->routeIs('admin.products.*') ? 'text-emerald-600' : 'text-slate-500' }}">
                 Produits
             </span>
-            @if(request()->routeIs('admin.products.*'))
-                <div class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-emerald-600 to-green-600 rounded-full"></div>
-            @endif
         </a>
 
         {{-- Clients --}}
         <a
             href="{{ route('admin.customers.index') }}"
             @click="setActive('customers')"
-            class="flex flex-col items-center justify-center gap-1 relative group transition-all duration-300 rounded-xl {{ request()->routeIs('admin.customers.*') ? 'active-tab' : '' }}"
+            @touchstart="tapFeedback($event)"
+            class="nav-item {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}"
         >
-            <div class="relative">
-                <div class="absolute inset-0 bg-gradient-to-br from-pink-500/20 to-rose-500/20 rounded-xl scale-0 group-hover:scale-100 {{ request()->routeIs('admin.customers.*') ? 'scale-100' : '' }} transition-transform duration-300"></div>
-                <svg class="w-6 h-6 relative transition-all duration-300 {{ request()->routeIs('admin.customers.*') ? 'text-pink-600 scale-110' : 'text-slate-400 group-hover:text-slate-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="{{ request()->routeIs('admin.customers.*') ? '2.5' : '2' }}" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+            <div class="nav-icon-wrapper">
+                <svg class="nav-icon {{ request()->routeIs('admin.customers.*') ? 'text-pink-600' : 'text-slate-400' }}"
+                     fill="{{ request()->routeIs('admin.customers.*') ? 'currentColor' : 'none' }}"
+                     stroke="currentColor" viewBox="0 0 24 24"
+                     stroke-width="{{ request()->routeIs('admin.customers.*') ? '0' : '2' }}">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                 </svg>
             </div>
-            <span class="text-[10px] font-semibold tracking-tight transition-all duration-300 {{ request()->routeIs('admin.customers.*') ? 'text-pink-600 scale-105' : 'text-slate-500 group-hover:text-slate-700' }}">
+            <span class="nav-label {{ request()->routeIs('admin.customers.*') ? 'text-pink-600' : 'text-slate-500' }}">
                 Clients
             </span>
-            @if(request()->routeIs('admin.customers.*'))
-                <div class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-pink-600 to-rose-600 rounded-full"></div>
-            @endif
         </a>
 
         {{-- Plus (Menu) --}}
         <button
             @click="toggleMenu()"
-            class="flex flex-col items-center justify-center gap-1 relative group transition-all duration-300 rounded-xl"
-            :class="menuOpen ? 'active-tab' : ''"
+            @touchstart="tapFeedback($event)"
+            class="nav-item"
+            :class="menuOpen ? 'active' : ''"
         >
-            <div class="relative">
-                <div class="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-indigo-500/20 rounded-xl scale-0 group-hover:scale-100 transition-transform duration-300"
-                     :class="menuOpen ? 'scale-100' : ''"></div>
-                <svg class="w-6 h-6 relative transition-all duration-300"
-                     :class="menuOpen ? 'text-purple-600 scale-110 rotate-45' : 'text-slate-400 group-hover:text-slate-600'"
-                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            <div class="nav-icon-wrapper">
+                <svg class="nav-icon transition-transform duration-200"
+                     :class="[menuOpen ? 'text-purple-600 rotate-90' : 'text-slate-400']"
+                     fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                    <circle cx="12" cy="5" r="1.5" fill="currentColor"/>
+                    <circle cx="12" cy="19" r="1.5" fill="currentColor"/>
                 </svg>
             </div>
-            <span class="text-[10px] font-semibold tracking-tight transition-all duration-300"
-                  :class="menuOpen ? 'text-purple-600 scale-105' : 'text-slate-500 group-hover:text-slate-700'">
+            <span class="nav-label" :class="menuOpen ? 'text-purple-600' : 'text-slate-500'">
                 Plus
             </span>
-            <div x-show="menuOpen" class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-8 h-1 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-full"></div>
         </button>
     </div>
 
-    {{-- Haptic feedback effect --}}
-    <div x-show="rippleEffect"
-         x-transition:enter="transition ease-out duration-200"
-         x-transition:enter-start="opacity-100 scale-50"
-         x-transition:enter-end="opacity-0 scale-150"
-         class="absolute bg-blue-500/20 rounded-full pointer-events-none"
-         :style="`left: ${rippleX}px; top: ${rippleY}px; width: 60px; height: 60px; transform: translate(-50%, -50%);`">
-    </div>
 </nav>
 
 <script>
 function mobileBottomNav() {
     return {
         menuOpen: false,
-        rippleEffect: false,
-        rippleX: 0,
-        rippleY: 0,
 
         toggleMenu() {
             this.menuOpen = !this.menuOpen;
             this.$dispatch('mobile-menu-toggle', { open: this.menuOpen });
-
-            // Haptic feedback (vibration légère)
-            if ('vibrate' in navigator) {
-                navigator.vibrate(10);
-            }
+            this.hapticFeedback();
         },
 
         setActive(tab) {
             this.menuOpen = false;
-
-            // Haptic feedback
-            if ('vibrate' in navigator) {
-                navigator.vibrate(5);
-            }
+            this.hapticFeedback(5);
         },
 
-        showRipple(e) {
-            this.rippleX = e.clientX;
-            this.rippleY = e.clientY;
-            this.rippleEffect = true;
-            setTimeout(() => this.rippleEffect = false, 600);
+        tapFeedback(e) {
+            this.hapticFeedback(3);
+            const target = e.currentTarget;
+            target.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                target.style.transform = '';
+            }, 150);
+        },
+
+        hapticFeedback(duration = 10) {
+            if ('vibrate' in navigator) {
+                navigator.vibrate(duration);
+            }
         }
     };
 }
 </script>
 
 <style>
-@keyframes tab-bounce {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+/* ===== BOTTOM NAV PREMIUM iOS/SHOPIFY STYLE ===== */
+
+/* Container avec safe area optimisée */
+.safe-area-wrapper {
+    height: 56px;
+    padding-top: 4px;
+    padding-bottom: 4px;
 }
 
-.active-tab {
-    animation: tab-bounce 0.3s ease-out;
+/* Style base des items */
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    position: relative;
+    padding: 6px 4px;
+    border-radius: 12px;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
 }
 
-/* Safe area for iPhone notch */
-@supports (padding: max(0px)) {
-    nav {
-        padding-bottom: max(env(safe-area-inset-bottom), 0px);
+.nav-item:active {
+    transform: scale(0.95);
+}
+
+/* Wrapper icône */
+.nav-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+}
+
+/* Icône */
+.nav-icon {
+    width: 24px;
+    height: 24px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-item.active .nav-icon {
+    transform: scale(1.08);
+}
+
+/* Label */
+.nav-label {
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    transition: color 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 60px;
+}
+
+/* Badge notifications */
+.nav-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 800;
+    color: white;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border-radius: 8px;
+    border: 1.5px solid white;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    z-index: 10;
+}
+
+/* Active state subtle background */
+.nav-item.active {
+    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.02) 0%, transparent 70%);
+}
+
+/* Touch optimization */
+@media (hover: none) and (pointer: coarse) {
+    .nav-item {
+        min-width: 60px;
+        min-height: 48px;
     }
+}
+
+/* Safe area support complet */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+    nav {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .safe-area-wrapper {
+        padding-bottom: max(4px, env(safe-area-inset-bottom));
+    }
+}
+
+/* iOS Safari bottom bar overlap fix */
+@supports (-webkit-touch-callout: none) {
+    nav {
+        padding-bottom: max(env(safe-area-inset-bottom, 0px), 8px);
+    }
+}
+
+/* Prevent text selection and callouts on iOS */
+nav * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Smooth hardware acceleration */
+nav {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
+}
+
+/* Enhanced backdrop blur for modern devices */
+@supports (backdrop-filter: blur(20px)) {
+    nav {
+        backdrop-filter: blur(20px) saturate(150%);
+        -webkit-backdrop-filter: blur(20px) saturate(150%);
+    }
+}
+
+/* Prevent layout shift */
+nav {
+    contain: layout style paint;
+}
+
+/* Smooth transitions */
+.nav-item, .nav-icon, .nav-label {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 </style>

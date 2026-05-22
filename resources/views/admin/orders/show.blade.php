@@ -91,92 +91,130 @@
         </div>
     </div>
 
-    {{-- ===== TIMELINE PREMIUM (Alpine réactif) ===== --}}
+    {{-- ===== TIMELINE PREMIUM (Alpine réactif) - Dual Layout ===== --}}
     <template x-if="currentStatus !== 'cancelled'">
-        <div class="bg-gradient-to-br from-white via-slate-50/30 to-white rounded-2xl shadow-lg border border-slate-200 p-6 md:p-8 overflow-x-auto">
-            <div class="flex items-center justify-between mb-8">
+        <div class="bg-gradient-to-br from-white via-slate-50/30 to-white rounded-2xl shadow-lg border border-slate-200 p-5 md:p-8">
+            <div class="flex items-center justify-between mb-6 md:mb-8">
                 <div>
-                    <h3 class="text-lg font-bold text-slate-900 mb-1">Suivi de livraison en temps réel</h3>
-                    <p class="text-sm text-slate-500">Progression actuelle de votre commande</p>
+                    <h3 class="text-base md:text-lg font-bold text-slate-900 mb-0.5">Suivi de livraison</h3>
+                    <p class="text-xs md:text-sm text-slate-500">Progression en temps réel</p>
                 </div>
-                <div class="hidden sm:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                <div class="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
                     <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                    <span class="text-sm font-semibold text-blue-700" x-text="statusLabels[currentStatus]"></span>
+                    <span class="text-xs md:text-sm font-semibold text-blue-700" x-text="statusLabels[currentStatus]"></span>
                 </div>
             </div>
 
-            <div class="relative min-w-[640px]">
-                {{-- Progress Bar Background --}}
-                <div class="absolute top-7 left-8 right-8 h-2 bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 rounded-full shadow-inner"></div>
+            {{-- === DESKTOP TIMELINE (horizontal, md+) === --}}
+            <div class="hidden md:block">
+                <div class="relative">
+                    {{-- Progress Bar Background --}}
+                    <div class="absolute top-7 left-8 right-8 h-2 bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 rounded-full shadow-inner"></div>
+                    {{-- Progress Bar Foreground --}}
+                    <div class="absolute top-7 left-8 h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-full shadow-lg shadow-blue-500/30 transition-all duration-1000 ease-out"
+                         :style="'width: calc(' + (currentIdx * (100 / 5)) + '% - ' + (currentIdx * 12) + 'px); transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);'"
+                         style="background-size: 200% 100%; animation: shimmer 3s infinite linear;"></div>
 
-                {{-- Progress Bar Foreground with Gradient Animation --}}
-                <div class="absolute top-7 left-8 h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-full shadow-lg shadow-blue-500/30 transition-all duration-1000 ease-out"
-                     :style="'width: calc(' + (currentIdx * (100 / 5)) + '% - ' + (currentIdx * 12) + 'px); transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);'"
-                     style="background-size: 200% 100%; animation: shimmer 3s infinite linear;">
+                    <div class="relative flex justify-between">
+                        <template x-for="(step, i) in steps" :key="'dt-' + step.key">
+                            <div class="flex flex-col items-center gap-3 flex-1">
+                                {{-- Icon Circle --}}
+                                <div class="relative w-14 h-14 rounded-full flex items-center justify-center border-3 transition-all duration-700 z-10 group"
+                                     :class="currentIdx >= i
+                                        ? 'border-' + step.color + '-500 bg-gradient-to-br from-' + step.color + '-500 to-' + step.color + '-600 text-white shadow-xl shadow-' + step.color + '-500/40 scale-110'
+                                        : 'border-slate-200 bg-white text-slate-300 hover:border-slate-300 hover:scale-105'"
+                                     :style="currentIdx === i ? 'animation: pulse-glow 2s infinite;' : ''">
+                                    <div x-show="currentIdx === i" class="absolute inset-0 rounded-full animate-ping opacity-30" :class="'bg-' + step.color + '-400'"></div>
+                                    <template x-if="currentIdx > i">
+                                        <svg class="w-7 h-7 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                    </template>
+                                    <template x-if="currentIdx <= i">
+                                        <svg class="w-6 h-6 relative transition-transform duration-300 group-hover:scale-110" :class="currentIdx === i ? 'animate-bounce-subtle' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="step.icon"/></svg>
+                                    </template>
+                                    <div x-show="currentIdx === i" class="absolute -inset-2 rounded-full blur-lg opacity-50" :class="'bg-' + step.color + '-400'"></div>
+                                </div>
+                                {{-- Label & date --}}
+                                <div class="text-center max-w-[90px]">
+                                    <p class="text-xs font-bold transition-all duration-300 leading-tight" :class="currentIdx >= i ? 'text-slate-900' : 'text-slate-400'" x-text="step.label"></p>
+                                    <template x-if="currentIdx >= i && step.date">
+                                        <p class="text-[10px] font-medium text-slate-500 mt-1" x-text="step.date"></p>
+                                    </template>
+                                    <template x-if="!(currentIdx >= i && step.date)">
+                                        <p class="text-[10px] text-slate-300 mt-1">En attente</p>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
                 </div>
+            </div>
 
-                <div class="relative flex justify-between">
-                    <template x-for="(step, i) in steps" :key="step.key">
-                        <div class="flex flex-col items-center gap-3 flex-1">
-                            {{-- Icon Circle avec animation premium --}}
-                            <div class="relative w-14 h-14 rounded-full flex items-center justify-center border-3 transition-all duration-700 z-10 group"
-                                 :class="currentIdx >= i
-                                    ? 'border-' + step.color + '-500 bg-gradient-to-br from-' + step.color + '-500 to-' + step.color + '-600 text-white shadow-xl shadow-' + step.color + '-500/40 scale-110'
-                                    : 'border-slate-200 bg-white text-slate-300 hover:border-slate-300 hover:scale-105'"
-                                 :style="currentIdx === i ? 'animation: pulse-glow 2s infinite;' : ''">
+            {{-- === MOBILE TIMELINE (vertical, below md) === --}}
+            <div class="md:hidden">
+                <div class="relative pl-8">
+                    {{-- Vertical line background --}}
+                    <div class="absolute left-[15px] top-2 bottom-2 w-0.5 bg-slate-200 rounded-full"></div>
+                    {{-- Vertical line progress --}}
+                    <div class="absolute left-[15px] top-2 w-0.5 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-500 rounded-full transition-all duration-1000"
+                         :style="'height: calc(' + (currentIdx * (100 / 5)) + '%)'"></div>
 
-                                {{-- Pulse Animation pour étape active --}}
-                                <div x-show="currentIdx === i" class="absolute inset-0 rounded-full animate-ping opacity-30"
-                                     :class="'bg-' + step.color + '-400'"></div>
+                    <div class="space-y-5">
+                        <template x-for="(step, i) in steps" :key="'mb-' + step.key">
+                            <div class="relative flex items-start gap-4">
+                                {{-- Step Circle --}}
+                                <div class="absolute -left-8 w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-500 z-10 flex-shrink-0"
+                                     :class="currentIdx > i
+                                        ? 'border-green-500 bg-green-500 text-white shadow-md shadow-green-500/30'
+                                        : currentIdx === i
+                                            ? 'border-blue-500 bg-blue-500 text-white shadow-lg shadow-blue-500/40'
+                                            : 'border-slate-200 bg-white text-slate-300'"
+                                     :style="currentIdx === i ? 'animation: pulse-glow-sm 2s infinite;' : ''">
+                                    <template x-if="currentIdx > i">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                    </template>
+                                    <template x-if="currentIdx === i">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="step.icon"/></svg>
+                                    </template>
+                                    <template x-if="currentIdx < i">
+                                        <div class="w-2 h-2 rounded-full bg-slate-300"></div>
+                                    </template>
+                                </div>
 
-                                {{-- Checkmark pour étapes complétées --}}
-                                <template x-if="currentIdx > i">
-                                    <div class="absolute inset-0 rounded-full flex items-center justify-center">
-                                        <svg class="w-7 h-7 text-white drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
-                                        </svg>
+                                {{-- Step Content --}}
+                                <div class="flex-1 min-w-0 pb-1"
+                                     :class="currentIdx >= i ? '' : 'opacity-50'">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <p class="text-sm font-semibold leading-tight"
+                                           :class="currentIdx >= i ? 'text-slate-900' : 'text-slate-400'"
+                                           x-text="step.label"></p>
+                                        <template x-if="currentIdx === i">
+                                            <span class="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                                                En cours
+                                            </span>
+                                        </template>
                                     </div>
-                                </template>
-
-                                {{-- Icon pour étape actuelle ou future --}}
-                                <template x-if="currentIdx <= i">
-                                    <svg class="w-6 h-6 relative transition-transform duration-300 group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                         :class="currentIdx === i ? 'animate-bounce-subtle' : ''">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" :d="step.icon"/>
-                                    </svg>
-                                </template>
-
-                                {{-- Glow effect actif --}}
-                                <div x-show="currentIdx === i" class="absolute -inset-2 rounded-full blur-lg opacity-50 transition-opacity"
-                                     :class="'bg-' + step.color + '-400'"></div>
-                            </div>
-
-                            {{-- Label et date --}}
-                            <div class="text-center max-w-[90px]">
-                                <p class="text-xs font-bold transition-all duration-300 leading-tight"
-                                   :class="currentIdx >= i ? 'text-slate-900 scale-105' : 'text-slate-400'" x-text="step.label"></p>
-
-                                <template x-if="currentIdx >= i && step.date">
-                                    <div class="mt-1.5 space-y-0.5">
-                                        <div class="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 rounded-md">
-                                            <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    <template x-if="currentIdx >= i && step.date">
+                                        <div class="mt-1 inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 rounded-md">
+                                            <svg class="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                             </svg>
-                                            <p class="text-[10px] font-semibold text-slate-600" x-text="step.date.split(' ')[0]"></p>
+                                            <span class="text-[11px] font-medium text-slate-500" x-text="step.date"></span>
                                         </div>
-                                        <p class="text-[9px] font-medium text-slate-400" x-text="step.date.split(' ')[1] || ''"></p>
-                                    </div>
-                                </template>
-                                <template x-if="!(currentIdx >= i && step.date)">
-                                    <p class="text-xs text-slate-300 mt-1.5 font-medium">En attente</p>
-                                </template>
+                                    </template>
+                                    <template x-if="!(currentIdx >= i && step.date)">
+                                        <p class="text-[11px] text-slate-300 mt-1 font-medium">En attente</p>
+                                    </template>
+                                </div>
                             </div>
-                        </div>
-                    </template>
+                        </template>
+                    </div>
                 </div>
             </div>
         </div>
     </template>
+
+    {{-- Cancelled state --}}
     <template x-if="currentStatus === 'cancelled'">
         <div class="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
@@ -189,20 +227,85 @@
         </div>
     </template>
 
+    {{-- ===== HISTORIQUE DES STATUTS (collapsible) ===== --}}
+    <div x-data="{ historyOpen: false }" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <button @click="historyOpen = !historyOpen" class="w-full flex items-center justify-between px-4 sm:px-6 py-4 hover:bg-slate-50/50 transition-colors">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div class="text-left">
+                    <h3 class="text-sm font-semibold text-slate-900">Historique des statuts</h3>
+                    <p class="text-xs text-slate-500">Voir toutes les transitions</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-medium px-2 py-0.5 bg-slate-100 text-slate-600 rounded-lg" x-text="steps.filter((s, i) => currentIdx >= i).length + '/' + steps.length"></span>
+                <svg class="w-5 h-5 text-slate-400 transition-transform duration-300" :class="historyOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+        </button>
+        <div x-show="historyOpen"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 max-h-0"
+             x-transition:enter-end="opacity-100 max-h-[500px]"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 max-h-[500px]"
+             x-transition:leave-end="opacity-0 max-h-0"
+             class="border-t border-slate-100 overflow-hidden"
+             x-cloak>
+            <div class="px-4 sm:px-6 py-4">
+                <div class="space-y-2">
+                    <template x-for="(step, i) in steps" :key="'history-' + step.key">
+                        <div class="flex items-center gap-3 py-2.5 px-3 rounded-xl transition-colors"
+                             :class="currentIdx === i ? 'bg-blue-50/80 ring-1 ring-blue-100' : (currentIdx > i ? 'bg-green-50/50' : 'bg-slate-50/50')">
+                            <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
+                                 :class="currentIdx > i ? 'bg-green-500 text-white' : (currentIdx === i ? 'bg-blue-500 text-white' : 'bg-slate-200 text-slate-400')">
+                                <template x-if="currentIdx > i">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+                                </template>
+                                <template x-if="currentIdx === i">
+                                    <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+                                </template>
+                                <template x-if="currentIdx < i">
+                                    <span x-text="i + 1"></span>
+                                </template>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium" :class="currentIdx >= i ? 'text-slate-900' : 'text-slate-400'" x-text="step.label"></p>
+                                <template x-if="currentIdx === i">
+                                    <p class="text-[11px] text-blue-600 font-medium mt-0.5">Statut actuel</p>
+                                </template>
+                                <template x-if="currentIdx > i">
+                                    <p class="text-[11px] text-green-600 font-medium mt-0.5">Terminé</p>
+                                </template>
+                            </div>
+                            <template x-if="currentIdx >= i && step.date">
+                                <span class="text-[11px] text-slate-500 font-medium flex-shrink-0 tabular-nums" x-text="step.date"></span>
+                            </template>
+                            <template x-if="!(currentIdx >= i && step.date)">
+                                <span class="text-xs text-slate-300 flex-shrink-0">&mdash;</span>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- ===== COLONNE PRINCIPALE ===== -->
         <div class="lg:col-span-2 space-y-6">
 
-            {{-- Articles --}}
+            {{-- Articles (touch-optimized) --}}
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div class="px-5 md:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                     <h3 class="font-semibold text-slate-900">Articles commandés</h3>
                     <span class="text-xs font-medium px-2 py-1 bg-slate-100 text-slate-600 rounded-lg">{{ $order->items->count() }} article(s)</span>
                 </div>
                 <div class="divide-y divide-slate-100">
                     @foreach($order->items as $item)
-                    <div class="p-5 flex gap-4 hover:bg-slate-50/50 transition-colors">
-                        <div class="w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl overflow-hidden flex-shrink-0">
+                    <div class="p-4 md:p-5 flex gap-3 md:gap-4 hover:bg-slate-50/50 transition-colors active:bg-slate-100/60">
+                        <div class="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl overflow-hidden flex-shrink-0">
                             @php $img = $item->product?->images->where('is_primary', true)->first() ?? $item->product?->images->first(); @endphp
                             @if($img)
                                 <img src="{{ asset('storage/' . $img->path) }}" alt="{{ $item->product_name }}" class="w-full h-full object-cover">
@@ -213,20 +316,20 @@
                             @endif
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="font-semibold text-slate-900 leading-snug">{{ $item->product_name }}</p>
+                            <p class="font-semibold text-slate-900 leading-snug text-sm md:text-base">{{ $item->product_name }}</p>
                             @if($item->variant_name)
                                 <span class="inline-block mt-1 px-2 py-0.5 text-xs bg-slate-100 text-slate-600 rounded-md font-medium">{{ $item->variant_name }}</span>
                             @endif
                             <p class="text-xs text-slate-400 mt-1 font-mono">{{ $item->sku }}</p>
                         </div>
                         <div class="text-right flex-shrink-0">
-                            <p class="text-sm text-slate-500">{{ number_format($item->unit_price, 0, ',', ' ') }} F × {{ $item->quantity }}</p>
-                            <p class="text-lg font-bold text-slate-900">{{ number_format($item->total, 0, ',', ' ') }} F</p>
+                            <p class="text-xs md:text-sm text-slate-500">{{ number_format($item->unit_price, 0, ',', ' ') }} F x {{ $item->quantity }}</p>
+                            <p class="text-base md:text-lg font-bold text-slate-900">{{ number_format($item->total, 0, ',', ' ') }} F</p>
                         </div>
                     </div>
                     @endforeach
                 </div>
-                <div class="px-6 py-4 bg-slate-50/80 border-t border-slate-100 space-y-2">
+                <div class="px-5 md:px-6 py-4 bg-slate-50/80 border-t border-slate-100 space-y-2">
                     <div class="flex justify-between text-sm text-slate-600">
                         <span>Sous-total</span>
                         <span>{{ number_format($order->subtotal, 0, ',', ' ') }} F</span>
@@ -737,6 +840,17 @@ function statusForm() {
     }
 }
 
+@keyframes pulse-glow-sm {
+    0%, 100% {
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+        transform: scale(1.05);
+    }
+}
+
 @keyframes bounce-subtle {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-4px); }
@@ -746,46 +860,14 @@ function statusForm() {
     animation: bounce-subtle 1.5s ease-in-out infinite;
 }
 
-/* ===== RESPONSIVE MOBILE ===== */
-@media (max-width: 640px) {
-    .relative.min-w-\[640px\] {
-        min-width: 100%;
-        padding: 0 0.5rem;
-    }
-
-    .relative.min-w-\[640px\] > .flex {
-        gap: 0.25rem;
-    }
-
-    .relative.min-w-\[640px\] .w-14 {
-        width: 2.75rem;
-        height: 2.75rem;
-    }
-
-    .relative.min-w-\[640px\] .max-w-\[90px\] {
-        max-width: 65px;
-    }
-
-    .relative.min-w-\[640px\] .text-xs {
-        font-size: 0.625rem;
-    }
-}
-
 /* ===== GRADIENT BORDERS ===== */
 .border-3 {
     border-width: 3px;
 }
 
-/* ===== SCROLL SNAP FOR MOBILE ===== */
-@media (max-width: 768px) {
-    .overflow-x-auto {
-        scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .overflow-x-auto > * {
-        scroll-snap-align: start;
-    }
+/* ===== CLOAK ===== */
+[x-cloak] {
+    display: none !important;
 }
 </style>
 @endpush

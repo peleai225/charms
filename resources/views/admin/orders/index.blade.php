@@ -127,7 +127,7 @@
 
     <!-- Filtres -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-        <form method="GET" @submit.prevent="fetchOrders()" class="flex flex-wrap gap-3 items-center">
+        <form method="GET" @submit.prevent="fetchOrders()" class="flex flex-wrap gap-2 sm:gap-3 items-center">
             <div class="relative flex-1 min-w-[200px]">
                 <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 <input
@@ -222,7 +222,25 @@
 
     <!-- Mobile Cards -->
     <div class="md:hidden">
-        <div id="orders-mobile-list" class="space-y-3">
+        {{-- Skeleton loader mobile --}}
+        <div x-show="searching" class="space-y-3">
+            <template x-for="i in 3" :key="'skel-'+i">
+                <div class="bg-white rounded-xl border border-slate-200 p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="h-4 w-24 skeleton rounded"></div>
+                        <div class="h-5 w-16 skeleton rounded-full"></div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="space-y-2">
+                            <div class="h-4 w-32 skeleton rounded"></div>
+                            <div class="h-3 w-20 skeleton rounded"></div>
+                        </div>
+                        <div class="h-5 w-16 skeleton rounded"></div>
+                    </div>
+                </div>
+            </template>
+        </div>
+        <div x-show="!searching" id="orders-mobile-list" class="space-y-3">
             @forelse($orders as $order)
             <a href="{{ route('admin.orders.show', $order) }}" class="block bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow active:scale-[0.99]">
                 <div class="flex items-center justify-between mb-3">

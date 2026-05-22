@@ -33,7 +33,7 @@
         style="padding-bottom: calc(env(safe-area-inset-bottom) + 4rem);"
     >
         {{-- Handle Bar --}}
-        <div class="flex justify-center pt-3 pb-2">
+        <div class="flex justify-center pt-3 pb-2 cursor-grab" @click="menuOpen = false">
             <div class="w-12 h-1.5 bg-slate-300 rounded-full"></div>
         </div>
 
@@ -51,6 +51,22 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
+        </div>
+
+        {{-- Quick Profile --}}
+        <div class="px-5 py-3 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-500/20">
+                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+            </div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-slate-900 truncate">{{ auth()->user()->name }}</p>
+                <p class="text-xs text-slate-500">{{ ucfirst(auth()->user()->role ?? 'Admin') }}</p>
+            </div>
+            <a href="{{ route('home') }}" target="_blank" class="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition-colors text-slate-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+            </a>
         </div>
 
         {{-- Content - Scrollable --}}
@@ -320,8 +336,15 @@
             </div>
             @endif
 
-            {{-- Bottom Padding --}}
-            <div class="h-4"></div>
+            {{-- Voir le site --}}
+            <div class="px-3 pt-2 pb-4">
+                <a href="{{ route('home') }}" target="_blank" @click="menuOpen = false" class="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 transition-all duration-200 active:scale-[0.98]">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                    Voir le site
+                </a>
+            </div>
         </div>
     </div>
 </div>

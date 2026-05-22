@@ -170,7 +170,7 @@ function mobileBottomNav() {
     position: relative;
     padding: 6px 4px;
     border-radius: 12px;
-    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
     user-select: none;
@@ -233,11 +233,32 @@ function mobileBottomNav() {
     border: 1.5px solid white;
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
     z-index: 10;
+    animation: badge-pulse 2s ease-in-out infinite;
 }
 
-/* Active state subtle background */
+/* Badge pulse animation */
+@keyframes badge-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* Active state subtle background with smooth transition */
 .nav-item.active {
-    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.02) 0%, transparent 70%);
+    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.03) 0%, transparent 70%);
+}
+
+/* Active indicator dot */
+.nav-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.8;
 }
 
 /* Touch optimization */

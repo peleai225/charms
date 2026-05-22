@@ -193,10 +193,10 @@
         </div>
 
         {{-- Mobile Cards --}}
-        <div class="md:hidden divide-y divide-slate-100">
+        <div class="md:hidden space-y-2 p-3">
             @forelse($products as $product)
-                <a href="{{ route('admin.products.edit', $product) }}" class="flex items-center gap-3 p-4 hover:bg-blue-50/30 transition-colors">
-                    <div class="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden ring-2 ring-white shadow-sm flex-shrink-0">
+                <a href="{{ route('admin.products.edit', $product) }}" class="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-100 active:scale-[0.98] active:bg-slate-50 transition-all shadow-sm">
+                    <div class="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                         @if($product->images->where('is_primary', true)->first())
                             <img src="{{ $product->primary_image_url }}" alt="" class="w-full h-full object-cover">
                         @else
@@ -204,14 +204,23 @@
                         @endif
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="font-semibold text-slate-900 truncate">{{ $product->name }}</p>
-                        <p class="text-xs text-slate-400">{{ $product->category?->name ?? 'Sans catégorie' }} · {{ $product->sku }}</p>
-                        <div class="flex items-center gap-2 mt-1">
+                        <div class="flex items-center gap-2">
+                            <p class="font-semibold text-slate-900 truncate text-sm">{{ $product->name }}</p>
+                            @if($product->status === 'draft')
+                                <span class="flex-shrink-0 w-2 h-2 rounded-full bg-amber-400"></span>
+                            @elseif($product->status === 'active')
+                                <span class="flex-shrink-0 w-2 h-2 rounded-full bg-green-500"></span>
+                            @endif
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">{{ $product->category?->name ?? 'Sans catégorie' }}</p>
+                        <div class="flex items-center gap-2 mt-1.5">
                             <span class="font-bold text-sm text-slate-900">{{ format_price($product->sale_price) }}</span>
                             @if($product->stock_quantity <= 0)
-                                <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-red-50 text-red-600">Rupture</span>
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-red-100 text-red-700">Rupture</span>
+                            @elseif($product->stock_quantity <= ($product->stock_alert_threshold ?? 5))
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700">Stock: {{ $product->stock_quantity }}</span>
                             @else
-                                <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-green-50 text-green-600">Stock: {{ $product->stock_quantity }}</span>
+                                <span class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500">Stock: {{ $product->stock_quantity }}</span>
                             @endif
                         </div>
                     </div>
@@ -219,7 +228,11 @@
                 </a>
             @empty
                 <div class="p-8 text-center">
-                    <p class="text-slate-500">Aucun produit trouvé</p>
+                    <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                        <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                    </div>
+                    <p class="font-medium text-slate-700">Aucun produit trouvé</p>
+                    <p class="text-xs text-slate-400 mt-1">Modifiez vos filtres ou créez un produit</p>
                 </div>
             @endforelse
         </div>

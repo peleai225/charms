@@ -64,9 +64,9 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </a>
             <div>
-                <div class="flex items-center gap-3">
-                    <h2 class="text-2xl font-bold text-slate-900 font-mono">{{ $order->order_number }}</h2>
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 text-sm font-semibold rounded-full transition-all duration-300"
+                <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+                    <h2 class="text-lg sm:text-2xl font-bold text-slate-900 font-mono">{{ $order->order_number }}</h2>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs sm:text-sm font-semibold rounded-full transition-all duration-300"
                           :class="badgeClasses[currentStatus] || 'bg-slate-50 text-slate-700 ring-1 ring-slate-200'">
                         <span class="w-2 h-2 rounded-full transition-colors duration-300"
                               :class="dotClasses[currentStatus] || 'bg-slate-500'"
@@ -77,16 +77,16 @@
                 <p class="text-slate-500 text-sm mt-0.5">Passée le {{ $order->created_at->format('d/m/Y à H:i') }}</p>
             </div>
         </div>
-        <div class="flex items-center gap-3 flex-wrap">
+        <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
             <a href="{{ route('admin.orders.invoice.view', $order) }}" target="_blank"
-               class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-colors text-sm">
+               class="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl transition-colors text-xs sm:text-sm active:scale-95">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                Voir facture
+                Facture
             </a>
             <a href="{{ route('admin.orders.invoice', $order) }}"
-               class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors text-sm shadow-sm shadow-green-600/20">
+               class="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors text-xs sm:text-sm shadow-sm shadow-green-600/20 active:scale-95">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                Télécharger PDF
+                PDF
             </a>
         </div>
     </div>

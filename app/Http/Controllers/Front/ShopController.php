@@ -226,14 +226,28 @@ class ShopController extends Controller
             ->take(2)
             ->get();
 
-        // Points de fidélité que le client gagnerait sur cet achat
-        $pointsToEarn = (int) floor($product->sale_price / 1000 * \App\Models\Setting::get('loyalty_points_per_1000', 10));
+        // Format data for Inertia
+        $productData = [
+            'id' => $product->id,
+            'name' => $product->name,
+            'slug' => $product->slug,
+            'sku' => $product->sku,
+            'price' => $product->sale_price,
+            'compare_price' => $product->compare_price,
+            'stock' => $product->stock_quantity,
+            'short_description' => $product->short_description,
+            'description' => $product->description,
+            'images' => $product->images->pluck('path')->toArray(),
+            'category' => $product->category ? [
+                'id' => $product->category->id,
+                'name' => $product->category->name,
+                'slug' => $product->category->slug,
+            ] : null,
+        ];
 
-        return view('front.shop.product', compact(
-            'product', 'variantsByColor', 'availableColors',
-            'secondaryAttributeSlug', 'secondaryAttributeName',
-            'relatedProducts', 'upsellProducts', 'pointsToEarn'
-        ));
+        return Inertia::render('Shop/Product', [
+            'product' => $productData,
+        ]);
     }
 
     /**

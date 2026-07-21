@@ -7,9 +7,36 @@ use App\Models\CustomerAddress;
 use App\Models\LoyaltyTransaction;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class AccountController extends Controller
 {
+    /**
+     * Tableau de bord du compte client
+     */
+    public function dashboard()
+    {
+        $customer = auth()->user()->customer;
+
+        if (!$customer) {
+            return redirect()->route('home')->with('error', 'Profil client non trouvé.');
+        }
+
+        $stats = [
+            'orders_count' => Order::where('customer_id', $customer->id)->count(),
+            'orders_delivered' => Order::where('customer_id', $customer->id)
+                ->where('status', 'delivered')
+                ->count(),
+            'orders_pending' => Order::where('customer_id', $customer->id)
+                ->whereIn('status', ['pending', 'processing', 'shipped'])
+                ->count(),
+        ];
+
+        return Inertia::render('Account/Dashboard', [
+            'stats' => $stats,
+        ]);
+    }
+
     /**
      * Affiche le détail d'une commande pour le client
      */

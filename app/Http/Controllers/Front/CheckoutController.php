@@ -16,6 +16,7 @@ use App\Services\MoneyFusionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class CheckoutController extends Controller
 {
@@ -50,13 +51,65 @@ class CheckoutController extends Controller
             }
         }
 
+        // Format cart data
+        $cartData = [
+            'id' => $cart->id,
+            'items' => $cart->items->map(function ($item) {
+                $primaryImage = $item->product->images->where('is_primary', true)->first()
+                    ?? $item->product->images->first();
+
+                return [
+                    'id' => $item->id,
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->unit_price,
+                    'total' => $item->unit_price * $item->quantity,
+                    'product' => [
+                        'id' => $item->product->id,
+                        'name' => $item->product->name,
+                        'slug' => $item->product->slug,
+                        'primary_image' => $primaryImage?->path,
+                    ],
+                ];
+            })->toArray(),
+            'subtotal' => $cart->subtotal,
+            'discount' => $cart->discount_amount ?? 0,
+            'total' => $cart->total,
+        ];
+
         // Récupérer les paramètres de paiement
         $settings = [
             'payment_moneyfusion_enabled' => Setting::get('payment_moneyfusion_enabled', '0'),
             'payment_cod_enabled' => Setting::get('payment_cod_enabled', '1'),
         ];
 
-        return view('front.checkout.index', compact('cart', 'customer', 'addresses', 'settings'));
+        $customerData = $customer ? [
+            'id' => $customer->id,
+            'first_name' => $customer->first_name,
+            'last_name' => $customer->last_name,
+            'email' => $customer->email,
+            'phone' => $customer->phone,
+        ] : null;
+
+        $addressesData = $addresses->map(function ($address) {
+            return [
+                'id' => $address->id,
+                'first_name' => $address->first_name,
+                'last_name' => $address->last_name,
+                'address_line1' => $address->address_line1,
+                'city' => $address->city,
+                'postal_code' => $address->postal_code,
+                'country' => $address->country,
+                'phone' => $address->phone,
+                'is_default' => $address->is_default,
+            ];
+        })->toArray();
+
+        return Inertia::render('Checkout/Index', [
+            'cart' => $cartData,
+            'customer' => $customerData,
+            'addresses' => $addressesData,
+            'settings' => $settings,
+        ]);
     }
 
     /**

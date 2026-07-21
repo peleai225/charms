@@ -9,6 +9,7 @@ use App\Models\Customer;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class CartController extends Controller
 {
@@ -20,7 +21,50 @@ class CartController extends Controller
         $cart = $this->getCart();
         $cart->load(['items.product.images', 'items.variant.attributeValues.attribute', 'coupon']);
 
-        return view('front.cart.index', compact('cart'));
+        // Format cart data for Inertia
+        $cartData = [
+            'id' => $cart->id,
+            'items' => $cart->items->map(function ($item) {
+                $primaryImage = $item->product->images->where('is_primary', true)->first()
+                    ?? $item->product->images->first();
+
+                $variantAttributes = [];
+                if ($item->variant) {
+                    foreach ($item->variant->attributeValues as $attrValue) {
+                        $variantAttributes[] = [
+                            'name' => $attrValue->attribute->name,
+                            'value' => $attrValue->value,
+                        ];
+                    }
+                }
+
+                return [
+                    'id' => $item->id,
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->unit_price,
+                    'total' => $item->unit_price * $item->quantity,
+                    'product' => [
+                        'id' => $item->product->id,
+                        'name' => $item->product->name,
+                        'slug' => $item->product->slug,
+                        'primary_image' => $primaryImage?->path,
+                    ],
+                    'variant' => $item->variant ? [
+                        'id' => $item->variant->id,
+                        'attributes' => $variantAttributes,
+                    ] : null,
+                ];
+            })->toArray(),
+            'subtotal' => $cart->subtotal,
+            'discount' => $cart->discount_amount ?? 0,
+            'shipping_cost' => $cart->shipping_cost ?? 0,
+            'total' => $cart->total,
+            'coupon_code' => $cart->coupon_code,
+        ];
+
+        return Inertia::render('Cart/Index', [
+            'cart' => $cartData,
+        ]);
     }
 
     /**

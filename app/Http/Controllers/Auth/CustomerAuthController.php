@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
 
 class CustomerAuthController extends Controller
 {
@@ -23,7 +24,9 @@ class CustomerAuthController extends Controller
      */
     public function showLoginForm()
     {
-        return view('front.auth.login');
+        return Inertia::render('Auth/Login', [
+            'status' => session('status'),
+        ]);
     }
 
     /**
@@ -31,7 +34,7 @@ class CustomerAuthController extends Controller
      */
     public function showRegisterForm()
     {
-        return view('front.auth.register');
+        return Inertia::render('Auth/Register');
     }
 
     /**
@@ -158,7 +161,9 @@ class CustomerAuthController extends Controller
      */
     public function showForgotPasswordForm()
     {
-        return view('front.auth.forgot-password');
+        return Inertia::render('Auth/ForgotPassword', [
+            'status' => session('status'),
+        ]);
     }
 
     /**
@@ -212,10 +217,11 @@ class CustomerAuthController extends Controller
     public function showResetForm(Request $request, string $token)
     {
         $email = $request->query('email');
-        
-        return view('front.auth.reset-password', [
+
+        return Inertia::render('Auth/ResetPassword', [
             'token' => $token,
             'email' => $email,
+            'status' => session('status'),
         ]);
     }
 

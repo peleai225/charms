@@ -144,9 +144,7 @@ Route::get('/contact', [\App\Http\Controllers\Front\ContactController::class, 'i
 Route::post('/contact', [\App\Http\Controllers\Front\ContactController::class, 'store'])->middleware('throttle:5,5')->name('contact.store');
 Route::post('/newsletter/subscribe', [\App\Http\Controllers\Front\NewsletterController::class, 'subscribe'])->name('newsletter.subscribe');
 
-Route::get('/a-propos', function () {
-    return view('front.pages.about');
-})->name('about');
+Route::get('/a-propos', [\App\Http\Controllers\Front\PageController::class, 'about'])->name('about');
 
 Route::get('/offline', function () {
     return view('front.pages.offline');

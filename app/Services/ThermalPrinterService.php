@@ -135,11 +135,128 @@ class ThermalPrinterService
 
     /**
      * Convertir en commandes ESC/POS binaires (nécessite mike42/escpos-php)
+     * Retourne null si connexion échoue, sinon imprime directement
      */
-    public function toEscPosCommands(array $receipt): string
+    public function printDirectly(array $receipt, string $printerName): ?string
     {
-        // TODO: Implémenter quand mike42/escpos-php sera installé
-        // Pour l'instant retourne du texte brut
-        return $this->toPlainText($receipt);
+        if (!class_exists(\Mike42\Escpos\Printer::class)) {
+            return 'Package mike42/escpos-php non installé';
+        }
+
+        try {
+            // Détection automatique du type de connexion
+            if (filter_var($printerName, FILTER_VALIDATE_IP)) {
+                // Network printer (IP)
+                $connector = new \Mike42\Escpos\PrintConnectors\NetworkPrintConnector(
+                    $printerName,
+                    config('pos.printer_port', 9100)
+                );
+            } else {
+                // USB/Local printer (Windows/Linux)
+                $connector = new \Mike42\Escpos\PrintConnectors\WindowsPrintConnector($printerName);
+            }
+
+            $printer = new \Mike42\Escpos\Printer($connector);
+
+            foreach ($receipt as $instruction) {
+                $this->executeEscPosCommand($printer, $instruction);
+            }
+
+            // Ouvrir tiroir-caisse si configuré
+            if (config('pos.cash_drawer', false)) {
+                $this->openCashDrawer($printer);
+            }
+
+            $printer->close();
+            return null; // Succès
+
+        } catch (\Exception $e) {
+            return 'Erreur impression: ' . $e->getMessage();
+        }
+    }
+
+    /**
+     * Exécuter une commande ESC/POS individuelle
+     */
+    private function executeEscPosCommand($printer, array $instruction): void
+    {
+        $cmd = $instruction['cmd'];
+
+        match($cmd) {
+            'text' => $this->printText($printer, $instruction),
+            'feed' => $printer->feed($instruction['lines'] ?? 1),
+            'cut' => $printer->cut(),
+            'align' => $printer->setJustification($this->getAlignment($instruction['value'])),
+            'qrcode' => $this->printQrCode($printer, $instruction['value']),
+            default => null
+        };
+    }
+
+    /**
+     * Imprimer du texte avec styles
+     */
+    private function printText($printer, array $instruction): void
+    {
+        $text = $instruction['value'];
+        $bold = $instruction['bold'] ?? false;
+        $size = $instruction['size'] ?? 'normal';
+
+        // Appliquer styles
+        if ($bold) {
+            $printer->setEmphasis(true);
+        }
+
+        if ($size === 'large') {
+            $printer->setTextSize(2, 2);
+        } elseif ($size === 'small') {
+            $printer->setTextSize(1, 1);
+        }
+
+        $printer->text($text . "\n");
+
+        // Reset styles
+        if ($bold) {
+            $printer->setEmphasis(false);
+        }
+        if ($size !== 'normal') {
+            $printer->setTextSize(1, 1);
+        }
+    }
+
+    /**
+     * Imprimer QR Code
+     */
+    private function printQrCode($printer, string $content): void
+    {
+        try {
+            $printer->qrCode($content, \Mike42\Escpos\Printer::QR_ECLEVEL_M, 6);
+        } catch (\Exception $e) {
+            // Imprimante ne supporte pas QR, on skip silencieusement
+        }
+    }
+
+    /**
+     * Convertir alignement en constante ESC/POS
+     */
+    private function getAlignment(string $align): int
+    {
+        return match($align) {
+            'center' => \Mike42\Escpos\Printer::JUSTIFY_CENTER,
+            'right' => \Mike42\Escpos\Printer::JUSTIFY_RIGHT,
+            default => \Mike42\Escpos\Printer::JUSTIFY_LEFT,
+        };
+    }
+
+    /**
+     * Ouvrir le tiroir-caisse
+     * Nécessite un tiroir connecté via RJ11 à l'imprimante
+     */
+    private function openCashDrawer($printer): void
+    {
+        try {
+            $printer->pulse();
+        } catch (\Exception $e) {
+            // Si l'imprimante ne supporte pas, on continue sans erreur
+        }
     }
 }

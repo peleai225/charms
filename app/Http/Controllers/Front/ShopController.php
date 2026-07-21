@@ -7,6 +7,7 @@ use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ShopController extends Controller
 {
@@ -82,12 +83,42 @@ class ShopController extends Controller
 
         // Données pour les filtres
         $categories = Category::active()->roots()->with('children')->ordered()->get();
-        $colors = Attribute::where('slug', 'couleur')->first()?->values ?? collect();
 
-        // Prix min/max
-        $priceRange = Product::active()->selectRaw('MIN(sale_price) as min, MAX(sale_price) as max')->first();
+        // Format data for Inertia
+        $productsData = [
+            'data' => $products->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                    'price' => $product->sale_price,
+                    'compare_price' => $product->compare_price,
+                    'stock' => $product->stock_quantity,
+                    'primary_image' => $product->images->where('is_primary', true)->first()?->path ?? $product->images->first()?->path,
+                ];
+            }),
+            'current_page' => $products->currentPage(),
+            'last_page' => $products->lastPage(),
+            'per_page' => $products->perPage(),
+            'total' => $products->total(),
+            'prev_page_url' => $products->previousPageUrl(),
+            'next_page_url' => $products->nextPageUrl(),
+        ];
 
-        return view('front.shop.index', compact('products', 'categories', 'colors', 'priceRange'));
+        $categoriesData = $categories->map(function ($cat) {
+            return [
+                'id' => $cat->id,
+                'name' => $cat->name,
+                'slug' => $cat->slug,
+            ];
+        });
+
+        return Inertia::render('Shop/Index', [
+            'products' => $productsData,
+            'categories' => $categoriesData,
+            'filters' => $request->only(['category', 'search', 'min_price', 'max_price', 'sort', 'on_sale', 'featured']),
+            'currentCategory' => isset($category) ? ['id' => $category->id, 'name' => $category->name, 'slug' => $category->slug] : null,
+        ]);
     }
 
     /**

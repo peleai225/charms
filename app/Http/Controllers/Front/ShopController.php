@@ -226,6 +226,46 @@ class ShopController extends Controller
             ->take(2)
             ->get();
 
+        // Format colors
+        $colorsData = $availableColors->map(function ($attrValue) {
+            return [
+                'id' => $attrValue->id,
+                'name' => $attrValue->value,
+                'hex' => $attrValue->hex_value ?? null,
+            ];
+        })->values()->toArray();
+
+        // Format secondary attribute values
+        $secondaryValues = $product->variants
+            ->pluck('attributeValues')
+            ->flatten()
+            ->filter(fn($av) => $av->attribute && $av->attribute->slug !== 'couleur')
+            ->unique('id')
+            ->map(function ($attrValue) {
+                return [
+                    'id' => $attrValue->id,
+                    'value' => $attrValue->value,
+                ];
+            })
+            ->values()
+            ->toArray();
+
+        // Format variants
+        $variantsData = $product->variants->map(function ($variant) {
+            $colorAttr = $variant->attributeValues->firstWhere('attribute.slug', 'couleur');
+            $secondaryAttr = $variant->attributeValues->firstWhere(fn($av) => $av->attribute && $av->attribute->slug !== 'couleur');
+
+            return [
+                'id' => $variant->id,
+                'sku' => $variant->sku,
+                'price' => $variant->price,
+                'stock' => $variant->stock_quantity,
+                'color_id' => $colorAttr?->id,
+                'secondary_id' => $secondaryAttr?->id,
+                'image' => $variant->image_path,
+            ];
+        })->toArray();
+
         // Format data for Inertia
         $productData = [
             'id' => $product->id,
@@ -242,6 +282,14 @@ class ShopController extends Controller
                 'id' => $product->category->id,
                 'name' => $product->category->name,
                 'slug' => $product->category->slug,
+            ] : null,
+            'has_variants' => $product->variants->isNotEmpty(),
+            'variants' => $variantsData,
+            'colors' => $colorsData,
+            'secondary_attribute' => $secondaryAttribute ? [
+                'slug' => $secondaryAttribute->slug,
+                'name' => $secondaryAttribute->name,
+                'values' => $secondaryValues,
             ] : null,
         ];
 

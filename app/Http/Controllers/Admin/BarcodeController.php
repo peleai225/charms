@@ -101,8 +101,17 @@ class BarcodeController extends Controller
             $productIds = array_filter(explode(',', $productIds));
         }
         
-        $labelFormat = $request->get('format', 'standard'); // standard, small, price_tag
-        $quantity = (int) $request->get('quantity', 1);
+        // Accepte les anciens noms (standard/small/price_tag) ET les nouveaux (50x30, 40x12…)
+        $formatMap = ['standard' => '50x30', 'small' => '40x12', 'price_tag' => '60x40'];
+        $rawFormat = $request->get('format', '50x30');
+        $labelFormat = $formatMap[$rawFormat] ?? $rawFormat;
+
+        $validFormats = ['50x30','40x30','60x40','80x50','40x12','50x15','57x32','a4'];
+        if (!in_array($labelFormat, $validFormats)) {
+            $labelFormat = '50x30';
+        }
+
+        $quantity = max(1, (int) $request->get('quantity', 1));
 
         // Si aucun produit sélectionné, rediriger vers la liste
         if (empty($productIds)) {

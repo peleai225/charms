@@ -255,15 +255,27 @@
 
 @push('scripts')
 <script>
-    // Sync color picker with text input
-    document.querySelectorAll('input[type="color"]').forEach(colorInput => {
-        colorInput.addEventListener('input', function() {
-            const textInput = document.getElementById(this.name + '_text');
-            if (textInput) {
-                textInput.value = this.value;
-            }
+    // Sync color picker with text input (éviter listeners multiples)
+    const initColorSync = () => {
+        document.querySelectorAll('input[type="color"]').forEach(colorInput => {
+            // Retirer ancien listener
+            colorInput.removeEventListener('input', colorInput._colorSyncHandler);
+
+            // Nouveau handler
+            colorInput._colorSyncHandler = function() {
+                const textInput = document.getElementById(this.name + '_text');
+                if (textInput) {
+                    textInput.value = this.value;
+                }
+            };
+
+            colorInput.addEventListener('input', colorInput._colorSyncHandler);
         });
-    });
+    };
+
+    // Init au chargement et après navigation
+    initColorSync();
+    document.addEventListener('livewire:navigated', initColorSync);
 </script>
 @endpush
 @endsection

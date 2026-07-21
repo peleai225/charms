@@ -364,7 +364,8 @@
 @push('scripts')
 <script>
 // Chart instance globale pour pouvoir la mettre à jour
-let salesChartInstance = null;
+if (!window.salesChartInstance) window.salesChartInstance = null;
+let salesChartInstance = window.salesChartInstance;
 
 function dashboardKpi() {
     return {
@@ -410,11 +411,11 @@ function dashboardKpi() {
                 this.kpi = data;
 
                 // Mettre à jour le graphique
-                if (salesChartInstance && data.chart) {
-                    salesChartInstance.data.labels = data.chart.labels;
-                    salesChartInstance.data.datasets[0].data = data.chart.revenues;
-                    salesChartInstance.data.datasets[1].data = data.chart.orders;
-                    salesChartInstance.update('active');
+                if (window.salesChartInstance && data.chart) {
+                    window.salesChartInstance.data.labels = data.chart.labels;
+                    window.salesChartInstance.data.datasets[0].data = data.chart.revenues;
+                    window.salesChartInstance.data.datasets[1].data = data.chart.orders;
+                    window.salesChartInstance.update('active');
                 }
             } catch (e) {
                 console.error('Dashboard stats error:', e);
@@ -429,7 +430,13 @@ function initChart(labels, revenues, orders) {
     const ctx = document.getElementById('salesChart');
     if (!ctx) return;
 
-    salesChartInstance = new Chart(ctx.getContext('2d'), {
+    // Détruire l'ancienne instance pour éviter "Canvas is already in use"
+    if (window.salesChartInstance) {
+        window.salesChartInstance.destroy();
+        window.salesChartInstance = null;
+    }
+
+    window.salesChartInstance = new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
             labels: labels,

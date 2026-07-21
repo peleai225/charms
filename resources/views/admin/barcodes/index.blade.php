@@ -18,10 +18,22 @@
                 Générer codes manquants
             </button>
         </form>
-        <button onclick="printSelected()" class="px-4 py-2 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition-colors inline-flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-            Imprimer étiquettes
-        </button>
+        <div class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-3 py-1.5">
+            <svg class="w-4 h-4 text-green-700 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            <select id="print-fmt" class="text-sm bg-transparent border-0 text-green-800 font-medium focus:ring-0 pr-6 cursor-pointer" title="Format étiquette">
+                <option value="50x30">50×30 mm (B21)</option>
+                <option value="40x30">40×30 mm (B21 petit)</option>
+                <option value="60x40">60×40 mm (grande)</option>
+                <option value="80x50">80×50 mm (prix)</option>
+                <option value="40x12">40×12 mm (D11)</option>
+                <option value="57x32">57×32 mm (générique)</option>
+            </select>
+            <span class="text-green-400 text-xs">×</span>
+            <input type="number" id="print-qty" value="1" min="1" max="99" class="w-12 text-sm bg-transparent border-0 text-green-800 font-medium focus:ring-0 text-center" title="Quantité par produit">
+            <button onclick="printSelected()" class="px-3 py-1 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors">
+                Imprimer
+            </button>
+        </div>
     </div>
 
     <!-- Recherche -->
@@ -133,7 +145,8 @@ function toggleAll(checkbox) {
 function openScanner() {
     document.getElementById('scannerModal').classList.remove('hidden');
     document.getElementById('scannerModal').classList.add('flex');
-    document.getElementById('scanInput').focus();
+    // Petit délai pour que le DOM soit prêt avant le focus
+    requestAnimationFrame(() => document.getElementById('scanInput').focus());
 }
 
 function closeScanner() {
@@ -141,8 +154,9 @@ function closeScanner() {
     document.getElementById('scannerModal').classList.remove('flex');
 }
 
-document.getElementById('scanInput')?.addEventListener('keypress', async function(e) {
+document.getElementById('scanInput')?.addEventListener('keydown', async function(e) {
     if (e.key === 'Enter') {
+        e.preventDefault();
         const code = this.value.trim();
         if (!code) return;
         
@@ -242,7 +256,13 @@ function printSelected() {
         alert('Veuillez sélectionner au moins un produit');
         return;
     }
-    window.open('{{ route("admin.barcodes.print-labels") }}?products=' + selected.join(','), '_blank');
+    // Mini modal sélecteur format/quantité
+    const fmt = document.getElementById('print-fmt') ? document.getElementById('print-fmt').value : '50x30';
+    const qty = document.getElementById('print-qty') ? document.getElementById('print-qty').value : '1';
+    const url = '{{ route("admin.barcodes.print-labels") }}?products=' + selected.join(',')
+              + '&format=' + encodeURIComponent(fmt)
+              + '&quantity=' + encodeURIComponent(qty);
+    window.open(url, '_blank');
 }
 
 function printBarcode() {

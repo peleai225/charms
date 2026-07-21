@@ -245,35 +245,7 @@
             <a href="{{ route('admin.orders.show', $order) }}" class="block bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md transition-shadow active:scale-[0.99]">
                 <div class="flex items-center justify-between mb-3">
                     <span class="font-mono font-semibold text-blue-600 text-sm">{{ $order->order_number }}</span>
-                    @switch($order->status)
-                        @case('pending')
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-50 text-amber-600">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>{{ $order->status_label }}
-                            </span>@break
-                        @case('confirmed')
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-50 text-blue-600">
-                                <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>{{ $order->status_label }}
-                            </span>@break
-                        @case('processing')
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-indigo-50 text-indigo-600">
-                                <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>{{ $order->status_label }}
-                            </span>@break
-                        @case('shipped')
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-purple-50 text-purple-600">
-                                <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>{{ $order->status_label }}
-                            </span>@break
-                        @case('delivered')
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-green-50 text-green-600">
-                                <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>{{ $order->status_label }}
-                            </span>@break
-                        @case('cancelled')
-                        @case('refunded')
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-red-50 text-red-600">
-                                <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>{{ $order->status_label }}
-                            </span>@break
-                        @default
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-50 text-slate-600">{{ $order->status_label }}</span>
-                    @endswitch
+                    @include('admin.orders.partials.status-badge', ['status' => $order->status, 'order' => $order])
                 </div>
                 <div class="flex items-center justify-between">
                     <div>
@@ -314,7 +286,7 @@
         <div class="overflow-x-auto" x-bind:class="searching ? 'opacity-60 pointer-events-none' : ''">
             <table class="w-full">
                 <thead>
-                    <tr class="bg-gradient-to-r from-slate-50 to-slate-100/50 border-b border-slate-200">
+                    <tr class="bg-slate-50 border-b border-slate-200">
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Commande</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Client</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Statut</th>
@@ -341,43 +313,9 @@
                                 <div x-data="{ changing: false, currentStatus: '{{ $order->status }}' }">
                                     <!-- Status badge, shown when not editing -->
                                     <div x-show="!changing">
-                                        @switch($order->status)
-                                            @case('pending')
-                                                <span x-show="currentStatus === 'pending'" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-50 text-amber-600 ring-1 ring-amber-100">
-                                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>{{ $order->status_label }}
-                                                </span>
-                                                @break
-                                            @case('confirmed')
-                                                <span x-show="currentStatus === 'confirmed'" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-blue-50 text-blue-600 ring-1 ring-blue-100">
-                                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>{{ $order->status_label }}
-                                                </span>
-                                                @break
-                                            @case('processing')
-                                                <span x-show="currentStatus === 'processing'" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">
-                                                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>{{ $order->status_label }}
-                                                </span>
-                                                @break
-                                            @case('shipped')
-                                                <span x-show="currentStatus === 'shipped'" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-purple-50 text-purple-600 ring-1 ring-purple-100">
-                                                    <span class="w-1.5 h-1.5 rounded-full bg-purple-500"></span>{{ $order->status_label }}
-                                                </span>
-                                                @break
-                                            @case('delivered')
-                                                <span x-show="currentStatus === 'delivered'" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-green-50 text-green-600 ring-1 ring-green-100">
-                                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>{{ $order->status_label }}
-                                                </span>
-                                                @break
-                                            @case('cancelled')
-                                            @case('refunded')
-                                                <span x-show="currentStatus === 'cancelled' || currentStatus === 'refunded'" class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-red-50 text-red-600 ring-1 ring-red-100">
-                                                    <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>{{ $order->status_label }}
-                                                </span>
-                                                @break
-                                            @default
-                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-50 text-slate-600 ring-1 ring-slate-200">
-                                                    {{ $order->status_label }}
-                                                </span>
-                                        @endswitch
+                                        <div x-show="currentStatus === '{{ $order->status }}'">
+                                            @include('admin.orders.partials.status-badge', ['status' => $order->status, 'order' => $order, 'ring' => true])
+                                        </div>
 
                                         {{-- Dynamic badge shown after AJAX status update --}}
                                         <template x-if="currentStatus !== '{{ $order->status }}'">
@@ -530,7 +468,7 @@
          x-transition:leave="transition-opacity ease-in duration-200"
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
-         class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm">
+         class="absolute inset-0 bg-slate-900/50">
     </div>
 
     {{-- Panel --}}
@@ -544,7 +482,7 @@
          class="absolute right-0 top-0 h-full w-full max-w-lg bg-white shadow-2xl flex flex-col">
 
         {{-- Header --}}
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white flex-shrink-0">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white flex-shrink-0">
             <div class="flex items-center gap-3">
                 <div class="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center">
                     <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>

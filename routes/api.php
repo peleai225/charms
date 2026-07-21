@@ -264,3 +264,74 @@ Route::get('/admin/order-detail/{order}', function (\App\Models\Order $order) {
         'invoice_url'    => route('admin.orders.invoice.view', $order->id),
     ]);
 })->middleware('web')->name('api.admin.order-detail');
+
+// Recherche globale admin (Command Palette Ctrl+K)
+Route::get('/admin/search', function (Illuminate\Http\Request $request) {
+    if (!auth()->check() || !in_array(auth()->user()->role ?? '', ['admin', 'manager', 'staff'])) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+
+    $q = trim($request->input('q', ''));
+    if (strlen($q) < 2) {
+        return response()->json(['results' => []]);
+    }
+
+    $results = [];
+
+    // Commandes — par numéro ou nom client
+    $orders = \App\Models\Order::where('order_number', 'like', "%{$q}%")
+        ->orWhere('billing_first_name', 'like', "%{$q}%")
+        ->orWhere('billing_last_name', 'like', "%{$q}%")
+        ->orWhere('billing_email', 'like', "%{$q}%")
+        ->latest()
+        ->take(4)
+        ->get(['id', 'order_number', 'billing_first_name', 'billing_last_name', 'total', 'status']);
+
+    foreach ($orders as $o) {
+        $results[] = [
+            'type'     => 'order',
+            'label'    => '# ' . $o->order_number . ' — ' . trim($o->billing_first_name . ' ' . $o->billing_last_name),
+            'sublabel' => number_format($o->total, 0, ',', ' ') . ' F · ' . $o->status,
+            'url'      => route('admin.orders.show', $o->id),
+            'icon'     => 'order',
+        ];
+    }
+
+    // Produits — par nom ou SKU
+    $products = \App\Models\Product::with('images')
+        ->where('name', 'like', "%{$q}%")
+        ->orWhere('sku', 'like', "%{$q}%")
+        ->orWhere('barcode', 'like', "%{$q}%")
+        ->take(4)
+        ->get(['id', 'name', 'sku', 'price', 'status']);
+
+    foreach ($products as $p) {
+        $results[] = [
+            'type'     => 'product',
+            'label'    => $p->name,
+            'sublabel' => 'SKU: ' . ($p->sku ?? '—') . ' · ' . number_format($p->price, 0, ',', ' ') . ' F',
+            'url'      => route('admin.products.edit', $p->id),
+            'icon'     => 'product',
+        ];
+    }
+
+    // Clients — par nom ou email
+    $customers = \App\Models\Customer::where('first_name', 'like', "%{$q}%")
+        ->orWhere('last_name', 'like', "%{$q}%")
+        ->orWhere('email', 'like', "%{$q}%")
+        ->orWhere('phone', 'like', "%{$q}%")
+        ->take(3)
+        ->get(['id', 'first_name', 'last_name', 'email']);
+
+    foreach ($customers as $c) {
+        $results[] = [
+            'type'     => 'customer',
+            'label'    => trim($c->first_name . ' ' . $c->last_name),
+            'sublabel' => $c->email,
+            'url'      => route('admin.customers.show', $c->id),
+            'icon'     => 'customer',
+        ];
+    }
+
+    return response()->json(['results' => $results]);
+})->middleware('web')->name('api.admin.search');

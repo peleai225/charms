@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Coupon;
 use App\Models\Product;
+use App\Models\Review;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class HomeController extends Controller
 {
@@ -87,13 +89,47 @@ class HomeController extends Controller
             ->take(3)
             ->get();
 
-        return view('front.home', compact(
-            'featuredCategories',
-            'featuredProducts',
-            'newProducts',
-            'saleProducts',
-            'activeCoupons'
-        ));
+        // Avis clients approuvés (4-5 étoiles, avec customer)
+        $reviews = Review::where('status', Review::STATUS_APPROVED)
+            ->where('rating', '>=', 4)
+            ->with('customer')
+            ->latest()
+            ->take(4)
+            ->get();
+
+        $reviewStats = Review::where('status', Review::STATUS_APPROVED)->count() > 0
+            ? [
+                'count' => Review::where('status', Review::STATUS_APPROVED)->count(),
+                'avg'   => round(Review::where('status', Review::STATUS_APPROVED)->avg('rating'), 1),
+            ]
+            : null;
+
+        // Format data for Inertia
+        $products = $featuredProducts->map(function ($product) {
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'slug' => $product->slug,
+                'price' => $product->sale_price,
+                'compare_price' => $product->compare_price,
+                'stock' => $product->stock_quantity,
+                'primary_image' => $product->images->where('is_primary', true)->first()?->path ?? $product->images->first()?->path,
+            ];
+        });
+
+        $categories = $featuredCategories->map(function ($category) {
+            return [
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => $category->slug,
+                'image' => $category->image,
+            ];
+        });
+
+        return Inertia::render('Home', [
+            'products' => $products,
+            'featured_categories' => $categories,
+        ]);
     }
 }
 

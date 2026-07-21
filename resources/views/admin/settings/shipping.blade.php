@@ -86,7 +86,8 @@
 </div>
 
 <script>
-let zoneIndex = {{ count($zones) }};
+if (!window.shippingZoneIndex) window.shippingZoneIndex = {{ count($zones) }};
+
 function addZone() {
     const container = document.getElementById('zones-container');
     const html = `
@@ -94,16 +95,16 @@ function addZone() {
             <div class="grid md:grid-cols-3 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Nom de la zone</label>
-                    <input type="text" name="shipping_zones[${zoneIndex}][name]" class="w-full px-4 py-2 border border-slate-300 rounded-xl" placeholder="Ex: Abidjan">
+                    <input type="text" name="shipping_zones[${window.shippingZoneIndex}][name]" class="w-full px-4 py-2 border border-slate-300 rounded-xl" placeholder="Ex: Abidjan">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Villes (séparées par virgule)</label>
-                    <input type="text" name="shipping_zones[${zoneIndex}][cities]" class="w-full px-4 py-2 border border-slate-300 rounded-xl" placeholder="Ex: Cocody, Plateau">
+                    <input type="text" name="shipping_zones[${window.shippingZoneIndex}][cities]" class="w-full px-4 py-2 border border-slate-300 rounded-xl" placeholder="Ex: Cocody, Plateau">
                 </div>
                 <div class="flex gap-2">
                     <div class="flex-1">
                         <label class="block text-sm font-medium text-slate-700 mb-1">Prix (F CFA)</label>
-                        <input type="number" name="shipping_zones[${zoneIndex}][price]" class="w-full px-4 py-2 border border-slate-300 rounded-xl">
+                        <input type="number" name="shipping_zones[${window.shippingZoneIndex}][price]" class="w-full px-4 py-2 border border-slate-300 rounded-xl">
                     </div>
                     <button type="button" onclick="this.closest('.zone-item').remove()" class="mt-6 p-2 text-red-600 hover:bg-red-50 rounded-lg">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
@@ -113,7 +114,7 @@ function addZone() {
         </div>
     `;
     container.insertAdjacentHTML('beforeend', html);
-    zoneIndex++;
+    window.shippingZoneIndex++;
 }
 </script>
 @endsection

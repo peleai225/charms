@@ -1,11 +1,24 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-B6UcAauC.css",
+    "file": "assets/app-DkiPE5NQ.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
     "names": [
       "app.css"
+    ]
+  },
+  "resources/js/Pages/Home.vue": {
+    "file": "assets/Home-DjkHloQe.js",
+    "name": "Home",
+    "src": "resources/js/Pages/Home.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ],
+    "css": [
+      "assets/Home-D3JQP6HZ.css",
+      "assets/app-DkiPE5NQ.css"
     ]
   },
   "resources/js/admin-notifications.js": {
@@ -15,9 +28,15 @@
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app--JUJmvQ0.js",
+    "file": "assets/app-DTNswNYL.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
+    "isEntry": true,
+    "dynamicImports": [
+      "resources/js/Pages/Home.vue"
+    ],
+    "css": [
+      "assets/app-DkiPE5NQ.css"
+    ]
   }
 }

@@ -112,16 +112,40 @@ VITE_PUSHER_APP_CLUSTER="${PUSHER_APP_CLUSTER}"</pre>
 </div>
 
 <script>
-    document.getElementById('moneyfusionToggle')?.addEventListener('change', function() {
-        document.getElementById('moneyfusionSettings').style.display = this.checked ? 'block' : 'none';
-    });
+    // Éviter les listeners multiples avec wire:navigate
+    if (!window.paymentSettingsInitialized) {
+        window.paymentSettingsInitialized = true;
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const moneyfusionToggle = document.getElementById('moneyfusionToggle');
-        if (moneyfusionToggle) {
-            document.getElementById('moneyfusionSettings').style.display = moneyfusionToggle.checked ? 'block' : 'none';
+        const initPaymentSettings = () => {
+            const toggle = document.getElementById('moneyfusionToggle');
+            const settings = document.getElementById('moneyfusionSettings');
+
+            if (toggle && settings) {
+                // Retirer ancien listener si présent
+                toggle.removeEventListener('change', window.moneyfusionToggleHandler);
+
+                // Handler global
+                window.moneyfusionToggleHandler = function() {
+                    settings.style.display = this.checked ? 'block' : 'none';
+                };
+
+                toggle.addEventListener('change', window.moneyfusionToggleHandler);
+
+                // État initial
+                settings.style.display = toggle.checked ? 'block' : 'none';
+            }
+        };
+
+        // Init au chargement
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initPaymentSettings);
+        } else {
+            initPaymentSettings();
         }
-    });
+
+        // Re-init après navigation Livewire
+        document.addEventListener('livewire:navigated', initPaymentSettings);
+    }
 </script>
 @endsection
 

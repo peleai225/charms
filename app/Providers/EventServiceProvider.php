@@ -15,6 +15,7 @@ use App\Listeners\CreateAccountingEntryOnPayment;
 use App\Listeners\CreateRefundAccountingEntry;
 use App\Listeners\DecrementStockOnOrder;
 use App\Listeners\IncrementCouponUsage;
+use App\Listeners\InvalidateAdminCaches;
 use App\Listeners\RestoreStockOnCancel;
 use App\Listeners\RestoreStockOnRefund;
 use App\Listeners\SendInvoiceOnPayment;
@@ -35,6 +36,7 @@ class EventServiceProvider extends ServiceProvider
             BroadcastNewOrderNotification::class,
             AssignOrderToSuppliers::class,
             SendPushOnOrderUpdate::class,
+            InvalidateAdminCaches::class,
         ],
 
         OrderPaid::class => [
@@ -45,21 +47,25 @@ class EventServiceProvider extends ServiceProvider
             IncrementCouponUsage::class,
             AwardLoyaltyPointsOnPayment::class,
             SendPushOnOrderUpdate::class,
+            InvalidateAdminCaches::class,
         ],
 
         OrderCancelled::class => [
             RestoreStockOnCancel::class,
             SendPushOnOrderUpdate::class,
+            InvalidateAdminCaches::class,
         ],
 
         OrderRefunded::class => [
             CreateRefundAccountingEntry::class,
             RestoreStockOnRefund::class,
+            InvalidateAdminCaches::class,
         ],
 
         // Événements de stock
         StockUpdated::class => [
             CheckLowStockAlert::class,
+            InvalidateAdminCaches::class,
         ],
     ];
 

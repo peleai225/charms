@@ -3,171 +3,220 @@
 @section('title', 'Mes adresses')
 
 @section('content')
-<!-- Hero header -->
-<div class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white py-10">
+
+<div class="bg-slate-50 border-b border-slate-200 py-8">
     <div class="container mx-auto px-4">
-        <nav class="text-sm text-slate-400 mb-3 flex items-center gap-2">
-            <a href="{{ route('home') }}" class="hover:text-white transition-colors">Accueil</a>
-            <span class="text-slate-600">/</span>
-            <a href="{{ route('account.dashboard') }}" class="hover:text-white transition-colors">Mon compte</a>
-            <span class="text-slate-600">/</span>
-            <span class="text-white">Mes adresses</span>
+        <nav class="text-sm text-slate-400 mb-2 flex items-center gap-2">
+            <a href="{{ route('home') }}" class="hover:text-slate-700 transition-colors">Accueil</a>
+            <span>/</span>
+            <a href="{{ route('account.dashboard') }}" class="hover:text-slate-700 transition-colors">Mon compte</a>
+            <span>/</span>
+            <span class="text-slate-700">Mes adresses</span>
         </nav>
-        <h1 class="text-3xl font-bold">Mes adresses</h1>
+        <h1 class="text-2xl font-bold text-slate-900">Mes adresses</h1>
     </div>
 </div>
 
-<div class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-4 py-8" x-data="{ showModal: false, editId: null }">
     <div class="max-w-6xl mx-auto">
         <div class="flex flex-col lg:flex-row gap-8">
-            <!-- Sidebar -->
             @include('front.account.partials.sidebar')
 
-            <!-- Main Content -->
-            <div class="flex-1">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-xl font-bold text-slate-900">Gérer vos adresses</h2>
-                    <button type="button" onclick="document.getElementById('addAddressModal').classList.remove('hidden')"
-                            class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 hover:-translate-y-0.5 transition-all shadow-sm hover:shadow-md">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex-1 min-w-0">
+
+                @if (session('success'))
+                <div class="mb-5 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm">
+                    {{ session('success') }}
+                </div>
+                @endif
+                @if (session('error'))
+                <div class="mb-5 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                    {{ session('error') }}
+                </div>
+                @endif
+
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="font-semibold text-slate-900">Adresses de livraison</h2>
+                    <button type="button" @click="showModal = true"
+                        class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Ajouter
+                    </button>
+                </div>
+
+                @if($addresses->count() > 0)
+                <div class="grid sm:grid-cols-2 gap-4">
+                    @foreach($addresses as $address)
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 relative hover:border-blue-200 transition-colors">
+                        @if($address->is_default)
+                        <span class="absolute top-4 right-4 inline-flex px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                            Par défaut
+                        </span>
+                        @endif
+
+                        <div class="mb-3 pr-16">
+                            <p class="font-semibold text-slate-900">{{ $address->first_name }} {{ $address->last_name }}</p>
+                        </div>
+                        <div class="text-sm text-slate-600 space-y-0.5">
+                            <p>{{ $address->address_line1 }}</p>
+                            @if($address->address_line2)
+                                <p>{{ $address->address_line2 }}</p>
+                            @endif
+                            <p>{{ $address->postal_code }} {{ $address->city }}</p>
+                            <p>{{ $address->country }}</p>
+                            @if($address->phone)
+                                <p class="mt-1 text-slate-500">{{ $address->phone }}</p>
+                            @endif
+                        </div>
+
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center gap-3">
+                            <button type="button" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                                Modifier
+                            </button>
+                            @if(!$address->is_default)
+                            <form action="{{ route('account.addresses.store') }}" method="POST" class="inline">
+                                @csrf
+                                <input type="hidden" name="_method" value="PATCH">
+                                <input type="hidden" name="address_id" value="{{ $address->id }}">
+                                <input type="hidden" name="set_default" value="1">
+                                <button type="submit" class="text-sm text-slate-500 hover:text-slate-700 font-medium">
+                                    Par défaut
+                                </button>
+                            </form>
+                            <form action="{{ route('account.addresses.store') }}" method="POST" class="inline ml-auto"
+                                  onsubmit="return confirm('Supprimer cette adresse ?')">
+                                @csrf
+                                <input type="hidden" name="_method" value="DELETE">
+                                <input type="hidden" name="address_id" value="{{ $address->id }}">
+                                <button type="submit" class="text-sm text-red-500 hover:text-red-700 font-medium">
+                                    Supprimer
+                                </button>
+                            </form>
+                            @endif
+                        </div>
+                    </div>
+                    @endforeach
+
+                    {{-- Card ajouter --}}
+                    <button type="button" @click="showModal = true"
+                        class="bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 p-5 flex flex-col items-center justify-center gap-2 hover:border-blue-400 hover:bg-blue-50 transition-colors text-slate-400 hover:text-blue-600 min-h-[140px]">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        <span class="text-sm font-medium">Nouvelle adresse</span>
+                    </button>
+                </div>
+                @else
+                <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                    <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Aucune adresse enregistrée</h3>
+                    <p class="text-slate-500 text-sm mb-5">Ajoutez une adresse pour faciliter vos prochaines commandes.</p>
+                    <button type="button" @click="showModal = true"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
                         Ajouter une adresse
                     </button>
                 </div>
-                
-
-                @if($customer && $addresses->count() > 0)
-                    <div class="grid md:grid-cols-2 gap-4">
-                        @foreach($addresses as $address)
-                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 relative hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-                            @if($address->is_default)
-                                <span class="absolute top-4 right-4 inline-flex px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                                    Adresse par défaut
-                                </span>
-                            @endif
-                            
-                            <div class="mb-4">
-                                <p class="font-semibold text-slate-900">{{ $address->first_name }} {{ $address->last_name }}</p>
-                                @if($address->company)
-                                    <p class="text-slate-600">{{ $address->company }}</p>
-                                @endif
-                            </div>
-                            
-                            <div class="text-slate-600 text-sm space-y-1">
-                                <p>{{ $address->address_line1 }}</p>
-                                @if($address->address_line2)
-                                    <p>{{ $address->address_line2 }}</p>
-                                @endif
-                                <p>{{ $address->postal_code }} {{ $address->city }}</p>
-                                <p>{{ $address->country }}</p>
-                                @if($address->phone)
-                                    <p class="mt-2">📞 {{ $address->phone }}</p>
-                                @endif
-                            </div>
-                            
-                            <div class="mt-4 pt-4 border-t border-slate-100 flex items-center gap-4">
-                                <button type="button" class="text-sm text-primary-600 hover:underline">Modifier</button>
-                                @if(!$address->is_default)
-                                    <button type="button" class="text-sm text-slate-600 hover:underline">Définir par défaut</button>
-                                @endif
-                                <button type="button" class="text-sm text-red-600 hover:underline">Supprimer</button>
-                            </div>
-                        </div>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="bg-white rounded-2xl p-12 shadow-sm border border-slate-200 text-center">
-                        <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                            <svg class="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                        </div>
-                        <h3 class="text-xl font-semibold text-slate-900 mb-2">Aucune adresse enregistrée</h3>
-                        <p class="text-slate-600 mb-6">Ajoutez une adresse pour faciliter vos prochaines commandes.</p>
-                        <button type="button" onclick="document.getElementById('addAddressModal').classList.remove('hidden')"
-                                class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                            </svg>
-                            Ajouter une adresse
-                        </button>
-                    </div>
                 @endif
+
             </div>
         </div>
     </div>
-</div>
 
-<!-- Modal Ajouter une adresse -->
-<div id="addAddressModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-slate-900/50 transition-opacity" onclick="document.getElementById('addAddressModal').classList.add('hidden')"></div>
-
-        <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-            <div class="bg-white px-6 py-5 border-b border-slate-100">
-                <h3 class="text-lg font-semibold text-slate-900" id="modal-title">Ajouter une adresse</h3>
+    {{-- Modal ajout adresse --}}
+    <div x-show="showModal" x-cloak
+         class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50" @click="showModal = false"></div>
+        <div class="relative bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="font-semibold text-slate-900">Nouvelle adresse</h3>
+                <button type="button" @click="showModal = false" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
-            
+
             <form id="addAddressForm" action="{{ route('account.addresses.store') }}" method="POST" class="p-6 space-y-4">
                 @csrf
-                <div class="grid grid-cols-2 gap-4">
+
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Prénom</label>
-                        <input type="text" name="first_name" required class="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Prénom <span class="text-red-500">*</span></label>
+                        <input type="text" name="first_name" required
+                            class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Nom</label>
-                        <input type="text" name="last_name" required class="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Nom <span class="text-red-500">*</span></label>
+                        <input type="text" name="last_name" required
+                            class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
                     </div>
                 </div>
-                
+
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Adresse</label>
-                    <input type="text" name="address" required class="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Adresse <span class="text-red-500">*</span></label>
+                    <input type="text" name="address" required
+                        class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        placeholder="Rue, quartier, numéro...">
                 </div>
-                
-                <div class="grid grid-cols-2 gap-4">
+
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Code postal</label>
-                        <input type="text" name="postal_code" required class="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Code postal <span class="text-red-500">*</span></label>
+                        <input type="text" name="postal_code" required value="00225"
+                            class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-700 mb-1">Ville</label>
-                        <input type="text" name="city" required class="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Ville <span class="text-red-500">*</span></label>
+                        <input type="text" name="city" required
+                            class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            placeholder="Abidjan">
                     </div>
                 </div>
-                
+
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Pays</label>
-                    <select name="country" required class="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
-                        <option value="CI" {{ old('country', 'CI') === 'CI' ? 'selected' : '' }}>Côte d'Ivoire</option>
-                        <option value="FR" {{ old('country') === 'FR' ? 'selected' : '' }}>France</option>
-                        <option value="SN" {{ old('country') === 'SN' ? 'selected' : '' }}>Sénégal</option>
-                        <option value="ML" {{ old('country') === 'ML' ? 'selected' : '' }}>Mali</option>
-                        <option value="BF" {{ old('country') === 'BF' ? 'selected' : '' }}>Burkina Faso</option>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Pays <span class="text-red-500">*</span></label>
+                    <select name="country" required
+                        class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white">
+                        <option value="CI" selected>Côte d'Ivoire</option>
+                        <option value="SN">Sénégal</option>
+                        <option value="ML">Mali</option>
+                        <option value="BF">Burkina Faso</option>
+                        <option value="GN">Guinée</option>
+                        <option value="FR">France</option>
                     </select>
                 </div>
-                
+
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
-                    <input type="tel" name="phone" class="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    <input type="tel" name="phone"
+                        class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        placeholder="+225 07 00 00 00 00">
                 </div>
-                
-                <div class="flex items-center">
-                    <input type="checkbox" name="is_default" id="is_default" class="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500">
-                    <label for="is_default" class="ml-2 text-sm text-slate-600">Définir comme adresse par défaut</label>
-                </div>
+
+                <label class="flex items-center gap-2.5 cursor-pointer">
+                    <input type="checkbox" name="is_default" value="1"
+                        class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                    <span class="text-sm text-slate-600">Définir comme adresse par défaut</span>
+                </label>
             </form>
-            
-            <div class="bg-slate-50 px-6 py-4 flex justify-end gap-3">
-                <button type="button" onclick="document.getElementById('addAddressModal').classList.add('hidden')"
-                        class="px-4 py-2 text-slate-600 font-medium rounded-xl hover:bg-slate-100 transition-colors">
+
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                <button type="button" @click="showModal = false"
+                    class="px-4 py-2 text-sm text-slate-600 font-medium rounded-xl hover:bg-slate-100 transition-colors">
                     Annuler
                 </button>
                 <button type="submit" form="addAddressForm"
-                        class="px-6 py-2 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition-colors">
+                    class="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors">
                     Enregistrer
                 </button>
             </div>
@@ -175,4 +224,3 @@
     </div>
 </div>
 @endsection
-

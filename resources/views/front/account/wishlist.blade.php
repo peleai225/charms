@@ -1,94 +1,115 @@
 @extends('layouts.front')
 
-@section('title', 'Mes Favoris')
+@section('title', 'Ma liste de souhaits')
 
 @section('content')
-<div class="bg-slate-50 min-h-screen py-10">
-    <div class="container mx-auto px-4 lg:px-6">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
-            
-            {{-- Sidebar Mon Compte --}}
-            <div class="md:col-span-4 lg:col-span-3">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 sticky top-28">
-                    <div class="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
-                        <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-xl font-bold">
-                            {{ mb_substr(auth()->user()->name, 0, 1) }}
-                        </div>
-                        <div>
-                            <p class="font-bold text-slate-900">{{ auth()->user()->name }}</p>
-                            <p class="text-xs text-slate-500">Client</p>
-                        </div>
-                    </div>
-                    
-                    <nav class="space-y-2">
-                        <a href="{{ route('account.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors">
-                            <svg class="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-                            Tableau de bord
-                        </a>
-                        <a href="{{ route('account.orders') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors">
-                            <svg class="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                            Mes commandes
-                        </a>
-                        <a href="{{ route('account.wishlist.index') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-rose-50 text-rose-700 font-medium transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                            Mes Favoris
-                        </a>
-                        <div class="pt-4 mt-4 border-t border-slate-100">
-                            <form action="{{ route('logout') }}" method="POST">
-                                @csrf
-                                <button type="submit" class="flex items-center gap-3 px-4 py-2.5 w-full text-left rounded-xl text-red-600 hover:bg-red-50 transition-colors">
-                                    <svg class="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                                    Déconnexion
-                                </button>
-                            </form>
-                        </div>
-                    </nav>
+
+<div class="bg-slate-50 border-b border-slate-200 py-8">
+    <div class="container mx-auto px-4">
+        <nav class="text-sm text-slate-400 mb-2 flex items-center gap-2">
+            <a href="{{ route('home') }}" class="hover:text-slate-700 transition-colors">Accueil</a>
+            <span>/</span>
+            <a href="{{ route('account.dashboard') }}" class="hover:text-slate-700 transition-colors">Mon compte</a>
+            <span>/</span>
+            <span class="text-slate-700">Liste de souhaits</span>
+        </nav>
+        <div class="flex items-center gap-3">
+            <h1 class="text-2xl font-bold text-slate-900">Ma liste de souhaits</h1>
+            @if($wishlistItems->count() > 0)
+            <span class="inline-flex px-2.5 py-0.5 bg-slate-200 text-slate-600 text-sm font-semibold rounded-full">
+                {{ $wishlistItems->total() }}
+            </span>
+            @endif
+        </div>
+    </div>
+</div>
+
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex flex-col lg:flex-row gap-8">
+            @include('front.account.partials.sidebar')
+
+            <div class="flex-1 min-w-0">
+
+                @if (session('success'))
+                <div class="mb-5 p-3 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm">
+                    {{ session('success') }}
                 </div>
-            </div>
-            
-            {{-- Main Content --}}
-            <div class="md:col-span-8 lg:col-span-9">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    <div class="px-6 py-6 border-b border-slate-100 flex items-center justify-between">
-                        <div>
-                            <h1 class="text-2xl font-bold text-slate-900">Mes Favoris</h1>
-                            <p class="text-sm text-slate-500 mt-1">Retrouvez les articles que vous avez aimés.</p>
-                        </div>
-                        <div class="w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                @endif
+
+                @if($wishlistItems->count() > 0)
+                <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                    @foreach($wishlistItems as $item)
+                    @php $product = $item->product; @endphp
+                    @if($product)
+                    @php
+                        $img = $product->images->where('is_primary', true)->first() ?? $product->images->first();
+                    @endphp
+                    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden hover:border-blue-200 hover:shadow-sm transition-all group">
+                        <a href="{{ route('shop.product', $product->slug) }}" class="block relative">
+                            <div class="aspect-[4/5] bg-slate-50">
+                                @if($img)
+                                    <img src="{{ asset('storage/' . $img->path) }}"
+                                         alt="{{ $product->name }}"
+                                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                         loading="lazy">
+                                @else
+                                    <div class="w-full h-full flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                    </div>
+                                @endif
+                            </div>
+                        </a>
+                        <div class="p-3">
+                            <a href="{{ route('shop.product', $product->slug) }}"
+                               class="text-sm font-medium text-slate-900 hover:text-blue-600 line-clamp-2 leading-snug block mb-2 transition-colors">
+                                {{ $product->name }}
+                            </a>
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="font-bold text-slate-900 text-sm">{{ format_price($product->sale_price) }}</span>
+                                <form action="{{ route('wishlist.toggle', $product->id) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" title="Retirer des favoris"
+                                        class="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="p-6">
-                        @if($wishlistItems->count() > 0)
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                @foreach($wishlistItems as $item)
-                                    @php
-                                        $product = $item->product;
-                                    @endphp
-                                    @include('front.shop.partials.product-card', ['product' => $product])
-                                @endforeach
-                            </div>
-                            
-                            <div class="mt-8">
-                                {!! $wishlistItems->links() !!}
-                            </div>
-                        @else
-                            <div class="text-center py-16">
-                                <div class="w-24 h-24 bg-rose-50 text-rose-300 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
-                                </div>
-                                <h3 class="text-xl font-bold text-slate-900 mb-2">Votre liste d'envies est vide</h3>
-                                <p class="text-slate-500 mb-8 max-w-md mx-auto">Vous n'avez pas encore ajouté de produits à vos favoris. Découvrez nos collections et trouvez votre bonheur !</p>
-                                <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/30">
-                                    Découvrir la boutique
-                                </a>
-                            </div>
-                        @endif
-                    </div>
+                    @endif
+                    @endforeach
                 </div>
+
+                @if($wishlistItems->hasPages())
+                <div class="mt-6">
+                    {{ $wishlistItems->links() }}
+                </div>
+                @endif
+
+                @else
+                <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                    <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Votre liste de souhaits est vide</h3>
+                    <p class="text-slate-500 text-sm mb-6 max-w-sm mx-auto">
+                        Vous n'avez pas encore ajouté de produits à vos favoris. Cliquez sur le coeur d'un produit pour l'ajouter.
+                    </p>
+                    <a href="{{ route('shop.index') }}"
+                       class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                        Découvrir la boutique
+                    </a>
+                </div>
+                @endif
+
             </div>
-            
         </div>
     </div>
 </div>

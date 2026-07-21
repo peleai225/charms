@@ -158,8 +158,12 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const ctx = document.getElementById('categoryChart').getContext('2d');
-    new Chart(ctx, {
+    const ctx = document.getElementById('categoryChart');
+    if (ctx) {
+        const existingChart = Chart.getChart(ctx);
+        if (existingChart) existingChart.destroy();
+
+        new Chart(ctx.getContext('2d'), {
         type: 'doughnut',
         data: {
             labels: @json($categoryStats->pluck('name')),
@@ -193,7 +197,8 @@
                 }
             }
         }
-    });
+        });
+    }
 </script>
 @endpush
 @endsection

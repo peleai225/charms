@@ -1,38 +1,102 @@
 /**
- * KILL-SWITCH SERVICE WORKER
- *
- * Cette version se désinscrit elle-même et supprime tous les caches.
- * Elle remplace une ancienne version qui mettait en cache trop agressivement
- * et empêchait les nouveaux assets de se charger.
- *
- * Quand les navigateurs des visiteurs vont fetch ce fichier (ce qu'ils font
- * automatiquement quand le SW expire ou périodiquement), il va :
- *   1. Supprimer tous les caches stockés
- *   2. Se désinscrire lui-même
- *   3. Recharger les onglets ouverts pour servir les assets frais depuis le réseau
- *
- * Une fois que tous les visiteurs sont passés, on pourra remettre un vrai SW.
+ * Service Worker Chamse — Stratégie cache-first pour assets, network-first pour pages.
+ * Version incrémentée à chaque déploiement pour invalider l'ancien cache.
  */
 
-self.addEventListener('install', () => {
+const CACHE_VERSION = 'chamse-v1';
+const STATIC_CACHE  = `${CACHE_VERSION}-static`;
+const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
+
+// Ressources précachées au moment de l'install
+const PRECACHE_URLS = [
+    '/offline',
+];
+
+// ─── Install ───────────────────────────────────────────────────────────────
+self.addEventListener('install', (event) => {
+    event.waitUntil(
+        caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS))
+    );
     self.skipWaiting();
 });
 
+// ─── Activate ──────────────────────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
-    event.waitUntil((async () => {
-        // 1) Supprimer tous les caches
-        const keys = await caches.keys();
-        await Promise.all(keys.map((key) => caches.delete(key)));
-
-        // 2) Se désinscrire
-        await self.registration.unregister();
-
-        // 3) Recharger tous les clients ouverts pour récupérer les nouveaux assets
-        const clients = await self.clients.matchAll({ type: 'window' });
-        clients.forEach((client) => {
-            try { client.navigate(client.url); } catch (e) {}
-        });
-    })());
+    event.waitUntil(
+        caches.keys().then((keys) =>
+            Promise.all(
+                keys
+                    .filter((k) => k !== STATIC_CACHE && k !== DYNAMIC_CACHE)
+                    .map((k) => caches.delete(k))
+            )
+        )
+    );
+    self.clients.claim();
 });
 
-// Pas de gestionnaire fetch : toutes les requêtes passent en direct au réseau.
+// ─── Fetch ─────────────────────────────────────────────────────────────────
+self.addEventListener('fetch', (event) => {
+    const { request } = event;
+    const url = new URL(request.url);
+
+    // Ne pas intercepter les requêtes non-GET, d'autres origines, ou les requêtes admin
+    if (
+        request.method !== 'GET' ||
+        url.origin !== self.location.origin ||
+        url.pathname.startsWith('/admin') ||
+        url.pathname.startsWith('/api') ||
+        url.pathname.startsWith('/webhook')
+    ) {
+        return;
+    }
+
+    // Assets statiques (build Vite, images publiques) → Cache First
+    if (
+        url.pathname.startsWith('/build/') ||
+        url.pathname.startsWith('/storage/') ||
+        /\.(woff2?|ttf|eot|svg|png|jpe?g|gif|webp|ico)$/.test(url.pathname)
+    ) {
+        event.respondWith(cacheFirst(request));
+        return;
+    }
+
+    // Pages HTML → Network First (affiche offline si réseau coupé)
+    if (request.headers.get('accept')?.includes('text/html')) {
+        event.respondWith(networkFirstWithOfflineFallback(request));
+        return;
+    }
+});
+
+// ─── Stratégies ────────────────────────────────────────────────────────────
+async function cacheFirst(request) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+
+    try {
+        const response = await fetch(request);
+        if (response.ok) {
+            const cache = await caches.open(DYNAMIC_CACHE);
+            cache.put(request, response.clone());
+        }
+        return response;
+    } catch {
+        return new Response('', { status: 503 });
+    }
+}
+
+async function networkFirstWithOfflineFallback(request) {
+    try {
+        const response = await fetch(request);
+        if (response.ok) {
+            const cache = await caches.open(DYNAMIC_CACHE);
+            cache.put(request, response.clone());
+        }
+        return response;
+    } catch {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+
+        // Retourner la page offline précachée
+        return caches.match('/offline') ?? new Response('Hors ligne', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+    }
+}

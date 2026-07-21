@@ -10,6 +10,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Customer;
 use App\Models\Setting;
+use App\Services\ThermalPrinterService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -343,6 +344,56 @@ class ScannerController extends Controller
         $amountReceived = (float) request('amount_received', $order->total);
 
         return view('admin.scanner.receipt', compact('order', 'change', 'amountReceived'));
+    }
+
+    /**
+     * API : Générer les commandes d'impression thermique (ESC/POS)
+     * Retourne JSON avec instructions pour imprimante POS
+     */
+    public function thermalReceipt(Order $order, ThermalPrinterService $printer)
+    {
+        if ($order->source !== 'pos') {
+            abort(404);
+        }
+
+        $options = [
+            'width' => (int) request('width', 48), // 48 pour 80mm, 32 pour 58mm
+            'change' => (float) request('change', 0),
+            'amount_received' => (float) request('amount_received', $order->total),
+            'order_url' => route('front.account.orders.show', $order),
+        ];
+
+        $receiptData = $printer->generateReceipt($order, $options);
+
+        return response()->json([
+            'success' => true,
+            'order_number' => $order->order_number,
+            'receipt' => $receiptData,
+            'plain_text' => $printer->toPlainText($receiptData),
+            'instructions' => 'Utilisez un driver ESC/POS (USB/Network/Bluetooth) pour envoyer ces commandes à l\'imprimante thermique.',
+        ]);
+    }
+
+    /**
+     * Version texte pur du reçu (pour debug ou copier-coller)
+     */
+    public function textReceipt(Order $order, ThermalPrinterService $printer)
+    {
+        if ($order->source !== 'pos') {
+            abort(404);
+        }
+
+        $options = [
+            'width' => (int) request('width', 48),
+            'change' => (float) request('change', 0),
+            'amount_received' => (float) request('amount_received', $order->total),
+        ];
+
+        $receiptData = $printer->generateReceipt($order, $options);
+        $plainText = $printer->toPlainText($receiptData);
+
+        return response($plainText)
+            ->header('Content-Type', 'text/plain; charset=utf-8');
     }
 
     /**

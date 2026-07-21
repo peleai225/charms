@@ -52,71 +52,8 @@ Route::get('storage/{path}', function (string $path) {
     }
 })->where('path', '.*')->name('storage.serve');
 
-// Setup sans terminal/SSH — pour hébergement mutualisé
-// Utiliser : /setup?token=VOTRE_CLE_SECRETE (définir DEPLOY_TOKEN dans .env)
-Route::get('/setup', function () {
-    $token = request('token');
-    $expected = config('app.deploy_token');
-    if (!$expected || !$token || !hash_equals($expected, $token)) {
-        abort(404);
-    }
-    $results = [];
-
-    // Créer le lien storage dans public_html (cPanel : public_html != app/public)
-    $docRoot = $_SERVER['DOCUMENT_ROOT'] ?? public_path();
-    $storageLink = rtrim($docRoot, '/') . '/storage';
-    $storageTarget = storage_path('app/public');
-    if (!file_exists($storageLink) && is_dir($storageTarget)) {
-        $ok = @symlink($storageTarget, $storageLink);
-        $results[] = $ok ? '✓ Lien storage créé dans public_html' : '✗ Échec symlink public_html/storage';
-    } elseif (is_link($storageLink)) {
-        $results[] = '✓ Lien storage existe déjà dans public_html';
-    } else {
-        $results[] = 'ℹ storage existe dans public_html (type: ' . filetype($storageLink) . ')';
-    }
-
-    // Aussi créer dans app/public (standard Laravel)
-    try {
-        Artisan::call('storage:link');
-        $results[] = '✓ Lien storage Laravel créé';
-    } catch (\Throwable $e) {
-        $results[] = 'Storage Laravel : ' . ($e->getMessage());
-    }
-
-    // Migrations
-    try {
-        Artisan::call('migrate', ['--force' => true]);
-        $results[] = '✓ Migrations exécutées';
-    } catch (\Throwable $e) {
-        $results[] = 'Migrations : ' . $e->getMessage();
-    }
-
-    // Vider tous les caches
-    try {
-        Artisan::call('route:clear');
-        Artisan::call('view:clear');
-        Artisan::call('config:clear');
-        Artisan::call('cache:clear');
-        $results[] = '✓ Caches vidés (route, view, config, cache)';
-    } catch (\Throwable $e) {
-        $results[] = 'Cache : ' . $e->getMessage();
-    }
-
-    return '<pre style="font-family:sans-serif;padding:20px;">' . implode("\n", $results) . '</pre>';
-});
-
-// Ancienne route (rétrocompatibilité local)
-Route::get('/setup-storage', function () {
-    if (!app()->environment('local')) {
-        abort(404);
-    }
-    try {
-        Artisan::call('storage:link');
-        return 'Le lien storage a été créé avec succès !';
-    } catch (\Throwable $e) {
-        return 'Erreur : ' . $e->getMessage();
-    }
-});
+// Setup sans terminal/SSH — GET /setup?token=APP_DEPLOY_TOKEN
+Route::get('/setup', [\App\Http\Controllers\Admin\SystemController::class, 'setup']);
 
 // Page d'accueil
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -316,6 +253,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/scanner/cart', [\App\Http\Controllers\Admin\ScannerController::class, 'clearCart'])->name('scanner.cart.clear');
         Route::post('/scanner/checkout', [\App\Http\Controllers\Admin\ScannerController::class, 'checkout'])->name('scanner.checkout');
         Route::get('/scanner/receipt/{order}', [\App\Http\Controllers\Admin\ScannerController::class, 'receipt'])->name('scanner.receipt');
+        Route::get('/scanner/receipt/{order}/thermal', [\App\Http\Controllers\Admin\ScannerController::class, 'thermalReceipt'])->name('scanner.receipt.thermal');
+        Route::get('/scanner/receipt/{order}/text', [\App\Http\Controllers\Admin\ScannerController::class, 'textReceipt'])->name('scanner.receipt.text');
         Route::post('/scanner/stock-movement', [\App\Http\Controllers\Admin\ScannerController::class, 'stockMovement'])->name('scanner.stock-movement');
 
         // Codes-barres — tous les rôles

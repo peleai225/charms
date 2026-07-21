@@ -1,9 +1,22 @@
 <?php
 /**
- * Script de configuration Laravel (cache, storage) — sans symlink requis
- * À placer dans public_html/ sur le serveur.
- * SUPPRIMEZ après utilisation.
+ * Script de configuration Laravel — À SUPPRIMER après utilisation.
+ * Accès : ?token=VOTRE_ADMIN_SCRIPT_TOKEN (défini dans .env)
  */
+
+// Guard — refuse tout accès sans token valide
+(function () {
+    $envFile = dirname(__DIR__) . '/.env';
+    $expected = getenv('ADMIN_SCRIPT_TOKEN') ?: (
+        file_exists($envFile)
+            ? (preg_match('/^ADMIN_SCRIPT_TOKEN=(.+)$/m', file_get_contents($envFile), $m) ? trim($m[1]) : null)
+            : null
+    );
+    if (!$expected || ($_GET['token'] ?? '') !== $expected) {
+        http_response_code(403);
+        die('Accès refusé. Utilisez ?token=ADMIN_SCRIPT_TOKEN');
+    }
+})();
 
 // Racine Laravel : depuis public_html → repositories/charms
 $laravelBase = file_exists(__DIR__.'/../repositories/charms/vendor/autoload.php')

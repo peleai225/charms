@@ -40,7 +40,8 @@
                         <div class="relative aspect-[4/3] bg-slate-100 overflow-hidden">
                             <img src="{{ asset('storage/' . $subcategory->image) }}"
                                  alt="{{ $subcategory->name }}"
-                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                 loading="lazy">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent"></div>
                             <div class="absolute inset-0 flex items-end p-4">
                                 <div>

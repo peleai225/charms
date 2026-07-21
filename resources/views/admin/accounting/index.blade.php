@@ -213,8 +213,12 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const ctx = document.getElementById('revenueChart').getContext('2d');
-    new Chart(ctx, {
+    const ctx = document.getElementById('revenueChart');
+    if (ctx) {
+        const existingChart = Chart.getChart(ctx);
+        if (existingChart) existingChart.destroy();
+
+        new Chart(ctx.getContext('2d'), {
         type: 'line',
         data: {
             labels: @json($revenueChart['labels']),
@@ -252,7 +256,8 @@
                 }
             }
         }
-    });
+        });
+    }
 </script>
 @endpush
 @endsection

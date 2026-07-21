@@ -18,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'customer' => \App\Http\Middleware\CustomerMiddleware::class,
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         ]);
+        $middleware->web(append: [
+            \App\Http\Middleware\HandleInertiaRequests::class,
+        ]);
         $middleware->appendToGroup('web', [
             \App\Http\Middleware\ConvertRedirectToJson::class,
         ]);

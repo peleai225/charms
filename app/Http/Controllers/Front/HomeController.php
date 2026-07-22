@@ -104,31 +104,56 @@ class HomeController extends Controller
             ]
             : null;
 
-        // Format data for Inertia
-        $products = $featuredProducts->map(function ($product) {
+        $formatProduct = function ($product) {
             return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'slug' => $product->slug,
-                'price' => $product->sale_price,
+                'id'            => $product->id,
+                'name'          => $product->name,
+                'slug'          => $product->slug,
+                'price'         => $product->sale_price,
                 'compare_price' => $product->compare_price,
-                'stock' => $product->stock_quantity,
-                'primary_image' => $product->images->where('is_primary', true)->first()?->path ?? $product->images->first()?->path,
+                'stock'         => $product->stock_quantity,
+                'has_variants'  => $product->variants_count > 0 ?? false,
+                'is_new'        => (bool) $product->is_new,
+                'category_name' => $product->category?->name,
+                'primary_image' => $product->images->where('is_primary', true)->first()?->path
+                    ?? $product->images->first()?->path,
             ];
-        });
+        };
 
         $categories = $featuredCategories->map(function ($category) {
             return [
-                'id' => $category->id,
-                'name' => $category->name,
-                'slug' => $category->slug,
-                'image' => $category->image,
+                'id'                => $category->id,
+                'name'              => $category->name,
+                'slug'              => $category->slug,
+                'image'             => $category->image,
+                'products_count'    => $category->products_count,
+                'min_product_price' => $category->min_product_price,
             ];
         });
 
+        $reviewsData = $reviews->map(function ($review) {
+            return [
+                'id'           => $review->id,
+                'rating'       => $review->rating,
+                'body'         => $review->body,
+                'author'       => $review->customer
+                    ? $review->customer->first_name . ' ' . mb_substr($review->customer->last_name, 0, 1) . '.'
+                    : 'Client',
+                'created_at'   => $review->created_at->diffForHumans(),
+            ];
+        });
+
+        $whatsapp = \App\Models\Setting::get('social_whatsapp');
+        $whatsappNumber = $whatsapp ? preg_replace('/\D/', '', $whatsapp) : null;
+
         return Inertia::render('Home', [
-            'products' => $products,
             'featured_categories' => $categories,
+            'featured_products'   => $featuredProducts->map($formatProduct),
+            'new_products'        => $newProducts->map($formatProduct),
+            'sale_products'       => $saleProducts->map($formatProduct),
+            'reviews'             => $reviewsData,
+            'review_stats'        => $reviewStats,
+            'whatsapp_number'     => $whatsappNumber,
         ]);
     }
 }

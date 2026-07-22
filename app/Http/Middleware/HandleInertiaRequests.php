@@ -58,17 +58,37 @@ class HandleInertiaRequests extends Middleware
             // Site settings (cached)
             'settings' => fn () => cache()->remember('site_settings', 3600, function () {
                 return [
-                    'site_name' => \App\Models\Setting::get('site_name', config('app.name', 'Chamse')),
-                    'logo' => \App\Models\Setting::get('logo'),
-                    'favicon' => \App\Models\Setting::get('favicon'),
-                    'primary_color' => \App\Models\Setting::get('primary_color', '#2563EB'),
+                    'site_name'          => \App\Models\Setting::get('site_name', config('app.name', 'Chamse')),
+                    'logo'               => \App\Models\Setting::get('logo'),
+                    'favicon'            => \App\Models\Setting::get('favicon'),
+                    'primary_color'      => \App\Models\Setting::get('primary_color', '#2563EB'),
+                    'social_whatsapp'    => \App\Models\Setting::get('social_whatsapp'),
+                    'social_facebook'    => \App\Models\Setting::get('social_facebook'),
+                    'social_instagram'   => \App\Models\Setting::get('social_instagram'),
                 ];
             }),
 
-            // Cart count
-            'cart_count' => fn () => session()->has('cart')
-                ? collect(session('cart'))->sum('quantity')
-                : 0,
+            // Top categories for nav dropdown
+            'nav_categories' => fn () => cache()->remember('nav_categories', 1800, function () {
+                return \App\Models\Category::active()
+                    ->roots()
+                    ->ordered()
+                    ->take(8)
+                    ->get()
+                    ->map(fn($c) => [
+                        'id'    => $c->id,
+                        'name'  => $c->name,
+                        'slug'  => $c->slug,
+                        'image' => $c->image,
+                    ])
+                    ->toArray();
+            }),
+
+            // Cart count (depuis la table carts en DB)
+            'cart_count' => fn () => \App\Models\Cart::where('session_id', session()->getId())
+                ->withSum('items', 'quantity')
+                ->first()
+                ?->items_sum_quantity ?? 0,
         ]);
     }
 }

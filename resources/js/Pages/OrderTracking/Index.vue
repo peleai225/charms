@@ -53,7 +53,7 @@ const submit = () => {
                 </div>
 
                 <!-- Error messages -->
-                <Alert v-if="$page.props.flash.error" type="danger" class="mb-4">
+                <Alert v-if="$page.props.flash?.error" type="danger" class="mb-4">
                     {{ $page.props.flash.error }}
                 </Alert>
 

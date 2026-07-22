@@ -96,7 +96,13 @@ class CartController extends Controller
         $cart = $this->getCart();
         $cart->addItem($product, $request->quantity, $variant);
 
-        if ($request->ajax()) {
+        // Inertia envoie X-Inertia: true → retourner redirect (pas JSON)
+        if ($request->header('X-Inertia')) {
+            return back()->with('success', 'Produit ajouté au panier !');
+        }
+
+        // Fetch brut (ProductCard, etc.) → JSON
+        if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Produit ajouté au panier',
@@ -119,12 +125,13 @@ class CartController extends Controller
         $cart = $this->getCart();
         $cart->updateItemQuantity($itemId, $request->quantity);
 
-        if ($request->ajax()) {
+        // Fetch pur (pas Inertia) → JSON pour mise à jour réactive sans rechargement
+        if (!$request->header('X-Inertia') && ($request->wantsJson() || $request->ajax())) {
             $cart->refresh();
             return response()->json([
-                'success' => true,
-                'subtotal' => number_format($cart->subtotal, 0, ',', ' ') . ' F CFA',
-                'total' => number_format($cart->total, 0, ',', ' ') . ' F CFA',
+                'success'    => true,
+                'subtotal'   => $cart->subtotal,
+                'total'      => $cart->total,
                 'cart_count' => $cart->items_count,
             ]);
         }
@@ -140,10 +147,12 @@ class CartController extends Controller
         $cart = $this->getCart();
         $cart->removeItem($itemId);
 
-        if (request()->ajax()) {
+        if (!request()->header('X-Inertia') && (request()->wantsJson() || request()->ajax())) {
             $cart->refresh();
             return response()->json([
-                'success' => true,
+                'success'    => true,
+                'subtotal'   => $cart->subtotal,
+                'total'      => $cart->total,
                 'cart_count' => $cart->items_count,
             ]);
         }
@@ -283,6 +292,7 @@ class CartController extends Controller
                 'price_fmt'    => number_format($item->unit_price, 0, ',', ' ') . ' F CFA',
                 'quantity'     => $item->quantity,
                 'subtotal_fmt' => number_format($item->unit_price * $item->quantity, 0, ',', ' ') . ' F CFA',
+                'variant_id'   => $item->variant_id,
                 'variant'      => $item->variant
                     ? $item->variant->attributeValues->pluck('value')->implode(' / ')
                     : null,

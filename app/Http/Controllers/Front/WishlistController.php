@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Wishlist;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class WishlistController extends Controller
 {
@@ -17,11 +18,36 @@ class WishlistController extends Controller
         }
 
         $wishlistItems = Wishlist::where('customer_id', $customer->id)
-            ->with(['product.images', 'variant.attributeValues.attribute'])
+            ->with(['product.images', 'product.category'])
             ->latest()
             ->paginate(12);
 
-        return view('front.account.wishlist', compact('wishlistItems'));
+        $wishlistData = [
+            'data' => $wishlistItems->map(function ($item) {
+                $product = $item->product;
+                if (!$product) return null;
+                $primaryImage = $product->images->where('is_primary', true)->first()
+                    ?? $product->images->first();
+                return [
+                    'id'            => $product->id,
+                    'name'          => $product->name,
+                    'slug'          => $product->slug,
+                    'price'         => $product->sale_price,
+                    'compare_price' => $product->compare_price,
+                    'stock'         => $product->stock_quantity,
+                    'has_variants'  => $product->variants()->exists(),
+                    'category_name' => $product->category?->name,
+                    'primary_image' => $primaryImage?->path,
+                ];
+            })->filter()->values()->toArray(),
+            'current_page' => $wishlistItems->currentPage(),
+            'last_page'    => $wishlistItems->lastPage(),
+            'total'        => $wishlistItems->total(),
+        ];
+
+        return Inertia::render('Account/Wishlist', [
+            'wishlist' => $wishlistData,
+        ]);
     }
 
     public function toggle(Product $product, Request $request)

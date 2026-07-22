@@ -221,7 +221,7 @@ class CheckoutController extends Controller
                 // Adresse de livraison
                 'shipping_first_name' => $validated['shipping_first_name'],
                 'shipping_last_name' => $validated['shipping_last_name'],
-                'shipping_email' => $validated['email'] ?? null,
+                'shipping_email' => $validated['email'] ?? auth()->user()?->email ?? 'noreply@chamse.ci',
                 'shipping_phone' => $validated['phone'],
                 'shipping_address' => $validated['shipping_address'],
                 'shipping_address_2' => $validated['shipping_address_2'] ?? null,
@@ -232,7 +232,7 @@ class CheckoutController extends Controller
                 // Adresse de facturation
                 'billing_first_name' => $sameBilling ? $validated['shipping_first_name'] : $validated['billing_first_name'],
                 'billing_last_name' => $sameBilling ? $validated['shipping_last_name'] : $validated['billing_last_name'],
-                'billing_email' => $validated['email'] ?? null,
+                'billing_email' => $validated['email'] ?? auth()->user()?->email ?? 'noreply@chamse.ci',
                 'billing_phone' => $validated['phone'],
                 'billing_address' => $sameBilling ? $validated['shipping_address'] : $validated['billing_address'],
                 'billing_address_2' => $sameBilling ? ($validated['shipping_address_2'] ?? null) : ($validated['billing_address_2'] ?? null),

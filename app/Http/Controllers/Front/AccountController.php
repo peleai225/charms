@@ -19,10 +19,23 @@ class AccountController extends Controller
             return redirect()->route('home')->with('error', 'Profil client non trouvé.');
         }
 
+        $recentOrders = Order::where('customer_id', $customer->id)
+            ->latest()
+            ->take(3)
+            ->get();
+
         $stats = [
-            'orders_count' => Order::where('customer_id', $customer->id)->count(),
-            'orders_delivered' => Order::where('customer_id', $customer->id)->where('status', 'delivered')->count(),
-            'orders_pending' => Order::where('customer_id', $customer->id)->whereIn('status', ['pending', 'processing', 'shipped'])->count(),
+            'orders_count'    => Order::where('customer_id', $customer->id)->count(),
+            'orders_delivered'=> Order::where('customer_id', $customer->id)->where('status', 'delivered')->count(),
+            'orders_pending'  => Order::where('customer_id', $customer->id)->whereIn('status', ['pending', 'processing', 'shipped'])->count(),
+            'loyalty_points'  => $customer->loyalty_points ?? 0,
+            'recent_orders'   => $recentOrders->map(fn($o) => [
+                'id'           => $o->id,
+                'order_number' => $o->order_number,
+                'status'       => $o->status,
+                'total'        => $o->total,
+                'created_at'   => $o->created_at->format('d/m/Y'),
+            ])->toArray(),
         ];
 
         return Inertia::render('Account/Dashboard', [
@@ -39,18 +52,28 @@ class AccountController extends Controller
         }
 
         $orders = Order::where('customer_id', $customer->id)
+            ->with(['items' => fn($q) => $q->with('product.images')->take(3)])
             ->latest()
             ->paginate(10);
 
         $ordersData = [
-            'data' => $orders->map(fn($order) => [
-                'id' => $order->id,
-                'order_number' => $order->order_number,
-                'status' => $order->status,
-                'total' => $order->total,
-                'items_count' => $order->items()->count(),
-                'created_at' => $order->created_at->format('d/m/Y'),
-            ])->toArray(),
+            'data' => $orders->map(function ($order) {
+                $itemsPreview = $order->items->take(3)->map(function ($item) {
+                    $img = $item->product?->images?->where('is_primary', true)->first()
+                        ?? $item->product?->images?->first();
+                    return ['name' => $item->product?->name, 'image' => $img?->path];
+                })->toArray();
+
+                return [
+                    'id'            => $order->id,
+                    'order_number'  => $order->order_number,
+                    'status'        => $order->status,
+                    'total'         => $order->total,
+                    'items_count'   => $order->items->count(),
+                    'items_preview' => $itemsPreview,
+                    'created_at'    => $order->created_at->format('d/m/Y'),
+                ];
+            })->toArray(),
             'current_page' => $orders->currentPage(),
             'last_page' => $orders->lastPage(),
             'total' => $orders->total(),
@@ -119,7 +142,7 @@ class AccountController extends Controller
                 'id' => $a->id,
                 'first_name' => $a->first_name,
                 'last_name' => $a->last_name,
-                'address_line1' => $a->address_line1,
+                'address'       => $a->address_line1 ?? $a->address,
                 'postal_code' => $a->postal_code,
                 'city' => $a->city,
                 'country' => $a->country,

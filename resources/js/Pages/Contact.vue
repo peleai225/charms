@@ -79,11 +79,11 @@ const submit = () => {
                 <Card padding="default" shadow="sm">
                     <h2 class="text-base font-bold text-slate-900 mb-5">Envoyez-nous un message</h2>
 
-                    <Alert v-if="$page.props.flash.success" type="success" class="mb-5" dismissible>
+                    <Alert v-if="$page.props.flash?.success" type="success" class="mb-5" dismissible>
                         {{ $page.props.flash.success }}
                     </Alert>
 
-                    <Alert v-if="$page.props.flash.error" type="danger" class="mb-5">
+                    <Alert v-if="$page.props.flash?.error" type="danger" class="mb-5">
                         {{ $page.props.flash.error }}
                     </Alert>
 

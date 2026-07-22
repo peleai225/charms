@@ -104,7 +104,7 @@ const { formatPrice } = useHelpers();
                 <!-- Actions -->
                 <div class="flex flex-col sm:flex-row gap-3">
                     <Link
-                        v-if="$page.props.auth.user"
+                        v-if="$page.props.auth?.user"
                         href="/mon-compte/commandes"
                         class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 transition"
                     >

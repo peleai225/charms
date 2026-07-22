@@ -156,7 +156,42 @@ class ShopController extends Controller
 
         $subcategories = $category->children()->active()->ordered()->get();
 
-        return view('front.shop.category', compact('category', 'products', 'subcategories'));
+        $formatProduct = fn($p) => [
+            'id'            => $p->id,
+            'name'          => $p->name,
+            'slug'          => $p->slug,
+            'price'         => $p->sale_price,
+            'compare_price' => $p->compare_price,
+            'stock'         => $p->stock_quantity,
+            'has_variants'  => $p->variants->isNotEmpty(),
+            'category_name' => $p->category?->name,
+            'primary_image' => $p->images->where('is_primary', true)->first()?->path ?? $p->images->first()?->path,
+        ];
+
+        return Inertia::render('Shop/Category', [
+            'category' => [
+                'id'          => $category->id,
+                'name'        => $category->name,
+                'slug'        => $category->slug,
+                'description' => $category->description,
+                'image'       => $category->image,
+            ],
+            'subcategories' => $subcategories->map(fn($s) => [
+                'id'    => $s->id,
+                'name'  => $s->name,
+                'slug'  => $s->slug,
+                'image' => $s->image,
+            ])->toArray(),
+            'products' => [
+                'data'          => $products->map($formatProduct)->toArray(),
+                'current_page'  => $products->currentPage(),
+                'last_page'     => $products->lastPage(),
+                'total'         => $products->total(),
+                'prev_page_url' => $products->previousPageUrl(),
+                'next_page_url' => $products->nextPageUrl(),
+            ],
+            'filters' => $request->only(['sort']),
+        ]);
     }
 
     /**
@@ -229,9 +264,9 @@ class ShopController extends Controller
         // Format colors
         $colorsData = $availableColors->map(function ($attrValue) {
             return [
-                'id' => $attrValue->id,
+                'id'   => $attrValue->id,
                 'name' => $attrValue->value,
-                'hex' => $attrValue->hex_value ?? null,
+                'hex'  => $attrValue->color_code ?? null,
             ];
         })->values()->toArray();
 
@@ -256,45 +291,80 @@ class ShopController extends Controller
             $secondaryAttr = $variant->attributeValues->firstWhere(fn($av) => $av->attribute && $av->attribute->slug !== 'couleur');
 
             return [
-                'id' => $variant->id,
-                'sku' => $variant->sku,
-                'price' => $variant->price,
-                'stock' => $variant->stock_quantity,
-                'color_id' => $colorAttr?->id,
+                'id'           => $variant->id,
+                'sku'          => $variant->sku,
+                'price'        => $variant->sale_price ?? $variant->product->sale_price,
+                'stock'        => $variant->stock_quantity,
+                'color_id'     => $colorAttr?->id,
                 'secondary_id' => $secondaryAttr?->id,
-                'image' => $variant->image_path,
+                'image'        => $variant->image ? asset('storage/' . $variant->image) : null,
             ];
         })->toArray();
 
+        $formatSmallProduct = fn($p) => [
+            'id'            => $p->id,
+            'name'          => $p->name,
+            'slug'          => $p->slug,
+            'price'         => $p->sale_price,
+            'compare_price' => $p->compare_price,
+            'stock'         => $p->stock_quantity,
+            'has_variants'  => false,
+            'primary_image' => $p->images->where('is_primary', true)->first()?->path ?? $p->images->first()?->path,
+        ];
+
+        $reviewsData = $product->reviews->map(function ($r) {
+            return [
+                'id'         => $r->id,
+                'rating'     => $r->rating,
+                'body'       => $r->body,
+                'author'     => $r->customer
+                    ? $r->customer->first_name . ' ' . mb_substr($r->customer->last_name ?? '', 0, 1) . '.'
+                    : 'Client',
+                'created_at' => $r->created_at->format('d/m/Y'),
+            ];
+        })->toArray();
+
+        $reviewAvg   = $product->reviews->avg('rating');
+        $reviewCount = $product->reviews->count();
+
+        $whatsapp = \App\Models\Setting::get('social_whatsapp');
+        $whatsappNumber = $whatsapp ? preg_replace('/\D/', '', $whatsapp) : null;
+
         // Format data for Inertia
         $productData = [
-            'id' => $product->id,
-            'name' => $product->name,
-            'slug' => $product->slug,
-            'sku' => $product->sku,
-            'price' => $product->sale_price,
-            'compare_price' => $product->compare_price,
-            'stock' => $product->stock_quantity,
-            'short_description' => $product->short_description,
-            'description' => $product->description,
-            'images' => $product->images->pluck('path')->toArray(),
-            'category' => $product->category ? [
-                'id' => $product->category->id,
+            'id'                 => $product->id,
+            'name'               => $product->name,
+            'slug'               => $product->slug,
+            'sku'                => $product->sku,
+            'price'              => $product->sale_price,
+            'compare_price'      => $product->compare_price,
+            'stock'              => $product->stock_quantity,
+            'short_description'  => $product->short_description,
+            'description'        => $product->description,
+            'weight'             => $product->weight,
+            'images'             => $product->images->pluck('path')->toArray(),
+            'category'           => $product->category ? [
+                'id'   => $product->category->id,
                 'name' => $product->category->name,
                 'slug' => $product->category->slug,
             ] : null,
-            'has_variants' => $product->variants->isNotEmpty(),
-            'variants' => $variantsData,
-            'colors' => $colorsData,
-            'secondary_attribute' => $secondaryAttribute ? [
-                'slug' => $secondaryAttribute->slug,
-                'name' => $secondaryAttribute->name,
+            'has_variants'       => $product->variants->isNotEmpty(),
+            'variants'           => $variantsData,
+            'colors'             => $colorsData,
+            'secondary_attribute'=> $secondaryAttribute ? [
+                'slug'   => $secondaryAttribute->slug,
+                'name'   => $secondaryAttribute->name,
                 'values' => $secondaryValues,
             ] : null,
+            'reviews'            => $reviewsData,
+            'review_avg'         => $reviewAvg ? round($reviewAvg, 1) : null,
+            'review_count'       => $reviewCount,
         ];
 
         return Inertia::render('Shop/Product', [
-            'product' => $productData,
+            'product'          => $productData,
+            'related_products' => $relatedProducts->map($formatSmallProduct),
+            'whatsapp_number'  => $whatsappNumber,
         ]);
     }
 

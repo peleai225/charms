@@ -274,6 +274,18 @@ class Order extends Model
         };
     }
 
+    public function getPaymentStatusLabelAttribute(): string
+    {
+        return match ($this->payment_status) {
+            self::PAYMENT_PENDING => 'En attente',
+            self::PAYMENT_PAID => 'Payée',
+            self::PAYMENT_PARTIALLY_PAID => 'Partiellement payée',
+            self::PAYMENT_REFUNDED => 'Remboursée',
+            self::PAYMENT_FAILED => 'Échouée',
+            default => 'Non défini',
+        };
+    }
+
     // ========== METHODS ==========
 
     public static function generateOrderNumber(): string

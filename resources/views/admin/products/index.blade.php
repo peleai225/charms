@@ -1,13 +1,59 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="p-4 sm:p-6 space-y-5">
+<div class="p-4 sm:p-6 space-y-5"
+    x-data="{
+        searching: false,
+        filters: {
+            search: '{{ request('search') }}',
+            status: '{{ request('status') }}',
+            category: '{{ request('category') }}',
+            stock: '{{ request('stock') }}'
+        },
+        debounceTimer: null,
+        async fetchProducts() {
+            this.searching = true;
+            const params = new URLSearchParams();
+            Object.entries(this.filters).forEach(([k, v]) => { if (v) params.append(k, v); });
+            const url = '{{ route('admin.products.index') }}?' + params.toString();
+            window.history.replaceState({}, '', url);
+            try {
+                const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                const newTbody = doc.querySelector('#products-table-body');
+                const currentTbody = document.querySelector('#products-table-body');
+                if (newTbody && currentTbody) currentTbody.innerHTML = newTbody.innerHTML;
+
+                const newPag = doc.querySelector('#products-pagination');
+                const currentPag = document.querySelector('#products-pagination');
+                if (newPag && currentPag) currentPag.innerHTML = newPag.innerHTML;
+
+                const newCount = doc.querySelector('#products-total-count');
+                const currentCount = document.querySelector('#products-total-count');
+                if (newCount && currentCount) currentCount.textContent = newCount.textContent;
+            } catch (e) {
+                console.error('Erreur lors du chargement des produits', e);
+            }
+            this.searching = false;
+        },
+        onFilterChange() {
+            clearTimeout(this.debounceTimer);
+            this.debounceTimer = setTimeout(() => this.fetchProducts(), 400);
+        },
+        resetFilters() {
+            this.filters = { search: '', status: '', category: '', stock: '' };
+            this.fetchProducts();
+        }
+    }">
 
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
             <h1 class="text-xl font-bold text-gray-900">Produits</h1>
-            <p class="text-[13px] text-gray-500 mt-0.5">{{ $products->total() }} produit(s) au total</p>
+            <p class="text-[13px] text-gray-500 mt-0.5"><span id="products-total-count">{{ $products->total() }}</span> produit(s) au total</p>
         </div>
         <div class="flex items-center gap-2">
             <a href="{{ route('admin.import-export.index') }}" class="h-9 px-4 flex items-center gap-2 border border-gray-200 text-[13px] font-medium text-gray-700 rounded-lg hover:bg-gray-50 transition">
@@ -24,57 +70,75 @@
     {{-- Filters & Table --}}
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div class="p-4 border-b border-gray-100">
-            <form method="GET" class="flex flex-col sm:flex-row gap-3">
+            <form method="GET" @submit.prevent="fetchProducts()" class="flex flex-col sm:flex-row gap-3">
                 {{-- Search --}}
-                <div class="flex-1">
+                <div class="flex-1 relative">
                     <input
                         type="text"
                         name="search"
-                        value="{{ request('search') }}"
+                        x-model="filters.search"
+                        @input="onFilterChange()"
                         placeholder="Rechercher par nom, SKU, code barre..."
-                        class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        class="w-full h-9 px-3 pr-8 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                     />
+                    <svg x-show="searching" class="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 animate-spin text-orange-500" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
                 </div>
 
                 {{-- Status filter --}}
-                <select name="status" class="h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <select name="status" x-model="filters.status" @change="onFilterChange()" class="h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
                     <option value="">Tous les statuts</option>
-                    <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Actif</option>
-                    <option value="draft" {{ request('status') === 'draft' ? 'selected' : '' }}>Brouillon</option>
-                    <option value="archived" {{ request('status') === 'archived' ? 'selected' : '' }}>Archivé</option>
+                    <option value="active">Actif</option>
+                    <option value="draft">Brouillon</option>
+                    <option value="archived">Archivé</option>
                 </select>
 
                 {{-- Category filter --}}
-                <select name="category" class="h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <select name="category" x-model="filters.category" @change="onFilterChange()" class="h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
                     <option value="">Toutes catégories</option>
                     @foreach($categories as $category)
-                        <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
-                            {{ $category->name }}
-                        </option>
+                        <option value="{{ $category->id }}">{{ $category->name }}</option>
                     @endforeach
                 </select>
 
                 {{-- Stock filter --}}
-                <select name="stock" class="h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                <select name="stock" x-model="filters.stock" @change="onFilterChange()" class="h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
                     <option value="">Tout stock</option>
-                    <option value="low" {{ request('stock') === 'low' ? 'selected' : '' }}>Stock faible</option>
-                    <option value="out" {{ request('stock') === 'out' ? 'selected' : '' }}>Rupture</option>
+                    <option value="low">Stock faible</option>
+                    <option value="out">Rupture</option>
                 </select>
 
-                <button type="submit" class="h-9 px-4 bg-gray-900 text-white text-[13px] font-semibold rounded-lg hover:bg-gray-800 transition">
-                    Filtrer
+                <button
+                    type="button"
+                    x-show="filters.search || filters.status || filters.category || filters.stock"
+                    @click="resetFilters()"
+                    class="h-9 px-4 flex items-center justify-center border border-gray-200 text-[13px] font-medium text-gray-600 rounded-lg hover:bg-gray-50 transition"
+                    title="Réinitialiser">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
 
                 @if(request()->hasAny(['search', 'status', 'category', 'stock']))
-                <a href="{{ route('admin.products.index') }}" class="h-9 px-4 flex items-center justify-center border border-gray-200 text-[13px] font-medium text-gray-600 rounded-lg hover:bg-gray-50 transition">
-                    Réinitialiser
-                </a>
+                    {{-- Fallback no-JS reset link (hidden when Alpine is active) --}}
+                    <a x-cloak href="{{ route('admin.products.index') }}" class="h-9 px-4 flex items-center justify-center border border-gray-200 text-[13px] font-medium text-gray-600 rounded-lg hover:bg-gray-50 transition" title="Réinitialiser">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </a>
                 @endif
             </form>
+
+            {{-- Loading indicator --}}
+            <div x-show="searching" x-transition.opacity class="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                <svg class="w-3.5 h-3.5 animate-spin text-orange-500" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                Mise à jour des résultats...
+            </div>
         </div>
 
         {{-- Table --}}
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto" x-bind:class="searching ? 'opacity-60 pointer-events-none' : ''">
             <table class="w-full text-[13px]">
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
@@ -87,7 +151,7 @@
                         <th class="px-4 py-3 text-right font-semibold text-gray-700"></th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody id="products-table-body" class="divide-y divide-gray-100">
                     @forelse($products as $product)
                     <tr class="hover:bg-gray-50 transition">
                         <td class="px-4 py-3">
@@ -172,9 +236,11 @@
 
         {{-- Pagination --}}
         @if($products->hasPages())
-        <div class="px-4 py-3 border-t border-gray-100">
+        <div id="products-pagination" class="px-4 py-3 border-t border-gray-100">
             {{ $products->links() }}
         </div>
+        @else
+        <div id="products-pagination"></div>
         @endif
     </div>
 

@@ -421,7 +421,9 @@ class CheckoutController extends Controller
             $this->authorizeOrderAccess($order);
         }
 
-        return view('front.checkout.cancel', compact('order'));
+        return Inertia::render('Checkout/Cancel', [
+            'order' => $order ? ['order_number' => $order->order_number, 'id' => $order->id] : null,
+        ]);
     }
 
     /**
@@ -430,14 +432,42 @@ class CheckoutController extends Controller
     public function success(Request $request)
     {
         $orderId = $request->get('order');
-        $order = Order::with(['items.product', 'items.variant'])->findOrFail($orderId);
+        $order = Order::with(['items.product.images', 'items.variant'])->findOrFail($orderId);
         $this->authorizeOrderAccess($order);
 
-        // Retirer la commande de la session (checkout terminé)
+        // Retirer la commande de la session
         $orderIds = array_filter(session('checkout_order_ids', []), fn($id) => $id !== $order->id);
         session(['checkout_order_ids' => array_values($orderIds)]);
 
-        return view('front.checkout.success', compact('order'));
+        $orderData = [
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'status' => $order->status,
+            'payment_method' => $order->payment_method,
+            'payment_status' => $order->payment_status,
+            'total' => $order->total,
+            'shipping_first_name' => $order->shipping_first_name,
+            'shipping_last_name' => $order->shipping_last_name,
+            'shipping_address' => $order->shipping_address,
+            'shipping_city' => $order->shipping_city,
+            'shipping_phone' => $order->shipping_phone,
+            'items' => $order->items->map(function ($item) {
+                $primaryImage = $item->product->images->where('is_primary', true)->first()
+                    ?? $item->product->images->first();
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'variant_name' => $item->variant_name ?? null,
+                    'unit_price' => $item->unit_price,
+                    'quantity' => $item->quantity,
+                    'product' => ['primary_image' => $primaryImage?->path],
+                ];
+            })->toArray(),
+        ];
+
+        return Inertia::render('Checkout/Success', [
+            'order' => $orderData,
+        ]);
     }
 
     /**

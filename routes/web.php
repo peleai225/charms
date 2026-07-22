@@ -77,15 +77,12 @@ Route::post('/deconnexion', [CustomerAuthController::class, 'logout'])->name('lo
 
 // Espace client (protégé)
 Route::middleware('customer')->prefix('mon-compte')->name('account.')->group(function () {
-    Route::get('/', function () {
-        return view('front.account.dashboard');
-    })->name('dashboard');
-    Route::get('/commandes', function () {
-        return view('front.account.orders');
-    })->name('orders');
+    Route::get('/', [App\Http\Controllers\Front\AccountController::class, 'dashboard'])->name('dashboard');
+    Route::get('/commandes', [App\Http\Controllers\Front\AccountController::class, 'orders'])->name('orders');
     Route::get('/commandes/{order}', [App\Http\Controllers\Front\AccountController::class, 'showOrder'])->name('orders.show');
     Route::get('/adresses', [App\Http\Controllers\Front\AccountController::class, 'addresses'])->name('addresses');
     Route::post('/adresses', [App\Http\Controllers\Front\AccountController::class, 'storeAddress'])->name('addresses.store');
+    Route::delete('/adresses/{address}', [App\Http\Controllers\Front\AccountController::class, 'destroyAddress'])->name('addresses.destroy');
     Route::get('/fidelite', [App\Http\Controllers\Front\AccountController::class, 'loyalty'])->name('loyalty');
     Route::get('/favoris', [App\Http\Controllers\Front\WishlistController::class, 'index'])->name('wishlist.index');
 });

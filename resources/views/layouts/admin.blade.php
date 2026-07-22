@@ -27,7 +27,7 @@
         <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%232563EB' rx='15' width='100' height='100'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='50' fill='white'>{{ substr($siteName, 0, 1) }}</text></svg>">
     @endif
 
-    @vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/admin-notifications.js', 'resources/js/admin-charts.js'])
+    @vite(['resources/css/app.css', 'resources/js/admin-notifications.js', 'resources/js/admin-charts.js'])
 
     <style>
         [x-cloak] { display: none !important; }

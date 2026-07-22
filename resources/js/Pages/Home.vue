@@ -3,7 +3,7 @@ import FrontLayout from '@/Layouts/FrontLayout.vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import ProductCard from '@/Components/ProductCard.vue';
 import { useHelpers } from '@/Composables/useHelpers';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
     featured_categories: Array,

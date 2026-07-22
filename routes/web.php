@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AdminAuthController;
+use App\Http\Controllers\Auth\SuperAdminAuthController;
 use App\Http\Controllers\Auth\CustomerAuthController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Front\HomeController;
@@ -378,5 +379,29 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/import-export/template', [\App\Http\Controllers\Admin\ImportExportController::class, 'downloadTemplate'])->name('import-export.template');
             Route::post('/import-export/import-products', [\App\Http\Controllers\Admin\ImportExportController::class, 'importProducts'])->name('import-export.import-products');
         });
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Routes SuperAdmin (Super Administration)
+|--------------------------------------------------------------------------
+*/
+
+// Authentification SuperAdmin
+Route::prefix('superadmin')->name('superadmin.')->group(function () {
+    // Login (accessible sans auth)
+    Route::middleware('guest')->group(function () {
+        Route::get('/login', [SuperAdminAuthController::class, 'showLoginForm'])->name('login');
+        Route::post('/login', [SuperAdminAuthController::class, 'login'])->middleware('throttle:5,1')->name('login.post');
+    });
+
+    // Logout
+    Route::post('/logout', [SuperAdminAuthController::class, 'logout'])->name('logout');
+
+    // Routes protégées (nécessite rôle superadmin)
+    Route::middleware('superadmin')->group(function () {
+        // Dashboard SuperAdmin
+        Route::get('/', [\App\Http\Controllers\SuperAdmin\DashboardController::class, 'index'])->name('dashboard');
     });
 });

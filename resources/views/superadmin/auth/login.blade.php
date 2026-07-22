@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <title>Connexion Admin - {{ config('app.name') }}</title>
+    <title>Connexion SuperAdmin - {{ config('app.name') }}</title>
     @if(app()->environment('local'))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @else
@@ -14,7 +14,6 @@
                     $viteHelper = new \App\Helpers\ViteHelper();
                     echo $viteHelper->renderAssets(['resources/css/app.css', 'resources/js/app.js']);
                 } else {
-                    // Fallback: charger directement depuis build/assets
                     $buildPath = public_path('build/assets');
                     if (is_dir($buildPath)) {
                         $files = scandir($buildPath);
@@ -30,7 +29,6 @@
                     }
                 }
             } catch (\Exception $e) {
-                // En cas d'erreur, essayer de charger directement
                 $buildPath = public_path('build/assets');
                 if (is_dir($buildPath)) {
                     $files = scandir($buildPath);
@@ -58,19 +56,28 @@
                 <!-- Logo -->
                 <div class="mb-8">
                     <div class="flex items-center gap-2">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-fuchsia-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                             </svg>
                         </div>
                         <span class="text-xl font-bold text-slate-900">{{ \App\Models\Setting::get('site_name', config('app.name', 'Boutique')) }}</span>
+                        <span class="px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white rounded-full">SUPER</span>
                     </div>
                 </div>
 
                 <!-- Title -->
                 <div class="mb-8">
-                    <h1 class="text-3xl font-bold text-slate-900 mb-2">Connexion administrateur</h1>
-                    <p class="text-slate-600">Accédez à votre espace de gestion</p>
+                    <h1 class="text-3xl font-bold text-slate-900 mb-2">Super Administration</h1>
+                    <p class="text-slate-600">Accès privilégié aux fonctions avancées</p>
+                </div>
+
+                <!-- Alert Warning -->
+                <div class="mb-6 p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-start gap-3">
+                    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Zone à accès restreint. Toute connexion est enregistrée.</span>
                 </div>
 
                 <!-- Messages flash -->
@@ -93,7 +100,7 @@
                 @endif
 
                 <!-- Form -->
-                <form method="POST" action="{{ route('admin.login.post') }}" class="space-y-5">
+                <form method="POST" action="{{ route('superadmin.login.post') }}" class="space-y-5">
                     @csrf
 
                     <!-- Email -->
@@ -106,8 +113,8 @@
                             name="email"
                             id="email"
                             value="{{ old('email') }}"
-                            class="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all @error('email') border-red-500 @enderror"
-                            placeholder="admin@example.com"
+                            class="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all @error('email') border-red-500 @enderror"
+                            placeholder="superadmin@example.com"
                             required
                             autofocus
                         >
@@ -130,7 +137,7 @@
                             type="password"
                             name="password"
                             id="password"
-                            class="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all @error('password') border-red-500 @enderror"
+                            class="w-full px-4 py-3 bg-white border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all @error('password') border-red-500 @enderror"
                             placeholder="Entrez votre mot de passe"
                             required
                         >
@@ -150,7 +157,7 @@
                             type="checkbox"
                             name="remember"
                             id="remember"
-                            class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0"
+                            class="w-4 h-4 rounded border-slate-300 text-purple-600 focus:ring-purple-500 focus:ring-offset-0"
                         >
                         <label for="remember" class="ml-2 text-sm text-slate-600 cursor-pointer">
                             Se souvenir de moi
@@ -160,12 +167,12 @@
                     <!-- Submit Button -->
                     <button
                         type="submit"
-                        class="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow"
+                        class="w-full py-3.5 px-4 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white font-semibold rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-purple-500/30 hover:shadow-purple-500/40"
                     >
-                        Se connecter
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                         </svg>
+                        Accès sécurisé
                     </button>
                 </form>
 
@@ -178,16 +185,16 @@
                             </svg>
                             Retour au site
                         </a>
-                        <a href="{{ route('superadmin.login') }}" class="text-slate-600 hover:text-slate-900 transition-colors">
-                            SuperAdmin
+                        <a href="{{ route('admin.login') }}" class="text-slate-600 hover:text-slate-900 transition-colors">
+                            Admin
                         </a>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Right Side - Hero Image with Overlay -->
-        <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+        <!-- Right Side - Hero -->
+        <div class="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-purple-900 via-fuchsia-900 to-purple-900 relative overflow-hidden">
             <!-- Background Pattern -->
             <div class="absolute inset-0 opacity-10">
                 <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'1\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
@@ -196,70 +203,79 @@
             <!-- Content -->
             <div class="relative z-10 flex flex-col justify-center items-center text-center p-12 text-white">
                 <div class="max-w-lg">
+                    <!-- Badge -->
+                    <div class="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full">
+                        <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                        <span class="text-sm font-semibold">Accès Privilégié</span>
+                    </div>
+
                     <!-- Icon -->
                     <div class="mb-8 inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20">
                         <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                         </svg>
                     </div>
 
                     <!-- Title -->
                     <h2 class="text-4xl font-bold mb-4 leading-tight">
-                        Gérez votre boutique en toute simplicité
+                        Contrôle total de la plateforme
                     </h2>
 
                     <!-- Description -->
-                    <p class="text-lg text-slate-300 mb-8">
-                        Une plateforme complète pour gérer vos produits, commandes, clients et bien plus encore. Prenez le contrôle de votre e-commerce.
+                    <p class="text-lg text-purple-200 mb-8">
+                        Accédez aux fonctionnalités avancées réservées aux super administrateurs. Gestion complète des utilisateurs, systèmes et configurations.
                     </p>
 
-                    <!-- Features -->
+                    <!-- Features Grid -->
                     <div class="grid grid-cols-2 gap-4 text-left">
                         <div class="flex items-start gap-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4">
-                            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-purple-500/30 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                                 </svg>
                             </div>
                             <div>
-                                <div class="font-semibold text-sm mb-1">Gestion complète</div>
-                                <div class="text-xs text-slate-400">Produits, stock, commandes</div>
+                                <div class="font-semibold text-sm mb-1">Gestion utilisateurs</div>
+                                <div class="text-xs text-purple-300">Admins, managers, staff</div>
                             </div>
                         </div>
 
                         <div class="flex items-start gap-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4">
-                            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-fuchsia-500/30 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-fuchsia-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                 </svg>
                             </div>
                             <div>
-                                <div class="font-semibold text-sm mb-1">Rapide & efficace</div>
-                                <div class="text-xs text-slate-400">Interface optimisée</div>
+                                <div class="font-semibold text-sm mb-1">Configuration</div>
+                                <div class="text-xs text-purple-300">Système & paramètres</div>
                             </div>
                         </div>
 
                         <div class="flex items-start gap-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4">
-                            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-pink-500/30 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                                 </svg>
                             </div>
                             <div>
-                                <div class="font-semibold text-sm mb-1">100% sécurisé</div>
-                                <div class="text-xs text-slate-400">Protection des données</div>
+                                <div class="font-semibold text-sm mb-1">Sécurité max</div>
+                                <div class="text-xs text-purple-300">Logs & monitoring</div>
                             </div>
                         </div>
 
                         <div class="flex items-start gap-3 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4">
-                            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-indigo-500/30 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                                 </svg>
                             </div>
                             <div>
-                                <div class="font-semibold text-sm mb-1">Statistiques</div>
-                                <div class="text-xs text-slate-400">Tableaux de bord détaillés</div>
+                                <div class="font-semibold text-sm mb-1">Accès complet</div>
+                                <div class="text-xs text-purple-300">Toutes les fonctions</div>
                             </div>
                         </div>
                     </div>
@@ -267,8 +283,8 @@
             </div>
 
             <!-- Decorative Elements -->
-            <div class="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl"></div>
-            <div class="absolute bottom-0 left-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl"></div>
+            <div class="absolute top-0 right-0 w-64 h-64 bg-fuchsia-500/20 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl"></div>
         </div>
     </div>
 

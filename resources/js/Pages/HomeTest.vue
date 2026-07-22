@@ -1,11 +1,14 @@
 <script setup>
 import FrontLayout from '@/Layouts/FrontLayout.vue';
 import { Head } from '@inertiajs/vue3';
+import { useHelpers } from '@/Composables/useHelpers';
 
 const props = defineProps({
     featured_categories: Array,
     featured_products:   Array,
 });
+
+const { formatPrice } = useHelpers();
 </script>
 
 <template>
@@ -23,7 +26,8 @@ const props = defineProps({
 
                 <div v-if="featured_products?.length" class="mt-6">
                     <h2 class="text-xl font-semibold mb-3">Premier produit :</h2>
-                    <pre class="bg-gray-100 p-4 rounded text-xs overflow-auto">{{ JSON.stringify(featured_products[0], null, 2) }}</pre>
+                    <p class="text-lg">Nom : {{ featured_products[0].name }}</p>
+                    <p class="text-lg">Prix : {{ formatPrice(featured_products[0].price) }}</p>
                 </div>
             </div>
         </div>

@@ -11,7 +11,7 @@ const appName = import.meta.env.VITE_APP_NAME || 'Chamse';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
-    resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue')),
+    resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob(['./Pages/**/*.vue', './Pages/*.vue'])),
     setup({ el, App, props, plugin }) {
         const pinia = createPinia();
 

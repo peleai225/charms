@@ -18,7 +18,7 @@ const props = defineProps({
 const page = usePage();
 const { formatPrice } = useHelpers();
 
-const siteName = page.props.settings?.site_name || 'Chamse';
+const siteName = computed(() => page.props.settings?.site_name || 'Chamse');
 
 const trustItems = [
     {

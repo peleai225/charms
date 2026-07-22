@@ -328,9 +328,9 @@ const currentProducts = computed(() => {
                 </div>
 
                 <!-- Grille produits -->
-                <div v-if="currentProducts().length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div v-if="currentProducts.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                     <ProductCard
-                        v-for="p in currentProducts().slice(0, 8)"
+                        v-for="p in currentProducts.slice(0, 8)"
                         :key="p.id"
                         :product="p"
                     />

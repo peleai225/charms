@@ -146,7 +146,7 @@ class HomeController extends Controller
         $whatsapp = \App\Models\Setting::get('social_whatsapp');
         $whatsappNumber = $whatsapp ? preg_replace('/\D/', '', $whatsapp) : null;
 
-        return Inertia::render('HomeTest', [
+        return Inertia::render('Home', [
             'featured_categories' => $categories,
             'featured_products'   => $featuredProducts->map($formatProduct),
             'new_products'        => $newProducts->map($formatProduct),

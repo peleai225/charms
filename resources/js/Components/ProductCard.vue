@@ -3,7 +3,7 @@ import { Link } from '@inertiajs/vue3';
 import { useHelpers } from '@/Composables/useHelpers';
 import { useCartStore } from '@/Stores/cart';
 import { useNotificationStore } from '@/Stores/notifications';
-import { ref, computed, onMounted, getCurrentInstance } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 const props = defineProps({
     product: Object,
@@ -17,9 +17,10 @@ const addingToCart = ref(false);
 const wishlistLoading = ref(false);
 const inWishlist = ref(props.product.in_wishlist ?? false);
 
-const inCart  = computed(() => cartStore.hasProduct(props.product.id));
-const uid     = getCurrentInstance()?.uid ?? Math.random().toString(36).slice(2);
-const halfId  = `half-${uid}`;
+const inCart = computed(() => cartStore.hasProduct(props.product.id));
+
+// Génération stable de l'ID pour le gradient de demi-étoile
+const halfId = `half-${props.product.id}`;
 
 onMounted(() => {
     if (cartStore.count > 0 && cartStore.productIds.size === 0) {

@@ -145,18 +145,6 @@
             {{-- Navigation --}}
             <nav class="flex-1 overflow-y-auto sidebar-scroll py-3 space-y-0.5" :class="sidebarCollapsed ? 'px-2' : 'px-3'">
 
-                @php
-                    $navItem = function(string $route, string $label, string $icon, string $routeMatch, ?int $badge = null) use ($sidebarCollapsed): string { return ''; };
-                @endphp
-
-                {{-- Helper macro --}}
-                @php
-                    function adminNavItem(string $routeName, string $label, string $svg, string $routeMatch, ?int $badge = null): array {
-                        return compact('routeName','label','svg','routeMatch','badge');
-                    }
-                    $isActive = fn(string $pattern) => request()->routeIs($pattern);
-                @endphp
-
                 {{-- ── MAIN MENU ── --}}
                 <p class="px-2 pt-1 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-widest"
                    x-show="!sidebarCollapsed" x-transition.opacity.duration.100ms>Menu principal</p>

@@ -4,6 +4,8 @@ import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import { useCartStore } from '@/Stores/cart';
 import { useUserStore } from '@/Stores/user';
 import { useNotificationStore } from '@/Stores/notifications';
+import ToastContainer from '@/Components/UI/ToastContainer.vue'
+import ConfirmModal from '@/Components/UI/ConfirmModal.vue'
 
 const props = defineProps({
     title: String,
@@ -572,6 +574,9 @@ onUnmounted(() => {
                 </div>
             </TransitionGroup>
         </div>
+
+        <ToastContainer />
+        <ConfirmModal />
     </div>
 </template>
 

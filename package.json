@@ -17,6 +17,7 @@
     "dependencies": {
         "@alpinejs/collapse": "^3.15.3",
         "@alpinejs/focus": "^3.15.3",
+        "@headlessui/vue": "^1.7.23",
         "@inertiajs/vue3": "^3.6.1",
         "@vitejs/plugin-vue": "^6.0.8",
         "@vueuse/core": "^14.3.0",

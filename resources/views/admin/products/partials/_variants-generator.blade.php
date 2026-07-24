@@ -21,7 +21,8 @@
     </button>
 
     <div x-cloak x-show="open" x-transition.opacity>
-        <form method="POST" action="{{ route('admin.products.variants.store', $product) }}" class="p-5 space-y-4 no-ajax">
+        <form method="POST" action="{{ route('admin.products.variants.store', $product) }}" enctype="multipart/form-data" class="p-5 space-y-4 no-ajax"
+              x-data="{ imgPreview: null }">
             @csrf
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {{-- SKU --}}
@@ -66,6 +67,28 @@
                 </div>
             </div>
             @endif
+
+            {{-- Image variante --}}
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Image (optionnel)</p>
+                <div class="flex items-center gap-3">
+                    <div class="w-16 h-16 rounded-lg border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:border-blue-300 transition-colors"
+                         @click="$refs.variantImg.click()">
+                        <img x-show="imgPreview" :src="imgPreview" class="w-full h-full object-cover rounded-lg">
+                        <svg x-show="!imgPreview" class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <input x-ref="variantImg" type="file" name="image" accept="image/*" class="hidden"
+                               @change="imgPreview = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : null">
+                        <p class="text-[12px] text-gray-500">Cliquez pour choisir une image</p>
+                        <p class="text-[11px] text-gray-400 mt-0.5">JPEG, PNG, WEBP — max 5 Mo</p>
+                        <button x-show="imgPreview" type="button" @click="imgPreview = null; $refs.variantImg.value = ''"
+                            class="mt-1 text-[11px] text-red-500 hover:text-red-600">Supprimer</button>
+                    </div>
+                </div>
+            </div>
 
             <div class="pt-2 border-t border-gray-100 flex gap-2">
                 <button type="submit"

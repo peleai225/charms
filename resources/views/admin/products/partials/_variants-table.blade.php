@@ -39,12 +39,15 @@
                     {{-- Identité --}}
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-2.5">
-                            @if($variant->image)
-                                <img src="{{ asset('storage/' . $variant->image) }}" class="w-9 h-9 rounded-lg object-cover border border-gray-200 flex-shrink-0">
-                            @elseif($vColor && $vColor->color_code)
-                                <span class="w-9 h-9 rounded-lg border border-gray-200 flex-shrink-0 inline-block" style="background:{{ $vColor->color_code }}"></span>
-                            @else
-                                <span class="w-9 h-9 rounded-lg bg-gray-100 border border-gray-200 flex-shrink-0 inline-block"></span>
+                            <img id="variant-img-{{ $variant->id }}"
+                                 src="{{ $variant->image ? asset('storage/' . $variant->image) : '' }}"
+                                 class="w-9 h-9 rounded-lg object-cover border border-gray-200 flex-shrink-0 {{ $variant->image ? '' : 'hidden' }}">
+                            @if(!$variant->image)
+                                @if($vColor && $vColor->color_code)
+                                    <span id="variant-placeholder-{{ $variant->id }}" class="w-9 h-9 rounded-lg border border-gray-200 flex-shrink-0 inline-block" style="background:{{ $vColor->color_code }}"></span>
+                                @else
+                                    <span id="variant-placeholder-{{ $variant->id }}" class="w-9 h-9 rounded-lg bg-gray-100 border border-gray-200 flex-shrink-0 inline-block"></span>
+                                @endif
                             @endif
                             <div class="flex flex-wrap items-center gap-1 min-w-0">
                                 @if($vColor)
@@ -184,7 +187,7 @@
                     <td class="px-4 py-3 text-right">
                         <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button type="button"
-                                @click="openEditDrawer({{ json_encode(['id' => $variant->id, 'sku' => $variant->sku, 'barcode' => $variant->barcode, 'purchase_price' => $variant->purchase_price, 'sale_price' => $variant->sale_price, 'compare_price' => $variant->compare_price, 'stock_quantity' => $variant->stock_quantity, 'stock_alert_threshold' => $variant->stock_alert_threshold, 'weight' => $variant->weight, 'is_active' => (bool)$variant->is_active, 'label' => $variantLabel]) }})"
+                                @click="openEditDrawer({{ json_encode(['id' => $variant->id, 'sku' => $variant->sku, 'barcode' => $variant->barcode, 'purchase_price' => $variant->purchase_price, 'sale_price' => $variant->sale_price, 'compare_price' => $variant->compare_price, 'stock_quantity' => $variant->stock_quantity, 'stock_alert_threshold' => $variant->stock_alert_threshold, 'weight' => $variant->weight, 'is_active' => (bool)$variant->is_active, 'label' => $variantLabel, 'image' => $variant->image]) }})"
                                 class="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all"
                                 title="Modifier tous les champs">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
@@ -246,7 +249,35 @@
             </button>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-5 space-y-4">
+        <div class="flex-1 overflow-y-auto p-5 space-y-4"
+             x-data="{ drawerImgPreview: null, drawerImgFile: null }"
+             x-init="$watch('editDrawer.data.image', v => { drawerImgPreview = v ? '/storage/' + v : null; drawerImgFile = null; })">
+
+            {{-- Image --}}
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Image</p>
+                <div class="flex items-center gap-4">
+                    <div class="w-20 h-20 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:border-orange-300 transition-colors"
+                         @click="$refs.drawerImg.click()">
+                        <img x-show="drawerImgPreview" :src="drawerImgPreview" class="w-full h-full object-cover rounded-xl">
+                        <svg x-show="!drawerImgPreview" class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <input id="drawer-img-input" x-ref="drawerImg" type="file" accept="image/*" class="hidden"
+                               @change="
+                                   const f = $event.target.files[0];
+                                   if (f) { drawerImgFile = f; drawerImgPreview = URL.createObjectURL(f); }
+                               ">
+                        <p class="text-[12px] text-gray-500">Cliquez pour changer l'image</p>
+                        <p class="text-[11px] text-gray-400 mt-0.5">JPEG, PNG, WEBP — max 5 Mo</p>
+                        <button x-show="drawerImgPreview" type="button"
+                            @click="drawerImgPreview = null; drawerImgFile = null; $refs.drawerImg.value = ''; editDrawer.data.image = null"
+                            class="mt-1 text-[11px] text-red-500 hover:text-red-600">Supprimer l'image</button>
+                    </div>
+                </div>
+            </div>
 
             {{-- Prix --}}
             <div>

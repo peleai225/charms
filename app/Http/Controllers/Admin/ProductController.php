@@ -588,7 +588,25 @@ class ProductController extends Controller
             'weight'                => 'sometimes|nullable|numeric|min:0',
             'stock_alert_threshold' => 'sometimes|nullable|integer|min:0',
             'is_active'             => 'sometimes|boolean',
+            'image'                 => 'sometimes|nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'remove_image'          => 'sometimes|boolean',
         ]);
+
+        // Gérer l'image séparément
+        unset($validated['image'], $validated['remove_image']);
+
+        if ($request->hasFile('image')) {
+            if ($variant->image) {
+                Storage::disk('public')->delete($variant->image);
+            }
+            $validated['image'] = $this->resizeAndStoreImage(
+                $request->file('image'),
+                'products/' . $product->id . '/variants'
+            );
+        } elseif ($request->boolean('remove_image') && $variant->image) {
+            Storage::disk('public')->delete($variant->image);
+            $validated['image'] = null;
+        }
 
         if (empty($validated)) {
             return $request->wantsJson() || $request->ajax()
@@ -601,6 +619,7 @@ class ProductController extends Controller
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success'               => true,
+                'image'                 => $variant->image,
                 'stock_quantity'        => $variant->stock_quantity,
                 'sale_price'            => $variant->sale_price,
                 'purchase_price'        => $variant->purchase_price,

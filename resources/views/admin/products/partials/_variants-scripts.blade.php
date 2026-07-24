@@ -184,28 +184,48 @@ function _registerVariantManager() {
                 if (!d.id) return;
                 this.editDrawer.saving = true;
                 try {
+                    // FormData pour supporter l'upload d'image
+                    const form = new FormData();
+                    form.append('_method', 'PATCH');
+                    form.append('purchase_price',        d.purchase_price !== '' && d.purchase_price != null ? d.purchase_price : '');
+                    form.append('sale_price',            d.sale_price !== '' && d.sale_price != null ? d.sale_price : '');
+                    form.append('compare_price',         d.compare_price !== '' && d.compare_price != null ? d.compare_price : '');
+                    form.append('stock_quantity',        d.stock_quantity ?? 0);
+                    form.append('stock_alert_threshold', d.stock_alert_threshold !== '' && d.stock_alert_threshold != null ? d.stock_alert_threshold : '');
+                    form.append('barcode',               d.barcode || '');
+                    form.append('weight',                d.weight !== '' && d.weight != null ? d.weight : '');
+                    form.append('is_active',             d.is_active ? '1' : '0');
+                    // Image : fichier si nouveau choisi, 'remove' si supprimée
+                    const imgInput = document.getElementById('drawer-img-input');
+                    if (imgInput && imgInput.files[0]) {
+                        form.append('image', imgInput.files[0]);
+                    } else if (d.image === null) {
+                        form.append('remove_image', '1');
+                    }
+
                     const res = await fetch('{{ $variantsUrl }}/' + d.id, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                            'X-HTTP-Method-Override': 'PATCH',
                             'Accept': 'application/json',
                         },
-                        body: JSON.stringify({
-                            purchase_price:        d.purchase_price !== '' ? d.purchase_price : null,
-                            sale_price:            d.sale_price !== '' ? d.sale_price : null,
-                            compare_price:         d.compare_price !== '' ? d.compare_price : null,
-                            stock_quantity:        d.stock_quantity,
-                            stock_alert_threshold: d.stock_alert_threshold !== '' ? d.stock_alert_threshold : null,
-                            barcode:               d.barcode || null,
-                            weight:                d.weight !== '' ? d.weight : null,
-                            is_active:             d.is_active,
-                        }),
+                        body: form,
                     });
                     const json = await res.json();
                     if (json.success) {
                         const vid = d.id;
+                        // Mettre à jour image dans la ligne
+                        const imgEl = document.getElementById('variant-img-' + vid);
+                        if (imgEl) {
+                            if (json.image) {
+                                imgEl.src = '/storage/' + json.image;
+                                imgEl.classList.remove('hidden');
+                                imgEl.nextElementSibling?.classList.add('hidden');
+                            } else {
+                                imgEl.classList.add('hidden');
+                                imgEl.nextElementSibling?.classList.remove('hidden');
+                            }
+                        }
                         const stockEl = document.getElementById('stock-badge-' + vid);
                         if (stockEl && json.stock_quantity !== undefined) {
                             const q = json.stock_quantity;
@@ -215,7 +235,7 @@ function _registerVariantManager() {
                         }
                         const priceEl = document.getElementById('price-badge-' + vid);
                         if (priceEl && json.sale_price !== undefined) {
-                            priceEl.textContent = json.sale_price ? Number(json.sale_price).toLocaleString('fr-FR') + ' F' : '—';
+                            priceEl.textContent = json.sale_price ? Number(json.sale_price).toLocaleString('fr-FR') + ' F CFA' : '— (produit)';
                         }
                         const activeEl = document.getElementById('active-badge-' + vid);
                         if (activeEl && json.is_active !== undefined) {

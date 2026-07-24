@@ -15,53 +15,35 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class ProductController extends Controller
 {
     /**
-     * Liste des produits
+     * Liste des produits (Inertia)
      */
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'images'])
-            ->withCount('variants');
+        Inertia::setRootView('layouts.admin-inertia');
 
-        // Filtres
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('barcode', 'like', "%{$search}%");
-            });
-        }
+        $products = Product::query()
+            ->with(['images', 'category', 'variants'])
+            ->when($request->search, fn($q) => $q->where('name', 'like', "%{$request->search}%")
+                ->orWhere('sku', 'like', "%{$request->search}%"))
+            ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->when($request->category, fn($q) => $q->where('category_id', $request->category))
+            ->when($request->stock === 'out', fn($q) => $q->where('stock_quantity', '<=', 0))
+            ->when($request->stock === 'low', fn($q) => $q->whereColumn('stock_quantity', '<=', 'stock_alert_threshold')->where('stock_quantity', '>', 0))
+            ->orderBy('created_at', 'desc')
+            ->paginate(20)
+            ->withQueryString();
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->filled('category')) {
-            $query->where('category_id', $request->category);
-        }
-
-        if ($request->filled('stock')) {
-            if ($request->stock === 'low') {
-                $query->lowStock();
-            } elseif ($request->stock === 'out') {
-                $query->outOfStock();
-            }
-        }
-
-        // Tri (whitelist pour éviter l'injection)
-        $allowedSort = ['name', 'sku', 'sale_price', 'stock_quantity', 'created_at', 'updated_at', 'status'];
-        $sortBy = in_array($request->get('sort'), $allowedSort) ? $request->get('sort') : 'created_at';
-        $sortDir = strtolower($request->get('dir', 'desc')) === 'asc' ? 'asc' : 'desc';
-        $query->orderBy($sortBy, $sortDir);
-
-        $products = $query->paginate(20)->withQueryString();
-        $categories = Category::active()->ordered()->get();
-
-        return view('admin.products.index', compact('products', 'categories'));
+        return Inertia::render('Admin/Products/Index', [
+            'pageTitle' => 'Produits',
+            'products' => $products,
+            'categories' => Category::orderBy('name')->get(['id', 'name']),
+            'filters' => $request->only('search', 'status', 'category', 'stock'),
+        ]);
     }
 
     /**
@@ -420,15 +402,19 @@ class ProductController extends Controller
     public function bulkStoreVariants(Request $request, Product $product)
     {
         $request->validate([
-            'rows'                    => 'required|array|min:1',
-            'rows.*.sku'              => 'required|string|max:100',
-            'rows.*.stock_quantity'   => 'required|integer|min:0',
-            'rows.*.sale_price'       => 'nullable|numeric|min:0',
-            'rows.*.attributes'       => 'nullable|array',
-            'rows.*.attributes.*'     => 'nullable|integer|exists:attribute_values,id',
-            // Rétro-compat : anciens champs s'ils sont encore envoyés
-            'rows.*.size_id'          => 'nullable|exists:attribute_values,id',
-            'rows.*.color_id'         => 'nullable|exists:attribute_values,id',
+            'rows'                           => 'required|array|min:1',
+            'rows.*.sku'                     => 'required|string|max:100',
+            'rows.*.stock_quantity'          => 'required|integer|min:0',
+            'rows.*.sale_price'              => 'nullable|numeric|min:0',
+            'rows.*.purchase_price'          => 'nullable|numeric|min:0',
+            'rows.*.compare_price'           => 'nullable|numeric|min:0',
+            'rows.*.barcode'                 => 'nullable|string|max:100',
+            'rows.*.weight'                  => 'nullable|numeric|min:0',
+            'rows.*.stock_alert_threshold'   => 'nullable|integer|min:0',
+            'rows.*.attributes'              => 'nullable|array',
+            'rows.*.attributes.*'            => 'nullable|integer|exists:attribute_values,id',
+            'rows.*.size_id'                 => 'nullable|exists:attribute_values,id',
+            'rows.*.color_id'                => 'nullable|exists:attribute_values,id',
         ]);
 
         // Vérifie que chaque clé d'attribut est bien un attribute_id valide
@@ -458,11 +444,16 @@ class ProductController extends Controller
                 }
 
                 $variant = ProductVariant::create([
-                    'product_id'     => $product->id,
-                    'sku'            => $sku,
-                    'stock_quantity' => (int) ($row['stock_quantity'] ?? 0),
-                    'sale_price'     => !empty($row['sale_price']) ? $row['sale_price'] : null,
-                    'is_active'      => true,
+                    'product_id'            => $product->id,
+                    'sku'                   => $sku,
+                    'stock_quantity'        => (int) ($row['stock_quantity'] ?? 0),
+                    'sale_price'            => !empty($row['sale_price']) ? $row['sale_price'] : null,
+                    'purchase_price'        => !empty($row['purchase_price']) ? $row['purchase_price'] : null,
+                    'compare_price'         => !empty($row['compare_price']) ? $row['compare_price'] : null,
+                    'barcode'               => !empty($row['barcode']) ? $row['barcode'] : null,
+                    'weight'                => !empty($row['weight']) ? $row['weight'] : null,
+                    'stock_alert_threshold' => isset($row['stock_alert_threshold']) && $row['stock_alert_threshold'] !== '' ? (int)$row['stock_alert_threshold'] : null,
+                    'is_active'             => true,
                 ]);
 
                 foreach ($pairs as $attributeId => $attributeValueId) {
@@ -486,10 +477,24 @@ class ProductController extends Controller
             $msg = "{$created} variante(s) créée(s)";
             if ($skipped > 0) $msg .= ", {$skipped} ignorée(s) (SKU déjà existant ou ligne invalide)";
 
-            return back()->with('success', $msg . '.');
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => $created > 0,
+                    'message' => $msg,
+                    'created' => $created,
+                    'skipped' => $skipped,
+                ], $created > 0 ? 200 : 422);
+            }
+
+            return back()->with($created > 0 ? 'success' : 'error', $msg . '.');
 
         } catch (\Exception $e) {
             DB::rollBack();
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+
             return back()->with('error', 'Erreur : ' . $e->getMessage());
         }
     }
@@ -575,9 +580,14 @@ class ProductController extends Controller
         }
 
         $validated = $request->validate([
-            'stock_quantity' => 'sometimes|required|integer|min:0',
-            'sale_price'     => 'sometimes|nullable|numeric|min:0',
-            'is_active'      => 'sometimes|boolean',
+            'stock_quantity'        => 'sometimes|required|integer|min:0',
+            'sale_price'            => 'sometimes|nullable|numeric|min:0',
+            'purchase_price'        => 'sometimes|nullable|numeric|min:0',
+            'compare_price'         => 'sometimes|nullable|numeric|min:0',
+            'barcode'               => 'sometimes|nullable|string|max:100',
+            'weight'                => 'sometimes|nullable|numeric|min:0',
+            'stock_alert_threshold' => 'sometimes|nullable|integer|min:0',
+            'is_active'             => 'sometimes|boolean',
         ]);
 
         if (empty($validated)) {
@@ -590,10 +600,15 @@ class ProductController extends Controller
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
-                'success'        => true,
-                'stock_quantity' => $variant->stock_quantity,
-                'sale_price'     => $variant->sale_price,
-                'is_active'      => (bool) $variant->is_active,
+                'success'               => true,
+                'stock_quantity'        => $variant->stock_quantity,
+                'sale_price'            => $variant->sale_price,
+                'purchase_price'        => $variant->purchase_price,
+                'compare_price'         => $variant->compare_price,
+                'barcode'               => $variant->barcode,
+                'weight'                => $variant->weight,
+                'stock_alert_threshold' => $variant->stock_alert_threshold,
+                'is_active'             => (bool) $variant->is_active,
             ]);
         }
 

@@ -208,6 +208,16 @@
                         </table>
                     </div>
 
+                    {{-- Message d'erreur bulk --}}
+                    <template x-if="bulkError">
+                        <div class="mt-3 flex items-start gap-2 px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg text-[12px] text-red-700">
+                            <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                            </svg>
+                            <span x-text="bulkError"></span>
+                        </div>
+                    </template>
+
                     <div class="flex items-center gap-3 mt-4">
                         <button type="button" @click="submitBulk()"
                             :disabled="bulkSubmitting || generatedRows.filter(r => !r.remove).length === 0"

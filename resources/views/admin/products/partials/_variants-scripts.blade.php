@@ -39,6 +39,7 @@ document.addEventListener('alpine:init', function() {
             selectedValues: {},
             generatedRows: [],
             bulkSubmitting: false,
+            bulkError: null,
 
             /* ── sélection attributs ── */
             toggleAttr(attrId) {
@@ -94,9 +95,9 @@ document.addEventListener('alpine:init', function() {
                     combos = combos.flatMap(c => pool.map(v => [...c, v]));
                 }
 
-                const sku = this.productSku.toUpperCase().replace(/[^A-Z0-9]/g, '-');
+                const sku = this.productSku.toUpperCase().replace(/[^A-Z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
                 this.generatedRows = combos.map(combo => {
-                    const suffix = combo.map(v => v.label.toUpperCase().replace(/[^A-Z0-9]/g, '')).join('-');
+                    const suffix = combo.map(v => v.label.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6)).join('-');
                     const attrs = {};
                     combo.forEach(v => { attrs[v.attrId] = v.valueId; });
                     return {
@@ -122,7 +123,17 @@ document.addEventListener('alpine:init', function() {
             async submitBulk() {
                 const rows = this.generatedRows.filter(r => !r.remove && r.sku.trim());
                 if (!rows.length) return;
+
+                // Vérifier les SKU en double dans la grille elle-même
+                const skus = rows.map(r => r.sku.trim().toUpperCase());
+                const hasDuplicates = skus.length !== new Set(skus).size;
+                if (hasDuplicates) {
+                    this.showBulkError('Certaines lignes ont des SKU identiques. Veuillez les corriger avant de continuer.');
+                    return;
+                }
+
                 this.bulkSubmitting = true;
+                this.bulkError = null;
                 const csrf = document.querySelector('meta[name=csrf-token]').content;
                 const payload = {
                     rows: rows.map(r => ({
@@ -148,15 +159,19 @@ document.addEventListener('alpine:init', function() {
                         body: JSON.stringify(payload),
                     });
                     const data = await res.json();
-                    if (res.ok && data.success !== false) {
+                    if (data.success) {
                         window.location.reload();
                     } else {
-                        alert(data.message || 'Erreur lors de la creation');
+                        this.showBulkError(data.message || 'Erreur lors de la création');
                     }
                 } catch (e) {
-                    alert('Erreur reseau');
+                    this.showBulkError('Erreur réseau. Vérifiez votre connexion.');
                 }
                 this.bulkSubmitting = false;
+            },
+            showBulkError(msg) {
+                this.bulkError = msg;
+                setTimeout(() => { this.bulkError = null; }, 8000);
             },
 
             /* ── drawer d'édition complète ── */

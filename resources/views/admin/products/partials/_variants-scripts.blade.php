@@ -1,0 +1,286 @@
+@php
+$attributesJson = json_encode($attributes->map(function($a) {
+    return [
+        'id'     => $a->id,
+        'name'   => $a->name,
+        'type'   => $a->type,
+        'values' => $a->values->map(function($v) {
+            return [
+                'id'         => $v->id,
+                'value'      => $v->value,
+                'color_code' => $v->color_code ?? null,
+            ];
+        })->values()->all(),
+    ];
+})->values()->all());
+$productSkuJs = addslashes($product->sku);
+$bulkRoute    = route('admin.products.variants.bulk', $product);
+$variantsUrl  = url('admin/products/' . $product->id . '/variants');
+@endphp
+@push('scripts')
+<script>
+document.addEventListener('alpine:init', function() {
+    Alpine.data('variantManager', function() {
+        return {
+            /* ── gestion inline des variantes existantes ── */
+            saving: {},
+            deleting: {},
+            editDrawer: {
+                open: false,
+                saving: false,
+                data: {},
+            },
+
+            /* ── générateur de combinaisons ── */
+            showGenerator: false,
+            productSku: '{{ $productSkuJs }}',
+            attributes: {!! $attributesJson !!},
+            selectedAttrs: [],
+            selectedValues: {},
+            generatedRows: [],
+            bulkSubmitting: false,
+
+            /* ── sélection attributs ── */
+            toggleAttr(attrId) {
+                const idx = this.selectedAttrs.indexOf(attrId);
+                if (idx >= 0) {
+                    this.selectedAttrs.splice(idx, 1);
+                    delete this.selectedValues[attrId];
+                } else {
+                    this.selectedAttrs.push(attrId);
+                    this.selectedValues[attrId] = [];
+                }
+                this.generatedRows = [];
+            },
+            isAttrSelected(attrId) {
+                return this.selectedAttrs.includes(attrId);
+            },
+            toggleValue(attrId, valueId) {
+                if (!this.selectedValues[attrId]) this.selectedValues[attrId] = [];
+                const idx = this.selectedValues[attrId].indexOf(valueId);
+                if (idx >= 0) this.selectedValues[attrId].splice(idx, 1);
+                else this.selectedValues[attrId].push(valueId);
+                this.generatedRows = [];
+            },
+            isValueSelected(attrId, valueId) {
+                return (this.selectedValues[attrId] || []).includes(valueId);
+            },
+            attrById(id) {
+                return this.attributes.find(a => a.id === id);
+            },
+            valueById(attrId, valueId) {
+                const attr = this.attrById(attrId);
+                return attr ? attr.values.find(v => v.id === valueId) : null;
+            },
+
+            /* ── génération du produit cartésien ── */
+            canGenerate() {
+                if (this.selectedAttrs.length === 0) return false;
+                return this.selectedAttrs.every(aid => (this.selectedValues[aid] || []).length > 0);
+            },
+            generate() {
+                const pools = this.selectedAttrs.map(aid => {
+                    const vals = (this.selectedValues[aid] || []).map(vid => ({
+                        attrId: aid,
+                        valueId: vid,
+                        label: (this.valueById(aid, vid) || {}).value || vid,
+                        color: (this.valueById(aid, vid) || {}).color_code || null,
+                    }));
+                    return vals;
+                });
+
+                let combos = [[]];
+                for (const pool of pools) {
+                    combos = combos.flatMap(c => pool.map(v => [...c, v]));
+                }
+
+                const sku = this.productSku.toUpperCase().replace(/[^A-Z0-9]/g, '-');
+                this.generatedRows = combos.map(combo => {
+                    const suffix = combo.map(v => v.label.toUpperCase().replace(/[^A-Z0-9]/g, '')).join('-');
+                    const attrs = {};
+                    combo.forEach(v => { attrs[v.attrId] = v.valueId; });
+                    return {
+                        label: combo.map(v => v.label).join(' / '),
+                        colors: combo.filter(v => v.color).map(v => v.color),
+                        sku: sku + '-' + suffix,
+                        stock: 0,
+                        price: '',
+                        purchase_price: '',
+                        compare_price: '',
+                        barcode: '',
+                        weight: '',
+                        attrs,
+                        remove: false,
+                    };
+                });
+            },
+            removeRow(i) {
+                this.generatedRows.splice(i, 1);
+            },
+
+            /* ── soumission bulk ── */
+            async submitBulk() {
+                const rows = this.generatedRows.filter(r => !r.remove && r.sku.trim());
+                if (!rows.length) return;
+                this.bulkSubmitting = true;
+                const csrf = document.querySelector('meta[name=csrf-token]').content;
+                const payload = {
+                    rows: rows.map(r => ({
+                        sku: r.sku,
+                        stock_quantity: parseInt(r.stock) || 0,
+                        sale_price: r.price !== '' ? parseFloat(r.price) : null,
+                        purchase_price: r.purchase_price !== '' ? parseFloat(r.purchase_price) : null,
+                        compare_price: r.compare_price !== '' ? parseFloat(r.compare_price) : null,
+                        barcode: r.barcode || null,
+                        weight: r.weight !== '' ? parseFloat(r.weight) : null,
+                        attributes: r.attrs,
+                    }))
+                };
+                try {
+                    const res = await fetch('{{ $bulkRoute }}', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': csrf,
+                        },
+                        body: JSON.stringify(payload),
+                    });
+                    const data = await res.json();
+                    if (res.ok && data.success !== false) {
+                        window.location.reload();
+                    } else {
+                        alert(data.message || 'Erreur lors de la creation');
+                    }
+                } catch (e) {
+                    alert('Erreur reseau');
+                }
+                this.bulkSubmitting = false;
+            },
+
+            /* ── drawer d'édition complète ── */
+            openEditDrawer(variantData) {
+                this.editDrawer.data = Object.assign({}, variantData);
+                this.editDrawer.open = true;
+            },
+            async saveEditDrawer() {
+                const d = this.editDrawer.data;
+                if (!d.id) return;
+                this.editDrawer.saving = true;
+                try {
+                    const res = await fetch('{{ $variantsUrl }}/' + d.id, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                            'X-HTTP-Method-Override': 'PATCH',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            purchase_price:        d.purchase_price !== '' ? d.purchase_price : null,
+                            sale_price:            d.sale_price !== '' ? d.sale_price : null,
+                            compare_price:         d.compare_price !== '' ? d.compare_price : null,
+                            stock_quantity:        d.stock_quantity,
+                            stock_alert_threshold: d.stock_alert_threshold !== '' ? d.stock_alert_threshold : null,
+                            barcode:               d.barcode || null,
+                            weight:                d.weight !== '' ? d.weight : null,
+                            is_active:             d.is_active,
+                        }),
+                    });
+                    const json = await res.json();
+                    if (json.success) {
+                        const vid = d.id;
+                        const stockEl = document.getElementById('stock-badge-' + vid);
+                        if (stockEl && json.stock_quantity !== undefined) {
+                            const q = json.stock_quantity;
+                            stockEl.textContent = q <= 0 ? 'Rupture' : q + ' pcs';
+                            stockEl.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold '
+                                + (q <= 0 ? 'bg-red-100 text-red-700' : q <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700');
+                        }
+                        const priceEl = document.getElementById('price-badge-' + vid);
+                        if (priceEl && json.sale_price !== undefined) {
+                            priceEl.textContent = json.sale_price ? Number(json.sale_price).toLocaleString('fr-FR') + ' F' : '—';
+                        }
+                        const activeEl = document.getElementById('active-badge-' + vid);
+                        if (activeEl && json.is_active !== undefined) {
+                            activeEl.textContent = json.is_active ? 'Active' : 'Inactive';
+                            activeEl.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold '
+                                + (json.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500');
+                        }
+                        this.editDrawer.open = false;
+                    } else {
+                        alert(json.message || 'Erreur lors de la sauvegarde');
+                    }
+                } catch(e) {
+                    alert('Erreur réseau');
+                } finally {
+                    this.editDrawer.saving = false;
+                }
+            },
+
+            /* ── patch / delete variantes existantes ── */
+            async patchVariant(variantId, data) {
+                this.saving[variantId] = true;
+                try {
+                    const res = await fetch('{{ $variantsUrl }}/' + variantId, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                            'X-HTTP-Method-Override': 'PATCH',
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify(data),
+                    });
+                    const json = await res.json();
+                    if (json.success) {
+                        const stockEl = document.getElementById('stock-badge-' + variantId);
+                        if (stockEl && json.stock_quantity !== undefined) {
+                            const q = json.stock_quantity;
+                            stockEl.textContent = q <= 0 ? 'Rupture' : q + ' pcs';
+                            stockEl.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold '
+                                + (q <= 0 ? 'bg-red-100 text-red-700' : q <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700');
+                        }
+                        const priceEl = document.getElementById('price-badge-' + variantId);
+                        if (priceEl && json.sale_price !== undefined) {
+                            priceEl.textContent = json.sale_price ? Number(json.sale_price).toLocaleString('fr-FR') + ' F CFA' : '— (produit)';
+                        }
+                        const activeEl = document.getElementById('active-badge-' + variantId);
+                        if (activeEl && json.is_active !== undefined) {
+                            activeEl.textContent = json.is_active ? 'Active' : 'Inactive';
+                            activeEl.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold '
+                                + (json.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500');
+                        }
+                    }
+                } finally {
+                    this.saving[variantId] = false;
+                }
+            },
+
+            async deleteVariant(variantId, name) {
+                if (!confirm('Supprimer la variante « ' + name + ' » ?')) return;
+                this.deleting[variantId] = true;
+                try {
+                    const res = await fetch('{{ $variantsUrl }}/' + variantId, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                            'X-HTTP-Method-Override': 'DELETE',
+                            'Accept': 'application/json',
+                        },
+                    });
+                    if (res.ok) {
+                        document.getElementById('variant-row-' + variantId)?.remove();
+                        const counter = document.getElementById('variants-count');
+                        if (counter) counter.textContent = Math.max(0, parseInt(counter.textContent) - 1) + ' variante(s)';
+                    }
+                } finally {
+                    this.deleting[variantId] = false;
+                }
+            }
+        };
+    });
+});
+</script>
+@endpush

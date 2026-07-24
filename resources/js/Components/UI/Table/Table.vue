@@ -21,6 +21,7 @@ const slots = defineSlots()
 
 const selectable  = computed(() => props.selected !== undefined && props.selected !== null)
 const hasActions  = computed(() => !!slots.actions)
+const cellSlots   = computed(() => Object.keys(slots).filter(k => k.startsWith('cell-')))
 const allSelected = computed(() => props.data.length > 0 && props.selected.length === props.data.length)
 
 function toggleAll(checked) {
@@ -91,6 +92,9 @@ function isSelected(row) {
                     >
                         <template v-if="$slots.actions" #actions="{ row: r }">
                             <slot name="actions" :row="r" />
+                        </template>
+                        <template v-for="slotName in cellSlots" :key="slotName" #[slotName]="slotProps">
+                            <slot :name="slotName" v-bind="slotProps" />
                         </template>
                     </TableRow>
                 </tbody>

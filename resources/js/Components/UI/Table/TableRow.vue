@@ -29,13 +29,12 @@ function getNestedValue(obj, key) {
             :key="col.key"
             :class="['px-4 py-3 text-sm text-gray-700', col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : '']"
         >
+            <slot v-if="$slots['cell-' + col.key]" :name="'cell-' + col.key" :row="row" :value="getNestedValue(row, col.key)" />
             <component
-                v-if="col.component"
+                v-else-if="col.component"
                 :is="col.component"
-                v-bind="{ [col.key]: getNestedValue(row, col.key) }"
-            >
-                {{ getNestedValue(row, col.key) }}
-            </component>
+                v-bind="typeof col.componentProps === 'function' ? col.componentProps(row) : (col.componentProps || { [col.key]: getNestedValue(row, col.key) })"
+            />
             <template v-else>
                 {{ col.format ? col.format(getNestedValue(row, col.key), row) : getNestedValue(row, col.key) }}
             </template>

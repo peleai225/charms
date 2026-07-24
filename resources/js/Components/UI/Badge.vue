@@ -12,6 +12,7 @@ const props = defineProps({
         default: 'md',
         validator: (v) => ['sm', 'md'].includes(v),
     },
+    label: { type: String, default: null },
 })
 
 const classes = computed(() => {
@@ -31,5 +32,5 @@ const classes = computed(() => {
 </script>
 
 <template>
-    <span :class="classes"><slot /></span>
+    <span :class="classes"><slot>{{ label }}</slot></span>
 </template>

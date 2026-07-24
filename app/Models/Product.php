@@ -46,6 +46,8 @@ class Product extends Model
         'is_new',
     ];
 
+    protected $appends = ['primary_image_url'];
+
     protected $casts = [
         'purchase_price' => 'decimal:2',
         'sale_price' => 'decimal:2',

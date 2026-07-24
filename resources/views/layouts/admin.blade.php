@@ -27,7 +27,7 @@
         <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%232563EB' rx='15' width='100' height='100'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='50' fill='white'>{{ substr($siteName, 0, 1) }}</text></svg>">
     @endif
 
-    @vite(['resources/css/app.css', 'resources/js/admin-notifications.js', 'resources/js/admin-charts.js'])
+    @vite(['resources/css/app.css', 'resources/js/admin-alpine.js', 'resources/js/admin-notifications.js', 'resources/js/admin-charts.js'])
 
     <style>
         [x-cloak] { display: none !important; }
@@ -58,12 +58,58 @@
 </head>
 
 <body class="bg-gray-100 min-h-screen antialiased text-[13px]"
+      @keydown.ctrl.k.window.prevent="openPalette()"
       x-data="{
           sidebarCollapsed: (() => { try { return localStorage.getItem('sidebarCollapsed') === 'true' } catch(e) { return false } })(),
           mobileOpen: false,
           toggleSidebar() {
               this.sidebarCollapsed = !this.sidebarCollapsed;
               try { localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed) } catch(e) {}
+          },
+          searchOpen: false,
+          paletteQuery: '',
+          paletteResults: [],
+          paletteLoading: false,
+          paletteSelected: -1,
+          _paletteTimer: null,
+          get paletteGrouped() {
+              const labels = { order: 'Commandes', product: 'Produits', customer: 'Clients' };
+              const map = {};
+              this.paletteResults.forEach((r, i) => {
+                  if (!map[r.type]) map[r.type] = { label: labels[r.type] || r.type, items: [] };
+                  map[r.type].items.push({ ...r, _idx: i });
+              });
+              return Object.values(map);
+          },
+          openPalette() {
+              this.searchOpen = true;
+              this.paletteQuery = '';
+              this.paletteResults = [];
+              this.paletteSelected = -1;
+              this.$nextTick(() => { const el = document.getElementById('palette-input'); if (el) el.focus(); });
+          },
+          paletteSearch() {
+              const q = this.paletteQuery.trim();
+              if (q.length < 2) { this.paletteResults = []; this.paletteLoading = false; return; }
+              this.paletteLoading = true;
+              clearTimeout(this._paletteTimer);
+              this._paletteTimer = setTimeout(async () => {
+                  try {
+                      const r = await fetch('/api/admin/search?q=' + encodeURIComponent(q), { credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
+                      const d = await r.json();
+                      this.paletteResults = d.results || [];
+                      this.paletteSelected = this.paletteResults.length > 0 ? 0 : -1;
+                  } catch(e) { this.paletteResults = []; }
+                  this.paletteLoading = false;
+              }, 250);
+          },
+          paletteNav(dir) {
+              if (!this.paletteResults.length) return;
+              this.paletteSelected = (this.paletteSelected + dir + this.paletteResults.length) % this.paletteResults.length;
+          },
+          paletteGo() {
+              const item = this.paletteResults[this.paletteSelected];
+              if (item) window.location.href = item.url;
           }
       }">
 
@@ -98,31 +144,31 @@
                :class="sidebarCollapsed ? 'w-[56px]' : 'w-[220px]'">
 
             {{-- Logo --}}
-            <div class="flex items-center h-[56px] border-b border-gray-100 flex-shrink-0 overflow-hidden"
-                 :class="sidebarCollapsed ? 'justify-center px-0' : 'px-5 gap-3'">
+            <div class="flex items-center h-[64px] border-b border-gray-100 flex-shrink-0 overflow-hidden"
+                 :class="sidebarCollapsed ? 'justify-center px-0' : 'px-4 gap-3'">
                 @if($siteLogo)
                     <img src="{{ asset('storage/' . $siteLogo) }}" alt="{{ $siteName }}"
-                         class="h-7 w-7 rounded-md object-contain flex-shrink-0">
+                         class="h-9 w-9 rounded-lg object-contain flex-shrink-0 ring-1 ring-gray-100">
                 @else
-                    <div class="w-7 h-7 rounded-md bg-orange-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                    <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-sm">
                         {{ substr($siteName, 0, 1) }}
                     </div>
                 @endif
-                <div x-show="!sidebarCollapsed" x-transition.opacity.duration.150ms class="min-w-0 overflow-hidden">
-                    <p class="text-[13px] font-bold text-gray-900 truncate leading-none">{{ $siteName }}</p>
-                    <p class="text-[11px] text-gray-400 mt-0.5 leading-none">Administration</p>
+                <div x-show="!sidebarCollapsed" x-transition.opacity.duration.150ms class="min-w-0 overflow-hidden flex-1">
+                    <p class="text-[13px] font-bold text-gray-900 truncate leading-tight">{{ $siteName }}</p>
+                    <p class="text-[11px] text-gray-400 mt-0.5 leading-none font-medium">Administration</p>
                 </div>
                 <button @click="toggleSidebar()" x-show="!sidebarCollapsed" x-cloak
-                        class="ml-auto text-gray-300 hover:text-gray-600 flex-shrink-0">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        class="text-gray-300 hover:text-gray-600 flex-shrink-0 p-1 rounded-md hover:bg-gray-100 transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
                     </svg>
                 </button>
             </div>
 
             {{-- Expand button when collapsed --}}
-            <div x-show="sidebarCollapsed" x-cloak class="flex justify-center py-2 border-b border-gray-100">
-                <button @click="toggleSidebar()" class="text-gray-300 hover:text-gray-600">
+            <div x-show="sidebarCollapsed" x-cloak class="flex justify-center py-3 border-b border-gray-100">
+                <button @click="toggleSidebar()" class="text-gray-300 hover:text-gray-600 p-1 rounded-md hover:bg-gray-100 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/>
                     </svg>
@@ -130,11 +176,11 @@
             </div>
 
             {{-- Nav --}}
-            <nav class="flex-1 overflow-y-auto overflow-x-hidden py-3">
+            <nav class="flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-0.5">
 
                 {{-- MAIN MENU --}}
                 <div x-show="!sidebarCollapsed" x-transition.opacity.duration.100ms
-                     class="px-4 mb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Main Menu</div>
+                     class="px-4 pt-1 pb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Main Menu</div>
 
                 @include('layouts.admin-nav-item', ['href' => route('admin.dashboard'),   'label' => 'Dashboard',  'match' => 'admin.dashboard',   'icon' => 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', 'badge' => null])
                 @include('layouts.admin-nav-item', ['href' => route('admin.orders.index'),    'label' => 'Commandes', 'match' => 'admin.orders.*',    'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', 'badge' => $pendingOrders ?: null])
@@ -143,8 +189,8 @@
                 @if(in_array(auth()->user()->role, ['admin', 'manager']))
                     {{-- CATALOGUE --}}
                     <div x-show="!sidebarCollapsed" x-transition.opacity.duration.100ms
-                         class="px-4 mt-4 mb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Catalogue</div>
-                    <div x-show="sidebarCollapsed" class="border-t border-gray-100 my-2 mx-3"></div>
+                         class="px-4 pt-5 pb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Catalogue</div>
+                    <div x-show="sidebarCollapsed" class="border-t border-gray-100 my-3 mx-3"></div>
 
                     @include('layouts.admin-nav-item', ['href' => route('admin.products.index'),   'label' => 'Produits',    'match' => 'admin.products.*',    'icon' => 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', 'badge' => null])
                     @include('layouts.admin-nav-item', ['href' => route('admin.categories.index'), 'label' => 'Catégories',  'match' => 'admin.categories.*',  'icon' => 'M4 6h16M4 10h16M4 14h16M4 18h16', 'badge' => null])
@@ -154,13 +200,17 @@
 
                 {{-- TOOLS --}}
                 <div x-show="!sidebarCollapsed" x-transition.opacity.duration.100ms
-                     class="px-4 mt-4 mb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Tools</div>
-                <div x-show="sidebarCollapsed" class="border-t border-gray-100 my-2 mx-3"></div>
+                     class="px-4 pt-5 pb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Tools</div>
+                <div x-show="sidebarCollapsed" class="border-t border-gray-100 my-3 mx-3"></div>
 
-                @include('layouts.admin-nav-item', ['href' => route('admin.stock.index'),   'label' => 'Stock',       'match' => 'admin.stock.*',     'icon' => 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4', 'badge' => $stockAlerts ?: null])
-                @include('layouts.admin-nav-item', ['href' => route('admin.reports.index'), 'label' => 'Rapports',    'match' => 'admin.reports.*',   'icon' => 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', 'badge' => null])
-                @include('layouts.admin-nav-item', ['href' => route('admin.scanner.index'), 'label' => 'Scanner/POS', 'match' => 'admin.scanner.*',   'icon' => 'M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z', 'badge' => null])
+                @include('layouts.admin-nav-item', ['href' => route('admin.stock.index'),    'label' => 'Stock',        'match' => 'admin.stock.*',     'icon' => 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4', 'badge' => $stockAlerts ?: null])
+                @include('layouts.admin-nav-item', ['href' => route('admin.barcodes.index'), 'label' => 'Barcodes',     'match' => 'admin.barcodes.*',  'icon' => 'M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z', 'badge' => null])
+                @include('layouts.admin-nav-item', ['href' => route('admin.reports.index'),  'label' => 'Rapports',     'match' => 'admin.reports.*',   'icon' => 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', 'badge' => null])
+                @include('layouts.admin-nav-item', ['href' => route('admin.scanner.index'),  'label' => 'Scanner/POS',  'match' => 'admin.scanner.*',   'icon' => 'M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z', 'badge' => null])
                 @include('layouts.admin-nav-item', ['href' => route('admin.reviews.index'), 'label' => 'Avis',        'match' => 'admin.reviews.*',   'icon' => 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z', 'badge' => null])
+
+                @include('layouts.admin-nav-item', ['href' => route('admin.crm.dashboard'),          'label' => 'CRM',            'match' => 'admin.crm.*',          'icon' => 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', 'badge' => null])
+                @include('layouts.admin-nav-item', ['href' => route('admin.marketing.campaigns'),    'label' => 'Marketing',      'match' => 'admin.marketing.*',    'icon' => 'M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z', 'badge' => null])
 
                 @if(in_array(auth()->user()->role, ['admin', 'manager']))
                     @include('layouts.admin-nav-item', ['href' => route('admin.suppliers.index'),    'label' => 'Fournisseurs',   'match' => 'admin.suppliers.*',    'icon' => 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4', 'badge' => null])
@@ -172,8 +222,8 @@
                 {{-- WORKSPACE (admin) --}}
                 @if(auth()->user()->role === 'admin')
                     <div x-show="!sidebarCollapsed" x-transition.opacity.duration.100ms
-                         class="px-4 mt-4 mb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Workspace</div>
-                    <div x-show="sidebarCollapsed" class="border-t border-gray-100 my-2 mx-3"></div>
+                         class="px-4 pt-5 pb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Workspace</div>
+                    <div x-show="sidebarCollapsed" class="border-t border-gray-100 my-3 mx-3"></div>
 
                     @include('layouts.admin-nav-item', ['href' => route('admin.accounting.index'),   'label' => 'Comptabilité',   'match' => 'admin.accounting.*',   'icon' => 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z', 'badge' => null])
                     @include('layouts.admin-nav-item', ['href' => route('admin.users.index'),        'label' => 'Utilisateurs',   'match' => 'admin.users.*',        'icon' => 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', 'badge' => null])
@@ -185,21 +235,25 @@
             </nav>
 
             {{-- Bottom: settings --}}
-            <div class="border-t border-gray-100 py-2">
+            <div class="border-t border-gray-100 pt-2 pb-3 space-y-0.5">
                 @if(auth()->user()->role === 'admin')
                     @include('layouts.admin-nav-item', ['href' => route('admin.settings.index'), 'label' => 'Paramètres', 'match' => 'admin.settings.*', 'icon' => 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z', 'badge' => null])
                     @include('layouts.admin-nav-item', ['href' => route('admin.system.index'),   'label' => 'Système',    'match' => 'admin.system.*',   'icon' => 'M13 10V3L4 14h7v7l9-11h-7z', 'badge' => null])
                 @endif
 
                 {{-- Profile --}}
-                <div class="mx-2 mt-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-                    <a href="{{ route('admin.profile.edit') }}" class="flex items-center gap-3 min-w-0">
-                        <div class="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 text-xs font-bold flex-shrink-0">
+                <div class="mx-2 mt-3 px-3 py-2.5 rounded-xl border border-gray-100 hover:bg-gray-50 hover:border-gray-200 transition-colors cursor-pointer"
+                     :class="sidebarCollapsed ? 'flex justify-center' : ''">
+                    <a href="{{ route('admin.profile.edit') }}" class="flex items-center gap-3 min-w-0 w-full">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm">
                             {{ strtoupper(substr(Auth::user()->name ?? 'A', 0, 1)) }}
                         </div>
-                        <div x-show="!sidebarCollapsed" x-transition.opacity.duration.100ms class="min-w-0">
-                            <p class="text-[12px] font-semibold text-gray-800 truncate leading-none">{{ Auth::user()->name ?? 'Admin' }}</p>
-                            <p class="text-[10px] text-gray-400 mt-0.5 capitalize leading-none">{{ Auth::user()->role ?? 'admin' }}</p>
+                        <div x-show="!sidebarCollapsed" x-transition.opacity.duration.100ms class="min-w-0 flex-1">
+                            <p class="text-[12px] font-semibold text-gray-800 truncate leading-tight">{{ Auth::user()->name ?? 'Admin' }}</p>
+                            <p class="text-[10px] text-gray-400 capitalize leading-none mt-0.5">{{ Auth::user()->role ?? 'admin' }}</p>
+                        </div>
+                        <div x-show="!sidebarCollapsed" x-transition.opacity.duration.100ms class="flex-shrink-0">
+                            <svg class="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                         </div>
                     </a>
                 </div>
@@ -220,13 +274,15 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    {{-- Search --}}
-                    <div class="hidden md:flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 w-48">
+                    {{-- Search / Command Palette trigger --}}
+                    <button @click="openPalette()"
+                        class="hidden md:flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 w-52 text-left hover:border-orange-300 hover:bg-orange-50/30 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500">
                         <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
-                        <span class="text-[12px] text-gray-400">Search here</span>
-                    </div>
+                        <span class="text-[12px] text-gray-400 flex-1">Rechercher...</span>
+                        <kbd class="hidden lg:inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium text-gray-400 bg-white rounded border border-gray-200 flex-shrink-0">Ctrl+K</kbd>
+                    </button>
 
                     {{-- Voir le site --}}
                     <a href="{{ route('home') }}" target="_blank"
@@ -325,6 +381,93 @@
                 </div>
             </header>
 
+            {{-- Command Palette --}}
+            <div x-show="searchOpen" x-cloak
+                 @keydown.escape.window="searchOpen = false"
+                 @keydown.arrow-down.window.prevent="if(searchOpen) paletteNav(1)"
+                 @keydown.arrow-up.window.prevent="if(searchOpen) paletteNav(-1)"
+                 @keydown.enter.window.prevent="if(searchOpen) paletteGo()"
+                 class="fixed inset-0 z-[9998] flex items-start justify-center pt-20 px-4">
+                <div @click="searchOpen = false"
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0"
+                     x-transition:enter-end="opacity-100"
+                     x-transition:leave="transition ease-in duration-150"
+                     x-transition:leave-start="opacity-100"
+                     x-transition:leave-end="opacity-0"
+                     class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+                <div x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 scale-95 -translate-y-4"
+                     x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-150"
+                     x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                     x-transition:leave-end="opacity-0 scale-95"
+                     class="relative w-full max-w-lg bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
+                    <div class="flex items-center gap-2.5 px-4 py-3 border-b border-gray-200">
+                        <template x-if="!paletteLoading">
+                            <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </template>
+                        <template x-if="paletteLoading">
+                            <svg class="w-4 h-4 text-orange-500 flex-shrink-0 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                            </svg>
+                        </template>
+                        <input id="palette-input" type="text"
+                               x-model="paletteQuery"
+                               @input.debounce.250ms="paletteSearch()"
+                               placeholder="Rechercher une commande, produit, client..."
+                               class="flex-1 bg-transparent border-none outline-none text-[13px] text-gray-900 placeholder-gray-400 focus:ring-0">
+                        <kbd class="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 flex-shrink-0">Esc</kbd>
+                    </div>
+                    <div class="max-h-80 overflow-y-auto">
+                        <template x-if="paletteQuery.trim().length === 0">
+                            <p class="px-4 py-5 text-[12px] text-gray-400 text-center">Tapez au moins 2 caractères pour rechercher…</p>
+                        </template>
+                        <template x-if="paletteQuery.trim().length === 1">
+                            <p class="px-4 py-3 text-[12px] text-gray-400 text-center">Continuez à taper…</p>
+                        </template>
+                        <template x-if="paletteQuery.trim().length >= 2 && !paletteLoading && paletteResults.length === 0">
+                            <p class="px-4 py-6 text-[12px] text-gray-400 text-center">Aucun résultat pour "<span x-text="paletteQuery.trim()"></span>"</p>
+                        </template>
+                        <template x-for="group in paletteGrouped" :key="group.label">
+                            <div class="py-1">
+                                <p class="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-widest" x-text="group.label"></p>
+                                <template x-for="item in group.items" :key="item._idx">
+                                    <a :href="item.url"
+                                       class="flex items-center gap-3 px-4 py-2 transition-colors text-[12px]"
+                                       :class="item._idx === paletteSelected ? 'bg-orange-50 text-orange-700' : 'text-gray-700 hover:bg-gray-50'"
+                                       @mouseenter="paletteSelected = item._idx"
+                                       @click="searchOpen = false">
+                                        <template x-if="item.type === 'order'">
+                                            <svg class="w-4 h-4 flex-shrink-0" :class="item._idx === paletteSelected ? 'text-orange-500' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                        </template>
+                                        <template x-if="item.type === 'product'">
+                                            <svg class="w-4 h-4 flex-shrink-0" :class="item._idx === paletteSelected ? 'text-orange-500' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                        </template>
+                                        <template x-if="item.type === 'customer'">
+                                            <svg class="w-4 h-4 flex-shrink-0" :class="item._idx === paletteSelected ? 'text-orange-500' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                        </template>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="truncate font-medium" x-text="item.label"></p>
+                                            <p class="truncate text-[11px] text-gray-400" x-text="item.sublabel || ''"></p>
+                                        </div>
+                                        <svg class="w-3.5 h-3.5 flex-shrink-0" :class="item._idx === paletteSelected ? 'text-orange-400' : 'text-gray-300'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                    </a>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                    <div x-show="paletteResults.length > 0" class="flex items-center gap-3 px-4 py-2 border-t border-gray-100 bg-gray-50 text-[10px] text-gray-400">
+                        <span><kbd class="px-1 py-0.5 bg-white border border-gray-200 rounded">↑↓</kbd> Naviguer</span>
+                        <span><kbd class="px-1 py-0.5 bg-white border border-gray-200 rounded">↵</kbd> Ouvrir</span>
+                        <span><kbd class="px-1 py-0.5 bg-white border border-gray-200 rounded">Esc</kbd> Fermer</span>
+                    </div>
+                </div>
+            </div>
+
             {{-- Content --}}
             <main class="flex-1 overflow-y-auto p-6">
                 @yield('content')
@@ -332,6 +475,20 @@
         </div>
     </div>
 
+    <script>
+        // Fonction globale pour afficher des notifications
+        window.showNotification = function(message, type = 'info') {
+            if (window.Alpine && window.Alpine.store && window.Alpine.store('notification')) {
+                window.Alpine.store('notification').show(message, type);
+            } else {
+                // Fallback si Alpine n'est pas encore chargé
+                const event = new CustomEvent('show-notification', { detail: { message, type } });
+                window.dispatchEvent(event);
+            }
+        };
+    </script>
+
+    @livewireScripts
     @stack('scripts')
 </body>
 </html>

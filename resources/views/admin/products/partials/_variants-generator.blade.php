@@ -1,3 +1,86 @@
+{{-- ── FORMULAIRE : AJOUTER UNE VARIANTE ── --}}
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden" x-data="{ open: false }">
+
+    <button type="button" @click="open = !open"
+        class="w-full flex items-center justify-between px-5 py-4 bg-gray-50 hover:bg-gray-100 transition-colors text-left">
+        <div class="flex items-center gap-3">
+            <div class="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+            </div>
+            <div>
+                <span class="text-sm font-semibold text-gray-900">Ajouter une variante</span>
+                <span class="ml-2 text-[11px] text-gray-400">Créer une variante avec attributs précis</span>
+            </div>
+        </div>
+        <svg class="w-4 h-4 text-gray-400 transition-transform" :class="open ? 'rotate-180' : ''"
+             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+    </button>
+
+    <div x-cloak x-show="open" x-transition.opacity>
+        <form method="POST" action="{{ route('admin.products.variants.store', $product) }}" class="p-5 space-y-4 no-ajax">
+            @csrf
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {{-- SKU --}}
+                <div>
+                    <label class="block text-[11px] font-medium text-gray-600 mb-1">SKU <span class="text-red-500">*</span></label>
+                    <input type="text" name="sku" required placeholder="ex: MON-PRODUIT-ROUGE-M"
+                        class="w-full h-9 px-3 text-[13px] font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                {{-- Stock --}}
+                <div>
+                    <label class="block text-[11px] font-medium text-gray-600 mb-1">Stock initial <span class="text-red-500">*</span></label>
+                    <input type="number" name="stock_quantity" value="0" min="0" required
+                        class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                {{-- Prix vente --}}
+                <div>
+                    <label class="block text-[11px] font-medium text-gray-600 mb-1">Prix de vente (F)</label>
+                    <input type="number" name="sale_price" min="0" step="1" placeholder="—"
+                        class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            {{-- Attributs --}}
+            @if($attributes->count())
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Attributs</p>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    @foreach($attributes as $attribute)
+                    <div>
+                        <label class="block text-[11px] font-medium text-gray-600 mb-1">{{ $attribute->name }}</label>
+                        <select name="attributes[{{ $attribute->id }}]"
+                            class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">— Non défini —</option>
+                            @foreach($attribute->values as $value)
+                            <option value="{{ $value->id }}">
+                                {{ $value->value }}
+                            </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
+            <div class="pt-2 border-t border-gray-100 flex gap-2">
+                <button type="submit"
+                    class="h-9 px-5 bg-blue-600 text-white text-[13px] font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+                    Ajouter la variante
+                </button>
+                <button type="button" @click="open = false"
+                    class="h-9 px-4 border border-gray-200 text-[13px] font-medium text-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
+                    Annuler
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {{-- ── GÉNÉRATEUR DE COMBINAISONS ── --}}
 <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
 

@@ -17,10 +17,10 @@ $productSkuJs = addslashes($product->sku);
 $bulkRoute    = route('admin.products.variants.bulk', $product);
 $variantsUrl  = url('admin/products/' . $product->id . '/variants');
 @endphp
-@push('scripts')
+@push('styles')
 <script>
-document.addEventListener('alpine:init', function() {
-    Alpine.data('variantManager', function() {
+function _registerVariantManager() {
+    window.Alpine.data('variantManager', function() {
         return {
             /* ── gestion inline des variantes existantes ── */
             saving: {},
@@ -296,6 +296,12 @@ document.addEventListener('alpine:init', function() {
             }
         };
     });
-});
+}
+// Alpine peut être déjà initialisé (module ES dans <head>) ou pas encore
+if (window.Alpine) {
+    _registerVariantManager();
+} else {
+    document.addEventListener('alpine:init', _registerVariantManager);
+}
 </script>
 @endpush

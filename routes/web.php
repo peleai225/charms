@@ -3,7 +3,10 @@
 use App\Http\Controllers\Auth\AdminAuthController;
 use App\Http\Controllers\Auth\SuperAdminAuthController;
 use App\Http\Controllers\Auth\CustomerAuthController;
-use App\Http\Controllers\Admin\DashboardController;
+// use App\Livewire\Admin\Dashboard as DashboardLivewire; // migré vers Inertia
+// use App\Livewire\Admin\Orders\Index as OrdersIndex; // migré vers Inertia
+use App\Livewire\Admin\Products\Index as ProductsIndex;
+// Reports migrés vers Inertia — Livewire classes supprimées des routes
 use App\Http\Controllers\Front\HomeController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Artisan;
@@ -54,7 +57,7 @@ Route::get('storage/{path}', function (string $path) {
 })->where('path', '.*')->name('storage.serve');
 
 // Setup sans terminal/SSH — GET /setup?token=APP_DEPLOY_TOKEN
-Route::get('/setup', [\App\Http\Controllers\Admin\SystemController::class, 'setup']);
+Route::get('/setup', [\App\Http\Controllers\Admin\SystemController::class, 'setup'])->middleware('throttle:3,10');
 
 // Page d'accueil
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -209,7 +212,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     // Routes protégées (nécessite rôle admin/manager/staff)
     Route::middleware('admin')->group(function () {
         // Dashboard — tous les rôles
-        Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
 
         // Profil admin — tous les rôles
         Route::get('/profile', [\App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('profile.edit');
@@ -217,7 +220,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/profile/password', [\App\Http\Controllers\Admin\ProfileController::class, 'updatePassword'])->name('profile.password');
 
         // Commandes — tous les rôles (consultation + mise à jour statut)
-        Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->names('orders');
+        Route::get('orders', [\App\Http\Controllers\Admin\OrderController::class, 'index'])->name('orders.index');
+        Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->only(['show','store','update','destroy'])->names('orders');
         Route::patch('orders/{order}/status', [\App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('orders.status');
         Route::get('orders/{order}/invoice', [\App\Http\Controllers\Admin\OrderController::class, 'invoice'])->name('orders.invoice');
         Route::get('orders/{order}/invoice/view', [\App\Http\Controllers\Admin\OrderController::class, 'viewInvoice'])->name('orders.invoice.view');
@@ -287,10 +291,30 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/whatsapp/catalog', [\App\Http\Controllers\Admin\WhatsAppController::class, 'exportCatalog'])->name('whatsapp.catalog');
         Route::post('/whatsapp/product-link', [\App\Http\Controllers\Admin\WhatsAppController::class, 'productLink'])->name('whatsapp.product-link');
 
+        // CRM — tous les rôles (admin + manager + staff)
+        Route::get('/crm', [\App\Http\Controllers\Admin\CrmController::class, 'dashboard'])->name('crm.dashboard');
+        Route::get('/crm/tags', [\App\Http\Controllers\Admin\CrmController::class, 'tags'])->name('crm.tags');
+        Route::post('/crm/tags', [\App\Http\Controllers\Admin\CrmController::class, 'storeTag'])->name('crm.tags.store');
+        Route::delete('/crm/tags/{tag}', [\App\Http\Controllers\Admin\CrmController::class, 'destroyTag'])->name('crm.tags.destroy');
+        Route::post('/crm/tags/assign', [\App\Http\Controllers\Admin\CrmController::class, 'assignTag'])->name('crm.tags.assign');
+        Route::post('/crm/auto-classify', [\App\Http\Controllers\Admin\CrmController::class, 'autoClassifyAll'])->name('crm.auto-classify');
+        Route::get('/crm/customers/{customer}', [\App\Http\Controllers\Admin\CrmController::class, 'customerAnalytics'])->name('crm.customer-analytics');
+
+        // Marketing — tous les rôles
+        Route::get('/marketing/campaigns', [\App\Http\Controllers\Admin\MarketingController::class, 'campaigns'])->name('marketing.campaigns');
+        Route::post('/marketing/campaigns', [\App\Http\Controllers\Admin\MarketingController::class, 'storeCampaign'])->name('marketing.campaigns.store');
+        Route::delete('/marketing/campaigns/{campaign}', [\App\Http\Controllers\Admin\MarketingController::class, 'destroyCampaign'])->name('marketing.campaigns.destroy');
+        Route::get('/marketing/automations', [\App\Http\Controllers\Admin\MarketingController::class, 'automations'])->name('marketing.automations');
+        Route::post('/marketing/automations', [\App\Http\Controllers\Admin\MarketingController::class, 'storeAutomation'])->name('marketing.automations.store');
+        Route::post('/marketing/automations/{automation}/toggle', [\App\Http\Controllers\Admin\MarketingController::class, 'toggleAutomation'])->name('marketing.automations.toggle');
+        Route::delete('/marketing/automations/{automation}', [\App\Http\Controllers\Admin\MarketingController::class, 'destroyAutomation'])->name('marketing.automations.destroy');
+        Route::get('/marketing/whatsapp-history', [\App\Http\Controllers\Admin\MarketingController::class, 'whatsappHistory'])->name('marketing.whatsapp-history');
+
         // ===== ADMIN + MANAGER uniquement =====
         Route::middleware('admin:admin,manager')->group(function () {
             // Produits (CRUD complet)
-            Route::resource('products', \App\Http\Controllers\Admin\ProductController::class)->names('products');
+            Route::get('products', [\App\Http\Controllers\Admin\ProductController::class, 'index'])->name('products.index');
+            Route::resource('products', \App\Http\Controllers\Admin\ProductController::class)->only(['create','store','show','edit','update','destroy'])->names('products');
             Route::post('products/{product}/variants', [\App\Http\Controllers\Admin\ProductController::class, 'storeVariant'])->name('products.variants.store');
             Route::post('products/{product}/variants/bulk', [\App\Http\Controllers\Admin\ProductController::class, 'bulkStoreVariants'])->name('products.variants.bulk');
             Route::patch('products/{product}/variants/{variant}', [\App\Http\Controllers\Admin\ProductController::class, 'updateVariant'])->name('products.variants.update');
@@ -307,6 +331,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('attributes/{attribute}/values', [\App\Http\Controllers\Admin\AttributeController::class, 'storeValue'])->name('attributes.values.store');
             Route::post('attributes/{attribute}/values/bulk', [\App\Http\Controllers\Admin\AttributeController::class, 'bulkStoreValues'])->name('attributes.values.bulk');
             Route::delete('attributes/{attribute}/values/{value}', [\App\Http\Controllers\Admin\AttributeController::class, 'destroyValue'])->name('attributes.values.destroy');
+            Route::patch('attributes/{attribute}/values/{value}', [\App\Http\Controllers\Admin\AttributeController::class, 'updateValue'])->name('attributes.values.update');
 
             // Catégories
             Route::resource('categories', \App\Http\Controllers\Admin\CategoryController::class)->names('categories');
@@ -320,7 +345,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('customers/{customer}', [\App\Http\Controllers\Admin\CustomerController::class, 'destroy'])->name('customers.destroy');
 
             // Remboursements
-            Route::get('/refunds', [\App\Http\Controllers\Admin\RefundController::class, 'index'])->name('refunds.index');
+            Route::get('/refunds', \App\Livewire\Admin\Refunds\Index::class)->name('refunds.index');
             Route::post('orders/{order}/refunds', [\App\Http\Controllers\Admin\RefundController::class, 'store'])->name('refunds.store');
 
             // Coupons / Codes promo
@@ -328,7 +353,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/coupons-generate-code', [\App\Http\Controllers\Admin\CouponController::class, 'generateCode'])->name('coupons.generate-code');
 
             // Bannières
-            Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class)->names('banners');
+            Route::get('banners', \App\Livewire\Admin\Banners\Index::class)->name('banners.index');
+            Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class)->only(['create','store','edit','update','destroy'])->names('banners');
             Route::patch('banners/{banner}/toggle', [\App\Http\Controllers\Admin\BannerController::class, 'toggle'])->name('banners.toggle');
 
             // Fournisseurs
@@ -343,7 +369,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // ===== ADMIN uniquement =====
         Route::middleware('admin:admin')->group(function () {
             // Utilisateurs admin
-            Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->names('users');
+            Route::get('users', \App\Livewire\Admin\Users\Index::class)->name('users.index');
+            Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->only(['create','store','show','edit','update','destroy'])->names('users');
 
             // Paramètres
             Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');

@@ -7,17 +7,32 @@ use App\Models\Attribute;
 use App\Models\AttributeValue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class AttributeController extends Controller
 {
     public function index()
     {
+        Inertia::setRootView('layouts.admin-inertia');
+
         $attributes = Attribute::with(['values' => fn($q) => $q->orderBy('order')->orderBy('value')])
             ->orderBy('order')
             ->orderBy('name')
             ->get();
 
-        return view('admin.attributes.index', compact('attributes'));
+        return Inertia::render('Admin/Attributes/Index', [
+            'attributes' => $attributes->map(fn($a) => [
+                'id'     => $a->id,
+                'name'   => $a->name,
+                'slug'   => $a->slug,
+                'type'   => $a->type,
+                'values' => $a->values->map(fn($v) => [
+                    'id'         => $v->id,
+                    'value'      => $v->value,
+                    'color_code' => $v->color_code,
+                ]),
+            ]),
+        ]);
     }
 
     public function storeAttribute(Request $request)
@@ -53,6 +68,7 @@ class AttributeController extends Controller
         $request->validate([
             'value'      => 'required|string|max:100',
             'color_code' => 'nullable|string|max:20|regex:/^#[0-9A-Fa-f]{3,6}$/',
+            'image'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
         ]);
 
         // Vérifier doublon
@@ -60,10 +76,17 @@ class AttributeController extends Controller
             return back()->with('error', '"' . $request->value . '" existe déjà dans cet attribut.');
         }
 
+        // Upload image si fournie
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('attributes', 'public');
+        }
+
         $attribute->values()->create([
             'value'      => $request->value,
             'slug'       => Str::slug($request->value),
             'color_code' => $request->color_code,
+            'image'      => $imagePath,
             'order'      => $attribute->values()->max('order') + 1,
         ]);
 

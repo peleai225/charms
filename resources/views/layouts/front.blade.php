@@ -10,9 +10,33 @@
         $siteDescription = \App\Models\Setting::get('site_description', 'Découvrez notre boutique en ligne avec des produits de qualité');
         $siteLogo = \App\Models\Setting::get('logo');
         $siteFavicon = \App\Models\Setting::get('favicon');
-        $primaryColor = \App\Models\Setting::get('primary_color', '#6366f1');
-        $secondaryColor = \App\Models\Setting::get('secondary_color', '#8b5cf6');
-        $accentColor = \App\Models\Setting::get('accent_color', '#f59e0b');
+        $primaryColor = \App\Models\Setting::get('primary_color', '#ba0d5d');
+        $secondaryColor = \App\Models\Setting::get('secondary_color', '#ba0d5d');
+        $accentColor = \App\Models\Setting::get('accent_color', '#e4ff5c');
+
+        // Calcul des nuances en PHP (hex pur, compatible tous navigateurs)
+        $hexMix = function(string $hex, float $ratio, bool $withBlack = false): string {
+            $hex = ltrim($hex, '#');
+            $r = hexdec(substr($hex, 0, 2));
+            $g = hexdec(substr($hex, 2, 2));
+            $b = hexdec(substr($hex, 4, 2));
+            $mix = $withBlack ? [0, 0, 0] : [255, 255, 255];
+            $r = (int) round($r * $ratio + $mix[0] * (1 - $ratio));
+            $g = (int) round($g * $ratio + $mix[1] * (1 - $ratio));
+            $b = (int) round($b * $ratio + $mix[2] * (1 - $ratio));
+            return sprintf('#%02x%02x%02x', $r, $g, $b);
+        };
+
+        $p50  = $hexMix($primaryColor, 0.06);
+        $p100 = $hexMix($primaryColor, 0.12);
+        $p200 = $hexMix($primaryColor, 0.22);
+        $p300 = $hexMix($primaryColor, 0.40);
+        $p400 = $hexMix($primaryColor, 0.65);
+        $p500 = $hexMix($primaryColor, 0.90);
+        $p600 = $primaryColor;
+        $p700 = $hexMix($primaryColor, 0.85, true);
+        $p800 = $hexMix($primaryColor, 0.70, true);
+        $p900 = $hexMix($primaryColor, 0.55, true);
     @endphp
     
     <title>@yield('title', $siteName)</title>
@@ -78,23 +102,20 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
     
-    <!-- Couleurs dynamiques du thème (depuis Paramètres > Couleurs) -->
+    <!-- Couleurs dynamiques du thème -->
     <style>
-        /* Tailwind v4 lit --color-primary-* depuis :root pour générer bg-primary-600 etc.
-           On écrase ces variables directement — c'est la seule approche fiable en v4. */
         :root {
-            --color-primary-50:  color-mix(in srgb, {{ $primaryColor }}  6%, white);
-            --color-primary-100: color-mix(in srgb, {{ $primaryColor }} 12%, white);
-            --color-primary-200: color-mix(in srgb, {{ $primaryColor }} 22%, white);
-            --color-primary-300: color-mix(in srgb, {{ $primaryColor }} 40%, white);
-            --color-primary-400: color-mix(in srgb, {{ $primaryColor }} 65%, white);
-            --color-primary-500: color-mix(in srgb, {{ $primaryColor }} 90%, white);
-            --color-primary-600: {{ $primaryColor }};
-            --color-primary-700: color-mix(in srgb, {{ $primaryColor }} 85%, black);
-            --color-primary-800: color-mix(in srgb, {{ $primaryColor }} 70%, black);
-            --color-primary-900: color-mix(in srgb, {{ $primaryColor }} 55%, black);
+            --color-primary-50:  {{ $p50 }};
+            --color-primary-100: {{ $p100 }};
+            --color-primary-200: {{ $p200 }};
+            --color-primary-300: {{ $p300 }};
+            --color-primary-400: {{ $p400 }};
+            --color-primary-500: {{ $p500 }};
+            --color-primary-600: {{ $p600 }};
+            --color-primary-700: {{ $p700 }};
+            --color-primary-800: {{ $p800 }};
+            --color-primary-900: {{ $p900 }};
         }
-
         @keyframes gradient { 0%,100% { background-position: 0% center; } 50% { background-position: 100% center; } }
         .animate-gradient { animation: gradient 6s ease infinite; }
     </style>

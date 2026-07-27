@@ -203,11 +203,9 @@
                 page-break-inside: avoid;
                 break-after: page;
                 margin: 0;
-                /* taille exacte via @page */
-                width: 100vw;
-                height: 100vh;
-                max-width: 100%;
-                max-height: 100%;
+                width: var(--lw);
+                height: var(--lh);
+                overflow: hidden;
             }
             .label:last-child { page-break-after: avoid; break-after: avoid; }
         }

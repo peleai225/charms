@@ -84,10 +84,12 @@ class HomeController extends Controller
             ->take(4)
             ->get();
 
-        $approvedCount = Review::where('status', Review::STATUS_APPROVED)->count();
-        $reviewStats = $approvedCount > 0 ? [
-            'count' => $approvedCount,
-            'avg'   => round(Review::where('status', Review::STATUS_APPROVED)->avg('rating'), 1),
+        $reviewAggregate = Review::where('status', Review::STATUS_APPROVED)
+            ->selectRaw('COUNT(*) as count, ROUND(AVG(rating), 1) as avg')
+            ->first();
+        $reviewStats = ($reviewAggregate->count ?? 0) > 0 ? [
+            'count' => $reviewAggregate->count,
+            'avg'   => $reviewAggregate->avg,
         ] : null;
 
         $formatProduct = fn($p) => [

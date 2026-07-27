@@ -17,7 +17,7 @@ class ShopController extends Controller
     public function index(Request $request)
     {
         $query = Product::active()
-            ->with(['images', 'category', 'variants.attributeValues.attribute']);
+            ->with(['images', 'category']);
 
         // Filtres
         if ($request->filled('category')) {

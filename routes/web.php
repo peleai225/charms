@@ -45,8 +45,6 @@ Route::get('/setup', [\App\Http\Controllers\Admin\SystemController::class, 'setu
 
 // Page d'accueil
 Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/accueil-v2', [HomeController::class, 'indexV2'])->name('home.v2');
-
 // Sitemap XML
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 

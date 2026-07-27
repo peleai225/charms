@@ -83,7 +83,7 @@ fi
 if [ $NO_COMPOSER -eq 0 ]; then
     echo -e "${YELLOW}[3/5] Installation des dépendances Composer (production)...${NC}"
     if command -v composer &> /dev/null; then
-        composer install --no-dev --optimize-autoloader --no-interaction
+        composer install --no-dev --optimize-autoloader --no-interaction --ignore-platform-req=ext-intl
         echo -e "${GREEN}      OK : dépendances installées${NC}"
     else
         echo -e "${RED}      WARN : composer non trouvé dans le PATH, dépendances non mises à jour${NC}"

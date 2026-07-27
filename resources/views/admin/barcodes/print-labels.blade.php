@@ -267,7 +267,7 @@
 
     <!-- Feuille de style @page dynamique -->
     <style id="page-style">
-        @page { size: 50mm 30mm; margin: 0; }
+        @page { size: 50mm 30mm landscape; margin: 0; }
     </style>
 </head>
 <body>
@@ -405,9 +405,12 @@ function applyFormat(key) {
     root.style.setProperty('--font-price', f.fp);
     root.style.setProperty('--font-sku',   f.fs);
 
-    // @page dynamique
+    // @page dynamique — forcer landscape si largeur > hauteur
+    const wNum = parseFloat(f.w);
+    const hNum = parseFloat(f.h);
+    const orientation = wNum > hNum ? 'landscape' : 'portrait';
     document.getElementById('page-style').textContent =
-        `@page { size: ${f.w} ${f.h}; margin: 0; }`;
+        `@page { size: ${f.w} ${f.h} ${orientation}; margin: 0; }`;
 
     rebuildLabels();
 }

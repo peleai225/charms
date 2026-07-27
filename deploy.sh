@@ -96,7 +96,7 @@ if [ $NO_NPM -eq 0 ]; then
     echo ""
 fi
 
-# === 5. Copie du build vers public_html ===
+# === 5. Copie du build + sw.js vers public_html ===
 echo -e "${YELLOW}[5/6] Synchronisation du build vers public_html...${NC}"
 if [ -d "public/build" ]; then
     cp -r public/build/ "$PUBLIC_HTML/"
@@ -104,6 +104,11 @@ if [ -d "public/build" ]; then
 else
     echo -e "${RED}      WARN : dossier public/build introuvable${NC}"
 fi
+# Stamp la version du SW avec le timestamp du déploiement pour invalider le cache
+BUILD_TS=$(date +%Y%m%d%H%M%S)
+sed "s/__BUILD__/${BUILD_TS}/" public/sw.js > "$PUBLIC_HTML/sw.js"
+cp public/sw.js "$PUBLIC_HTML/sw.js.src" 2>/dev/null || true
+echo -e "${GREEN}      OK : sw.js (v${BUILD_TS}) copié vers public_html${NC}"
 echo ""
 
 # === 6. Caches Laravel + migrations ===

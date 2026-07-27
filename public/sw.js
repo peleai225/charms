@@ -3,7 +3,7 @@
  * Version incrémentée à chaque déploiement pour invalider l'ancien cache.
  */
 
-const CACHE_VERSION = 'chamse-v1';
+const CACHE_VERSION = 'chamse-__BUILD__'; // remplacé par deploy.sh en prod
 const STATIC_CACHE  = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 

@@ -146,7 +146,15 @@ Route::get('/manifest.json', function () {
     $primaryColor = \App\Models\Setting::get('primary_color', '#6366f1');
     $favicon = \App\Models\Setting::get('favicon');
 
-    $iconBase = $favicon ? asset('storage/' . $favicon) : '/favicon.ico';
+    $icons = $favicon
+        ? [
+            ['src' => asset('storage/' . $favicon), 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any maskable'],
+            ['src' => asset('storage/' . $favicon), 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any maskable'],
+          ]
+        : [
+            ['src' => url('/pwa-icon/192'), 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any maskable'],
+            ['src' => url('/pwa-icon/512'), 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any maskable'],
+          ];
 
     return response()->json([
         'name' => $siteName,
@@ -160,12 +168,45 @@ Route::get('/manifest.json', function () {
         'scope' => '/',
         'lang' => 'fr',
         'categories' => ['shopping', 'business'],
-        'icons' => [
-            ['src' => $iconBase, 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any maskable'],
-            ['src' => $iconBase, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any maskable'],
-        ],
+        'icons' => $icons,
     ], 200, ['Content-Type' => 'application/manifest+json'])->setCache(['public' => true, 'max_age' => 86400]);
 })->name('manifest');
+
+Route::get('/pwa-icon/{size}', function (int $size) {
+    $size = in_array($size, [192, 512]) ? $size : 192;
+    $color = \App\Models\Setting::get('primary_color', '#ba0d5d');
+    $hex = ltrim($color, '#');
+    $r = hexdec(substr($hex, 0, 2));
+    $g = hexdec(substr($hex, 2, 2));
+    $b = hexdec(substr($hex, 4, 2));
+
+    $img = imagecreatetruecolor($size, $size);
+    $bg = imagecolorallocate($img, $r, $g, $b);
+    imagefill($img, 0, 0, $bg);
+
+    // Cercle blanc centré (lettre "S" stylisée)
+    $white = imagecolorallocate($img, 255, 255, 255);
+    $pad = (int)($size * 0.18);
+    imagefilledellipse($img, (int)($size / 2), (int)($size / 2), $size - $pad * 2, $size - $pad * 2, $white);
+
+    // Lettre centrale en couleur primaire
+    $textColor = imagecolorallocate($img, $r, $g, $b);
+    $font = 5; // police GD intégrée
+    $letter = strtoupper(substr(\App\Models\Setting::get('site_name', 'S'), 0, 1));
+    $fontW = imagefontwidth($font);
+    $fontH = imagefontheight($font);
+    $scale = (int)($size * 0.28 / $fontH);
+    $x = (int)(($size - $fontW * $scale) / 2);
+    $y = (int)(($size - $fontH * $scale) / 2);
+    imagestring($img, $font, $x, $y, $letter, $textColor);
+
+    ob_start();
+    imagepng($img);
+    $png = ob_get_clean();
+    imagedestroy($img);
+
+    return response($png, 200, ['Content-Type' => 'image/png', 'Cache-Control' => 'public, max-age=86400']);
+})->name('pwa.icon')->where('size', '[0-9]+');
 
 Route::get('/legal/{slug}', function (string $slug) {
     $pages = [

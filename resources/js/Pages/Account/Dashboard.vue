@@ -63,7 +63,7 @@ const quickLinks = [
                 <Link
                     v-for="order in stats.recent_orders"
                     :key="order.id"
-                    :href="`/mon-compte/commandes/${order.id}`"
+                    :href="`/mon-compte/commandes/${order.order_number}`"
                     class="flex items-center justify-between px-5 py-3.5 hover:bg-slate-50 transition"
                 >
                     <div class="flex items-center gap-3">

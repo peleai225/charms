@@ -29,3 +29,4 @@ public/fix-*.php
 public/*-cache.php
 public/*-vite.php
 public/*-production.php
+/public/build

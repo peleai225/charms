@@ -599,9 +599,9 @@ onUnmounted(() => {
                     </span>
                     <span>Panier</span>
                 </button>
-                <Link :href="userStore.isAuthenticated ? '/account' : '/login'"
+                <Link :href="userStore.isAuthenticated ? '/mon-compte' : '/connexion'"
                     class="flex flex-col items-center justify-center flex-1 gap-0.5 text-[10px] font-medium transition-colors"
-                    :class="$page.url.startsWith('/account') || $page.url.startsWith('/login') ? 'text-primary-600' : 'text-slate-500'">
+                    :class="$page.url.startsWith('/mon-compte') || $page.url.startsWith('/connexion') ? 'text-primary-600' : 'text-slate-500'">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                     <span>Compte</span>
                 </Link>

@@ -9,6 +9,8 @@ $attributesJson = json_encode($attributes->map(function($a) {
                 'id'         => $v->id,
                 'value'      => $v->value,
                 'color_code' => $v->color_code ?? null,
+                'image'      => $v->image ?? null,
+                'image_url'  => $v->image_url ?? null,
             ];
         })->values()->all(),
     ];
@@ -17,10 +19,9 @@ $productSkuJs = addslashes($product->sku);
 $bulkRoute    = route('admin.products.variants.bulk', $product);
 $variantsUrl  = url('admin/products/' . $product->id . '/variants');
 @endphp
-@push('styles')
+
 <script>
-function _registerVariantManager() {
-    window.Alpine.data('variantManager', function() {
+window.variantManagerData = function() {
         return {
             /* ── gestion inline des variantes existantes ── */
             saving: {},
@@ -273,9 +274,11 @@ function _registerVariantManager() {
                         const stockEl = document.getElementById('stock-badge-' + variantId);
                         if (stockEl && json.stock_quantity !== undefined) {
                             const q = json.stock_quantity;
-                            stockEl.textContent = q <= 0 ? 'Rupture' : q + ' pcs';
-                            stockEl.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold '
-                                + (q <= 0 ? 'bg-red-100 text-red-700' : q <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700');
+                            const icon = q <= 0 ? '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>'
+                                : (q <= 5 ? '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 3a9 9 0 110 18 9 9 0 010-18z"/></svg>' : '');
+                            stockEl.innerHTML = icon + (q <= 0 ? 'Rupture' : q + ' pcs');
+                            stockEl.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold '
+                                + (q <= 0 ? 'bg-red-100 text-red-700 ring-1 ring-red-200' : q <= 5 ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-200' : 'bg-green-100 text-green-700');
                         }
                         const priceEl = document.getElementById('price-badge-' + variantId);
                         if (priceEl && json.sale_price !== undefined) {
@@ -283,11 +286,24 @@ function _registerVariantManager() {
                         }
                         const activeEl = document.getElementById('active-badge-' + variantId);
                         if (activeEl && json.is_active !== undefined) {
-                            activeEl.textContent = json.is_active ? 'Active' : 'Inactive';
-                            activeEl.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold '
-                                + (json.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500');
+                            const activeIcon = json.is_active
+                                ? '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+                                : '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+                            activeEl.innerHTML = activeIcon + (json.is_active ? 'Active' : 'Inactive');
+                            activeEl.className = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold cursor-pointer hover:scale-105 active:scale-95 transition-all '
+                                + (json.is_active ? 'bg-green-100 text-green-700 ring-1 ring-green-200' : 'bg-gray-100 text-gray-500');
                         }
+                        // Animation ligne mise à jour
+                        const row = document.getElementById('variant-row-' + variantId);
+                        if (row) {
+                            row.classList.add('bg-green-50');
+                            setTimeout(() => row.classList.remove('bg-green-50'), 1000);
+                        }
+                    } else {
+                        alert(json.message || 'Erreur lors de la mise à jour');
                     }
+                } catch(e) {
+                    alert('Erreur réseau. Vérifiez votre connexion.');
                 } finally {
                     this.saving[variantId] = false;
                 }
@@ -315,13 +331,6 @@ function _registerVariantManager() {
                 }
             }
         };
-    });
-}
-// Alpine peut être déjà initialisé (module ES dans <head>) ou pas encore
-if (window.Alpine) {
-    _registerVariantManager();
-} else {
-    document.addEventListener('alpine:init', _registerVariantManager);
 }
 </script>
-@endpush
+

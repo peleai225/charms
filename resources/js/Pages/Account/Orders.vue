@@ -68,7 +68,7 @@ const goToPage = (p) => {
             <Link
                 v-for="order in orders.data"
                 :key="order.id"
-                :href="`/mon-compte/commandes/${order.id}`"
+                :href="`/mon-compte/commandes/${order.order_number}`"
                 class="block bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition p-4 sm:p-5"
             >
                 <div class="flex items-start justify-between gap-3">

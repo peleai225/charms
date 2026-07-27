@@ -100,15 +100,24 @@ const stars = computed(() => {
         <!-- Zone image -->
         <Link :href="`/produit/${product.slug}`" class="block relative overflow-hidden bg-slate-50" style="aspect-ratio: 1/1">
 
-            <!-- Image produit -->
+            <!-- Image produit principal -->
             <img
                 v-if="product.primary_image"
                 :src="`/storage/${product.primary_image}`"
                 :alt="product.name"
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                class="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
+                :class="{ 'group-hover:opacity-0': product.secondary_image || (product.images && product.images[1]) }"
                 loading="lazy"
             />
-            <div v-else class="w-full h-full flex items-center justify-center">
+            <!-- Image secondaire au hover si disponible -->
+            <img
+                v-if="product.secondary_image || (product.images && product.images[1])"
+                :src="`/storage/${product.secondary_image || product.images[1]}`"
+                :alt="`${product.name} survol`"
+                class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                loading="lazy"
+            />
+            <div v-if="!product.primary_image" class="w-full h-full flex items-center justify-center">
                 <svg class="w-14 h-14 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
@@ -116,10 +125,10 @@ const stars = computed(() => {
 
             <!-- Badge promo top-left -->
             <div class="absolute top-3 left-3 flex flex-col gap-1 z-10">
-                <span v-if="discount" class="px-2.5 py-1 bg-emerald-800 text-white text-xs font-bold rounded-full shadow-sm">
+                <span v-if="discount" class="px-2.5 py-1 bg-accent-600 text-white text-xs font-bold rounded-full shadow-sm">
                     {{ discount }}% off
                 </span>
-                <span v-if="product.is_new" class="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-full shadow-sm">
+                <span v-if="product.is_new" class="px-2.5 py-1 bg-primary-600 text-white text-xs font-bold rounded-full shadow-sm">
                     Nouveau
                 </span>
                 <span v-if="product.stock === 0" class="px-2.5 py-1 bg-slate-500 text-white text-xs font-bold rounded-full shadow-sm">
@@ -170,7 +179,7 @@ const stars = computed(() => {
                     :disabled="addingToCart"
                     class="w-9 h-9 rounded-full flex items-center justify-center shadow-md
                            hover:scale-110 transition-all duration-150 disabled:opacity-60"
-                    :class="inCart ? 'bg-emerald-600' : 'bg-white'"
+                    :class="inCart ? 'bg-primary-600' : 'bg-white'"
                     :title="inCart ? 'Déjà dans le panier' : 'Ajouter au panier'"
                 >
                     <svg v-if="!addingToCart" class="w-4 h-4" :class="inCart ? 'text-white' : 'text-slate-500'"
@@ -231,13 +240,13 @@ const stars = computed(() => {
             </div>
 
             <!-- Nom produit -->
-            <Link :href="`/produit/${product.slug}`" class="block text-sm font-semibold text-slate-800 hover:text-emerald-700 transition-colors line-clamp-2 leading-snug mb-2">
+            <Link :href="`/produit/${product.slug}`" class="block text-sm font-semibold text-slate-800 hover:text-primary-600 transition-colors line-clamp-2 leading-snug mb-2">
                 {{ product.name }}
             </Link>
 
             <!-- Prix -->
             <div class="flex items-center gap-2">
-                <span class="text-base font-bold" :class="discount ? 'text-emerald-700' : 'text-slate-900'">
+                <span class="text-base font-bold" :class="discount ? 'text-primary-600' : 'text-slate-900'">
                     {{ formatPrice(product.price) }}
                 </span>
                 <span v-if="product.compare_price" class="text-sm text-slate-400 line-through font-normal">
@@ -245,7 +254,7 @@ const stars = computed(() => {
                 </span>
 
                 <!-- Petit indicateur "dans le panier" discret -->
-                <span v-if="inCart" class="ml-auto flex items-center gap-0.5 text-[10px] text-emerald-600 font-semibold">
+                <span v-if="inCart" class="ml-auto flex items-center gap-0.5 text-[10px] text-primary-600 font-semibold">
                     <svg class="w-3 h-3 fill-current" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
                     Panier
                 </span>

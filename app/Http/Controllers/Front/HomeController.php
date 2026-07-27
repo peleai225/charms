@@ -12,20 +12,24 @@ use Inertia\Inertia;
 
 class HomeController extends Controller
 {
-    /**
-     * Affiche la page d'accueil
-     */
     public function index()
     {
-        // Catégories mises en avant (+ comptage produits actifs, prix mini par catégorie)
+        return Inertia::render('Home', $this->buildData());
+    }
+
+    public function indexV2()
+    {
+        return Inertia::render('HomeV2', $this->buildData());
+    }
+
+    private function buildData(): array
+    {
         $featuredCategories = Category::active()
             ->featured()
             ->roots()
             ->ordered()
             ->take(6)
-            ->withCount(['products' => function ($query) {
-                $query->active();
-            }])
+            ->withCount(['products' => fn($q) => $q->active()])
             ->get();
 
         if ($featuredCategories->isNotEmpty()) {
@@ -35,61 +39,44 @@ class HomeController extends Controller
                 ->selectRaw('category_id, MIN(sale_price) as min_sale_price')
                 ->pluck('min_sale_price', 'category_id');
 
-            $featuredCategories->each(function (Category $category) use ($minByCategory) {
-                $category->setAttribute(
-                    'min_product_price',
-                    $minByCategory[$category->id] ?? null
-                );
-            });
+            $featuredCategories->each(fn(Category $c) =>
+                $c->setAttribute('min_product_price', $minByCategory[$c->id] ?? null)
+            );
         }
 
-        // Produits mis en avant — avec fallback vers les plus récents si aucun marqué
-        // Ordre: par date de mise à jour décroissante (les plus récemment mis en vedette en premier)
         $featuredProducts = Product::active()
             ->featured()
             ->with(['images', 'category'])
+            ->withCount('variants')
             ->latest('updated_at')
             ->take(8)
             ->get();
 
-        // Fallback : si aucun produit n'est marqué "featured", prendre les 8 plus récents actifs
         if ($featuredProducts->isEmpty()) {
             $featuredProducts = Product::active()
                 ->with(['images', 'category'])
+                ->withCount('variants')
                 ->latest()
                 ->take(8)
                 ->get();
         }
 
-        // Nouveautés
         $newProducts = Product::active()
             ->new()
             ->with(['images', 'category'])
+            ->withCount('variants')
             ->latest()
             ->take(8)
             ->get();
 
-        // Promotions (produits avec compare_price)
         $saleProducts = Product::active()
             ->whereNotNull('compare_price')
             ->whereColumn('compare_price', '>', 'sale_price')
             ->with(['images', 'category'])
+            ->withCount('variants')
             ->take(8)
             ->get();
 
-        $activeCoupons = Coupon::where('is_active', true)
-            ->where(function ($q) {
-                $q->whereNull('starts_at')->orWhere('starts_at', '<=', now());
-            })
-            ->where(function ($q) {
-                $q->whereNull('expires_at')->orWhere('expires_at', '>=', now());
-            })
-            ->where('first_order_only', false)
-            ->whereNull('applicable_products')
-            ->take(3)
-            ->get();
-
-        // Avis clients approuvés (4-5 étoiles, avec customer)
         $reviews = Review::where('status', Review::STATUS_APPROVED)
             ->where('rating', '>=', 4)
             ->with('customer')
@@ -97,64 +84,72 @@ class HomeController extends Controller
             ->take(4)
             ->get();
 
-        $reviewStats = Review::where('status', Review::STATUS_APPROVED)->count() > 0
-            ? [
-                'count' => Review::where('status', Review::STATUS_APPROVED)->count(),
-                'avg'   => round(Review::where('status', Review::STATUS_APPROVED)->avg('rating'), 1),
-            ]
-            : null;
+        $approvedCount = Review::where('status', Review::STATUS_APPROVED)->count();
+        $reviewStats = $approvedCount > 0 ? [
+            'count' => $approvedCount,
+            'avg'   => round(Review::where('status', Review::STATUS_APPROVED)->avg('rating'), 1),
+        ] : null;
 
-        $formatProduct = function ($product) {
-            return [
-                'id'            => $product->id,
-                'name'          => $product->name,
-                'slug'          => $product->slug,
-                'price'         => $product->sale_price,
-                'compare_price' => $product->compare_price,
-                'stock'         => $product->stock_quantity,
-                'has_variants'  => $product->variants_count > 0 ?? false,
-                'is_new'        => (bool) $product->is_new,
-                'category_name' => $product->category?->name,
-                'primary_image' => $product->images->where('is_primary', true)->first()?->path
-                    ?? $product->images->first()?->path,
-            ];
-        };
+        $formatProduct = fn($p) => [
+            'id'            => $p->id,
+            'name'          => $p->name,
+            'slug'          => $p->slug,
+            'price'         => $p->sale_price,
+            'compare_price' => $p->compare_price,
+            'stock'         => $p->stock_quantity,
+            'has_variants'  => $p->variants_count > 0,
+            'is_new'        => (bool) $p->is_new,
+            'category_name' => $p->category?->name,
+            'primary_image' => $p->images->where('is_primary', true)->first()?->path
+                ?? $p->images->first()?->path,
+        ];
 
-        $categories = $featuredCategories->map(function ($category) {
-            return [
-                'id'                => $category->id,
-                'name'              => $category->name,
-                'slug'              => $category->slug,
-                'image'             => $category->image,
-                'products_count'    => $category->products_count,
-                'min_product_price' => $category->min_product_price,
-            ];
-        });
-
-        $reviewsData = $reviews->map(function ($review) {
-            return [
-                'id'           => $review->id,
-                'rating'       => $review->rating,
-                'body'         => $review->body,
-                'author'       => $review->customer
-                    ? $review->customer->first_name . ' ' . mb_substr($review->customer->last_name, 0, 1) . '.'
-                    : 'Client',
-                'created_at'   => $review->created_at->diffForHumans(),
-            ];
-        });
+        $mapBanner = fn($b) => [
+            'id'               => $b->id,
+            'title'            => $b->title,
+            'subtitle'         => $b->subtitle,
+            'description'      => $b->description,
+            'image'            => $b->image ? asset('storage/' . $b->image) : null,
+            'image_mobile'     => $b->image_mobile ? asset('storage/' . $b->image_mobile) : null,
+            'link'             => $b->link,
+            'button_text'      => $b->button_text,
+            'background_color' => $b->background_color,
+            'text_color'       => $b->text_color,
+        ];
 
         $whatsapp = \App\Models\Setting::get('social_whatsapp');
-        $whatsappNumber = $whatsapp ? preg_replace('/\D/', '', $whatsapp) : null;
 
-        return Inertia::render('Home', [
-            'featured_categories' => $categories,
-            'featured_products'   => $featuredProducts->map($formatProduct),
-            'new_products'        => $newProducts->map($formatProduct),
-            'sale_products'       => $saleProducts->map($formatProduct),
-            'reviews'             => $reviewsData,
-            'review_stats'        => $reviewStats,
-            'whatsapp_number'     => $whatsappNumber,
-        ]);
+        $homeBanners = \App\Models\Banner::active()
+            ->whereIn('position', ['home_hero', 'home_middle', 'home_bottom'])
+            ->orderBy('order')
+            ->get()
+            ->groupBy('position')
+            ->map(fn($group) => $group->map($mapBanner)->values()->all());
+
+        return [
+            'featured_categories' => $featuredCategories->map(fn($c) => [
+                'id'                => $c->id,
+                'name'              => $c->name,
+                'slug'              => $c->slug,
+                'image'             => $c->image,
+                'products_count'    => $c->products_count,
+                'min_product_price' => $c->min_product_price,
+            ]),
+            'featured_products' => $featuredProducts->map($formatProduct),
+            'new_products'      => $newProducts->map($formatProduct),
+            'sale_products'     => $saleProducts->map($formatProduct),
+            'reviews'           => $reviews->map(fn($r) => [
+                'id'         => $r->id,
+                'rating'     => $r->rating,
+                'body'       => $r->body,
+                'author'     => $r->customer
+                    ? $r->customer->first_name . ' ' . mb_substr($r->customer->last_name, 0, 1) . '.'
+                    : 'Client',
+                'created_at' => $r->created_at->diffForHumans(),
+            ]),
+            'review_stats'    => $reviewStats,
+            'whatsapp_number' => $whatsapp ? preg_replace('/\D/', '', $whatsapp) : null,
+            'banners'         => $homeBanners,
+        ];
     }
 }
-

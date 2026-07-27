@@ -34,31 +34,64 @@
                     $vOthers = $variant->attributeValues->filter(fn($v) => $v->attribute && $v->attribute->slug !== 'couleur')->values();
                     $variantLabel = $variant->name ?: ($vColor ? $vColor->value : 'Variante');
                 @endphp
-                <tr id="variant-row-{{ $variant->id }}" class="hover:bg-gray-50/60 transition-colors group">
+                <tr id="variant-row-{{ $variant->id }}"
+                    class="hover:bg-gray-50/60 transition-colors group relative"
+                    :class="saving[{{ $variant->id }}] ? 'bg-blue-50/30' : ''">
+
+                    {{-- Overlay état sauvegarde --}}
+                    <td colspan="7" x-show="saving[{{ $variant->id }}]" class="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 pointer-events-none">
+                        <div class="flex items-center justify-center h-full">
+                            <div class="flex items-center gap-2 px-3 py-1.5 bg-white rounded-lg shadow-sm border border-gray-200">
+                                <svg class="w-4 h-4 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                                </svg>
+                                <span class="text-[12px] font-medium text-gray-700">Enregistrement...</span>
+                            </div>
+                        </div>
+                    </td>
 
                     {{-- Identité --}}
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-2.5">
-                            <img id="variant-img-{{ $variant->id }}"
-                                 src="{{ $variant->image ? asset('storage/' . $variant->image) : '' }}"
-                                 class="w-9 h-9 rounded-lg object-cover border border-gray-200 flex-shrink-0 {{ $variant->image ? '' : 'hidden' }}">
-                            @if(!$variant->image)
-                                @if($vColor && $vColor->color_code)
-                                    <span id="variant-placeholder-{{ $variant->id }}" class="w-9 h-9 rounded-lg border border-gray-200 flex-shrink-0 inline-block" style="background:{{ $vColor->color_code }}"></span>
-                                @else
-                                    <span id="variant-placeholder-{{ $variant->id }}" class="w-9 h-9 rounded-lg bg-gray-100 border border-gray-200 flex-shrink-0 inline-block"></span>
+                            <div class="relative flex-shrink-0">
+                                <img id="variant-img-{{ $variant->id }}"
+                                     src="{{ $variant->image ? asset('storage/' . $variant->image) : '' }}"
+                                     class="w-9 h-9 rounded-lg object-cover border border-gray-200 flex-shrink-0 {{ $variant->image ? '' : 'hidden' }}">
+                                @if(!$variant->image)
+                                    @if($vColor && $vColor->color_code)
+                                        <span id="variant-placeholder-{{ $variant->id }}" class="w-9 h-9 rounded-lg border border-gray-200 flex-shrink-0 inline-block" style="background:{{ $vColor->color_code }}"></span>
+                                    @else
+                                        <span id="variant-placeholder-{{ $variant->id }}" class="w-9 h-9 rounded-lg bg-gray-100 border border-gray-200 flex-shrink-0 inline-block"></span>
+                                    @endif
+                                    {{-- Badge image manquante --}}
+                                    <div class="absolute -top-1 -right-1 w-3 h-3 bg-orange-400 rounded-full border-2 border-white"
+                                         title="Image manquante"></div>
                                 @endif
-                            @endif
-                            <div class="flex flex-wrap items-center gap-1 min-w-0">
-                                @if($vColor)
-                                    <span class="font-medium text-gray-900">{{ $vColor->value }}</span>
-                                @endif
-                                @foreach($vOthers as $av)
-                                    <span class="text-[11px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded whitespace-nowrap">{{ $av->value }}</span>
-                                @endforeach
-                                @if(!$vColor && $vOthers->isEmpty())
-                                    <span class="text-gray-600">{{ $variant->name ?: 'Variante' }}</span>
-                                @endif
+                            </div>
+                            <div class="flex flex-col gap-1 min-w-0">
+                                <div class="flex flex-wrap items-center gap-1">
+                                    @if($vColor)
+                                        <span class="font-medium text-gray-900">{{ $vColor->value }}</span>
+                                    @endif
+                                    @foreach($vOthers as $av)
+                                        <span class="text-[11px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded whitespace-nowrap">{{ $av->value }}</span>
+                                    @endforeach
+                                    @if(!$vColor && $vOthers->isEmpty())
+                                        <span class="text-gray-600">{{ $variant->name ?: 'Variante' }}</span>
+                                    @endif
+                                </div>
+                                {{-- Badges état inline --}}
+                                <div class="flex items-center gap-1">
+                                    @if(!$variant->is_active)
+                                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded text-[10px] font-medium">
+                                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                            </svg>
+                                            Inactive
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </td>
@@ -73,29 +106,50 @@
 
                     {{-- Stock inline --}}
                     <td class="px-4 py-3 text-center"
-                        x-data="{ editing: false, val: {{ $variant->stock_quantity }} }">
+                        x-data="{ editing: false, val: {{ $variant->stock_quantity }}, justSaved: false }">
                         <template x-if="!editing">
-                            <div class="flex items-center justify-center gap-1.5">
-                                <span id="stock-badge-{{ $variant->id }}"
-                                    class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold
-                                        {{ $variant->stock_quantity <= 0 ? 'bg-red-100 text-red-700' : ($variant->stock_quantity <= 5 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700') }}">
-                                    {{ $variant->stock_quantity <= 0 ? 'Rupture' : $variant->stock_quantity . ' pcs' }}
+                            <div class="flex flex-col items-center gap-1">
+                                <div class="flex items-center gap-1.5">
+                                    <span id="stock-badge-{{ $variant->id }}"
+                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold
+                                            {{ $variant->stock_quantity <= 0 ? 'bg-red-100 text-red-700 ring-1 ring-red-200' : ($variant->stock_quantity <= 5 ? 'bg-amber-100 text-amber-700 ring-1 ring-amber-200' : 'bg-green-100 text-green-700') }}">
+                                        @if($variant->stock_quantity <= 0)
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                            </svg>
+                                            Rupture
+                                        @elseif($variant->stock_quantity <= 5)
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 3a9 9 0 110 18 9 9 0 010-18z"/>
+                                            </svg>
+                                            {{ $variant->stock_quantity }} pcs
+                                        @else
+                                            {{ $variant->stock_quantity }} pcs
+                                        @endif
+                                    </span>
+                                    <button type="button" @click="editing = true"
+                                        class="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-blue-600 transition-opacity">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    </button>
+                                </div>
+                                <span x-show="justSaved" x-transition.opacity.duration.300ms
+                                    class="inline-flex items-center gap-1 text-[10px] text-green-600 font-medium">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    Sauvegardé
                                 </span>
-                                <button type="button" @click="editing = true"
-                                    class="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-orange-500 transition-opacity">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                                </button>
                             </div>
                         </template>
                         <template x-if="editing">
                             <div class="flex items-center justify-center gap-1">
                                 <input type="number" x-model.number="val" min="0"
-                                    class="w-16 h-7 px-2 text-[12px] border border-orange-300 rounded focus:outline-none focus:ring-1 focus:ring-orange-500 text-center"
-                                    @keydown.enter.prevent="patchVariant({{ $variant->id }}, { stock_quantity: val }); editing = false"
+                                    class="w-16 h-7 px-2 text-[12px] border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-center"
+                                    @keydown.enter.prevent="patchVariant({{ $variant->id }}, { stock_quantity: val }); editing = false; justSaved = true; setTimeout(() => justSaved = false, 2000)"
                                     @keydown.escape="editing = false"
                                     x-init="$nextTick(() => $el.focus())">
-                                <button type="button" @click="patchVariant({{ $variant->id }}, { stock_quantity: val }); editing = false"
-                                    class="w-7 h-7 flex items-center justify-center bg-orange-600 hover:bg-orange-700 text-white rounded">
+                                <button type="button" @click="patchVariant({{ $variant->id }}, { stock_quantity: val }); editing = false; justSaved = true; setTimeout(() => justSaved = false, 2000)"
+                                    class="w-7 h-7 flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white rounded shadow-sm">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                                 </button>
                                 <button type="button" @click="editing = false"
@@ -173,14 +227,27 @@
                     </td>
 
                     {{-- Statut toggle --}}
-                    <td class="px-4 py-3 text-center">
+                    <td class="px-4 py-3 text-center" x-data="{ toggleSaved: false }">
                         <button type="button"
                             id="active-badge-{{ $variant->id }}"
-                            @click="patchVariant({{ $variant->id }}, { is_active: document.getElementById('active-badge-{{ $variant->id }}').textContent.trim() !== 'Active' })"
-                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold cursor-pointer hover:opacity-75 transition-opacity
-                                {{ $variant->is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
+                            @click="patchVariant({{ $variant->id }}, { is_active: document.getElementById('active-badge-{{ $variant->id }}').textContent.trim() !== 'Active' }); toggleSaved = true; setTimeout(() => toggleSaved = false, 2000)"
+                            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold cursor-pointer hover:scale-105 active:scale-95 transition-all
+                                {{ $variant->is_active ? 'bg-green-100 text-green-700 ring-1 ring-green-200' : 'bg-gray-100 text-gray-500' }}">
+                            @if($variant->is_active)
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            @else
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            @endif
                             {{ $variant->is_active ? 'Active' : 'Inactive' }}
                         </button>
+                        <span x-show="toggleSaved" x-transition.opacity.duration.300ms
+                            class="block mt-1 text-[10px] text-green-600 font-medium">
+                            Mis à jour
+                        </span>
                     </td>
 
                     {{-- Actions : édition complète + suppression --}}
@@ -255,14 +322,30 @@
 
             {{-- Image --}}
             <div>
-                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Image</p>
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Image</p>
+                    <span x-show="!drawerImgPreview" class="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-50 text-orange-600 rounded-full text-[10px] font-medium">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                        Image manquante
+                    </span>
+                </div>
                 <div class="flex items-center gap-4">
-                    <div class="w-20 h-20 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:border-orange-300 transition-colors"
+                    <div class="relative w-20 h-20 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all group"
                          @click="$refs.drawerImg.click()">
                         <img x-show="drawerImgPreview" :src="drawerImgPreview" class="w-full h-full object-cover rounded-xl">
-                        <svg x-show="!drawerImgPreview" class="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
+                        <div x-show="!drawerImgPreview" class="flex flex-col items-center gap-1">
+                            <svg class="w-7 h-7 text-gray-300 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <span class="text-[9px] text-gray-400 group-hover:text-blue-500">Ajouter</span>
+                        </div>
+                        <div x-show="drawerImgPreview" class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                            </svg>
+                        </div>
                     </div>
                     <div class="flex-1">
                         <input id="drawer-img-input" x-ref="drawerImg" type="file" accept="image/*" class="hidden"
@@ -270,11 +353,16 @@
                                    const f = $event.target.files[0];
                                    if (f) { drawerImgFile = f; drawerImgPreview = URL.createObjectURL(f); }
                                ">
-                        <p class="text-[12px] text-gray-500">Cliquez pour changer l'image</p>
+                        <p class="text-[12px] text-gray-500 font-medium">Cliquez pour changer l'image</p>
                         <p class="text-[11px] text-gray-400 mt-0.5">JPEG, PNG, WEBP — max 5 Mo</p>
                         <button x-show="drawerImgPreview" type="button"
                             @click="drawerImgPreview = null; drawerImgFile = null; $refs.drawerImg.value = ''; editDrawer.data.image = null"
-                            class="mt-1 text-[11px] text-red-500 hover:text-red-600">Supprimer l'image</button>
+                            class="mt-1.5 inline-flex items-center gap-1 text-[11px] text-red-500 hover:text-red-600 font-medium">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            Supprimer l'image
+                        </button>
                     </div>
                 </div>
             </div>
@@ -303,17 +391,41 @@
 
             {{-- Stock --}}
             <div>
-                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Stock</p>
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">Stock</p>
+                    <span x-show="editDrawer.data.stock_quantity <= 0"
+                        class="inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-600 rounded-full text-[10px] font-medium">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                        Stock épuisé
+                    </span>
+                    <span x-show="editDrawer.data.stock_quantity > 0 && editDrawer.data.stock_quantity <= 5"
+                        class="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-600 rounded-full text-[10px] font-medium">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 3a9 9 0 110 18 9 9 0 010-18z"/>
+                        </svg>
+                        Stock faible
+                    </span>
+                    <span x-show="editDrawer.data.stock_quantity > 5"
+                        class="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-600 rounded-full text-[10px] font-medium">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        En stock
+                    </span>
+                </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-[11px] font-medium text-gray-600 mb-1">Quantité</label>
                         <input type="number" x-model.number="editDrawer.data.stock_quantity" min="0"
-                            class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            :class="editDrawer.data.stock_quantity <= 0 ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500'"
+                            class="w-full h-9 px-3 text-[13px] border rounded-lg focus:outline-none focus:ring-2 transition-colors">
                     </div>
                     <div>
                         <label class="block text-[11px] font-medium text-gray-600 mb-1">Seuil alerte</label>
                         <input type="number" x-model="editDrawer.data.stock_alert_threshold" min="0" placeholder="—"
-                            class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
             </div>
@@ -351,20 +463,35 @@
 
         </div>
 
-        <div class="flex-shrink-0 px-5 py-4 border-t border-gray-100 flex gap-3">
-            <button type="button" @click="saveEditDrawer()"
-                :disabled="editDrawer.saving"
-                class="flex-1 h-9 bg-orange-600 text-white text-[13px] font-semibold rounded-lg hover:bg-orange-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                <svg x-show="editDrawer.saving" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+        <div class="flex-shrink-0 px-5 py-4 border-t border-gray-100">
+            {{-- Message succès temporaire --}}
+            <div x-data="{ showSuccess: false }" x-show="showSuccess" x-transition.opacity.duration.300ms
+                class="mb-3 flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg text-[12px] text-green-700">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                <span x-text="editDrawer.saving ? 'Enregistrement...' : 'Enregistrer'"></span>
-            </button>
-            <button type="button" @click="editDrawer.open = false"
-                class="h-9 px-4 border border-gray-200 text-[13px] font-medium text-gray-600 rounded-lg hover:bg-gray-50 transition">
-                Annuler
-            </button>
+                <span class="font-medium">Variante enregistrée avec succès</span>
+            </div>
+
+            <div class="flex gap-3">
+                <button type="button" @click="saveEditDrawer()"
+                    :disabled="editDrawer.saving"
+                    class="flex-1 h-9 bg-blue-600 text-white text-[13px] font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm">
+                    <svg x-show="editDrawer.saving" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    </svg>
+                    <svg x-show="!editDrawer.saving" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span x-text="editDrawer.saving ? 'Enregistrement...' : 'Enregistrer'"></span>
+                </button>
+                <button type="button" @click="editDrawer.open = false"
+                    :disabled="editDrawer.saving"
+                    class="h-9 px-4 border border-gray-200 text-[13px] font-medium text-gray-600 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    Annuler
+                </button>
+            </div>
         </div>
     </div>
 </div>

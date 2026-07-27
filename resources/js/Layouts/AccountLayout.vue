@@ -65,7 +65,7 @@ const initials = computed(() => {
                         <!-- Header utilisateur -->
                         <div class="bg-slate-900 px-5 py-5">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-sm font-bold text-white shrink-0">
+                                <div class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-sm font-bold text-white shrink-0">
                                     {{ initials }}
                                 </div>
                                 <div class="min-w-0">

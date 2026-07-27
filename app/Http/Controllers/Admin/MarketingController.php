@@ -8,14 +8,44 @@ use App\Models\CustomerTag;
 use App\Models\MarketingAutomation;
 use App\Models\WhatsAppMessage;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class MarketingController extends Controller
 {
     public function campaigns()
     {
         $campaigns = Campaign::latest()->paginate(20);
-        $tags = CustomerTag::orderBy('name')->get();
-        return view('admin.marketing.campaigns', compact('campaigns', 'tags'));
+        $tags = CustomerTag::orderBy('name')
+            ->get()
+            ->map(fn($t) => [
+                'id'    => $t->id,
+                'name'  => $t->name,
+                'color' => $t->color,
+            ]);
+
+        $stats = [
+            'total'     => Campaign::count(),
+            'active'    => Campaign::where('status', 'active')->count(),
+            'sent'      => (int) Campaign::sum('sent_count'),
+            'delivered' => (int) Campaign::sum('delivered_count'),
+        ];
+
+        $campaignData = $campaigns->through(fn($c) => [
+            'id'               => $c->id,
+            'name'             => $c->name,
+            'type'             => $c->type,
+            'status'           => $c->status,
+            'recipients_count' => $c->recipients_count,
+            'sent_count'       => $c->sent_count,
+            'scheduled_at_fmt' => $c->scheduled_at?->format('d/m/Y H:i'),
+        ]);
+
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Marketing/Campaigns', [
+            'campaigns' => $campaignData,
+            'tags'      => $tags,
+            'stats'     => $stats,
+        ]);
     }
 
     public function storeCampaign(Request $request)
@@ -47,8 +77,23 @@ class MarketingController extends Controller
 
     public function automations()
     {
-        $automations = MarketingAutomation::latest()->get();
-        return view('admin.marketing.automations', compact('automations'));
+        $automations = MarketingAutomation::latest()
+            ->get()
+            ->map(fn($a) => [
+                'id'               => $a->id,
+                'name'             => $a->name,
+                'trigger'          => $a->trigger,
+                'channel'          => $a->channel,
+                'delay_hours'      => $a->delay_hours,
+                'is_active'        => $a->is_active,
+                'sent_count'       => $a->sent_count ?? 0,
+                'conversion_rate'  => $a->conversion_rate,
+            ]);
+
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Marketing/Automations', [
+            'automations' => $automations,
+        ]);
     }
 
     public function storeAutomation(Request $request)
@@ -82,17 +127,31 @@ class MarketingController extends Controller
 
     public function whatsappHistory()
     {
-        $messages = WhatsAppMessage::with(['customer', 'order'])
+        $messages = WhatsAppMessage::with('customer')
             ->latest()
             ->paginate(30);
 
         $stats = [
-            'total' => WhatsAppMessage::count(),
-            'sent' => WhatsAppMessage::where('status', 'sent')->count(),
+            'total'     => WhatsAppMessage::count(),
+            'sent'      => WhatsAppMessage::where('status', 'sent')->count(),
             'delivered' => WhatsAppMessage::where('status', 'delivered')->count(),
-            'pending' => WhatsAppMessage::where('status', 'pending')->count(),
+            'pending'   => WhatsAppMessage::where('status', 'pending')->count(),
         ];
 
-        return view('admin.marketing.whatsapp-history', compact('messages', 'stats'));
+        $messageData = $messages->through(fn($m) => [
+            'id'             => $m->id,
+            'phone'          => $m->phone,
+            'message'        => $m->message,
+            'type'           => $m->type,
+            'status'         => $m->status,
+            'customer_name'  => $m->customer?->full_name,
+            'created_at_fmt' => $m->created_at->format('d/m/Y H:i'),
+        ]);
+
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Marketing/WhatsappHistory', [
+            'messages' => $messageData,
+            'stats'    => $stats,
+        ]);
     }
 }

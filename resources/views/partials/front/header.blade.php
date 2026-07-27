@@ -169,8 +169,7 @@
                 </a>
 
                 {{-- Cart --}}
-                <button x-data="{ count: {{ \App\Models\Cart::getOrCreate(session()->getId(), auth()->user()?->customer)->items_count ?? 0 }} }"
-                        @cart-count-updated.window="count = $event.detail.count"
+                <button x-data="{ get count() { return window.Alpine?.store('cart')?.count ?? 0; } }"
                         @click="$dispatch('open-cart-drawer')"
                         class="relative w-9 h-9 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
                         aria-label="Ouvrir le panier">
@@ -179,7 +178,7 @@
                           x-transition:enter="transition ease-out duration-200"
                           x-transition:enter-start="opacity-0 scale-50"
                           x-transition:enter-end="opacity-100 scale-100"
-                          class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none"></span>
+                          class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-primary-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none"></span>
                 </button>
 
                 {{-- Account --}}

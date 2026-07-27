@@ -33,7 +33,7 @@
                 @if($customer && $orders->count() > 0)
                 <div class="space-y-4">
                     @foreach($orders as $order)
-                    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-blue-200 transition-colors">
+                    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-primary-200 transition-colors">
 
                         {{-- En-tête commande --}}
                         <div class="px-5 py-4 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -48,13 +48,13 @@
                                 <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold
                                     @if($order->status === 'delivered') bg-green-100 text-green-700
                                     @elseif($order->status === 'cancelled') bg-red-100 text-red-700
-                                    @elseif($order->status === 'shipped') bg-indigo-100 text-indigo-700
-                                    @elseif($order->status === 'processing') bg-blue-100 text-blue-700
+                                    @elseif($order->status === 'shipped') bg-primary-100 text-primary-700
+                                    @elseif($order->status === 'processing') bg-primary-100 text-primary-700
                                     @else bg-amber-100 text-amber-700 @endif">
                                     {{ $order->status_label }}
                                 </span>
                                 <a href="{{ route('account.orders.show', $order) }}"
-                                   class="text-sm text-blue-600 font-medium hover:text-blue-700 transition-colors">
+                                   class="text-sm text-primary-600 font-medium hover:text-primary-700 transition-colors">
                                     Détails
                                 </a>
                             </div>
@@ -118,7 +118,7 @@
                     <h3 class="text-lg font-semibold text-slate-900 mb-2">Vous n'avez pas encore passé de commande</h3>
                     <p class="text-slate-500 text-sm mb-6">Découvrez notre catalogue et trouvez ce qu'il vous faut.</p>
                     <a href="{{ route('shop.index') }}"
-                       class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                       class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition-colors">
                         Découvrir la boutique
                     </a>
                 </div>

@@ -80,65 +80,20 @@
     
     <!-- Couleurs dynamiques du thème (depuis Paramètres > Couleurs) -->
     <style>
+        /* Tailwind v4 lit --color-primary-* depuis :root pour générer bg-primary-600 etc.
+           On écrase ces variables directement — c'est la seule approche fiable en v4. */
         :root {
-            --color-primary: {{ $primaryColor }};
-            --color-primary-dark: color-mix(in srgb, {{ $primaryColor }} 85%, black);
-            --color-primary-darker: color-mix(in srgb, {{ $primaryColor }} 70%, black);
-            --color-primary-light: color-mix(in srgb, {{ $primaryColor }} 12%, white);
-            --color-primary-soft: color-mix(in srgb, {{ $primaryColor }} 6%, white);
-            --color-secondary: {{ $secondaryColor }};
-            --color-secondary-dark: color-mix(in srgb, {{ $secondaryColor }} 85%, black);
-            --color-secondary-light: color-mix(in srgb, {{ $secondaryColor }} 12%, white);
-            --color-accent: {{ $accentColor }};
-            --color-accent-dark: color-mix(in srgb, {{ $accentColor }} 85%, black);
-            --color-accent-light: color-mix(in srgb, {{ $accentColor }} 14%, white);
-            --color-accent-soft: color-mix(in srgb, {{ $accentColor }} 8%, white);
+            --color-primary-50:  color-mix(in srgb, {{ $primaryColor }}  6%, white);
+            --color-primary-100: color-mix(in srgb, {{ $primaryColor }} 12%, white);
+            --color-primary-200: color-mix(in srgb, {{ $primaryColor }} 22%, white);
+            --color-primary-300: color-mix(in srgb, {{ $primaryColor }} 40%, white);
+            --color-primary-400: color-mix(in srgb, {{ $primaryColor }} 65%, white);
+            --color-primary-500: color-mix(in srgb, {{ $primaryColor }} 90%, white);
+            --color-primary-600: {{ $primaryColor }};
+            --color-primary-700: color-mix(in srgb, {{ $primaryColor }} 85%, black);
+            --color-primary-800: color-mix(in srgb, {{ $primaryColor }} 70%, black);
+            --color-primary-900: color-mix(in srgb, {{ $primaryColor }} 55%, black);
         }
-
-        /* PRIMARY — Override Tailwind primary classes avec la couleur des paramètres */
-        .bg-primary-50  { background-color: var(--color-primary-soft) !important; }
-        .bg-primary-100 { background-color: var(--color-primary-light) !important; }
-        .bg-primary-500, .bg-primary-600 { background-color: var(--color-primary) !important; }
-        .bg-primary-700, .bg-primary-800 { background-color: var(--color-primary-dark) !important; }
-        .bg-primary-900, .bg-primary-950 { background-color: var(--color-primary-darker) !important; }
-        .text-primary-300 { color: color-mix(in srgb, var(--color-primary) 60%, white) !important; }
-        .text-primary-400 { color: color-mix(in srgb, var(--color-primary) 75%, white) !important; }
-        .text-primary-500, .text-primary-600 { color: var(--color-primary) !important; }
-        .text-primary-700, .text-primary-800 { color: var(--color-primary-dark) !important; }
-        .border-primary-100 { border-color: var(--color-primary-light) !important; }
-        .border-primary-200 { border-color: color-mix(in srgb, var(--color-primary) 22%, white) !important; }
-        .border-primary-500, .border-primary-600 { border-color: var(--color-primary) !important; }
-        .ring-primary-500, .ring-primary-600 { --tw-ring-color: var(--color-primary) !important; }
-        .hover\:bg-primary-50:hover { background-color: var(--color-primary-soft) !important; }
-        .hover\:bg-primary-500:hover, .hover\:bg-primary-600:hover { background-color: var(--color-primary) !important; }
-        .hover\:bg-primary-700:hover, .hover\:bg-primary-800:hover { background-color: var(--color-primary-dark) !important; }
-        .hover\:text-primary-500:hover, .hover\:text-primary-600:hover, .hover\:text-primary-700:hover { color: var(--color-primary) !important; }
-        .hover\:border-primary-500:hover, .hover\:border-primary-600:hover { border-color: var(--color-primary) !important; }
-        .from-primary-400 { --tw-gradient-from: color-mix(in srgb, var(--color-primary) 75%, white) !important; --tw-gradient-to: rgba(0,0,0,0) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
-        .from-primary-500, .from-primary-600 { --tw-gradient-from: var(--color-primary) !important; --tw-gradient-to: rgba(0,0,0,0) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
-        .from-primary-700 { --tw-gradient-from: var(--color-primary-dark) !important; --tw-gradient-to: rgba(0,0,0,0) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
-        .to-primary-500 { --tw-gradient-to: var(--color-primary) !important; }
-        .to-primary-700, .to-primary-800 { --tw-gradient-to: var(--color-primary-dark) !important; }
-        .via-primary-700, .via-primary-800 { --tw-gradient-via: var(--color-primary-dark) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to) !important; }
-        .shadow-primary-500\/25, .shadow-primary-500\/30, .shadow-primary-600\/25, .shadow-primary-600\/30, .shadow-primary-600\/40 { --tw-shadow-color: color-mix(in srgb, var(--color-primary) 30%, transparent) !important; }
-
-        /* ACCENT — Couleur d'accent (par défaut amber) */
-        .bg-accent-50  { background-color: var(--color-accent-soft) !important; }
-        .bg-accent-100 { background-color: var(--color-accent-light) !important; }
-        .bg-accent-500, .bg-accent-600 { background-color: var(--color-accent) !important; }
-        .bg-accent-700 { background-color: var(--color-accent-dark) !important; }
-        .text-accent-400 { color: color-mix(in srgb, var(--color-accent) 70%, white) !important; }
-        .text-accent-500, .text-accent-600 { color: var(--color-accent) !important; }
-        .text-accent-700, .text-accent-800 { color: var(--color-accent-dark) !important; }
-        .border-accent-200 { border-color: color-mix(in srgb, var(--color-accent) 25%, white) !important; }
-        .border-accent-500 { border-color: var(--color-accent) !important; }
-        .hover\:text-accent-500:hover, .hover\:text-accent-600:hover { color: var(--color-accent) !important; }
-        .hover\:bg-accent-600:hover { background-color: var(--color-accent) !important; }
-
-        /* SECONDARY */
-        .bg-secondary-500, .bg-secondary-600 { background-color: var(--color-secondary) !important; }
-        .text-secondary-500, .text-secondary-600 { color: var(--color-secondary) !important; }
-        .from-secondary-500, .from-secondary-600 { --tw-gradient-from: var(--color-secondary) !important; }
 
         @keyframes gradient { 0%,100% { background-position: 0% center; } 50% { background-position: 100% center; } }
         .animate-gradient { animation: gradient 6s ease infinite; }
@@ -267,7 +222,7 @@
                     'bg-green-50 border-green-200 text-green-800': notification.type === 'success',
                     'bg-red-50 border-red-200 text-red-800': notification.type === 'error',
                     'bg-amber-50 border-amber-200 text-amber-800': notification.type === 'warning',
-                    'bg-blue-50 border-blue-200 text-blue-800': notification.type === 'info'
+                    'bg-primary-50 border-primary-200 text-primary-800': notification.type === 'info'
                 }"
                 class="flex items-center gap-3 px-4 py-3 rounded-xl border shadow-md min-w-[calc(100vw-2rem)] sm:min-w-[300px]"
             >
@@ -290,7 +245,7 @@
         }" 
         x-show="!dismissed"
         x-transition
-        class="bg-blue-600 text-white relative overflow-hidden">
+        class="bg-primary-600 text-white relative overflow-hidden">
             <div class="absolute inset-0 opacity-10">
                 <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23ffffff\" fill-opacity=\"0.4\"%3E%3Cpath d=\"M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
             </div>
@@ -496,7 +451,7 @@
     @endif
 
     <!-- Main Content -->
-    <main class="min-h-screen">
+    <main class="min-h-screen pb-16 lg:pb-0">
         @yield('content')
     </main>
 
@@ -660,14 +615,14 @@
                 {{-- Android / Chrome --}}
                 <template x-if="platform === 'android'">
                     <div class="flex items-start gap-4">
-                        <div class="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+                        <div class="flex-shrink-0 w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center shadow-sm">
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                         </div>
                         <div class="flex-1 min-w-0">
                             <h3 class="text-sm font-bold text-slate-900">Installer l'application</h3>
                             <p class="text-xs text-slate-500 mt-0.5">Accès rapide depuis votre écran d'accueil, mode plein écran.</p>
                             <div class="flex items-center gap-2 mt-3">
-                                <button @click="installApp()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors duration-150">
+                                <button @click="installApp()" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors duration-150">
                                     Installer
                                 </button>
                                 <button @click="dismiss()" class="px-4 py-2 text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors">
@@ -684,14 +639,14 @@
                 {{-- iOS Safari --}}
                 <template x-if="platform === 'ios'">
                     <div class="flex items-start gap-4">
-                        <div class="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm">
+                        <div class="flex-shrink-0 w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center shadow-sm">
                             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                         </div>
                         <div class="flex-1 min-w-0">
                             <h3 class="text-sm font-bold text-slate-900">Installer l'application</h3>
                             <p class="text-xs text-slate-500 mt-1 leading-relaxed">
                                 Appuyez sur
-                                <svg class="inline w-4 h-4 text-blue-500 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                <svg class="inline w-4 h-4 text-primary-500 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                                 puis <strong>"Sur l'écran d'accueil"</strong>
                             </p>
                             <div class="mt-3">
@@ -785,5 +740,82 @@
         }
     </script>
     @endif
+
+    {{-- ── Bottom Nav Mobile (PWA) ───────────────────────────────────────────── --}}
+    @if(!request()->is('admin/*') && !request()->is('login') && !request()->is('register'))
+    <nav class="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-white/90 backdrop-blur-xl border-t border-slate-900/[0.07] shadow-[0_-1px_12px_rgba(0,0,0,0.07)]"
+         style="padding-bottom:env(safe-area-inset-bottom,0px)">
+        <div class="grid grid-cols-4 h-14">
+
+            {{-- Accueil --}}
+            <a href="{{ route('home') }}"
+               class="front-bnav-item {{ request()->routeIs('home') ? 'front-bnav-active' : '' }}">
+                <svg class="w-5 h-5" fill="{{ request()->routeIs('home') ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                <span>Accueil</span>
+            </a>
+
+            {{-- Boutique --}}
+            <a href="{{ route('shop.index') }}"
+               class="front-bnav-item {{ request()->routeIs('shop.*') ? 'front-bnav-active' : '' }}">
+                <svg class="w-5 h-5" fill="{{ request()->routeIs('shop.*') ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                </svg>
+                <span>Boutique</span>
+            </a>
+
+            {{-- Panier --}}
+            <button x-data="{ get count() { return window.Alpine?.store('cart')?.count ?? 0; } }"
+                    @click="$dispatch('open-cart-drawer')"
+                    class="front-bnav-item relative">
+                <div class="relative">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <span x-show="count > 0" x-text="count"
+                          class="absolute -top-1.5 -right-1.5 w-4 h-4 bg-primary-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none"></span>
+                </div>
+                <span>Panier</span>
+            </button>
+
+            {{-- Compte --}}
+            @auth
+            <a href="{{ route('account.dashboard') }}"
+               class="front-bnav-item {{ request()->routeIs('account.*') ? 'front-bnav-active' : '' }}">
+                <svg class="w-5 h-5" fill="{{ request()->routeIs('account.*') ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+                <span>Compte</span>
+            </a>
+            @else
+            <a href="{{ route('login') }}"
+               class="front-bnav-item {{ request()->routeIs('login') ? 'front-bnav-active' : '' }}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                </svg>
+                <span>Connexion</span>
+            </a>
+            @endauth
+
+        </div>
+    </nav>
+    <style>
+        .front-bnav-item {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 3px; font-size: 10px; font-weight: 600; color: #94a3b8;
+            transition: color 0.2s; -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation; user-select: none; cursor: pointer;
+            border: none; background: none; width: 100%;
+        }
+        .front-bnav-item:active { transform: scale(0.93); }
+        .front-bnav-active { color: var(--color-primary-600) !important; }
+        @supports (backdrop-filter: blur(20px)) {
+            .front-bnav-item svg { transition: transform 0.2s; }
+            .front-bnav-active svg { transform: scale(1.1); }
+        }
+    </style>
+    @endif
+
 </body>
 </html>

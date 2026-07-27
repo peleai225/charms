@@ -8,26 +8,56 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::with('parent', 'children')
+        Inertia::setRootView('layouts.admin-inertia');
+
+        $categories = Category::with('children.children')
             ->withCount('products')
             ->ordered()
             ->get();
 
-        // Organiser en arbre
-        $tree = $categories->whereNull('parent_id');
+        $tree = $categories->whereNull('parent_id')->values();
 
-        return view('admin.categories.index', compact('categories', 'tree'));
+        $mapCat = fn($c) => [
+            'id'             => $c->id,
+            'name'           => $c->name,
+            'slug'           => $c->slug,
+            'image'          => $c->image,
+            'is_active'      => $c->is_active,
+            'is_featured'    => $c->is_featured,
+            'parent_id'      => $c->parent_id,
+            'order'          => $c->order,
+            'products_count' => $c->products_count,
+            'description'    => $c->description,
+        ];
+
+        $treeData = $tree->map(function ($cat) use ($mapCat) {
+            $data = $mapCat($cat);
+            $data['children'] = ($cat->children ?? collect())->map(function ($child) use ($mapCat) {
+                $c = $mapCat($child);
+                $c['children'] = ($child->children ?? collect())->map($mapCat)->values()->all();
+                return $c;
+            })->values()->all();
+            return $data;
+        })->values();
+
+        $allFlat = $categories->map($mapCat)->values();
+
+        return Inertia::render('Admin/Categories/Index', [
+            'categories' => $allFlat,
+            'tree'       => $treeData,
+        ]);
     }
 
     public function create()
     {
-        $categories = Category::whereNull('parent_id')->ordered()->get();
-        return view('admin.categories.create', compact('categories'));
+        // Redirige vers index (création via modal inline)
+        return redirect()->route('admin.categories.index');
     }
 
     public function store(Request $request)
@@ -69,12 +99,8 @@ class CategoryController extends Controller
 
     public function edit(Category $category)
     {
-        $categories = Category::whereNull('parent_id')
-            ->where('id', '!=', $category->id)
-            ->ordered()
-            ->get();
-
-        return view('admin.categories.edit', compact('category', 'categories'));
+        // Édition via modal dans Index.vue
+        return redirect()->route('admin.categories.index');
     }
 
     public function update(Request $request, Category $category)

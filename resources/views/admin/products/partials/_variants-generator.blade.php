@@ -264,9 +264,22 @@
                                             </div>
                                         </td>
                                         <td class="px-3 py-2.5">
-                                            <input type="text" x-model="row.sku"
-                                                :disabled="row.remove"
-                                                class="w-full h-7 px-2 text-[12px] font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-500 disabled:bg-gray-50">
+                                            <div class="relative"
+                                                 x-data="{
+                                                     isDuplicate: false,
+                                                     init() {
+                                                         this.$watch('row.sku', () => {
+                                                             const skus = $root.generatedRows.map(r => r.sku.trim().toUpperCase()).filter(s => s);
+                                                             this.isDuplicate = skus.filter(s => s === row.sku.trim().toUpperCase()).length > 1;
+                                                         });
+                                                     }
+                                                 }">
+                                                <input type="text" x-model="row.sku"
+                                                    :disabled="row.remove"
+                                                    :class="isDuplicate && !row.remove ? 'border-red-300 bg-red-50 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500'"
+                                                    class="w-full h-7 px-2 text-[12px] font-mono border rounded-lg focus:outline-none focus:ring-1 disabled:bg-gray-50 transition-colors">
+                                                <div x-show="isDuplicate && !row.remove" class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                                            </div>
                                         </td>
                                         <td class="px-3 py-2.5">
                                             <input type="text" x-model="row.barcode" placeholder="—"
@@ -314,28 +327,56 @@
                         </table>
                     </div>
 
-                    {{-- Message d'erreur bulk --}}
-                    <template x-if="bulkError">
-                        <div class="mt-3 flex items-start gap-2 px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg text-[12px] text-red-700">
-                            <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                            </svg>
-                            <span x-text="bulkError"></span>
-                        </div>
-                    </template>
+                    {{-- Messages validation --}}
+                    <div class="mt-3 space-y-2">
+                        {{-- Message d'erreur bulk --}}
+                        <template x-if="bulkError">
+                            <div class="flex items-start gap-2 px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg text-[12px] text-red-700 animate-pulse">
+                                <svg class="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                </svg>
+                                <span x-text="bulkError"></span>
+                            </div>
+                        </template>
+
+                        {{-- Alerte SKU dupliqués --}}
+                        <template x-if="generatedRows.filter(r => !r.remove).length > 0">
+                            <div x-data="{
+                                hasDuplicates: false,
+                                init() {
+                                    this.$watch('$root.generatedRows', () => {
+                                        const skus = $root.generatedRows.filter(r => !r.remove).map(r => r.sku.trim().toUpperCase()).filter(s => s);
+                                        this.hasDuplicates = skus.length !== new Set(skus).size;
+                                    }, { deep: true });
+                                }
+                            }">
+                                <div x-show="hasDuplicates" x-transition.opacity
+                                    class="flex items-start gap-2 px-3 py-2.5 bg-orange-50 border border-orange-200 rounded-lg text-[12px] text-orange-700">
+                                    <svg class="w-4 h-4 text-orange-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 3a9 9 0 110 18 9 9 0 010-18z"/>
+                                    </svg>
+                                    <span class="font-medium">Attention : certains SKU sont dupliqués (point rouge). Corrigez-les avant de créer.</span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
 
                     <div class="flex items-center gap-3 mt-4">
                         <button type="button" @click="submitBulk()"
                             :disabled="bulkSubmitting || generatedRows.filter(r => !r.remove).length === 0"
-                            class="h-9 px-6 bg-orange-600 text-white text-[13px] font-semibold rounded-lg hover:bg-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                            class="h-9 px-6 bg-blue-600 text-white text-[13px] font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm">
                             <svg x-show="bulkSubmitting" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                             </svg>
-                            <span x-text="bulkSubmitting ? 'Création...' : 'Créer ' + generatedRows.filter(r => !r.remove).length + ' variante(s)'"></span>
+                            <svg x-show="!bulkSubmitting" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            <span x-text="bulkSubmitting ? 'Création en cours...' : 'Créer ' + generatedRows.filter(r => !r.remove).length + ' variante(s)'"></span>
                         </button>
-                        <button type="button" @click="generatedRows = []"
-                            class="h-9 px-4 border border-gray-200 text-[13px] font-medium text-gray-600 rounded-lg hover:bg-gray-50 transition">
+                        <button type="button" @click="generatedRows = []; bulkError = null"
+                            :disabled="bulkSubmitting"
+                            class="h-9 px-4 border border-gray-200 text-[13px] font-medium text-gray-600 rounded-lg hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed">
                             Réinitialiser
                         </button>
                     </div>

@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\PosService;
+use App\Services\ThermalPrinterService;
 use App\Models\Order;
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ScannerController extends Controller
 {
@@ -17,9 +19,13 @@ class ScannerController extends Controller
      */
     public function index()
     {
+        Inertia::setRootView('layouts.admin-inertia');
+
         $receiptAutoPrint = Setting::get('pos_receipt_auto_print', '0') === '1';
 
-        return view('admin.scanner.index', compact('receiptAutoPrint'));
+        return Inertia::render('Admin/Scanner/Index', [
+            'receiptAutoPrint' => $receiptAutoPrint,
+        ]);
     }
 
     /**
@@ -141,6 +147,86 @@ class ScannerController extends Controller
         $amountReceived = (float) request('amount_received', $order->total);
 
         return view('admin.scanner.receipt', compact('order', 'change', 'amountReceived'));
+    }
+
+    /**
+     * Retourne le reçu au format JSON ESC/POS (pour imprimante thermique)
+     */
+    public function thermalReceipt(Order $order)
+    {
+        $order->loadMissing(['items.product']);
+
+        $change = (float) request('change', 0);
+        $amountReceived = (float) request('amount_received', $order->total);
+
+        $service = new ThermalPrinterService();
+        $receipt = $service->generateReceipt($order, [
+            'change'          => $change,
+            'amount_received' => $amountReceived,
+        ]);
+
+        return response()->json($receipt)
+            ->header('Content-Disposition', 'attachment; filename="receipt-' . $order->order_number . '.json"');
+    }
+
+    /**
+     * Retourne le reçu en texte brut (debug / imprimante série)
+     */
+    public function textReceipt(Order $order)
+    {
+        $order->loadMissing(['items.product']);
+
+        $change = (float) request('change', 0);
+        $amountReceived = (float) request('amount_received', $order->total);
+
+        $service = new ThermalPrinterService();
+        $receipt = $service->generateReceipt($order, [
+            'change'          => $change,
+            'amount_received' => $amountReceived,
+        ]);
+
+        return response($service->toPlainText($receipt), 200)
+            ->header('Content-Type', 'text/plain; charset=UTF-8')
+            ->header('Content-Disposition', 'attachment; filename="receipt-' . $order->order_number . '.txt"');
+    }
+
+    /**
+     * Envoie le reçu directement à l'imprimante réseau (ESC/POS TCP)
+     */
+    public function printDirect(Order $order, Request $request)
+    {
+        $printerEnabled = Setting::get('pos_printer_enabled', '0') === '1';
+        if (!$printerEnabled) {
+            return response()->json(['success' => false, 'message' => "L'impression directe est désactivée dans les paramètres."]);
+        }
+
+        $ip   = Setting::get('pos_printer_ip', '');
+        $port = (int) Setting::get('pos_printer_port', 9100);
+
+        if (!$ip) {
+            return response()->json(['success' => false, 'message' => "Adresse IP de l'imprimante non configurée."]);
+        }
+
+        $order->loadMissing(['items.product']);
+
+        $change         = (float) $request->get('change', 0);
+        $amountReceived = (float) $request->get('amount_received', $order->total);
+
+        $service = new ThermalPrinterService();
+        $receipt = $service->generateReceipt($order, [
+            'change'          => $change,
+            'amount_received' => $amountReceived,
+        ]);
+
+        config(['pos.printer_port' => $port, 'pos.cash_drawer' => Setting::get('pos_cash_drawer', '0') === '1']);
+
+        $error = $service->printDirectly($receipt, $ip);
+
+        if ($error !== null) {
+            return response()->json(['success' => false, 'message' => $error]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Reçu envoyé à l\'imprimante.']);
     }
 
     /**

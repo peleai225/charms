@@ -38,7 +38,7 @@
                 <div class="flex items-center justify-between mb-5">
                     <h2 class="font-semibold text-slate-900">Adresses de livraison</h2>
                     <button type="button" @click="showModal = true"
-                        class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                        class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
@@ -49,7 +49,7 @@
                 @if($addresses->count() > 0)
                 <div class="grid sm:grid-cols-2 gap-4">
                     @foreach($addresses as $address)
-                    <div class="bg-white rounded-2xl border border-slate-200 p-5 relative hover:border-blue-200 transition-colors">
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 relative hover:border-primary-200 transition-colors">
                         @if($address->is_default)
                         <span class="absolute top-4 right-4 inline-flex px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
                             Par défaut
@@ -72,7 +72,7 @@
                         </div>
 
                         <div class="mt-4 pt-3 border-t border-slate-100 flex items-center gap-3">
-                            <button type="button" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                            <button type="button" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
                                 Modifier
                             </button>
                             @if(!$address->is_default)
@@ -101,7 +101,7 @@
 
                     {{-- Card ajouter --}}
                     <button type="button" @click="showModal = true"
-                        class="bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 p-5 flex flex-col items-center justify-center gap-2 hover:border-blue-400 hover:bg-blue-50 transition-colors text-slate-400 hover:text-blue-600 min-h-[140px]">
+                        class="bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 p-5 flex flex-col items-center justify-center gap-2 hover:border-primary-400 hover:bg-primary-50 transition-colors text-slate-400 hover:text-primary-600 min-h-[140px]">
                         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/>
                         </svg>
@@ -119,7 +119,7 @@
                     <h3 class="text-lg font-semibold text-slate-900 mb-2">Aucune adresse enregistrée</h3>
                     <p class="text-slate-500 text-sm mb-5">Ajoutez une adresse pour faciliter vos prochaines commandes.</p>
                     <button type="button" @click="showModal = true"
-                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
@@ -153,19 +153,19 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Prénom <span class="text-red-500">*</span></label>
                         <input type="text" name="first_name" required
-                            class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                            class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Nom <span class="text-red-500">*</span></label>
                         <input type="text" name="last_name" required
-                            class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                            class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Adresse <span class="text-red-500">*</span></label>
                     <input type="text" name="address" required
-                        class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
                         placeholder="Rue, quartier, numéro...">
                 </div>
 
@@ -173,12 +173,12 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Code postal <span class="text-red-500">*</span></label>
                         <input type="text" name="postal_code" required value="00225"
-                            class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                            class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Ville <span class="text-red-500">*</span></label>
                         <input type="text" name="city" required
-                            class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
                             placeholder="Abidjan">
                     </div>
                 </div>
@@ -186,7 +186,7 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Pays <span class="text-red-500">*</span></label>
                     <select name="country" required
-                        class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white">
+                        class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 bg-white">
                         <option value="CI" selected>Côte d'Ivoire</option>
                         <option value="SN">Sénégal</option>
                         <option value="ML">Mali</option>
@@ -199,13 +199,13 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
                     <input type="tel" name="phone"
-                        class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
                         placeholder="+225 07 00 00 00 00">
                 </div>
 
                 <label class="flex items-center gap-2.5 cursor-pointer">
                     <input type="checkbox" name="is_default" value="1"
-                        class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        class="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500">
                     <span class="text-sm text-slate-600">Définir comme adresse par défaut</span>
                 </label>
             </form>
@@ -216,7 +216,7 @@
                     Annuler
                 </button>
                 <button type="submit" form="addAddressForm"
-                    class="px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                    class="px-5 py-2 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition-colors">
                     Enregistrer
                 </button>
             </div>

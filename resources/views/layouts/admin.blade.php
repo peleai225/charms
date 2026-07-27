@@ -469,7 +469,7 @@
             </div>
 
             {{-- Content --}}
-            <main class="flex-1 overflow-y-auto p-6">
+            <main class="flex-1 overflow-y-auto p-6 pb-24 lg:pb-6">
                 @yield('content')
             </main>
         </div>
@@ -489,6 +489,19 @@
     </script>
 
     @livewireScripts
+    <script>
+        // Garantir que variantManagerData est initialisé par Alpine si défini
+        document.addEventListener('livewire:initialized', function() {
+            if (window.Alpine && window.variantManagerData) {
+                document.querySelectorAll('[x-data="variantManagerData()"]').forEach(function(el) {
+                    if (!el._x_dataStack) {
+                        window.Alpine.initTree(el);
+                    }
+                });
+            }
+        });
+    </script>
     @stack('scripts')
+    @include('components.admin.mobile-bottom-nav')
 </body>
 </html>

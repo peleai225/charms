@@ -1,0 +1,171 @@
+<script setup>
+import { useForm } from '@inertiajs/vue3'
+
+const form = useForm({
+    first_name:   '',
+    last_name:    '',
+    email:        '',
+    phone:        '',
+    birth_date:   '',
+    gender:       '',
+    status:       'active',
+    notes:        '',
+    address_line1: '',
+    city:          '',
+    postal_code:   '',
+    country:       'MA',
+    address_phone: '',
+})
+
+function submit() {
+    form.post(route('admin.customers.store'))
+}
+</script>
+
+<template>
+    <div class="p-6 space-y-5 max-w-4xl">
+
+        <!-- Header -->
+        <div class="flex items-center gap-3">
+            <a :href="route('admin.customers.index')"
+                class="p-2 hover:bg-gray-100 rounded-lg transition text-gray-500 hover:text-gray-900">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <h1 class="text-xl font-bold text-gray-900">Nouveau client</h1>
+        </div>
+
+        <!-- Erreurs globales -->
+        <div v-if="form.hasErrors" class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
+            <p class="font-semibold mb-1">Veuillez corriger les erreurs suivantes :</p>
+            <ul class="list-disc list-inside space-y-0.5">
+                <li v-for="(error, field) in form.errors" :key="field">{{ error }}</li>
+            </ul>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+            <!-- Colonne principale -->
+            <div class="lg:col-span-2 space-y-5">
+
+                <!-- Infos personnelles -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-4">
+                    <h2 class="text-sm font-semibold text-gray-900">Informations personnelles</h2>
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-xs font-medium text-gray-700 block mb-1.5">Prénom <span class="text-red-500">*</span></label>
+                            <input v-model="form.first_name" type="text"
+                                :class="form.errors.first_name ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:ring-orange-500'"
+                                class="w-full h-9 px-3 text-[13px] border rounded-lg focus:outline-none focus:ring-2">
+                            <p v-if="form.errors.first_name" class="mt-1 text-xs text-red-600">{{ form.errors.first_name }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-700 block mb-1.5">Nom <span class="text-red-500">*</span></label>
+                            <input v-model="form.last_name" type="text"
+                                :class="form.errors.last_name ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:ring-orange-500'"
+                                class="w-full h-9 px-3 text-[13px] border rounded-lg focus:outline-none focus:ring-2">
+                            <p v-if="form.errors.last_name" class="mt-1 text-xs text-red-600">{{ form.errors.last_name }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-700 block mb-1.5">Email <span class="text-red-500">*</span></label>
+                            <input v-model="form.email" type="email"
+                                :class="form.errors.email ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:ring-orange-500'"
+                                class="w-full h-9 px-3 text-[13px] border rounded-lg focus:outline-none focus:ring-2">
+                            <p v-if="form.errors.email" class="mt-1 text-xs text-red-600">{{ form.errors.email }}</p>
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-700 block mb-1.5">Téléphone</label>
+                            <input v-model="form.phone" type="tel"
+                                class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-700 block mb-1.5">Date de naissance</label>
+                            <input v-model="form.birth_date" type="date"
+                                class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-700 block mb-1.5">Genre</label>
+                            <select v-model="form.gender"
+                                class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                <option value="">Non précisé</option>
+                                <option value="male">Homme</option>
+                                <option value="female">Femme</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Adresse principale -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-4">
+                    <h2 class="text-sm font-semibold text-gray-900">Adresse principale <span class="text-gray-400 font-normal text-xs">(optionnelle)</span></h2>
+                    <div class="grid sm:grid-cols-2 gap-4">
+                        <div class="sm:col-span-2">
+                            <label class="text-xs font-medium text-gray-700 block mb-1.5">Adresse</label>
+                            <input v-model="form.address_line1" type="text"
+                                class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-700 block mb-1.5">Ville</label>
+                            <input v-model="form.city" type="text"
+                                class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-700 block mb-1.5">Code postal</label>
+                            <input v-model="form.postal_code" type="text"
+                                class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-700 block mb-1.5">Pays</label>
+                            <select v-model="form.country"
+                                class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                <option value="MA">Maroc</option>
+                                <option value="FR">France</option>
+                                <option value="BE">Belgique</option>
+                                <option value="CH">Suisse</option>
+                                <option value="LU">Luxembourg</option>
+                                <option value="DE">Allemagne</option>
+                                <option value="ES">Espagne</option>
+                                <option value="GB">Royaume-Uni</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-medium text-gray-700 block mb-1.5">Téléphone adresse</label>
+                            <input v-model="form.address_phone" type="tel"
+                                class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-2">
+                    <h2 class="text-sm font-semibold text-gray-900">Notes internes</h2>
+                    <textarea v-model="form.notes" rows="3" placeholder="Notes visibles uniquement par l'équipe…"
+                        class="w-full px-3 py-2 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"></textarea>
+                </div>
+
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-5">
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 space-y-4">
+                    <h2 class="text-sm font-semibold text-gray-900">Statut du compte</h2>
+                    <div>
+                        <label class="text-xs font-medium text-gray-700 block mb-1.5">Statut</label>
+                        <select v-model="form.status"
+                            class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="active">Actif</option>
+                            <option value="inactive">Inactif</option>
+                        </select>
+                    </div>
+                    <button @click="submit" :disabled="form.processing"
+                        class="w-full h-9 flex items-center justify-center bg-gray-900 text-white text-[13px] font-semibold rounded-lg hover:bg-gray-800 transition disabled:opacity-50">
+                        <svg v-if="form.processing" class="w-4 h-4 animate-spin mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                        Créer le client
+                    </button>
+                    <a :href="route('admin.customers.index')"
+                        class="block text-center text-xs text-gray-500 hover:text-gray-700 transition">Annuler</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</template>

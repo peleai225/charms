@@ -320,13 +320,24 @@
 
     <div class="cp-separator"></div>
 
+    <div class="cp-group">
+        <label>Modèle</label>
+        <select id="model-select" title="Choisir le modèle exact de votre NIIMBOT">
+            <option value="B1">B1 / B1 Pro / M2-H</option>
+            <option value="B21_V1">B21 / B21 Pro</option>
+            <option value="D11_V1">D11 / D11S</option>
+            <option value="D110">D110 / D110S</option>
+            <option value="D110M_V4">D110M / B3S Pro (300 dpi)</option>
+        </select>
+    </div>
+
     <button id="btn-bt" class="btn-bt" onclick="printBluetooth()" title="Envoyer directement au NIIMBOT via Bluetooth">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7l8 5-8 5V7z M16 12h.01"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.343 6.343A8 8 0 1117.657 17.657 8 8 0 016.343 6.343z"/></svg>
         Envoyer NIIMBOT
     </button>
     <button class="btn-print" onclick="window.print()">
         <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-        Fallback
+        Imprimer (PDF)
     </button>
     <button class="btn-close" onclick="window.close()">Fermer</button>
 </div>
@@ -483,8 +494,14 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <!-- ════════════════════════════════════════════════════════
-     WEB BLUETOOTH — NIIMBOT ENGINE
+     WEB BLUETOOTH — NIIMBOT ENGINE (niimbluelib @0.0.1-alpha.39)
 ══════════════════════════════════════════════════════════ -->
+
+<!-- html2canvas : rendu DOM → canvas bitmap -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<!-- niimbluelib : driver NIIMBOT officiel (reverse-engineered, MIT) -->
+<script src="https://unpkg.com/@mmote/niimbluelib@0.0.1-alpha.39/dist/umd/niimbluelib.min.js"></script>
+
 <script>
 /* ─── Toast helpers ─────────────────────────────────────────────────── */
 let _toastTimer = null;
@@ -506,315 +523,120 @@ function hideToast() {
     document.getElementById('bt-toast').style.display = 'none';
 }
 
-/* ─── niimblue protocol constants ──────────────────────────────────── */
-// Tous les profils de service connus (varie selon modèle/firmware)
-const NB_PROFILES = [
-    // B21 / B3S / B203
-    {
-        service: '0000ff00-0000-1000-8000-00805f9b34fb',
-        write:   '0000ff02-0000-1000-8000-00805f9b34fb',
-        notify:  '0000ff01-0000-1000-8000-00805f9b34fb',
-    },
-    // D11 / D110 (Nordic UART-like)
-    {
-        service: 'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
-        write:   'bef8d6c9-9c21-4c9e-b632-bd58c1009f9f',
-        notify:  'bef8d6c9-9c21-4c9e-b632-bd58c1009f9f',
-    },
-    // Variante ancienne firmware
-    {
-        service: '0000ae30-0000-1000-8000-00805f9b34fb',
-        write:   '0000ae01-0000-1000-8000-00805f9b34fb',
-        notify:  '0000ae02-0000-1000-8000-00805f9b34fb',
-    },
-];
-// Remplis dynamiquement après découverte
-let NB_SERVICE = null, NB_CHAR_WRITE = null, NB_CHAR_NOTIFY = null;
+/* ─── État client niimbluelib ───────────────────────────────────────── */
+let _client = null;
 
-/* Commandes protocole NIIMBOT (reverse-engineered) */
-const CMD = {
-    GET_INFO:          0x40,
-    SET_LABEL_TYPE:    0x23,
-    SET_LABEL_DENSITY: 0x21,
-    SET_DIMENSIONS:    0x13,
-    START_PRINT:       0x01,
-    START_PAGE_PRINT:  0x03,
-    END_PAGE_PRINT:    0xe3,
-    END_PRINT:         0xf3,
-    SEND_LINE:         0x85,
-};
+function getClient() {
+    if (!_client) {
+        _client = new niimbluelib.NiimbotBluetoothClient();
 
-/* ─── Bluetooth state ───────────────────────────────────────────────── */
-let _btDevice    = null;
-let _btChar      = null;
-let _notifyChar  = null;
-let _responseMap = {};
-
-/* ─── Packet builder ─────────────────────────────────────────────────
-   Format NIIMBOT : 55 55 | CMD | LEN | DATA... | CHECKSUM | AA AA
-   Checksum = CMD ^ LEN ^ DATA[0] ^ DATA[1] ^ ...
-──────────────────────────────────────────────────────────────────── */
-function buildPacket(cmd, data = []) {
-    const len = data.length;
-    let checksum = cmd ^ len;
-    for (const b of data) checksum ^= b;
-    return new Uint8Array([0x55, 0x55, cmd, len, ...data, checksum, 0xAA, 0xAA]);
-}
-
-function handleNotification(event) {
-    const raw = new Uint8Array(event.target.value.buffer);
-    if (raw.length < 6) return;
-    if (raw[0] !== 0x55 || raw[1] !== 0x55) return;
-    // Format réponse : 55 55 CMD LEN DATA... CS AA AA
-    const cmd  = raw[2];
-    const data = raw.slice(4, raw.length - 3);
-    if (_responseMap[cmd]) {
-        const fn = _responseMap[cmd];
-        delete _responseMap[cmd];
-        fn(data);
-    }
-}
-
-async function sendCmd(cmd, data = [], waitAck = false, timeoutMs = 4000) {
-    const pkt = buildPacket(cmd, data);
-
-    if (waitAck) {
-        return new Promise((resolve, reject) => {
-            const timer = setTimeout(() => {
-                delete _responseMap[cmd];
-                reject(new Error('Timeout ACK cmd 0x' + cmd.toString(16)));
-            }, timeoutMs);
-            _responseMap[cmd] = (resp) => { clearTimeout(timer); resolve(resp); };
-            const doWrite = _btChar.properties.writeWithoutResponse
-                ? _btChar.writeValueWithoutResponse(pkt)
-                : _btChar.writeValue(pkt);
-            doWrite.catch(reject);
+        _client.on('connect', () => {
+            showToast('success', '✅', 'NIIMBOT connecté — prêt à imprimer');
+        });
+        _client.on('disconnect', () => {
+            showToast('error', '🔌', 'NIIMBOT déconnecté');
+            _client = null;
+        });
+        _client.on('printprogress', (e) => {
+            const pct = Math.round((e.page / e.pageCount) * 80 + (e.pagePrintProgress / 100) * 20);
+            setToastProgress(pct);
         });
     }
-
-    if (_btChar.properties.writeWithoutResponse) {
-        await _btChar.writeValueWithoutResponse(pkt);
-    } else {
-        await _btChar.writeValue(pkt);
-    }
+    return _client;
 }
 
-/* ─── Connexion BT ──────────────────────────────────────────────────── */
-async function selectDevice() {
-    showToast('printing', '🔵', 'Sélectionne ton NIIMBOT dans la liste...');
-    const device = await navigator.bluetooth.requestDevice({
-        acceptAllDevices: true,
-        optionalServices: NB_PROFILES.map(p => p.service),
-    });
-    _btDevice = device;
-    device.addEventListener('gattserverdisconnected', () => { _btGattConnected = false; });
-    return device;
-}
-
-let _btGattConnected = false;
-
-async function connectGatt() {
-    showToast('printing', '🔵', 'Connexion à ' + (_btDevice.name || 'NIIMBOT') + '...');
-    const server = await _btDevice.gatt.connect();
-
-    // Découverte automatique du bon profil de service
-    let foundProfile = null;
-    for (const profile of NB_PROFILES) {
-        try {
-            await server.getPrimaryService(profile.service);
-            foundProfile = profile;
-            break;
-        } catch (_) { /* ce profil n'existe pas sur ce device */ }
-    }
-
-    if (!foundProfile) {
-        // Dernier recours : lister tous les services disponibles
-        const services = await server.getPrimaryServices();
-        const uuids = services.map(s => s.uuid).join(', ');
-        throw new Error('Service NIIMBOT introuvable. UUIDs détectés : ' + uuids);
-    }
-
-    const service = await server.getPrimaryService(foundProfile.service);
-    _btChar     = await service.getCharacteristic(foundProfile.write);
-    _notifyChar = await service.getCharacteristic(foundProfile.notify);
-
-    await _notifyChar.startNotifications();
-    _notifyChar.addEventListener('characteristicvaluechanged', handleNotification);
-    _btGattConnected = true;
-
-    showToast('success', '✅', 'NIIMBOT prêt : ' + (_btDevice.name || 'Imprimante'));
-}
-
-async function ensureConnected() {
-    if (!_btDevice) await selectDevice();
-    if (!_btGattConnected || !_btDevice.gatt.connected) await connectGatt();
-}
-
-/* ─── Conversion label en bitmap 1bit ───────────────────────────────
-   On rend chaque étiquette dans un <canvas> hors-écran,
-   puis on extrait les données pixel par pixel → bitmap 1 bit.
-──────────────────────────────────────────────────────────────────── */
+/* ─── Rendu étiquette → canvas bitmap ──────────────────────────────── */
 async function labelToCanvas(labelEl, targetW, targetH) {
-    if (window.html2canvas) {
-        // Taille naturelle de l'élément à l'écran (px)
-        const naturalW = labelEl.offsetWidth  || targetW;
-        const naturalH = labelEl.offsetHeight || targetH;
-        // Facteur d'échelle pour atteindre la résolution cible (203 dpi)
-        const scale = Math.max(targetW / naturalW, targetH / naturalH);
+    const naturalW = labelEl.offsetWidth  || targetW;
+    const naturalH = labelEl.offsetHeight || targetH;
+    const scale    = Math.max(targetW / naturalW, targetH / naturalH);
 
-        const raw = await html2canvas(labelEl, {
-            scale,
-            useCORS:         true,
-            allowTaint:      true,
-            backgroundColor: '#ffffff',
-            logging:         false,
-        });
-
-        // Recadrer au format exact si légèrement différent
-        if (raw.width === targetW && raw.height === targetH) return raw;
-        const out = document.createElement('canvas');
-        out.width  = targetW;
-        out.height = targetH;
-        out.getContext('2d').drawImage(raw, 0, 0, targetW, targetH);
-        return out;
-    }
-
-    // Fallback : SVG foreignObject → canvas
-    return new Promise((resolve) => {
-        const ns  = 'http://www.w3.org/2000/svg';
-        const svg = document.createElementNS(ns, 'svg');
-        svg.setAttribute('width',  targetW);
-        svg.setAttribute('height', targetH);
-        const fo = document.createElementNS(ns, 'foreignObject');
-        fo.setAttribute('width',  targetW);
-        fo.setAttribute('height', targetH);
-        fo.appendChild(labelEl.cloneNode(true));
-        svg.appendChild(fo);
-        const xml = new XMLSerializer().serializeToString(svg);
-        const img = new Image();
-        img.onload = () => {
-            const c = document.createElement('canvas');
-            c.width = targetW; c.height = targetH;
-            c.getContext('2d').drawImage(img, 0, 0);
-            resolve(c);
-        };
-        img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml);
+    const raw = await html2canvas(labelEl, {
+        scale,
+        useCORS:         true,
+        allowTaint:      true,
+        backgroundColor: '#ffffff',
+        logging:         false,
     });
-}
 
-function canvasToBitmap1bit(canvas) {
-    const ctx    = canvas.getContext('2d');
-    const w      = canvas.width;
-    const h      = canvas.height;
-    const pixels = ctx.getImageData(0, 0, w, h).data;
-    // 1 bit par pixel, MSB first, lignes de w bits
-    const rowBytes = Math.ceil(w / 8);
-    const bitmap   = new Uint8Array(rowBytes * h);
-    for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-            const i = (y * w + x) * 4;
-            const lum = 0.299 * pixels[i] + 0.587 * pixels[i+1] + 0.114 * pixels[i+2];
-            if (lum < 128) { // pixel noir → bit 1
-                bitmap[y * rowBytes + Math.floor(x / 8)] |= (0x80 >> (x % 8));
-            }
-        }
-    }
-    return { bitmap, rowBytes, w, h };
-}
+    if (raw.width === targetW && raw.height === targetH) return raw;
 
-/* ─── Envoi d'une étiquette ─────────────────────────────────────────── */
-async function printOneLabelBT(labelEl, fmtKey) {
-    const DOTS_PER_MM = 8; // 203 dpi ≈ 8 dots/mm
-    const f    = FORMATS[fmtKey] || FORMATS['50x30'];
-    const wMm  = parseInt(f.w);
-    const hMm  = parseInt(f.h);
-    const wPx  = wMm * DOTS_PER_MM;
-    const hPx  = hMm * DOTS_PER_MM;
-
-    const canvas = await labelToCanvas(labelEl, wPx, hPx);
-    const { bitmap, rowBytes, w, h } = canvasToBitmap1bit(canvas);
-
-    await sendCmd(CMD.START_PAGE_PRINT, [0x01], true);
-
-    for (let y = 0; y < h; y++) {
-        const line = Array.from(bitmap.slice(y * rowBytes, (y + 1) * rowBytes));
-        await sendCmd(CMD.SEND_LINE, [
-            (y >> 8) & 0xFF, y & 0xFF,
-            0x01,
-            ...line,
-        ], true);   // attend ACK pour chaque ligne
-    }
-
-    await sendCmd(CMD.END_PAGE_PRINT, [0x01], true);
-    await new Promise(r => setTimeout(r, 150));
+    const out = document.createElement('canvas');
+    out.width  = targetW;
+    out.height = targetH;
+    out.getContext('2d').drawImage(raw, 0, 0, targetW, targetH);
+    return out;
 }
 
 /* ─── Entrée principale ─────────────────────────────────────────────── */
 async function printBluetooth() {
     if (!navigator.bluetooth) {
-        showToast('error', '⚠️', 'Web Bluetooth non disponible. Utilise Chrome ou Edge.');
+        showToast('error', '⚠️', 'Web Bluetooth indisponible — utilise Chrome ou Edge.');
         return;
     }
 
-    const btnBt = document.getElementById('btn-bt');
+    const btnBt    = document.getElementById('btn-bt');
+    const fmtKey   = document.getElementById('fmt-select').value;
+    const taskName = document.getElementById('model-select').value;
+    const labels   = [...document.querySelectorAll('.label')];
+    const total    = labels.length;
+
+    if (total === 0) {
+        showToast('error', '⚠️', 'Aucune étiquette à imprimer.');
+        return;
+    }
+
+    btnBt.disabled = true;
 
     try {
-        btnBt.disabled = true;
+        const client = getClient();
 
-        // Connexion si nécessaire (picker uniquement la 1ère fois)
-        await ensureConnected();
-
-        const labels  = [...document.querySelectorAll('.label')];
-        const fmtKey  = document.getElementById('fmt-select').value;
-        const total   = labels.length;
-
-        if (total === 0) {
-            showToast('error', '⚠️', 'Aucune étiquette à imprimer.');
-            return;
+        // Connexion (ouvre le picker Bluetooth si pas encore connecté)
+        if (!client.isConnected?.()) {
+            showToast('printing', '🔵', 'Sélectionne ton NIIMBOT dans la liste...', false);
+            await client.connect();
         }
 
-        const f      = FORMATS[fmtKey] || FORMATS['50x30'];
-        const wDots  = parseInt(f.w) * 8;
-        const hDots  = parseInt(f.h) * 8;
+        const f       = FORMATS[fmtKey] || FORMATS['50x30'];
+        const DPI     = (taskName === 'D110M_V4') ? 12 : 8; // 300 dpi ≈ 12 dots/mm, 203 dpi ≈ 8
+        const wPx     = parseInt(f.w) * DPI;
+        const hPx     = parseInt(f.h) * DPI;
 
-        showToast('printing', '🖨️', `Préparation impression…`, true);
+        showToast('printing', '🖨️', `Préparation de ${total} étiquette${total > 1 ? 's' : ''}…`, true);
 
-        // Séquence d'initialisation B1 — chaque commande attend son ACK
-        await sendCmd(CMD.GET_INFO,          [],      true);
-        await sendCmd(CMD.SET_LABEL_TYPE,    [0x01],  true);
-        await sendCmd(CMD.SET_LABEL_DENSITY, [0x03],  true);
-        await sendCmd(CMD.SET_DIMENSIONS, [
-            (wDots >> 8) & 0xFF, wDots & 0xFF,
-            (hDots >> 8) & 0xFF, hDots & 0xFF,
-            0x00, total & 0xFF,
-        ], true);
-        await sendCmd(CMD.START_PRINT, [0x01], true);
-        await new Promise(r => setTimeout(r, 100));
+        const printTask = client.abstraction.newPrintTask(taskName, {
+            totalPages:          total,
+            statusPollIntervalMs: 150,
+            statusTimeoutMs:     12_000,
+        });
 
-        // Debug : affiche le premier canvas rendu avant envoi
-        const debugCanvas = await labelToCanvas(labels[0], wDots, hDots);
-        debugCanvas.style.cssText = 'position:fixed;bottom:80px;right:16px;border:2px solid #6366f1;border-radius:8px;z-index:9998;max-width:200px;background:#fff;';
-        debugCanvas.title = 'Aperçu bitmap envoyé au NIIMBOT';
-        document.body.appendChild(debugCanvas);
-        setTimeout(() => debugCanvas.remove(), 8000);
+        await printTask.printInit();
 
         for (let i = 0; i < labels.length; i++) {
             showToast('printing', '🖨️', `Impression ${i + 1} / ${total}…`, true);
-            setToastProgress(Math.round(((i + 1) / total) * 90));
-            await printOneLabelBT(labels[i], fmtKey);
+            setToastProgress(Math.round((i / total) * 80));
+
+            const canvas  = await labelToCanvas(labels[i], wPx, hPx);
+            const encoded = niimbluelib.ImageEncoder.encodeCanvas(canvas, 'left');
+
+            await printTask.printPage(encoded, 1);
+            await printTask.waitForPageFinished();
         }
 
-        await sendCmd(CMD.END_PRINT, [0x01], true);
+        await printTask.waitForFinished();
+        await printTask.printEnd();
+
         setToastProgress(100);
-        showToast('success', '✅', `${total} étiquette${total > 1 ? 's' : ''} envoyée${total > 1 ? 's' : ''} !`);
+        showToast('success', '✅', `${total} étiquette${total > 1 ? 's' : ''} envoyée${total > 1 ? 's' : ''} avec succès !`);
 
     } catch (err) {
-        console.error('[NIIMBOT BT]', err);
+        console.error('[NIIMBOT]', err);
+        _client = null; // force reconnexion au prochain essai
+
         if (err.name === 'NotFoundError' || err.message?.includes('cancelled')) {
             showToast('error', '❌', 'Sélection annulée.');
-        } else if (err.message?.includes('GATT')) {
-            _btChar = null;
-            showToast('error', '🔌', 'Connexion perdue. Réessaie.');
+        } else if (err.name === 'NetworkError' || err.message?.includes('GATT')) {
+            showToast('error', '🔌', 'Connexion perdue — réessaie.');
         } else {
             showToast('error', '❌', 'Erreur : ' + err.message);
         }
@@ -822,10 +644,18 @@ async function printBluetooth() {
         btnBt.disabled = false;
     }
 }
-</script>
 
-<!-- html2canvas pour rendu fidèle des étiquettes (CDN, ~250 ko) -->
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+/* ─── Init ──────────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+    if (!navigator.bluetooth) {
+        const btn = document.getElementById('btn-bt');
+        btn.title   = 'Web Bluetooth non disponible (Chrome/Edge requis)';
+        btn.style.opacity = '0.35';
+        btn.style.cursor  = 'not-allowed';
+        btn.onclick = () => showToast('error', '⚠️', 'Web Bluetooth non disponible. Utilise Chrome ou Edge.');
+    }
+});
+</script>
 
 </body>
 </html>

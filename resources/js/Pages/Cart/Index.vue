@@ -212,7 +212,7 @@ const waCartMessage = computed(() => {
 
                                 <!-- Infos -->
                                 <div class="flex-1 min-w-0">
-                                    <Link :href="`/produit/${item.product.slug}`" class="font-semibold text-slate-900 hover:text-blue-600 transition text-sm leading-tight line-clamp-2">
+                                    <Link :href="`/produit/${item.product.slug}`" class="font-semibold text-slate-900 hover:text-primary-600 transition text-sm leading-tight line-clamp-2">
                                         {{ item.product.name }}
                                     </Link>
                                     <div v-if="item.variant?.attributes?.length" class="flex flex-wrap gap-1 mt-1">

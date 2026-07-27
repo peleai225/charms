@@ -55,14 +55,14 @@
                         <label for="name" class="block text-sm font-medium text-slate-700 mb-1.5">Nom complet <span class="text-red-500">*</span></label>
                         <input type="text" name="name" id="name" value="{{ old('name') }}" required
                                placeholder="Votre nom"
-                               class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-colors @error('name') border-red-300 @enderror">
+                               class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors @error('name') border-red-300 @enderror">
                         @error('name')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
                     </div>
                     <div>
                         <label for="email" class="block text-sm font-medium text-slate-700 mb-1.5">Email <span class="text-red-500">*</span></label>
                         <input type="email" name="email" id="email" value="{{ old('email') }}" required
                                placeholder="votre@email.com"
-                               class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-colors @error('email') border-red-300 @enderror">
+                               class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors @error('email') border-red-300 @enderror">
                         @error('email')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>
@@ -70,7 +70,7 @@
                 <div>
                     <label for="subject" class="block text-sm font-medium text-slate-700 mb-1.5">Sujet <span class="text-red-500">*</span></label>
                     <select name="subject" id="subject" required
-                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-colors @error('subject') border-red-300 @enderror">
+                            class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 transition-colors @error('subject') border-red-300 @enderror">
                         <option value="">Choisir un sujet</option>
                         <option value="order"       {{ old('subject') === 'order'       ? 'selected' : '' }}>Question sur une commande</option>
                         <option value="product"     {{ old('subject') === 'product'     ? 'selected' : '' }}>Question sur un produit</option>
@@ -86,12 +86,12 @@
                     <label for="message" class="block text-sm font-medium text-slate-700 mb-1.5">Message <span class="text-red-500">*</span></label>
                     <textarea name="message" id="message" rows="5" required
                               placeholder="Votre message..."
-                              class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 resize-none transition-colors @error('message') border-red-300 @enderror">{{ old('message') }}</textarea>
+                              class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 resize-none transition-colors @error('message') border-red-300 @enderror">{{ old('message') }}</textarea>
                     @error('message')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
                 </div>
 
                 <button type="submit"
-                        class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-colors">
+                        class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm rounded-xl transition-colors">
                     Envoyer le message
                 </button>
             </form>
@@ -122,13 +122,13 @@
             <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
                 {{-- Phone --}}
                 <div class="flex items-start gap-3">
-                    <div class="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                    <div class="w-9 h-9 bg-primary-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
                     </div>
                     <div>
                         <p class="text-xs text-slate-500 mb-0.5">Téléphone</p>
                         @if($contactPhone)
-                        <a href="tel:{{ preg_replace('/[^0-9+]/', '', $contactPhone) }}" class="text-sm font-semibold text-blue-600 hover:underline">{{ $contactPhone }}</a>
+                        <a href="tel:{{ preg_replace('/[^0-9+]/', '', $contactPhone) }}" class="text-sm font-semibold text-primary-600 hover:underline">{{ $contactPhone }}</a>
                         @else
                         <p class="text-sm text-slate-400">Non renseigné</p>
                         @endif
@@ -145,7 +145,7 @@
                     <div>
                         <p class="text-xs text-slate-500 mb-0.5">Email</p>
                         @if($contactEmail)
-                        <a href="mailto:{{ $contactEmail }}" class="text-sm font-semibold text-blue-600 hover:underline">{{ $contactEmail }}</a>
+                        <a href="mailto:{{ $contactEmail }}" class="text-sm font-semibold text-primary-600 hover:underline">{{ $contactEmail }}</a>
                         @else
                         <p class="text-sm text-slate-400">Non renseigné</p>
                         @endif

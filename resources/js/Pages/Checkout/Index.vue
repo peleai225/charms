@@ -39,7 +39,9 @@ const form = useForm({
     shipping_city:        '',
     shipping_postal_code: '',
     shipping_country:     'CI',
-    payment_method:       props.settings?.payment_cod_enabled === '1' ? 'cod' : 'moneyfusion',
+    payment_method:       props.settings?.payment_cod_enabled === '1' ? 'cod'
+                        : props.settings?.payment_jeko_enabled === '1' ? 'jeko'
+                        : 'moneyfusion',
     notes:                '',
 });
 
@@ -55,6 +57,9 @@ const submit = () => {
 // ─── Méthodes paiement disponibles ───────────────────────────────────────────
 const paymentMethods = computed(() => {
     const methods = [];
+    if (props.settings?.payment_jeko_enabled === '1') {
+        methods.push({ value: 'jeko', label: 'Paiement en ligne', desc: 'Wave, Orange Money, MTN, Moov, Djamo (Jeko Africa)', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' });
+    }
     if (props.settings?.payment_moneyfusion_enabled === '1') {
         methods.push({ value: 'moneyfusion', label: 'Paiement en ligne', desc: 'Mobile Money, Carte bancaire (MoneyFusion)', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' });
     }
@@ -114,7 +119,7 @@ const paymentMethods = computed(() => {
                                     <div class="min-w-0">
                                         <p class="text-sm font-semibold text-slate-900 truncate">{{ addr.first_name }} {{ addr.last_name }}</p>
                                         <p class="text-xs text-slate-500 leading-relaxed">{{ addr.address }}, {{ addr.city }}</p>
-                                        <span v-if="addr.is_default" class="inline-block mt-1 text-xs text-blue-600 font-medium">Par défaut</span>
+                                        <span v-if="addr.is_default" class="inline-block mt-1 text-xs text-primary-600 font-medium">Par défaut</span>
                                     </div>
                                 </label>
                             </div>

@@ -39,7 +39,7 @@
         <a href="{{ route('shop.index') }}" class="shrink-0 px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors {{ !request('category') ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">Tout voir</a>
         @foreach($categories as $cat)
         <a href="{{ route('shop.index', array_merge(request()->except('category','page'), ['category'=>$cat->slug])) }}"
-           class="shrink-0 px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors {{ request('category')===$cat->slug ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">{{ $cat->name }}</a>
+           class="shrink-0 px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors {{ request('category')===$cat->slug ? 'bg-primary-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' }}">{{ $cat->name }}</a>
         @endforeach
     </div>
 </div>
@@ -51,7 +51,7 @@
     <div class="flex items-center gap-3 mb-5">
         <button @click="filtersOpen = true" class="lg:hidden inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-medium rounded-lg text-sm transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
-            Filtres @if($activeFilters > 0)<span class="w-5 h-5 bg-blue-600 text-white text-[10px] font-bold rounded-full inline-flex items-center justify-center">{{ $activeFilters }}</span>@endif
+            Filtres @if($activeFilters > 0)<span class="w-5 h-5 bg-primary-600 text-white text-[10px] font-bold rounded-full inline-flex items-center justify-center">{{ $activeFilters }}</span>@endif
         </button>
         <p class="hidden lg:block text-sm text-slate-500"><span class="font-semibold text-slate-900">{{ $products->total() }}</span> résultat{{ $products->total() > 1 ? 's' : '' }}</p>
         <div class="ml-auto flex items-center gap-2">
@@ -67,7 +67,7 @@
                 </button>
                 <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-150" x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50">
                     @foreach($sortOptions as $key => $label)
-                    <a href="{{ request()->fullUrlWithQuery(['sort'=>$key,'page'=>null]) }}" class="flex items-center justify-between px-4 py-2.5 text-sm transition-colors {{ $currentSort===$key ? 'text-blue-600 font-semibold bg-blue-50' : 'text-slate-700 hover:bg-slate-50' }}">
+                    <a href="{{ request()->fullUrlWithQuery(['sort'=>$key,'page'=>null]) }}" class="flex items-center justify-between px-4 py-2.5 text-sm transition-colors {{ $currentSort===$key ? 'text-primary-600 font-semibold bg-primary-50' : 'text-slate-700 hover:bg-slate-50' }}">
                         {{ $label }}
                         @if($currentSort===$key)<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $xCheck !!}</svg>@endif
                     </a>
@@ -83,7 +83,7 @@
         <span class="text-xs font-medium text-slate-400 uppercase tracking-wider">Actifs :</span>
         @if(request('search'))<a href="{{ request()->fullUrlWithQuery(['search'=>null]) }}" class="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-md">"{{ request('search') }}" <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $xClose !!}</svg></a>@endif
         @if(request('category'))@php $ac=$categories->firstWhere('slug',request('category')); @endphp
-            @if($ac)<a href="{{ request()->fullUrlWithQuery(['category'=>null]) }}" class="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-md">{{ $ac->name }} <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $xClose !!}</svg></a>@endif
+            @if($ac)<a href="{{ request()->fullUrlWithQuery(['category'=>null]) }}" class="inline-flex items-center gap-1.5 px-3 py-1 bg-primary-50 hover:bg-primary-100 text-primary-700 text-xs font-medium rounded-md">{{ $ac->name }} <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $xClose !!}</svg></a>@endif
         @endif
         @if(request('color'))@php $col=isset($colors)?$colors->firstWhere('id',request('color')):null; @endphp
             @if($col)<a href="{{ request()->fullUrlWithQuery(['color'=>null]) }}" class="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-md"><span class="w-3 h-3 rounded-full border border-slate-200" style="background-color:{{ $col->value }}"></span>{{ $col->label }} <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $xClose !!}</svg></a>@endif
@@ -102,23 +102,23 @@
             <div class="sticky top-20 space-y-7">
                 <div class="flex items-center justify-between">
                     <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Filtres</span>
-                    @if($activeFilters > 0)<a href="{{ route('shop.index') }}" class="text-xs text-blue-600 hover:text-blue-700 font-medium">Effacer ({{ $activeFilters }})</a>@endif
+                    @if($activeFilters > 0)<a href="{{ route('shop.index') }}" class="text-xs text-primary-600 hover:text-primary-700 font-medium">Effacer ({{ $activeFilters }})</a>@endif
                 </div>
 
                 @if($categories->count() > 0)
                 <div>
                     <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Catégories</p>
                     <ul class="space-y-0.5">
-                        <li><a href="{{ route('shop.index') }}" class="block py-1.5 text-sm transition-colors {{ !request('category') ? 'text-blue-600 font-semibold' : 'text-slate-600 hover:text-slate-900' }}">Tout voir</a></li>
+                        <li><a href="{{ route('shop.index') }}" class="block py-1.5 text-sm transition-colors {{ !request('category') ? 'text-primary-600 font-semibold' : 'text-slate-600 hover:text-slate-900' }}">Tout voir</a></li>
                         @foreach($categories as $cat)
                         <li x-data="{open:{{ (request('category')===$cat->slug||$cat->children->where('slug',request('category'))->count()>0)?'true':'false' }}}">
                             <div class="flex items-center justify-between">
-                                <a href="{{ route('shop.index', array_merge(request()->except('category','page'), ['category'=>$cat->slug])) }}" class="flex-1 py-1.5 text-sm transition-colors {{ request('category')===$cat->slug ? 'text-blue-600 font-semibold' : 'text-slate-600 hover:text-slate-900' }}">{{ $cat->name }}</a>
+                                <a href="{{ route('shop.index', array_merge(request()->except('category','page'), ['category'=>$cat->slug])) }}" class="flex-1 py-1.5 text-sm transition-colors {{ request('category')===$cat->slug ? 'text-primary-600 font-semibold' : 'text-slate-600 hover:text-slate-900' }}">{{ $cat->name }}</a>
                                 @if($cat->children->count() > 0)<button @click="open=!open" class="p-1 text-slate-400 hover:text-slate-700 transition-colors"><svg class="w-3.5 h-3.5 transition-transform" :class="open&&'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button>@endif
                             </div>
                             @if($cat->children->count() > 0)
                             <ul x-show="open" x-cloak class="ml-3 border-l border-slate-100 pl-3 mt-0.5 space-y-0.5">
-                                @foreach($cat->children as $child)<li><a href="{{ route('shop.index', array_merge(request()->except('category','page'),['category'=>$child->slug])) }}" class="block py-1 text-sm transition-colors {{ request('category')===$child->slug ? 'text-blue-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">{{ $child->name }}</a></li>@endforeach
+                                @foreach($cat->children as $child)<li><a href="{{ route('shop.index', array_merge(request()->except('category','page'),['category'=>$child->slug])) }}" class="block py-1 text-sm transition-colors {{ request('category')===$child->slug ? 'text-primary-600 font-semibold' : 'text-slate-500 hover:text-slate-900' }}">{{ $child->name }}</a></li>@endforeach
                             </ul>
                             @endif
                         </li>
@@ -132,9 +132,9 @@
                     <form method="GET" action="{{ route('shop.index') }}" class="space-y-3">
                         @foreach(request()->except('min_price','max_price','page') as $k=>$v)<input type="hidden" name="{{ $k }}" value="{{ $v }}">@endforeach
                         <div class="flex items-center gap-2">
-                            <input type="number" name="min_price" value="{{ request('min_price') }}" placeholder="{{ $priceRange->min ?? '0' }}" min="0" class="flex-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            <input type="number" name="min_price" value="{{ request('min_price') }}" placeholder="{{ $priceRange->min ?? '0' }}" min="0" class="flex-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500">
                             <span class="text-slate-300 text-sm">–</span>
-                            <input type="number" name="max_price" value="{{ request('max_price') }}" placeholder="{{ $priceRange->max ?? '∞' }}" min="0" class="flex-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            <input type="number" name="max_price" value="{{ request('max_price') }}" placeholder="{{ $priceRange->max ?? '∞' }}" min="0" class="flex-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500">
                         </div>
                         <button type="submit" class="w-full py-2 text-xs font-medium bg-slate-900 hover:bg-slate-700 text-white rounded-lg transition-colors">Appliquer</button>
                     </form>
@@ -145,7 +145,7 @@
                     <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Couleur</p>
                     <div class="flex flex-wrap gap-2">
                         @foreach($colors as $color)
-                        <a href="{{ request()->fullUrlWithQuery(['color'=>request('color')==$color->id?null:$color->id,'page'=>null]) }}" title="{{ $color->label }}" class="w-7 h-7 rounded-full border-2 transition-all {{ request('color')==$color->id ? 'border-blue-600 ring-2 ring-blue-600 ring-offset-1' : 'border-slate-200 hover:border-slate-400' }}" style="background-color:{{ $color->value }}"></a>
+                        <a href="{{ request()->fullUrlWithQuery(['color'=>request('color')==$color->id?null:$color->id,'page'=>null]) }}" title="{{ $color->label }}" class="w-7 h-7 rounded-full border-2 transition-all {{ request('color')==$color->id ? 'border-primary-600 ring-2 ring-primary-600 ring-offset-1' : 'border-slate-200 hover:border-slate-400' }}" style="background-color:{{ $color->value }}"></a>
                         @endforeach
                     </div>
                 </div>
@@ -155,8 +155,8 @@
                     <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Options</p>
                     @foreach(['on_sale'=>'En promotion seulement','in_stock'=>'En stock seulement'] as $param=>$label)
                     <a href="{{ request($param) ? request()->fullUrlWithQuery([$param=>null]) : request()->fullUrlWithQuery([$param=>'1','page'=>null]) }}"
-                       class="flex items-center gap-2.5 text-sm transition-colors {{ request($param) ? 'text-blue-600 font-medium' : 'text-slate-600 hover:text-slate-900' }}">
-                        <span class="w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 {{ request($param) ? 'bg-blue-600 border-blue-600' : 'border-slate-300' }}">
+                       class="flex items-center gap-2.5 text-sm transition-colors {{ request($param) ? 'text-primary-600 font-medium' : 'text-slate-600 hover:text-slate-900' }}">
+                        <span class="w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 {{ request($param) ? 'bg-primary-600 border-primary-600' : 'border-slate-300' }}">
                             @if(request($param))<svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $xCheck !!}</svg>@endif
                         </span>
                         {{ $label }}
@@ -164,7 +164,7 @@
                     @endforeach
                 </div>
 
-                <a href="{{ route('shop.index', request()->all()) }}" class="block w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg text-center transition-colors">
+                <a href="{{ route('shop.index', request()->all()) }}" class="block w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg text-center transition-colors">
                     Voir les résultats ({{ $products->total() }})
                 </a>
             </div>
@@ -200,7 +200,7 @@
            x-transition:leave="transition ease-in duration-200" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full"
            class="lg:hidden fixed top-0 right-0 bottom-0 w-[88vw] max-w-sm bg-white z-[90] flex flex-col shadow-xl">
         <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-            <h2 class="font-semibold text-slate-900">Filtres @if($activeFilters>0)<span class="ml-1 inline-flex items-center justify-center w-5 h-5 bg-blue-600 text-white text-[10px] font-bold rounded-full">{{ $activeFilters }}</span>@endif</h2>
+            <h2 class="font-semibold text-slate-900">Filtres @if($activeFilters>0)<span class="ml-1 inline-flex items-center justify-center w-5 h-5 bg-primary-600 text-white text-[10px] font-bold rounded-full">{{ $activeFilters }}</span>@endif</h2>
             <button @click="filtersOpen=false" class="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
         <form method="GET" action="{{ route('shop.index') }}" class="flex-1 overflow-y-auto p-5 space-y-6">
@@ -209,33 +209,33 @@
             <div>
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Catégories</p>
                 <ul class="space-y-1">
-                    <li><label class="flex items-center gap-2.5 cursor-pointer py-1"><input type="radio" name="category" value="" {{ !request('category')?'checked':'' }} class="text-blue-600 focus:ring-blue-500"><span class="text-sm text-slate-700">Tout voir</span></label></li>
-                    @foreach($categories as $cat)<li><label class="flex items-center gap-2.5 cursor-pointer py-1"><input type="radio" name="category" value="{{ $cat->slug }}" {{ request('category')===$cat->slug?'checked':'' }} class="text-blue-600 focus:ring-blue-500"><span class="text-sm text-slate-700">{{ $cat->name }}</span></label></li>@endforeach
+                    <li><label class="flex items-center gap-2.5 cursor-pointer py-1"><input type="radio" name="category" value="" {{ !request('category')?'checked':'' }} class="text-primary-600 focus:ring-primary-500"><span class="text-sm text-slate-700">Tout voir</span></label></li>
+                    @foreach($categories as $cat)<li><label class="flex items-center gap-2.5 cursor-pointer py-1"><input type="radio" name="category" value="{{ $cat->slug }}" {{ request('category')===$cat->slug?'checked':'' }} class="text-primary-600 focus:ring-primary-500"><span class="text-sm text-slate-700">{{ $cat->name }}</span></label></li>@endforeach
                 </ul>
             </div>
             @endif
             <div>
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Prix (XOF)</p>
                 <div class="flex items-center gap-2">
-                    <input type="number" name="min_price" value="{{ request('min_price') }}" placeholder="Min" min="0" class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    <input type="number" name="min_price" value="{{ request('min_price') }}" placeholder="Min" min="0" class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500">
                     <span class="text-slate-300">–</span>
-                    <input type="number" name="max_price" value="{{ request('max_price') }}" placeholder="Max" min="0" class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    <input type="number" name="max_price" value="{{ request('max_price') }}" placeholder="Max" min="0" class="flex-1 px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500">
                 </div>
             </div>
             @if(isset($colors) && $colors->count() > 0)
             <div>
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Couleur</p>
                 <div class="flex flex-wrap gap-2">
-                    @foreach($colors as $color)<label class="cursor-pointer" title="{{ $color->label }}"><input type="radio" name="color" value="{{ $color->id }}" {{ request('color')==$color->id?'checked':'' }} class="sr-only peer"><span class="block w-8 h-8 rounded-full border-2 peer-checked:border-blue-600 peer-checked:ring-2 peer-checked:ring-blue-600 peer-checked:ring-offset-1 border-slate-200 hover:border-slate-400 transition-all" style="background-color:{{ $color->value }}"></span></label>@endforeach
+                    @foreach($colors as $color)<label class="cursor-pointer" title="{{ $color->label }}"><input type="radio" name="color" value="{{ $color->id }}" {{ request('color')==$color->id?'checked':'' }} class="sr-only peer"><span class="block w-8 h-8 rounded-full border-2 peer-checked:border-primary-600 peer-checked:ring-2 peer-checked:ring-primary-600 peer-checked:ring-offset-1 border-slate-200 hover:border-slate-400 transition-all" style="background-color:{{ $color->value }}"></span></label>@endforeach
                 </div>
             </div>
             @endif
             <div class="space-y-3">
                 <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Options</p>
-                <label class="flex items-center gap-2.5 cursor-pointer"><input type="checkbox" name="on_sale" value="1" {{ request('on_sale')?'checked':'' }} class="rounded text-blue-600 focus:ring-blue-500"><span class="text-sm text-slate-700">En promotion seulement</span></label>
-                <label class="flex items-center gap-2.5 cursor-pointer"><input type="checkbox" name="in_stock" value="1" {{ request('in_stock')?'checked':'' }} class="rounded text-blue-600 focus:ring-blue-500"><span class="text-sm text-slate-700">En stock seulement</span></label>
+                <label class="flex items-center gap-2.5 cursor-pointer"><input type="checkbox" name="on_sale" value="1" {{ request('on_sale')?'checked':'' }} class="rounded text-primary-600 focus:ring-primary-500"><span class="text-sm text-slate-700">En promotion seulement</span></label>
+                <label class="flex items-center gap-2.5 cursor-pointer"><input type="checkbox" name="in_stock" value="1" {{ request('in_stock')?'checked':'' }} class="rounded text-primary-600 focus:ring-primary-500"><span class="text-sm text-slate-700">En stock seulement</span></label>
             </div>
-            <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl text-sm transition-colors">Voir les résultats ({{ $products->total() }})</button>
+            <button type="submit" class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-xl text-sm transition-colors">Voir les résultats ({{ $products->total() }})</button>
             @if($activeFilters>0)<a href="{{ route('shop.index') }}" class="block text-center text-sm text-slate-400 hover:text-slate-700 transition-colors">Effacer les filtres</a>@endif
         </form>
     </aside>

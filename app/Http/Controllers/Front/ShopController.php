@@ -264,9 +264,10 @@ class ShopController extends Controller
         // Format colors
         $colorsData = $availableColors->map(function ($attrValue) {
             return [
-                'id'   => $attrValue->id,
-                'name' => $attrValue->value,
-                'hex'  => $attrValue->color_code ?? null,
+                'id'    => $attrValue->id,
+                'name'  => $attrValue->value,
+                'hex'   => $attrValue->color_code ?? null,
+                'image' => $attrValue->image_url,
             ];
         })->values()->toArray();
 

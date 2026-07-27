@@ -20,9 +20,9 @@
     $isCancelled  = in_array($order->status, ['cancelled', 'refunded']);
     $statusBadge  = match($order->status) {
         'delivered'            => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-        'shipped'              => 'bg-blue-50 text-blue-700 border-blue-200',
+        'shipped'              => 'bg-primary-50 text-primary-700 border-primary-200',
         'processing'           => 'bg-amber-50 text-amber-700 border-amber-200',
-        'confirmed'            => 'bg-indigo-50 text-indigo-700 border-indigo-200',
+        'confirmed'            => 'bg-primary-50 text-primary-700 border-primary-200',
         'cancelled','refunded' => 'bg-red-50 text-red-700 border-red-200',
         default                => 'bg-slate-50 text-slate-700 border-slate-200',
     };
@@ -88,7 +88,7 @@
             <div class="flex flex-col items-center">
                 <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
                     {{ $isDone    ? 'bg-emerald-500 text-white' : '' }}
-                    {{ $isCurrent ? 'bg-blue-600 text-white' : '' }}
+                    {{ $isCurrent ? 'bg-primary-600 text-white' : '' }}
                     {{ $isFuture  ? 'bg-slate-100 text-slate-400 border border-slate-200' : '' }}">
                     @if($isDone)
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
@@ -104,7 +104,7 @@
                 <div class="flex items-center justify-between">
                     <p class="text-sm font-semibold
                         {{ $isDone    ? 'text-slate-600' : '' }}
-                        {{ $isCurrent ? 'text-blue-700' : '' }}
+                        {{ $isCurrent ? 'text-primary-700' : '' }}
                         {{ $isFuture  ? 'text-slate-400' : '' }}">
                         {{ $step['label'] }}
                     </p>
@@ -113,7 +113,7 @@
                     @endif
                 </div>
                 @if($isCurrent)
-                <p class="text-xs text-blue-500 mt-0.5">En cours...</p>
+                <p class="text-xs text-primary-500 mt-0.5">En cours...</p>
                 @endif
             </div>
         </div>

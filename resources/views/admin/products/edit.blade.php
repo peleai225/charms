@@ -11,7 +11,7 @@
 
 @include('admin.products.partials._variants-scripts')
 
-<div class="mt-5 space-y-4" x-data="variantManager">
+<div class="mt-5 space-y-4" x-data="variantManagerData()">
 
     @include('admin.products.partials._variants-generator')
 

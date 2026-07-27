@@ -64,7 +64,7 @@ const values = [
         <div class="container mx-auto px-4 py-12 max-w-5xl">
             <!-- Notre histoire -->
             <div class="mb-12">
-                <span class="text-xs font-semibold text-blue-600 uppercase tracking-widest">Notre histoire</span>
+                <span class="text-xs font-semibold text-primary-600 uppercase tracking-widest">Notre histoire</span>
                 <h2 class="text-2xl font-bold text-slate-900 mt-1 mb-4">Qui sommes-nous ?</h2>
                 <div class="text-slate-600 leading-relaxed text-sm max-w-2xl">
                     <p v-if="about_text" class="whitespace-pre-line">{{ about_text }}</p>
@@ -91,7 +91,7 @@ const values = [
 
             <!-- Nos valeurs -->
             <div class="mb-12">
-                <span class="text-xs font-semibold text-blue-600 uppercase tracking-widest">Nos valeurs</span>
+                <span class="text-xs font-semibold text-primary-600 uppercase tracking-widest">Nos valeurs</span>
                 <h2 class="text-2xl font-bold text-slate-900 mt-1 mb-6">Ce qui nous guide</h2>
                 <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div

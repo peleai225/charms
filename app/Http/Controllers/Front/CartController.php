@@ -123,6 +123,22 @@ class CartController extends Controller
         ]);
 
         $cart = $this->getCart();
+        $item = $cart->items()->with(['product', 'variant'])->findOrFail($itemId);
+
+        if ($request->quantity > 0) {
+            $stock = $item->variant
+                ? $item->variant->stock_quantity
+                : $item->product->stock_quantity;
+            $allowBackorder = $item->product->allow_backorder ?? false;
+            if (!$allowBackorder && $request->quantity > $stock) {
+                $msg = "Stock insuffisant (max {$stock}).";
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json(['success' => false, 'message' => $msg], 422);
+                }
+                return back()->withErrors(['quantity' => $msg]);
+            }
+        }
+
         $cart->updateItemQuantity($itemId, $request->quantity);
 
         // Fetch pur (pas Inertia) → JSON pour mise à jour réactive sans rechargement
@@ -254,6 +270,11 @@ class CartController extends Controller
         $cart = $this->getCart();
         $cart->removeCoupon();
 
+        if (request()->wantsJson() || request()->ajax()) {
+            $cart->refresh();
+            return response()->json(['success' => true, 'cart_count' => $cart->items_count]);
+        }
+
         return back()->with('success', 'Code promo retiré.');
     }
 
@@ -292,7 +313,7 @@ class CartController extends Controller
                 'price_fmt'    => number_format($item->unit_price, 0, ',', ' ') . ' F CFA',
                 'quantity'     => $item->quantity,
                 'subtotal_fmt' => number_format($item->unit_price * $item->quantity, 0, ',', ' ') . ' F CFA',
-                'variant_id'   => $item->variant_id,
+                'variant_id'   => $item->product_variant_id,
                 'variant'      => $item->variant
                     ? $item->variant->attributeValues->pluck('value')->implode(' / ')
                     : null,

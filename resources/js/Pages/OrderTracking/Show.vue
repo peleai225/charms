@@ -1,10 +1,10 @@
 <script setup>
 import FrontLayout from '@/Layouts/FrontLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import Card from '@/Components/Card.vue';
 import Badge from '@/Components/Badge.vue';
 import { useHelpers } from '@/Composables/useHelpers';
-import { computed } from 'vue';
+import { computed, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({
     order: Object,
@@ -36,6 +36,22 @@ const steps = computed(() => [
 const statusOrder = { pending: 0, confirmed: 1, processing: 2, shipped: 3, delivered: 4, cancelled: -1, refunded: -1 };
 const currentIndex = computed(() => statusOrder[props.order.status] ?? 0);
 const isCancelled = computed(() => ['cancelled', 'refunded'].includes(props.order.status));
+
+// Écoute temps réel via Pusher/Echo
+let echoChannel = null;
+onMounted(() => {
+    if (window.Echo) {
+        echoChannel = window.Echo.channel(`order.${props.order.id}`)
+            .listen('.status-updated', () => {
+                router.reload({ only: ['order'] });
+            });
+    }
+});
+onUnmounted(() => {
+    if (echoChannel) {
+        window.Echo.leave(`order.${props.order.id}`);
+    }
+});
 </script>
 
 <template>

@@ -41,8 +41,8 @@
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
                     <div class="bg-white rounded-2xl p-4 border border-slate-200">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="w-10 h-10 bg-primary-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                                 </svg>
                             </div>
@@ -87,7 +87,7 @@
                 <div class="bg-white rounded-2xl border border-slate-200 mb-6 overflow-hidden">
                     <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                         <h2 class="font-semibold text-slate-900">Dernières commandes</h2>
-                        <a href="{{ route('account.orders') }}" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                        <a href="{{ route('account.orders') }}" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
                             Voir tout
                         </a>
                     </div>
@@ -104,14 +104,14 @@
                                     <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium
                                         @if($order->status === 'delivered') bg-green-100 text-green-700
                                         @elseif($order->status === 'cancelled') bg-red-100 text-red-700
-                                        @elseif($order->status === 'shipped') bg-indigo-100 text-indigo-700
-                                        @elseif($order->status === 'processing') bg-blue-100 text-blue-700
+                                        @elseif($order->status === 'shipped') bg-primary-100 text-primary-700
+                                        @elseif($order->status === 'processing') bg-primary-100 text-primary-700
                                         @else bg-amber-100 text-amber-700 @endif">
                                         {{ $order->status_label }}
                                     </span>
                                 </div>
                                 <a href="{{ route('account.orders.show', $order) }}"
-                                   class="text-slate-400 hover:text-blue-600 transition-colors">
+                                   class="text-slate-400 hover:text-primary-600 transition-colors">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                                     </svg>
@@ -127,7 +127,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                     </svg>
                     <p class="text-slate-500 text-sm mb-4">Vous n'avez pas encore passé de commande.</p>
-                    <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                    <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition-colors">
                         Découvrir la boutique
                     </a>
                 </div>
@@ -137,7 +137,7 @@
                 <div class="bg-white rounded-2xl border border-slate-200">
                     <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                         <h2 class="font-semibold text-slate-900">Adresse principale</h2>
-                        <a href="{{ route('account.addresses') }}" class="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                        <a href="{{ route('account.addresses') }}" class="text-sm text-primary-600 hover:text-primary-700 font-medium">
                             Gérer
                         </a>
                     </div>
@@ -154,7 +154,7 @@
                         @else
                         <div class="text-center py-4">
                             <p class="text-sm text-slate-500 mb-3">Aucune adresse enregistrée</p>
-                            <a href="{{ route('account.addresses') }}" class="inline-flex items-center gap-1.5 px-4 py-2 border border-blue-600 text-blue-600 text-sm font-medium rounded-xl hover:bg-blue-50 transition-colors">
+                            <a href="{{ route('account.addresses') }}" class="inline-flex items-center gap-1.5 px-4 py-2 border border-primary-600 text-primary-600 text-sm font-medium rounded-xl hover:bg-primary-50 transition-colors">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                 </svg>

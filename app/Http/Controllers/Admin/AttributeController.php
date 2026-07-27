@@ -8,30 +8,19 @@ use App\Models\AttributeValue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
-
 class AttributeController extends Controller
 {
     public function index()
     {
-        Inertia::setRootView('layouts.admin-inertia');
-
         $attributes = Attribute::with(['values' => fn($q) => $q->orderBy('order')->orderBy('value')])
             ->orderBy('order')
             ->orderBy('name')
             ->get();
 
+        Inertia::setRootView('layouts.admin-inertia');
+
         return Inertia::render('Admin/Attributes/Index', [
-            'attributes' => $attributes->map(fn($a) => [
-                'id'     => $a->id,
-                'name'   => $a->name,
-                'slug'   => $a->slug,
-                'type'   => $a->type,
-                'values' => $a->values->map(fn($v) => [
-                    'id'         => $v->id,
-                    'value'      => $v->value,
-                    'color_code' => $v->color_code,
-                ]),
-            ]),
+            'attributes' => $attributes,
         ]);
     }
 
@@ -93,37 +82,25 @@ class AttributeController extends Controller
         return back()->with('success', '"' . $request->value . '" ajouté à ' . $attribute->name . '.');
     }
 
-    public function destroyValue(Attribute $attribute, AttributeValue $value)
-    {
-        $value->delete();
-        return back()->with('success', 'Valeur supprimée.');
-    }
-
     public function updateValue(Request $request, Attribute $attribute, AttributeValue $value)
     {
-        $validated = $request->validate([
-            'color_code'   => 'nullable|string|max:20|regex:/^#[0-9A-Fa-f]{3,6}$/',
-            'image'        => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
-            'remove_image' => 'nullable|boolean',
+        $request->validate([
+            'color_code'    => 'nullable|string|max:20|regex:/^#[0-9A-Fa-f]{3,6}$/',
+            'image'         => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'remove_image'  => 'nullable|boolean',
         ]);
 
-        // Supprimer image si demandé
-        if ($request->boolean('remove_image')) {
-            $value->deleteImage();
+        if ($request->has('color_code')) {
+            $value->color_code = $request->color_code;
         }
 
-        // Uploader nouvelle image
-        if ($request->hasFile('image')) {
-            // Supprimer ancienne
+        if ($request->boolean('remove_image')) {
+            $value->deleteImage();
+        } elseif ($request->hasFile('image')) {
             if ($value->image) {
                 \Storage::disk('public')->delete($value->image);
             }
             $value->image = $request->file('image')->store('attributes', 'public');
-        }
-
-        // Mettre à jour color_code
-        if ($request->has('color_code')) {
-            $value->color_code = $request->color_code;
         }
 
         $value->save();
@@ -133,6 +110,13 @@ class AttributeController extends Controller
             'image'     => $value->image,
             'image_url' => $value->image_url,
         ]);
+    }
+
+    public function destroyValue(Attribute $attribute, AttributeValue $value)
+    {
+        $value->deleteImage();
+        $value->delete();
+        return back()->with('success', 'Valeur supprimée.');
     }
 
     public function bulkStoreValues(Request $request, Attribute $attribute)

@@ -25,6 +25,8 @@ class AttributeValue extends Model
         'order' => 'integer',
     ];
 
+    protected $appends = ['image_url'];
+
     protected static function boot()
     {
         parent::boot();

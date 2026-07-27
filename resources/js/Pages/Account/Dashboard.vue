@@ -10,7 +10,7 @@ const props = defineProps({
 const { formatPrice } = useHelpers();
 
 const statCards = [
-    { key: 'orders_count',     label: 'Commandes',  icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z', color: 'text-blue-600 bg-blue-50' },
+    { key: 'orders_count',     label: 'Commandes',  icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z', color: 'text-primary-600 bg-primary-50' },
     { key: 'orders_delivered', label: 'Livrées',    icon: 'M5 13l4 4L19 7',                              color: 'text-green-600 bg-green-50' },
     { key: 'orders_pending',   label: 'En cours',   icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-amber-600 bg-amber-50' },
     { key: 'loyalty_points',   label: 'Pts fidélité',icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z', color: 'text-purple-600 bg-purple-50' },

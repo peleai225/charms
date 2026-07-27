@@ -6,25 +6,25 @@
 
 <div class="relative group mx-2">
     <a href="{{ $href }}"
-       class="flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors relative
+       class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors relative
               {{ $isActive
-                  ? 'nav-active bg-gray-50 text-gray-900'
+                  ? 'nav-active bg-orange-50/70 text-gray-900'
                   : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' }}"
        :class="sidebarCollapsed ? 'justify-center px-0' : ''">
 
-        <svg class="w-[16px] h-[16px] flex-shrink-0 {{ $isActive ? 'text-gray-800' : 'text-gray-400 group-hover:text-gray-600' }}"
+        <svg class="w-[15px] h-[15px] flex-shrink-0 {{ $isActive ? 'text-orange-500' : 'text-gray-400 group-hover:text-gray-600' }}"
              fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75">
             <path stroke-linecap="round" stroke-linejoin="round" d="{{ $icon }}"/>
         </svg>
 
-        <span class="flex-1 truncate text-[13px] font-medium leading-none"
+        <span class="flex-1 truncate text-[12.5px] font-medium leading-none"
               x-show="!sidebarCollapsed" x-transition.opacity.duration.100ms>
             {{ $label }}
         </span>
 
         @if($badge)
-            <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full leading-none flex-shrink-0
-                         {{ $isActive ? 'bg-orange-100 text-orange-600' : 'bg-gray-100 text-gray-500' }}"
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none flex-shrink-0
+                         {{ $isActive ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-500' }}"
                   x-show="!sidebarCollapsed" x-transition.opacity.duration.100ms>
                 {{ $badge }}
             </span>

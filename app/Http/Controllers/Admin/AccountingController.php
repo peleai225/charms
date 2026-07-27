@@ -12,6 +12,7 @@ use App\Models\AccountingPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Inertia\Inertia;
 
 class AccountingController extends Controller
 {
@@ -94,15 +95,37 @@ class AccountingController extends Controller
             ]);
         }
 
-        return view('admin.accounting.index', compact(
-            'stats',
-            'revenueChart',
-            'paymentMethods',
-            'topProducts',
-            'recentEntries',
-            'journals',
-            'period'
-        ));
+        Inertia::setRootView('layouts.admin-inertia');
+
+        return Inertia::render('Admin/Accounting/Index', [
+            'stats'          => $stats,
+            'revenueChart'   => $revenueChart,
+            'paymentMethods' => $paymentMethods->map(fn($m) => [
+                'payment_method' => $m->payment_method,
+                'total'          => (float) $m->total,
+                'count'          => $m->count,
+            ])->values()->toArray(),
+            'topProducts'    => $topProducts->map(fn($p) => [
+                'id'            => $p->id,
+                'name'          => $p->name,
+                'quantity_sold' => $p->quantity_sold,
+                'revenue'       => (float) $p->revenue,
+            ])->values()->toArray(),
+            'recentEntries'  => $recentEntries->map(fn($e) => [
+                'id'           => $e->id,
+                'entry_number' => $e->entry_number,
+                'label'        => $e->label,
+                'description'  => $e->description,
+                'total_debit'  => (float) $e->total_debit,
+                'entry_date_fmt' => $e->entry_date ? $e->entry_date->format('d/m/Y') : null,
+            ])->values()->toArray(),
+            'journals'       => $journals->map(fn($j) => [
+                'id'            => $j->id,
+                'name'          => $j->name,
+                'entries_count' => $j->entries_count ?? 0,
+            ])->values()->toArray(),
+            'period'         => $period,
+        ]);
     }
 
     /**
@@ -127,7 +150,26 @@ class AccountingController extends Controller
         $entries = $query->latest('entry_date')->paginate(20);
         $journals = AccountingJournal::all();
 
-        return view('admin.accounting.entries', compact('entries', 'journals'));
+        Inertia::setRootView('layouts.admin-inertia');
+
+        return Inertia::render('Admin/Accounting/Entries', [
+            'entries'  => $entries->through(fn($e) => [
+                'id'           => $e->id,
+                'entry_number' => $e->entry_number,
+                'description'  => $e->description,
+                'label'        => $e->label,
+                'journal_code' => $e->journal?->code,
+                'total_debit'  => (float) $e->total_debit,
+                'total_credit' => (float) $e->total_credit,
+                'entry_date_fmt' => $e->entry_date ? $e->entry_date->format('d/m/Y') : null,
+            ]),
+            'journals' => $journals->map(fn($j) => [
+                'id'   => $j->id,
+                'name' => $j->name,
+                'code' => $j->code,
+            ])->values()->toArray(),
+            'filters'  => $request->only(['journal', 'start_date', 'end_date']),
+        ]);
     }
 
     /**
@@ -135,8 +177,38 @@ class AccountingController extends Controller
      */
     public function showEntry(AccountingEntry $entry)
     {
-        $entry->load(['journal', 'lines.account', 'order']);
-        return view('admin.accounting.entry-show', compact('entry'));
+        $entry->load(['journal', 'lines.account', 'order', 'createdBy']);
+
+        Inertia::setRootView('layouts.admin-inertia');
+
+        return Inertia::render('Admin/Accounting/EntryShow', [
+            'entry' => [
+                'id'             => $entry->id,
+                'entry_number'   => $entry->entry_number,
+                'description'    => $entry->description,
+                'label'          => $entry->label,
+                'document_number' => $entry->document_number,
+                'journal_code'   => $entry->journal?->code,
+                'journal_name'   => $entry->journal?->name,
+                'entry_date_fmt' => $entry->entry_date ? $entry->entry_date->format('d/m/Y') : null,
+                'created_at_fmt' => $entry->created_at?->format('d/m/Y à H:i'),
+                'created_by_name' => $entry->createdBy?->name,
+                'fiscal_year'    => $entry->fiscal_year,
+                'is_balanced'    => $entry->isBalanced(),
+                'total_debit'    => (float) $entry->total_debit,
+                'total_credit'   => (float) $entry->total_credit,
+                'order_id'       => $entry->order?->id,
+                'order_number'   => $entry->order?->order_number,
+                'lines'          => $entry->lines->map(fn($l) => [
+                    'id'           => $l->id,
+                    'account_code' => $l->account?->code,
+                    'account_name' => $l->account?->name,
+                    'label'        => $l->label,
+                    'debit'        => (float) $l->debit,
+                    'credit'       => (float) $l->credit,
+                ])->values()->toArray(),
+            ],
+        ]);
     }
 
     /**
@@ -145,7 +217,23 @@ class AccountingController extends Controller
     public function accounts()
     {
         $accounts = AccountingAccount::orderBy('code')->get()->groupBy('type');
-        return view('admin.accounting.accounts', compact('accounts'));
+
+        Inertia::setRootView('layouts.admin-inertia');
+
+        $mapped = $accounts->map(fn($typeAccounts) =>
+            $typeAccounts->map(fn($a) => [
+                'id'          => $a->id,
+                'code'        => $a->code,
+                'name'        => $a->name,
+                'description' => $a->description,
+                'balance'     => (float) $a->balance,
+                'is_active'   => $a->is_active,
+            ])->values()->toArray()
+        )->toArray();
+
+        return Inertia::render('Admin/Accounting/Accounts', [
+            'accounts' => $mapped,
+        ]);
     }
 
     /**
@@ -187,7 +275,23 @@ class AccountingController extends Controller
             'credit' => array_sum(array_column($balances, 'credit')),
         ];
 
-        return view('admin.accounting.balance', compact('balances', 'totals', 'startDate', 'endDate'));
+        Inertia::setRootView('layouts.admin-inertia');
+
+        $mappedBalances = array_map(fn($row) => [
+            'account_id'   => $row['account']->id,
+            'account_code' => $row['account']->code,
+            'account_name' => $row['account']->name,
+            'debit'        => (float) $row['debit'],
+            'credit'       => (float) $row['credit'],
+            'balance'      => (float) $row['balance'],
+        ], $balances);
+
+        return Inertia::render('Admin/Accounting/Balance', [
+            'balances'  => $mappedBalances,
+            'totals'    => $totals,
+            'startDate' => $startDate,
+            'endDate'   => $endDate,
+        ]);
     }
 
     /**
@@ -223,7 +327,31 @@ class AccountingController extends Controller
             // Tables peuvent ne pas exister
         }
 
-        return view('admin.accounting.ledger', compact('accounts', 'account', 'entries', 'startDate', 'endDate', 'accountId'));
+        Inertia::setRootView('layouts.admin-inertia');
+
+        return Inertia::render('Admin/Accounting/Ledger', [
+            'accounts'  => $accounts->map(fn($a) => [
+                'id'   => $a->id,
+                'code' => $a->code,
+                'name' => $a->name,
+            ])->values()->toArray(),
+            'account'   => $account ? [
+                'id'   => $account->id,
+                'code' => $account->code,
+                'name' => $account->name,
+            ] : null,
+            'entries'   => $entries->map(fn($l) => [
+                'id'             => $l->id,
+                'label'          => $l->label,
+                'debit'          => (float) $l->debit,
+                'credit'         => (float) $l->credit,
+                'entry_date_fmt' => $l->entry?->entry_date ? $l->entry->entry_date->format('d/m/Y') : null,
+                'journal_code'   => $l->entry?->journal?->code ?? 'OD',
+            ])->values()->toArray(),
+            'startDate' => $startDate,
+            'endDate'   => $endDate,
+            'accountId' => $accountId,
+        ]);
     }
 
     /**
@@ -234,7 +362,20 @@ class AccountingController extends Controller
         $journals = AccountingJournal::all();
         $accounts = AccountingAccount::orderBy('code')->get();
 
-        return view('admin.accounting.create-entry', compact('journals', 'accounts'));
+        Inertia::setRootView('layouts.admin-inertia');
+
+        return Inertia::render('Admin/Accounting/CreateEntry', [
+            'journals' => $journals->map(fn($j) => [
+                'id'   => $j->id,
+                'code' => $j->code,
+                'name' => $j->name,
+            ])->values()->toArray(),
+            'accounts' => $accounts->map(fn($a) => [
+                'id'   => $a->id,
+                'code' => $a->code,
+                'name' => $a->name,
+            ])->values()->toArray(),
+        ]);
     }
 
     /**

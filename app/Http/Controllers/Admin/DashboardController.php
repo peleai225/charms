@@ -8,278 +8,144 @@ use App\Models\Order;
 use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    /**
-     * Affiche le dashboard admin
-     */
-    public function index()
+    public function index(Request $request)
     {
-        // Statistiques principales
-        $stats = $this->getMainStats();
-        
-        // Ventes des 30 derniers jours
-        $salesChart = $this->getSalesChartData();
-        
-        // Commandes récentes
-        $recentOrders = Order::with('customer')
-            ->latest()
-            ->take(10)
-            ->get();
-        
-        // Produits en rupture ou stock bas
-        $lowStockProducts = Product::where('status', 'active')
-            ->where('track_stock', true)
-            ->where(function ($query) {
-                $query->where('stock_quantity', '<=', 0)
-                    ->orWhereColumn('stock_quantity', '<=', 'stock_alert_threshold');
-            })
-            ->orderBy('stock_quantity')
-            ->take(10)
-            ->get();
+        Inertia::setRootView('layouts.admin-inertia');
 
-        // Top produits vendus (CORRIGÉ pour MySQL strict mode)
-        $topProducts = Product::query()
-            ->select([
-                'products.id',
-                'products.name',
-                'products.slug',
-                'products.sku',
-                'products.sale_price',
-                'products.status',
-                'products.stock_quantity',
-                'products.created_at',
-                'products.updated_at'
-            ])
-            ->selectRaw('COALESCE(SUM(order_items.quantity), 0) as total_sold')
-            ->leftJoin('order_items', 'products.id', '=', 'order_items.product_id')
-            ->leftJoin('orders', function ($join) {
-                $join->on('order_items.order_id', '=', 'orders.id')
-                    ->whereNotIn('orders.status', ['cancelled', 'refunded'])
-                    ->where('orders.created_at', '>=', now()->subDays(30));
-            })
-            ->groupBy([
-                'products.id',
-                'products.name',
-                'products.slug',
-                'products.sku',
-                'products.sale_price',
-                'products.status',
-                'products.stock_quantity',
-                'products.created_at',
-                'products.updated_at'
-            ])
-            ->orderByDesc('total_sold')
-            ->take(5)
-            ->get();
+        $period = in_array($request->period, ['today', 'week', 'month'])
+            ? $request->period
+            : 'month';
 
-        return view('admin.dashboard', compact(
-            'stats',
-            'salesChart',
-            'recentOrders',
-            'lowStockProducts',
-            'topProducts'
-        ));
-    }
-
-    /**
-     * API : commandes récentes (pour rafraîchissement AJAX)
-     */
-    public function recentOrders()
-    {
-        $orders = Order::with('customer')
-            ->latest()
-            ->take(10)
-            ->get();
-
-        return response()->json($orders->map(fn($o) => [
-            'id'           => $o->id,
-            'order_number' => $o->order_number,
-            'total'        => format_price($o->total),
-            'status'       => $o->status,
-            'status_label' => $o->status_label,
-            'created_at'   => $o->created_at->diffForHumans(),
-            'initials'     => $o->customer
-                ? strtoupper(substr($o->customer->first_name, 0, 1) . substr($o->customer->last_name, 0, 1))
-                : 'IN',
-            'url'          => route('admin.orders.show', $o->id),
-        ]));
-    }
-
-    /**
-     * API : stats filtrées par période (today / week / month)
-     */
-    public function apiStats(Request $request)
-    {
-        $period = $request->input('period', 'month');
-
-        [$start, $prevStart, $prevEnd] = match ($period) {
-            'today' => [
-                Carbon::today(),
-                Carbon::yesterday()->startOfDay(),
-                Carbon::yesterday()->endOfDay(),
-            ],
-            'week' => [
-                Carbon::now()->startOfWeek(),
-                Carbon::now()->subWeek()->startOfWeek(),
-                Carbon::now()->subWeek()->endOfWeek(),
-            ],
-            default => [
-                Carbon::now()->startOfMonth(),
-                Carbon::now()->subMonth()->startOfMonth(),
-                Carbon::now()->subMonth()->endOfMonth(),
-            ],
-        };
-
-        $revenue = Order::whereNotIn('status', ['cancelled', 'refunded'])
-            ->where('created_at', '>=', $start)->sum('total');
-
-        $prevRevenue = Order::whereNotIn('status', ['cancelled', 'refunded'])
-            ->whereBetween('created_at', [$prevStart, $prevEnd])->sum('total');
-
-        $growth = $prevRevenue > 0
-            ? round((($revenue - $prevRevenue) / $prevRevenue) * 100, 1)
-            : 0;
-
-        $ordersCount  = Order::where('created_at', '>=', $start)->count();
-        $pendingCount = Order::whereIn('status', ['pending', 'confirmed', 'processing'])->count();
-        $newCustomers = Customer::where('created_at', '>=', $start)->count();
-
-        // Chart data for the selected period
-        $days = match ($period) {
-            'today' => 24,   // hours
-            'week'  => 7,
-            default => 30,
-        };
-
-        $chart = $this->getSalesChartData($period);
-
-        return response()->json([
-            'revenue'      => $revenue,
-            'revenue_fmt'  => number_format($revenue, 0, ',', ' ') . ' F CFA',
-            'growth'       => $growth,
-            'orders'       => $ordersCount,
-            'pending'      => $pendingCount,
-            'new_customers'=> $newCustomers,
-            'chart'        => $chart,
+        return Inertia::render('Admin/Dashboard/Index', [
+            'stats'         => $this->getMainStats(),
+            'salesChart'    => $this->getSalesChartData($period),
+            'recentOrders'  => $this->getRecentOrders(),
+            'lowStock'      => $this->getLowStockProducts(),
+            'topProducts'   => $this->getTopProducts(),
+            'currentPeriod' => $period,
         ]);
     }
 
-    /**
-     * Statistiques principales
-     */
-    protected function getMainStats(): array
+    private function getMainStats(): array
     {
-        $today = Carbon::today();
-        $thisMonth = Carbon::now()->startOfMonth();
-        $lastMonth = Carbon::now()->subMonth()->startOfMonth();
+        $today        = Carbon::today();
+        $thisMonth    = Carbon::now()->startOfMonth();
+        $lastMonth    = Carbon::now()->subMonth()->startOfMonth();
         $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
 
-        // Chiffre d'affaires du mois
         $monthlyRevenue = Order::whereNotIn('status', ['cancelled', 'refunded'])
-            ->where('created_at', '>=', $thisMonth)
-            ->sum('total');
+            ->where('created_at', '>=', $thisMonth)->sum('total');
 
-        // Chiffre d'affaires du mois précédent
         $lastMonthRevenue = Order::whereNotIn('status', ['cancelled', 'refunded'])
-            ->whereBetween('created_at', [$lastMonth, $lastMonthEnd])
-            ->sum('total');
+            ->whereBetween('created_at', [$lastMonth, $lastMonthEnd])->sum('total');
 
-        // Évolution du CA
-        $revenueGrowth = $lastMonthRevenue > 0 
+        $revenueGrowth = $lastMonthRevenue > 0
             ? round((($monthlyRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100, 1)
             : 0;
 
-        // Nombre de commandes du jour
-        $todayOrders = Order::whereDate('created_at', $today)->count();
-
-        // Commandes en attente
-        $pendingOrders = Order::whereIn('status', ['pending', 'confirmed', 'processing'])->count();
-
-        // Nombre de clients
-        $totalCustomers = Customer::count();
-
-        // Nouveaux clients ce mois
-        $newCustomers = Customer::where('created_at', '>=', $thisMonth)->count();
-
-        // Produits actifs
-        $activeProducts = Product::where('status', 'active')->count();
-
-        // Produits en rupture
-        $outOfStock = Product::where('status', 'active')
-            ->where('track_stock', true)
-            ->where('stock_quantity', '<=', 0)
-            ->count();
-
-        // Valeur totale du stock
-        $stockValue = Product::where('status', 'active')
-            ->selectRaw('SUM(stock_quantity * COALESCE(cost_price, purchase_price)) as value')
-            ->value('value') ?? 0;
-
         return [
             'monthly_revenue' => $monthlyRevenue,
-            'revenue_growth' => $revenueGrowth,
-            'today_orders' => $todayOrders,
-            'pending_orders' => $pendingOrders,
-            'total_customers' => $totalCustomers,
-            'new_customers' => $newCustomers,
-            'active_products' => $activeProducts,
-            'out_of_stock' => $outOfStock,
-            'stock_value' => $stockValue,
+            'revenue_growth'  => $revenueGrowth,
+            'today_orders'    => Order::whereDate('created_at', $today)->count(),
+            'pending_orders'  => Order::whereIn('status', ['pending', 'confirmed', 'processing'])->count(),
+            'new_customers'   => Customer::where('created_at', '>=', $thisMonth)->count(),
+            'active_products' => Product::where('status', 'active')->count(),
+            'out_of_stock'    => Product::where('status', 'active')->where('track_stock', true)->where('stock_quantity', '<=', 0)->count(),
+            'stock_value'     => Product::where('status', 'active')->selectRaw('SUM(stock_quantity * COALESCE(cost_price, purchase_price)) as value')->value('value') ?? 0,
         ];
     }
 
-    /**
-     * Données pour le graphique des ventes
-     */
-    protected function getSalesChartData(string $period = 'month'): array
+    private function getSalesChartData(string $period): array
     {
         if ($period === 'today') {
-            // Granularité : heure par heure
-            $startDate = Carbon::today();
             $sales = Order::whereNotIn('status', ['cancelled', 'refunded'])
-                ->where('created_at', '>=', $startDate)
+                ->where('created_at', '>=', Carbon::today())
                 ->selectRaw('HOUR(created_at) as hour, SUM(total) as total, COUNT(*) as count')
-                ->groupBy('hour')
-                ->orderBy('hour')
-                ->get()
-                ->keyBy('hour');
+                ->groupBy('hour')->orderBy('hour')->get()->keyBy('hour');
 
             $labels = $revenues = $orders = [];
             for ($h = 0; $h < 24; $h++) {
                 $labels[]   = str_pad($h, 2, '0', STR_PAD_LEFT) . 'h';
-                $revenues[] = $sales[$h]->total ?? 0;
-                $orders[]   = $sales[$h]->count ?? 0;
+                $revenues[] = (float) ($sales[$h]->total ?? 0);
+                $orders[]   = (int) ($sales[$h]->count ?? 0);
             }
         } else {
-            $days = $period === 'week' ? 7 : 30;
+            $days      = $period === 'week' ? 7 : 30;
             $startDate = Carbon::now()->subDays($days - 1)->startOfDay();
 
             $sales = Order::whereNotIn('status', ['cancelled', 'refunded'])
                 ->where('created_at', '>=', $startDate)
                 ->selectRaw('DATE(created_at) as date, SUM(total) as total, COUNT(*) as count')
-                ->groupBy('date')
-                ->orderBy('date')
-                ->get()
-                ->keyBy('date');
+                ->groupBy('date')->orderBy('date')->get()->keyBy('date');
 
             $labels = $revenues = $orders = [];
             for ($i = 0; $i < $days; $i++) {
                 $date       = Carbon::now()->subDays($days - 1 - $i);
                 $dateKey    = $date->format('Y-m-d');
                 $labels[]   = $date->format('d/m');
-                $revenues[] = $sales[$dateKey]->total ?? 0;
-                $orders[]   = $sales[$dateKey]->count ?? 0;
+                $revenues[] = (float) ($sales[$dateKey]->total ?? 0);
+                $orders[]   = (int) ($sales[$dateKey]->count ?? 0);
             }
         }
 
-        return [
-            'labels'   => $labels,
-            'revenues' => $revenues,
-            'orders'   => $orders,
-        ];
+        return compact('labels', 'revenues', 'orders');
+    }
+
+    private function getRecentOrders(): array
+    {
+        return Order::with('customer')->latest()->take(10)->get()
+            ->map(fn($o) => [
+                'id'             => $o->id,
+                'order_number'   => $o->order_number,
+                'total'          => $o->total,
+                'status'         => $o->status,
+                'customer_name'  => trim(($o->customer?->first_name ?? $o->billing_first_name) . ' ' . ($o->customer?->last_name ?? $o->billing_last_name)),
+                'created_at_fmt' => $o->created_at->format('d/m H:i'),
+            ])->toArray();
+    }
+
+    private function getLowStockProducts(): array
+    {
+        return Product::where('status', 'active')->where('track_stock', true)
+            ->where(fn($q) => $q->where('stock_quantity', '<=', 0)->orWhereColumn('stock_quantity', '<=', 'stock_alert_threshold'))
+            ->orderBy('stock_quantity')->take(10)->get()
+            ->map(fn($p) => [
+                'id'             => $p->id,
+                'name'           => $p->name,
+                'stock_quantity' => $p->stock_quantity,
+            ])->toArray();
+    }
+
+    private function getTopProducts(): array
+    {
+        $products = Product::select([
+                'products.id', 'products.name', 'products.slug',
+                'products.sku', 'products.sale_price', 'products.status',
+                'products.stock_quantity', 'products.created_at', 'products.updated_at',
+            ])
+            ->selectRaw('COALESCE(SUM(order_items.quantity), 0) as total_sold')
+            ->with('images')
+            ->leftJoin('order_items', 'products.id', '=', 'order_items.product_id')
+            ->leftJoin('orders', function ($join) {
+                $join->on('order_items.order_id', '=', 'orders.id')
+                    ->whereNotIn('orders.status', ['cancelled', 'refunded'])
+                    ->where('orders.created_at', '>=', now()->subDays(30));
+            })
+            ->groupBy(['products.id','products.name','products.slug','products.sku','products.sale_price','products.status','products.stock_quantity','products.created_at','products.updated_at'])
+            ->orderByDesc('total_sold')->take(5)->get();
+
+        $maxSold = $products->first()?->total_sold ?? 1;
+
+        return $products->map(fn($p) => [
+            'id'         => $p->id,
+            'name'       => $p->name,
+            'total_sold' => $p->total_sold,
+            'pct'        => $maxSold > 0 ? round($p->total_sold / $maxSold * 100) : 0,
+            'image_url'  => $p->images->first() ? asset('storage/' . $p->images->first()->path) : null,
+        ])->toArray();
     }
 }
-

@@ -15,6 +15,7 @@ const { formatPrice } = useHelpers();
 
 // ─── Galerie ──────────────────────────────────────────────────────────────────
 const activeImage = ref(0);
+const colorImageOverride = ref(null);
 
 // ─── Variantes ────────────────────────────────────────────────────────────────
 const selectedColorId     = ref(null);
@@ -48,10 +49,16 @@ const selectColor = (colorId) => {
     selectedColorId.value = colorId;
     const available = props.product.variants.filter(v => v.color_id === colorId).map(v => v.secondary_id);
     if (available.length) selectedSecondaryId.value = available[0];
+
+    // Priority: color attribute image > variant image > gallery
+    const color = props.product.colors.find(c => c.id === colorId);
     const variantImg = props.product.variants.find(v => v.color_id === colorId)?.image;
-    if (variantImg) {
-        const idx = props.product.images.indexOf(variantImg);
-        if (idx !== -1) activeImage.value = idx;
+    if (color?.image) {
+        colorImageOverride.value = color.image;
+    } else if (variantImg) {
+        colorImageOverride.value = variantImg;
+    } else {
+        colorImageOverride.value = null;
     }
 };
 
@@ -126,7 +133,13 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                     <!-- Image principale -->
                     <div class="relative bg-slate-100 rounded-2xl overflow-hidden aspect-square mb-3 border border-slate-200">
                         <img
-                            v-if="product.images[activeImage]"
+                            v-if="colorImageOverride"
+                            :src="colorImageOverride"
+                            :alt="product.name"
+                            class="w-full h-full object-cover"
+                        />
+                        <img
+                            v-else-if="product.images[activeImage]"
                             :src="`/storage/${product.images[activeImage]}`"
                             :alt="product.name"
                             class="w-full h-full object-cover"
@@ -157,7 +170,7 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                             :key="i"
                             @click="activeImage = i"
                             class="aspect-square bg-slate-100 rounded-xl overflow-hidden border-2 transition"
-                            :class="activeImage === i ? 'border-slate-900' : 'border-transparent hover:border-slate-300'"
+                            :class="activeImage === i ? 'border-primary-600' : 'border-transparent hover:border-slate-300'"
                         >
                             <img :src="`/storage/${img}`" :alt="`${product.name} ${i+1}`" class="w-full h-full object-cover" loading="lazy" />
                         </button>
@@ -167,7 +180,7 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                 <!-- Infos produit -->
                 <div class="flex flex-col">
                     <!-- Catégorie + nom -->
-                    <p v-if="product.category" class="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">{{ product.category.name }}</p>
+                    <p v-if="product.category" class="text-xs font-semibold text-primary-600 uppercase tracking-wider mb-1">{{ product.category.name }}</p>
                     <h1 class="text-2xl md:text-3xl font-bold text-slate-900 mb-3 leading-tight">{{ product.name }}</h1>
 
                     <!-- Avis inline -->
@@ -203,11 +216,13 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                                 v-for="color in product.colors"
                                 :key="color.id"
                                 @click="selectColor(color.id)"
-                                class="w-9 h-9 rounded-full border-2 transition-all relative shadow-sm"
-                                :style="{ backgroundColor: color.hex || '#94a3b8' }"
-                                :class="selectedColorId === color.id ? 'border-slate-900 ring-2 ring-offset-1 ring-slate-900' : 'border-white hover:scale-110'"
+                                class="w-9 h-9 rounded-full border-2 transition-all relative shadow-sm overflow-hidden"
+                                :style="!color.image ? { backgroundColor: color.hex || '#94a3b8' } : {}"
+                                :class="selectedColorId === color.id ? 'border-primary-600 ring-2 ring-offset-1 ring-primary-600' : 'border-white hover:scale-110'"
                                 :title="color.name"
-                            />
+                            >
+                                <img v-if="color.image" :src="color.image" :alt="color.name" class="w-full h-full object-cover" />
+                            </button>
                         </div>
                     </div>
 
@@ -223,8 +238,8 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                                 @click="selectedSecondaryId = val.id"
                                 class="px-4 py-1.5 border rounded-lg text-sm font-medium transition"
                                 :class="selectedSecondaryId === val.id
-                                    ? 'bg-slate-900 border-slate-900 text-white'
-                                    : 'border-slate-300 text-slate-700 hover:border-slate-500'"
+                                    ? 'bg-primary-600 border-primary-600 text-white'
+                                    : 'border-slate-300 text-slate-700 hover:border-primary-600'"
                             >
                                 {{ val.value }}
                             </button>
@@ -258,7 +273,7 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                         <button
                             @click="addToCart"
                             :disabled="currentStock === 0 || form.processing || (product.has_variants && !selectedVariant)"
-                            class="flex-1 flex items-center justify-center gap-2 py-3 px-6 bg-slate-900 text-white text-sm font-semibold rounded-xl hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                            class="flex-1 flex items-center justify-center gap-2 py-3 px-6 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition"
                         >
                             <svg v-if="!form.processing" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                             <svg v-else class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
@@ -280,7 +295,7 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                     <!-- Méta infos -->
                     <div class="border-t border-slate-100 pt-4 space-y-1.5 text-xs text-slate-500">
                         <p>SKU : <span class="text-slate-700 font-medium">{{ selectedVariant?.sku || product.sku }}</span></p>
-                        <p v-if="product.category">Catégorie : <Link :href="`/categorie/${product.category.slug}`" class="text-blue-600 hover:underline">{{ product.category.name }}</Link></p>
+                        <p v-if="product.category">Catégorie : <Link :href="`/categorie/${product.category.slug}`" class="text-primary-600 hover:underline">{{ product.category.name }}</Link></p>
                         <p v-if="product.weight">Poids : <span class="text-slate-700">{{ product.weight }} g</span></p>
                     </div>
                 </div>
@@ -296,7 +311,7 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                         @click="activeTab = tab.key"
                         class="px-5 py-3 text-sm font-medium border-b-2 -mb-px transition"
                         :class="activeTab === tab.key
-                            ? 'border-slate-900 text-slate-900'
+                            ? 'border-primary-600 text-primary-600'
                             : 'border-transparent text-slate-500 hover:text-slate-700'"
                     >
                         {{ tab.label }}
@@ -361,7 +376,7 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
             <div v-if="related_products?.length">
                 <div class="flex items-end justify-between mb-5">
                     <div>
-                        <p class="text-xs font-semibold text-blue-600 uppercase tracking-widest mb-1">Suggestions</p>
+                        <p class="text-xs font-semibold text-primary-600 uppercase tracking-widest mb-1">Suggestions</p>
                         <h2 class="text-xl font-bold text-slate-900">Vous aimerez aussi</h2>
                     </div>
                     <Link v-if="product.category" :href="`/categorie/${product.category.slug}`" class="text-sm text-slate-500 hover:text-slate-900 transition">Voir tout →</Link>

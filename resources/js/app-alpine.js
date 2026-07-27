@@ -38,15 +38,15 @@ document.addEventListener('alpine:init', () => {
             if (this.isLoading) return;
             this.isLoading = true;
             try {
-                const res = await fetch('/api/cart', {
+                const res = await fetch('/panier/count', {
                     credentials: 'same-origin',
                     headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    this.count = data.items_count ?? data.count ?? this.count;
+                    this.count = data.count ?? this.count;
                 }
-            } catch (e) { console.error('Cart sync error:', e); }
+            } catch (e) { /* silencieux */ }
             finally { this.isLoading = false; }
         },
     });
@@ -149,7 +149,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await res.json().catch(() => ({}));
             const notify = window.Alpine?.store('notify');
-            if (res.ok && data.redirect) { if (notify && data.message) notify.add(data.message, data.type ?? 'success'); window.location.href = data.redirect; return; }
+            if (res.ok && data.redirect) {
+                if (notify && data.message) notify.add(data.message, data.type ?? 'success');
+                const dest = data.redirect;
+                // N'accepte que les chemins relatifs (commence par /) — pas de redirect externe
+                if (typeof dest === 'string' && dest.startsWith('/')) window.location.href = dest;
+                return;
+            }
             if (!res.ok) { const msg = data.message || data.errors?.[Object.keys(data.errors ?? {})[0]]?.[0] || 'Une erreur est survenue.'; notify?.error(msg); }
         } catch (err) { console.error(err); window.Alpine?.store('notify')?.error('Erreur de connexion.'); }
         finally { if (btn) { btn.disabled = false; btn.innerHTML = orig; } }

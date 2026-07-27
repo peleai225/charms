@@ -86,13 +86,14 @@ class AccountController extends Controller
         ]);
     }
 
-    public function showOrder(Order $order)
+    public function showOrder(string $orderNumber)
     {
         $customer = auth()->user()->customer;
 
-        if (!$customer || $order->customer_id !== $customer->id) {
-            abort(403);
-        }
+        $order = Order::where('order_number', $orderNumber)
+            ->where('customer_id', $customer?->id)
+            ->firstOrFail();
+
 
         $order->load(['items.product.images', 'items.productVariant.attributeValues', 'payments']);
 

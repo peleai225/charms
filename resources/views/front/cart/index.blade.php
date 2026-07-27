@@ -80,7 +80,7 @@ if (!$cart->is_empty) {
 
                 <div class="flex-1 min-w-0">
                     <a href="{{ route('shop.product', $item->product->slug) }}"
-                       class="font-medium text-slate-900 hover:text-blue-600 transition-colors line-clamp-2 text-sm leading-snug">
+                       class="font-medium text-slate-900 hover:text-primary-600 transition-colors line-clamp-2 text-sm leading-snug">
                         {{ $item->product->name }}
                     </a>
                     @if($item->variant)
@@ -167,7 +167,7 @@ if (!$cart->is_empty) {
                     <form @submit.prevent="applyCoupon($event)" class="flex gap-2">
                         @csrf
                         <input type="text" x-model="couponCode" name="coupon_code" placeholder="Code promo"
-                            class="flex-1 px-3 py-2 border border-slate-200 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors uppercase">
+                            class="flex-1 px-3 py-2 border border-slate-200 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors uppercase">
                         <button type="submit" :disabled="isApplying"
                             class="px-3 py-2 bg-slate-700 hover:bg-slate-800 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap min-w-[90px] flex items-center justify-center">
                             <svg x-show="isApplying" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
@@ -247,7 +247,7 @@ if (!$cart->is_empty) {
         <h2 class="text-xl font-bold text-slate-900 mb-2">Votre panier est vide</h2>
         <p class="text-sm text-slate-500 mb-8 max-w-xs mx-auto">Découvrez nos produits et ajoutez-les à votre panier pour passer commande.</p>
         <a href="{{ route('shop.index') }}"
-           class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors">
+           class="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
             Découvrir la boutique
         </a>

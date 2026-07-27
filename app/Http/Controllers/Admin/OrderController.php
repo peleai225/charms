@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Events\OrderCancelled;
+use App\Events\OrderStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Mail\OrderShipped;
 use App\Mail\OrderStatusChanged;
@@ -11,56 +12,68 @@ use App\Models\Order;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Inertia\Inertia;
 
 class OrderController extends Controller
 {
-    /**
-     * Liste des commandes
-     */
     public function index(Request $request)
     {
-        $query = Order::with(['customer', 'items'])
-            ->withCount('items');
+        Inertia::setRootView('layouts.admin-inertia');
 
-        // Filtres
-        if ($request->filled('search')) {
-            $search = $request->search;
+        $query = Order::with(['customer', 'items'])
+            ->latest();
+
+        if ($search = $request->search) {
             $query->where(function ($q) use ($search) {
                 $q->where('order_number', 'like', "%{$search}%")
-                    ->orWhere('billing_email', 'like', "%{$search}%")
-                    ->orWhere('billing_first_name', 'like', "%{$search}%")
-                    ->orWhere('billing_last_name', 'like', "%{$search}%");
+                  ->orWhere('billing_first_name', 'like', "%{$search}%")
+                  ->orWhere('billing_last_name', 'like', "%{$search}%")
+                  ->orWhere('billing_email', 'like', "%{$search}%")
+                  ->orWhere('billing_phone', 'like', "%{$search}%");
             });
         }
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        if ($status = $request->status) {
+            $query->where('status', $status);
         }
 
-        if ($request->filled('payment_status')) {
-            $query->where('payment_status', $request->payment_status);
+        if ($payment = $request->payment_status) {
+            $query->where('payment_status', $payment);
         }
 
-        if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
+        if ($from = $request->date_from) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to = $request->date_to) {
+            $query->whereDate('created_at', '<=', $to);
         }
 
-        if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
-        }
+        $orders = $query->paginate(20)->withQueryString();
 
-        // Statistiques
         $stats = [
-            'pending' => Order::pending()->count(),
-            'processing' => Order::processing()->count(),
-            'shipped' => Order::shipped()->count(),
-            'today_total' => Order::whereDate('created_at', today())->sum('total'),
+            'pending'     => Order::where('status', 'pending')->count(),
+            'processing'  => Order::whereIn('status', ['confirmed', 'processing'])->count(),
+            'shipped'     => Order::where('status', 'shipped')->count(),
             'today_count' => Order::whereDate('created_at', today())->count(),
+            'today_total' => Order::whereDate('created_at', today())->sum('total'),
         ];
 
-        $orders = $query->latest()->paginate(20)->withQueryString();
-
-        return view('admin.orders.index', compact('orders', 'stats'));
+        return Inertia::render('Admin/Orders/Index', [
+            'orders'  => $orders->through(fn ($o) => [
+                'id'             => $o->id,
+                'order_number'   => $o->order_number,
+                'status'         => $o->status,
+                'payment_status' => $o->payment_status,
+                'total'          => $o->total,
+                'items_count'    => $o->items->sum('quantity'),
+                'customer_name'  => trim($o->billing_first_name . ' ' . $o->billing_last_name),
+                'billing_email'  => $o->billing_email,
+                'billing_phone'  => $o->billing_phone,
+                'created_at_fmt' => $o->created_at->format('d/m/Y H:i'),
+            ]),
+            'stats'   => $stats,
+            'filters' => $request->only(['search', 'status', 'payment_status', 'date_from', 'date_to']),
+        ]);
     }
 
     /**
@@ -68,6 +81,8 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
+        Inertia::setRootView('layouts.admin-inertia');
+
         $order->load([
             'customer',
             'items.product.images',
@@ -82,7 +97,69 @@ class OrderController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('admin.orders.show', compact('order', 'timeline'));
+        $orderData = [
+            'id'                  => $order->id,
+            'order_number'        => $order->order_number,
+            'status'              => $order->status,
+            'payment_status'      => $order->payment_status,
+            'payment_status_label'=> $order->payment_status_label,
+            'payment_method'      => $order->payment_method,
+            'payment_method_label'=> $order->payment_method_label,
+            'subtotal'            => $order->subtotal,
+            'tax_amount'          => $order->tax_amount,
+            'shipping_amount'     => $order->shipping_amount,
+            'discount_amount'     => $order->discount_amount,
+            'total'               => $order->total,
+            'coupon_code'         => $order->coupon_code,
+            'tracking_number'     => $order->tracking_number,
+            'shipping_carrier'    => $order->shipping_carrier,
+            'customer_id'         => $order->customer_id,
+            'billing_first_name'  => $order->billing_first_name,
+            'billing_last_name'   => $order->billing_last_name,
+            'billing_email'       => $order->billing_email,
+            'billing_phone'       => $order->billing_phone,
+            'billing_address'     => $order->billing_address,
+            'billing_address_2'   => $order->billing_address_2,
+            'billing_city'        => $order->billing_city,
+            'billing_postal_code' => $order->billing_postal_code,
+            'billing_country'     => $order->billing_country,
+            'shipping_first_name' => $order->shipping_first_name,
+            'shipping_last_name'  => $order->shipping_last_name,
+            'shipping_phone'      => $order->shipping_phone,
+            'shipping_address'    => $order->shipping_address,
+            'shipping_address_2'  => $order->shipping_address_2,
+            'shipping_city'       => $order->shipping_city,
+            'shipping_postal_code'=> $order->shipping_postal_code,
+            'shipping_country'    => $order->shipping_country,
+            'customer_notes'      => $order->customer_notes,
+            'admin_notes'         => $order->admin_notes,
+            'created_at_fmt'      => $order->created_at->format('d/m/Y H:i'),
+            'shipped_at_fmt'      => $order->shipped_at?->format('d/m/Y H:i'),
+            'delivered_at_fmt'    => $order->delivered_at?->format('d/m/Y H:i'),
+            'paid_at_fmt'         => $order->paid_at?->format('d/m/Y H:i'),
+            'items'               => $order->items->map(fn ($item) => [
+                'id'           => $item->id,
+                'name'         => $item->name ?? $item->product?->name,
+                'variant_name' => $item->product_variant?->name ?? $item->variant_name,
+                'sku'          => $item->sku,
+                'quantity'     => $item->quantity,
+                'unit_price'   => $item->unit_price,
+                'total'        => $item->total,
+                'image_url'    => $item->product?->images->first()
+                    ? asset('storage/' . $item->product->images->first()->path)
+                    : null,
+            ]),
+        ];
+
+        return Inertia::render('Admin/Orders/Show', [
+            'order'    => $orderData,
+            'timeline' => $timeline->map(fn ($log) => [
+                'id'          => $log->id,
+                'action'      => $log->action,
+                'description' => $log->description,
+                'created_at'  => $log->created_at->format('d/m/Y H:i'),
+            ]),
+        ]);
     }
 
     /**
@@ -111,27 +188,31 @@ class OrderController extends Controller
         // Actions spécifiques selon le statut
         if ($newStatus === 'shipped' && $oldStatus !== 'shipped') {
             $order->update(['shipped_at' => now()]);
-            
-            // Envoyer l'email de suivi
+
             if ($order->billing_email) {
                 try {
-                    // Configurer la connexion mail depuis les paramètres
-                    \App\Services\MailConfigService::configureFromSettings();
-                    
-                    Mail::to($order->billing_email)->send(new OrderShipped($order));
+                    Mail::to($order->billing_email)->queue(new OrderShipped($order));
                 } catch (\Exception $e) {
-                    \Log::error('Failed to send shipping email: ' . $e->getMessage());
+                    \Log::error('Failed to queue shipping email: ' . $e->getMessage());
                 }
             }
         }
 
         if ($newStatus === 'delivered') {
             $order->update(['delivered_at' => now()]);
+
+            // COD : marquer automatiquement comme payé à la livraison
+            if ($order->payment_method === 'cod' && $order->payment_status !== 'paid') {
+                $order->update(['payment_status' => 'paid', 'paid_at' => now()]);
+            }
         }
 
         if ($newStatus === 'cancelled' && $oldStatus !== 'cancelled') {
             event(new OrderCancelled($order, $request->admin_notes ?? ''));
         }
+
+        // Broadcast temps réel au client
+        event(new OrderStatusUpdated($order, $oldStatus));
 
         // Log
         ActivityLog::log(
@@ -140,15 +221,12 @@ class OrderController extends Controller
             $order
         );
 
-        // Envoyer email de changement de statut
+        // Email de changement de statut (en queue pour ne pas bloquer la réponse)
         if ($order->billing_email && $newStatus !== 'cancelled') {
             try {
-                // Configurer la connexion mail depuis les paramètres
-                \App\Services\MailConfigService::configureFromSettings();
-                
-                Mail::to($order->billing_email)->send(new OrderStatusChanged($order, $oldStatus));
+                Mail::to($order->billing_email)->queue(new OrderStatusChanged($order, $oldStatus));
             } catch (\Exception $e) {
-                \Log::error('Failed to send status email: ' . $e->getMessage());
+                \Log::error('Failed to queue status email: ' . $e->getMessage());
             }
         }
 

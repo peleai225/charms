@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Banner;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class BannerController extends Controller
 {
     public function index(Request $request)
     {
+        Inertia::setRootView('layouts.admin-inertia');
+
         $query = Banner::query();
 
         if ($request->filled('position')) {
@@ -29,14 +32,36 @@ class BannerController extends Controller
         $positions = Banner::POSITIONS;
         $types = Banner::TYPES;
 
-        return view('admin.banners.index', compact('banners', 'positions', 'types'));
+        return Inertia::render('Admin/Banners/Index', [
+            'banners'   => $banners->through(fn($b) => [
+                'id'         => $b->id,
+                'name'       => $b->name,
+                'title'      => $b->title,
+                'subtitle'   => $b->subtitle,
+                'image'      => $b->image,
+                'link'       => $b->link,
+                'button_text'=> $b->button_text,
+                'position'   => $b->position,
+                'type'       => $b->type,
+                'order'      => $b->order,
+                'is_active'  => $b->is_active,
+                'starts_at'  => $b->starts_at?->format('d/m/Y'),
+                'ends_at'    => $b->ends_at?->format('d/m/Y'),
+            ]),
+            'positions' => $positions,
+            'types'     => $types,
+            'filters'   => $request->only(['position', 'type', 'status']),
+        ]);
     }
 
     public function create()
     {
-        $positions = Banner::POSITIONS;
-        $types = Banner::TYPES;
-        return view('admin.banners.create', compact('positions', 'types'));
+        Inertia::setRootView('layouts.admin-inertia');
+
+        return Inertia::render('Admin/Banners/Create', [
+            'positions' => Banner::POSITIONS,
+            'types'     => Banner::TYPES,
+        ]);
     }
 
     public function store(Request $request)
@@ -89,9 +114,27 @@ class BannerController extends Controller
 
     public function edit(Banner $banner)
     {
-        $positions = Banner::POSITIONS;
-        $types = Banner::TYPES;
-        return view('admin.banners.edit', compact('banner', 'positions', 'types'));
+        Inertia::setRootView('layouts.admin-inertia');
+
+        return Inertia::render('Admin/Banners/Edit', [
+            'banner'    => [
+                'id'          => $banner->id,
+                'name'        => $banner->name,
+                'title'       => $banner->title,
+                'subtitle'    => $banner->subtitle,
+                'image'       => $banner->image,
+                'link'        => $banner->link,
+                'button_text' => $banner->button_text,
+                'position'    => $banner->position,
+                'type'        => $banner->type,
+                'order'       => $banner->order,
+                'is_active'   => $banner->is_active,
+                'starts_at'   => $banner->starts_at?->format('Y-m-d'),
+                'ends_at'     => $banner->ends_at?->format('Y-m-d'),
+            ],
+            'positions' => Banner::POSITIONS,
+            'types'     => Banner::TYPES,
+        ]);
     }
 
     public function update(Request $request, Banner $banner)

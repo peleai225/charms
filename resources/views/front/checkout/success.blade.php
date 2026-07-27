@@ -174,7 +174,7 @@ $waTrackingUrl = $waNumber ? "https://wa.me/{$waNumber}?text=" . rawurlencode($w
     {{-- Actions --}}
     <div class="flex flex-col sm:flex-row gap-3">
         <a href="{{ route('order-tracking.index') }}"
-           class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors text-sm">
+           class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-colors text-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
             Suivre ma commande
         </a>
@@ -195,7 +195,7 @@ $waTrackingUrl = $waNumber ? "https://wa.me/{$waNumber}?text=" . rawurlencode($w
     <p class="text-center text-xs text-slate-400 mt-6">
         Besoin d'aide ?
         @if($waNumber)
-        <a href="https://wa.me/{{ $waNumber }}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline font-medium">Contactez-nous sur WhatsApp</a>
+        <a href="https://wa.me/{{ $waNumber }}" target="_blank" rel="noopener noreferrer" class="text-primary-600 hover:underline font-medium">Contactez-nous sur WhatsApp</a>
         @endif
     </p>
 

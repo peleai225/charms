@@ -28,7 +28,7 @@
                     <span class="px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded">-{{ $discountPct }}%</span>
                 @endif
                 @if(!empty($product->is_new) && $product->is_new)
-                    <span class="px-2 py-0.5 bg-blue-600 text-white text-[10px] font-bold rounded">Nouveau</span>
+                    <span class="px-2 py-0.5 bg-primary-600 text-white text-[10px] font-bold rounded">Nouveau</span>
                 @endif
             </div>
 
@@ -61,11 +61,11 @@
                                     if (d.success !== false) {
                                         added = true;
                                         if ($store.cart) $store.cart.count = d.cart_count;
-                                        if ($store.cartDrawer) $store.cartDrawer.open();
+                                        $dispatch('open-cart-drawer');
                                         setTimeout(() => added = false, 2000);
                                     }
                                 }).catch(() => { adding = false; })"
-                            :class="added ? 'bg-emerald-500 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'"
+                            :class="added ? 'bg-emerald-500 text-white' : 'bg-primary-600 hover:bg-primary-700 text-white'"
                             :disabled="adding"
                             class="w-full py-2 text-sm font-medium rounded-lg transition-colors">
                         <span x-show="!adding && !added">Ajouter</span>
@@ -79,7 +79,7 @@
                     </button>
                     @else
                     <a href="{{ route('shop.product', $product->slug) }}"
-                       class="block w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg text-center transition-colors">
+                       class="block w-full py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg text-center transition-colors">
                         Choisir les options
                     </a>
                     @endif
@@ -106,7 +106,7 @@
             <p class="text-xs text-slate-400">{{ $product->category->name }}</p>
         @endif
         <h3 class="font-semibold text-slate-900 text-sm line-clamp-2 mt-0.5 leading-snug">
-            <a href="{{ route('shop.product', $product->slug) }}" class="hover:text-blue-600 transition-colors">
+            <a href="{{ route('shop.product', $product->slug) }}" class="hover:text-primary-600 transition-colors">
                 {{ $product->name }}
             </a>
         </h3>

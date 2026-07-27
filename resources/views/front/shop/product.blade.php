@@ -61,7 +61,7 @@
                 <img :src="currentImage" alt="{{ $product->name }}" class="w-full h-full object-cover transition-opacity duration-200">
                 <div class="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
                     @if($product->is_on_sale && $product->discount_percentage > 0)<span class="px-2.5 py-1 bg-red-500 text-white text-xs font-bold rounded-lg">-{{ $product->discount_percentage }}%</span>@endif
-                    @if(!empty($product->is_new) && $product->is_new)<span class="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-lg">Nouveau</span>@endif
+                    @if(!empty($product->is_new) && $product->is_new)<span class="px-2.5 py-1 bg-primary-600 text-white text-xs font-bold rounded-lg">Nouveau</span>@endif
                     @if(!$product->is_in_stock)<span class="px-2.5 py-1 bg-slate-500 text-white text-xs font-bold rounded-lg">Rupture</span>@endif
                 </div>
                 <div class="absolute bottom-3 right-3 bg-black/30 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg></div>
@@ -70,7 +70,8 @@
             <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
                 @foreach($product->images->take(5) as $index => $image)
                 <button @click="setImageAndIndex('{{ asset('storage/'.$image->path) }}', {{ $index }})"
-                        :class="currentImage==='{{ asset('storage/'.$image->path) }}'?'ring-2 ring-blue-600 border-blue-600':'border-slate-200 hover:border-slate-400'"
+                        :class="currentImage==='{{ asset('storage/'.$image->path) }}'?'border-slate-200':'border-slate-200 hover:border-slate-400'"
+                        :style="currentImage==='{{ asset('storage/'.$image->path) }}'?'outline:2px solid var(--color-primary);border-color:var(--color-primary)':''"
                         class="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 transition-all">
                     <img src="{{ asset('storage/'.$image->path) }}" alt="" class="w-full h-full object-cover" loading="lazy">
                 </button>
@@ -82,7 +83,7 @@
         {{-- Infos --}}
         <div class="space-y-5" id="buy-section">
             <div>
-                @if($product->category)<a href="{{ route('shop.index',['category'=>$product->category->slug]) }}" class="text-xs font-semibold text-blue-600 uppercase tracking-widest hover:text-blue-700 transition-colors">{{ $product->category->name }}</a>@endif
+                @if($product->category)<a href="{{ route('shop.index',['category'=>$product->category->slug]) }}" class="text-xs font-semibold text-primary-600 uppercase tracking-widest hover:text-primary-700 transition-colors">{{ $product->category->name }}</a>@endif
                 <h1 class="text-2xl font-bold text-slate-900 mt-1 leading-snug">{{ $product->name }}</h1>
             </div>
 
@@ -109,7 +110,8 @@
                     @foreach($availableColors as $color)
                     <button type="button"
                             @click="selectColor({{ $color->id }},'{{ $color->label??$color->value }}','{{ $color->value }}',{{ json_encode($variantsByColor[$color->id]??[]) }})"
-                            :class="selectedColorId==={{ $color->id }}?'ring-2 ring-offset-2 ring-blue-600':'hover:scale-110'"
+                            :class="selectedColorId==={{ $color->id }}?'':'hover:scale-110'"
+                            :style="selectedColorId==={{ $color->id }}?'box-shadow:0 0 0 2px #fff,0 0 0 4px var(--color-primary)':''"
                             class="w-9 h-9 rounded-full border-2 border-slate-200 transition-all"
                             style="background-color:{{ $color->value }}" title="{{ $color->label??$color->value }}">
                     </button>
@@ -124,7 +126,7 @@
                 <div class="flex flex-wrap gap-2">
                     <template x-for="size in availableSizes" :key="size.id">
                         <button type="button" @click="selectSize(size)" :disabled="size.stock<=0"
-                                :class="{'bg-blue-600 border-blue-600 text-white':selectedSizeId===size.id,'border-slate-200 text-slate-700 hover:border-blue-600':selectedSizeId!==size.id&&size.stock>0,'border-slate-100 text-slate-300 cursor-not-allowed line-through':size.stock<=0}"
+                                :class="{'bg-primary-600 border-primary-600 text-white':selectedSizeId===size.id,'border-slate-200 text-slate-700 hover:border-primary-600':selectedSizeId!==size.id&&size.stock>0,'border-slate-100 text-slate-300 cursor-not-allowed line-through':size.stock<=0}"
                                 class="px-4 py-2 border-2 rounded-lg text-sm font-medium transition-colors"><span x-text="size.name"></span></button>
                     </template>
                 </div>
@@ -162,7 +164,7 @@
 
                 <button type="button" @click="addToCart()"
                         :disabled="isAdding||(!{{ $product->has_variants?'true':'false' }}&&!{{ $product->is_in_stock?'true':'false' }})||({{ $product->has_variants?'true':'false' }}&&variantStock!==null&&variantStock<=0)"
-                        class="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
+                        class="w-full py-4 bg-primary-600 hover:bg-primary-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2">
                     <svg x-show="!isAdding" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                     <svg x-show="isAdding" class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                     <span x-text="isAdding?'Ajout en cours...':(showSuccess?'Ajouté !':'Ajouter au panier')"></span>
@@ -204,9 +206,9 @@
             @if($thumb)<img src="{{ asset('storage/'.$thumb->path) }}" alt="{{ $product->name }}" class="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-slate-100" loading="lazy">@endif
             <div class="flex-1 min-w-0">
                 <p class="text-sm font-semibold text-slate-900 truncate">{{ $product->name }}</p>
-                <p class="text-sm font-bold text-blue-600">{{ format_price($product->sale_price) }}</p>
+                <p class="text-sm font-bold text-primary-600">{{ format_price($product->sale_price) }}</p>
             </div>
-            <button type="button" @click="addToCart()" :disabled="isAdding" class="flex-shrink-0 py-2.5 px-5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 text-white text-sm font-semibold rounded-xl transition-colors flex items-center gap-2">
+            <button type="button" @click="addToCart()" :disabled="isAdding" class="flex-shrink-0 py-2.5 px-5 bg-primary-600 hover:bg-primary-700 disabled:bg-slate-200 text-white text-sm font-semibold rounded-xl transition-colors flex items-center gap-2">
                 <svg x-show="!isAdding" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                 <svg x-show="isAdding" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
                 <span x-text="isAdding?'...':'Ajouter'"></span>
@@ -219,7 +221,7 @@
         <div class="flex border-b border-slate-100 overflow-x-auto scrollbar-none">
             @foreach(['description'=>'Description','specs'=>'Caractéristiques','reviews'=>('Avis ('.(($product->reviews_count??0)).')') ] as $key=>$label)
             <button @click="tab='{{ $key }}'" id="{{ $key }}"
-                    :class="tab==='{{ $key }}'?'border-blue-600 text-blue-600 font-semibold':'border-transparent text-slate-500 hover:text-slate-700'"
+                    :class="tab==='{{ $key }}'?'border-primary-600 text-primary-600 font-semibold':'border-transparent text-slate-500 hover:text-slate-700'"
                     class="px-5 py-4 text-sm border-b-2 -mb-px transition-colors whitespace-nowrap">{{ $label }}</button>
             @endforeach
         </div>
@@ -333,7 +335,7 @@ function productPage() {
             try{
                 const r=await fetch('{{ route("cart.add") }}',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content,'X-Requested-With':'XMLHttpRequest'},body:JSON.stringify({product_id:{{ $product->id }},variant_id:this.selectedVariantId||null,quantity:this.quantity})});
                 const d=await r.json();
-                if(d.success){if(Alpine.store('cart'))Alpine.store('cart').count=d.cart_count;if(Alpine.store('cartDrawer'))Alpine.store('cartDrawer').open();this.showSuccess=true;setTimeout(()=>{this.showSuccess=false;},3000);window.dispatchEvent(new CustomEvent('cart-item-added'));}
+                if(d.success){if(Alpine.store('cart'))Alpine.store('cart').count=d.cart_count;window.dispatchEvent(new CustomEvent('open-cart-drawer'));this.showSuccess=true;setTimeout(()=>{this.showSuccess=false;},3000);window.dispatchEvent(new CustomEvent('cart-item-added'));}
                 else alert(d.message||"Erreur lors de l'ajout au panier");
             }catch(e){alert("Erreur lors de l'ajout au panier");}
             finally{this.isAdding=false;}

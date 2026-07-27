@@ -55,5 +55,13 @@ class AccountingAccount extends Model
     {
         return self::TYPES[$this->type] ?? $this->type;
     }
+
+    /**
+     * Solde calculé : total débits - total crédits de toutes les lignes
+     */
+    public function getBalanceAttribute(): float
+    {
+        return (float) $this->lines()->sum('debit') - (float) $this->lines()->sum('credit');
+    }
 }
 

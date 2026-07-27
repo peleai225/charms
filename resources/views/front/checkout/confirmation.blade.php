@@ -37,7 +37,7 @@
                 </div>
                 <div class="flex flex-col sm:flex-row gap-3">
                     <a :href="redirectUrl || '{{ route('checkout.success', ['order' => $order->id]) }}'"
-                       class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors text-sm">
+                       class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors text-sm">
                         Voir ma commande
                     </a>
                     <a href="{{ route('home') }}"
@@ -62,7 +62,7 @@
                 <p class="text-slate-500 text-sm mb-6">Votre paiement n'a pas pu être traité. Veuillez réessayer ou choisir un autre mode de paiement.</p>
                 <div class="flex flex-col sm:flex-row gap-3">
                     <a href="{{ route('checkout.payment', ['order' => $order->id]) }}"
-                       class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors text-sm">
+                       class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors text-sm">
                         Réessayer le paiement
                     </a>
                     <a href="{{ route('cart.index') }}"
@@ -85,12 +85,12 @@
                 </div>
                 <h1 class="text-xl font-bold text-slate-900 mb-2">Vérification en attente</h1>
                 <p class="text-slate-500 text-sm mb-5">Le paiement n'a pas encore été confirmé. Cela peut prendre quelques minutes. Vous recevrez un message dès que le paiement sera validé.</p>
-                <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-6 text-left">
-                    <p class="text-sm text-blue-800">Votre commande <strong>{{ $order->order_number }}</strong> est enregistrée. Ne payez pas une seconde fois.</p>
+                <div class="bg-primary-50 border border-primary-200 rounded-lg px-4 py-3 mb-6 text-left">
+                    <p class="text-sm text-primary-800">Votre commande <strong>{{ $order->order_number }}</strong> est enregistrée. Ne payez pas une seconde fois.</p>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-3">
                     <a href="{{ route('home') }}"
-                       class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors text-sm">
+                       class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors text-sm">
                         Retour à la boutique
                     </a>
                     <a href="{{ route('order-tracking.index') }}"
@@ -141,7 +141,7 @@
                         Retour à l'accueil
                     </a>
                     <button @click="checkStatus()" :disabled="isChecking"
-                        class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors text-sm">
+                        class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white font-semibold rounded-lg transition-colors text-sm">
                         <svg class="w-4 h-4" :class="{ 'animate-spin': isChecking }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                         <span x-text="isChecking ? 'Vérification...' : 'Vérifier maintenant'"></span>
                     </button>

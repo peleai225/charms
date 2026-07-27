@@ -171,7 +171,7 @@ const goToPage = (p) => {
                     <!-- Infos -->
                     <div class="p-3">
                         <p v-if="product.category_name" class="text-[10px] text-slate-400 mb-0.5 uppercase tracking-wide">{{ product.category_name }}</p>
-                        <Link :href="`/produit/${product.slug}`" class="text-xs font-semibold text-slate-900 hover:text-blue-600 transition line-clamp-2 leading-snug block">
+                        <Link :href="`/produit/${product.slug}`" class="text-xs font-semibold text-slate-900 hover:text-primary-600 transition line-clamp-2 leading-snug block">
                             {{ product.name }}
                         </Link>
 

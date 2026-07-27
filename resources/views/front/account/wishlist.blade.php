@@ -45,7 +45,7 @@
                     @php
                         $img = $product->images->where('is_primary', true)->first() ?? $product->images->first();
                     @endphp
-                    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden hover:border-blue-200 hover:shadow-sm transition-all group">
+                    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden hover:border-primary-200 hover:shadow-sm transition-all group">
                         <a href="{{ route('shop.product', $product->slug) }}" class="block relative">
                             <div class="aspect-[4/5] bg-slate-50">
                                 @if($img)
@@ -64,7 +64,7 @@
                         </a>
                         <div class="p-3">
                             <a href="{{ route('shop.product', $product->slug) }}"
-                               class="text-sm font-medium text-slate-900 hover:text-blue-600 line-clamp-2 leading-snug block mb-2 transition-colors">
+                               class="text-sm font-medium text-slate-900 hover:text-primary-600 line-clamp-2 leading-snug block mb-2 transition-colors">
                                 {{ $product->name }}
                             </a>
                             <div class="flex items-center justify-between gap-2">
@@ -103,7 +103,7 @@
                         Vous n'avez pas encore ajouté de produits à vos favoris. Cliquez sur le coeur d'un produit pour l'ajouter.
                     </p>
                     <a href="{{ route('shop.index') }}"
-                       class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                       class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition-colors">
                         Découvrir la boutique
                     </a>
                 </div>

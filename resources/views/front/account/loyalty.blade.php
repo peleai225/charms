@@ -65,7 +65,7 @@
                     <div class="grid sm:grid-cols-3 gap-4">
                         @foreach([
                             ['title' => 'Achetez', 'desc' => number_format(\App\Models\Setting::get('loyalty_points_per_1000', 10)) . ' pts pour 1 000 F dépensés', 'bg' => 'bg-amber-50', 'color' => 'text-amber-600'],
-                            ['title' => 'Accumulez', 'desc' => 'Vos points s\'accumulent après chaque commande payée', 'bg' => 'bg-blue-50', 'color' => 'text-blue-600'],
+                            ['title' => 'Accumulez', 'desc' => 'Vos points s\'accumulent après chaque commande payée', 'bg' => 'bg-primary-50', 'color' => 'text-primary-600'],
                             ['title' => 'Profitez', 'desc' => '100 pts = 500 F CFA de réduction', 'bg' => 'bg-green-50', 'color' => 'text-green-600'],
                         ] as $item)
                         <div class="text-center p-4 {{ $item['bg'] }} rounded-xl">
@@ -91,7 +91,7 @@
                         </div>
                         <p class="font-medium text-slate-700 mb-1">Pas encore de points</p>
                         <p class="text-sm text-slate-500 mb-4">Passez votre première commande pour commencer à gagner des points !</p>
-                        <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                        <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition-colors">
                             Voir la boutique
                         </a>
                     </div>

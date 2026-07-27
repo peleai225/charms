@@ -62,10 +62,10 @@
                 <form action="{{ route('checkout.process-payment', ['order' => $order->id]) }}" method="POST">
                     @csrf
                     <input type="hidden" name="method" value="lygos">
-                    <button type="submit" class="w-full flex items-center justify-between p-4 border-2 border-blue-200 rounded-2xl hover:border-blue-400 hover:bg-blue-50 hover:shadow-md transition-all duration-300 group">
+                    <button type="submit" class="w-full flex items-center justify-between p-4 border-2 border-primary-200 rounded-2xl hover:border-primary-400 hover:bg-primary-50 hover:shadow-md transition-all duration-300 group">
                         <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <svg class="w-7 h-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                                 </svg>
                             </div>
@@ -74,7 +74,7 @@
                                 <p class="text-sm text-slate-500">Mobile Money et paiements internationaux</p>
                             </div>
                         </div>
-                        <svg class="w-5 h-5 text-slate-400 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 text-slate-400 group-hover:text-primary-500 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                         </svg>
                     </button>

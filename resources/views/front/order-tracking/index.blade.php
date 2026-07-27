@@ -19,8 +19,8 @@
 
         {{-- Icon --}}
         <div class="text-center mb-6">
-            <div class="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="w-14 h-14 bg-primary-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <svg class="w-7 h-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
                 </svg>
             </div>
@@ -56,7 +56,7 @@
                            value="{{ old('order_number') }}"
                            required
                            placeholder="CMD-2024-XXXX"
-                           class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 bg-slate-50 focus:bg-white transition-colors @error('order_number') border-red-300 @enderror">
+                           class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 bg-slate-50 focus:bg-white transition-colors @error('order_number') border-red-300 @enderror">
                     @error('order_number')
                     <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                     @enderror
@@ -70,14 +70,14 @@
                            value="{{ old('email') }}"
                            required
                            placeholder="votre@email.com"
-                           class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 bg-slate-50 focus:bg-white transition-colors @error('email') border-red-300 @enderror">
+                           class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 bg-slate-50 focus:bg-white transition-colors @error('email') border-red-300 @enderror">
                     @error('email')
                     <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <button type="submit"
-                        class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-colors">
+                        class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm rounded-xl transition-colors">
                     Rechercher
                 </button>
             </form>
@@ -86,12 +86,12 @@
         {{-- Auth link --}}
         @auth
         <p class="text-center text-sm text-slate-500 mt-4">
-            <a href="{{ route('account.orders') }}" class="text-blue-600 hover:underline font-medium">Voir toutes mes commandes</a>
+            <a href="{{ route('account.orders') }}" class="text-primary-600 hover:underline font-medium">Voir toutes mes commandes</a>
         </p>
         @else
         <p class="text-center text-sm text-slate-500 mt-4">
             Vous avez un compte ?
-            <a href="{{ route('login') }}" class="text-blue-600 hover:underline font-medium">Connectez-vous</a>
+            <a href="{{ route('login') }}" class="text-primary-600 hover:underline font-medium">Connectez-vous</a>
         </p>
         @endauth
 

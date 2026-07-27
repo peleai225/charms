@@ -35,8 +35,8 @@
             <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold
                 @if($order->status === 'delivered') bg-green-100 text-green-700
                 @elseif($order->status === 'cancelled') bg-red-100 text-red-700
-                @elseif($order->status === 'shipped') bg-indigo-100 text-indigo-700
-                @elseif($order->status === 'processing') bg-blue-100 text-blue-700
+                @elseif($order->status === 'shipped') bg-primary-100 text-primary-700
+                @elseif($order->status === 'processing') bg-primary-100 text-primary-700
                 @else bg-amber-100 text-amber-700 @endif">
                 {{ $order->status_label }}
             </span>
@@ -62,12 +62,12 @@
                             {{-- Ligne de connexion --}}
                             @if($i < count($steps) - 1)
                             <div class="absolute top-3.5 left-1/2 right-0 h-0.5
-                                {{ $currentStep > $i ? 'bg-blue-600' : 'bg-slate-200' }}" style="width: calc(100% - 12px); transform: translateX(50%);">
+                                {{ $currentStep > $i ? 'bg-primary-600' : 'bg-slate-200' }}" style="width: calc(100% - 12px); transform: translateX(50%);">
                             </div>
                             @endif
                             {{-- Point --}}
                             <div class="w-7 h-7 rounded-full flex items-center justify-center z-10 flex-shrink-0
-                                {{ $currentStep >= $i ? 'bg-blue-600' : 'bg-slate-200' }}">
+                                {{ $currentStep >= $i ? 'bg-primary-600' : 'bg-slate-200' }}">
                                 @if($currentStep > $i)
                                 <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
@@ -76,7 +76,7 @@
                                 <div class="w-2.5 h-2.5 bg-white rounded-full"></div>
                                 @endif
                             </div>
-                            <p class="text-xs mt-1.5 text-center {{ $currentStep >= $i ? 'text-blue-600 font-semibold' : 'text-slate-400' }}">
+                            <p class="text-xs mt-1.5 text-center {{ $currentStep >= $i ? 'text-primary-600 font-semibold' : 'text-slate-400' }}">
                                 {{ $step['label'] }}
                             </p>
                         </div>
@@ -191,11 +191,11 @@
                         </div>
 
                         @if($order->tracking_number)
-                        <div class="bg-blue-50 border border-blue-200 rounded-2xl p-5">
-                            <h3 class="font-semibold text-blue-900 mb-2 text-sm">Numéro de suivi</h3>
-                            <p class="font-mono text-blue-800 font-bold">{{ $order->tracking_number }}</p>
+                        <div class="bg-primary-50 border border-primary-200 rounded-2xl p-5">
+                            <h3 class="font-semibold text-primary-900 mb-2 text-sm">Numéro de suivi</h3>
+                            <p class="font-mono text-primary-800 font-bold">{{ $order->tracking_number }}</p>
                             @if($order->shipping_carrier)
-                                <p class="text-xs text-blue-600 mt-1">{{ $order->shipping_carrier }}</p>
+                                <p class="text-xs text-primary-600 mt-1">{{ $order->shipping_carrier }}</p>
                             @endif
                         </div>
                         @endif

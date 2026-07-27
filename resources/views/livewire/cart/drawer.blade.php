@@ -37,7 +37,7 @@
                 </svg>
                 <h2 class="font-semibold text-slate-900 text-sm">Votre panier</h2>
                 @if($cart->items_count > 0)
-                    <span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">{{ $cart->items_count }}</span>
+                    <span class="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-bold rounded-full">{{ $cart->items_count }}</span>
                 @endif
             </div>
             <button wire:click="close" class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors duration-150">
@@ -113,7 +113,7 @@
                 <p class="text-sm font-medium text-slate-900">Panier vide</p>
                 <p class="text-xs text-slate-500 mt-1">Parcourez nos produits</p>
                 <a href="{{ route('shop.index') }}" wire:click="close"
-                   class="mt-5 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors duration-150">
+                   class="mt-5 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg transition-colors duration-150">
                     Voir la boutique
                 </a>
             </div>
@@ -201,7 +201,7 @@
                             @click="locate()"
                             :disabled="locating"
                             class="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md transition-colors duration-100"
-                            :class="status === 'found' ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' : 'text-white bg-blue-600 hover:bg-blue-700'"
+                            :class="status === 'found' ? 'text-primary-600 bg-primary-50 hover:bg-primary-100' : 'text-white bg-primary-600 hover:bg-primary-700'"
                         >
                             <svg x-show="!locating" class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
@@ -238,7 +238,7 @@
 
             {{-- Checkout classique --}}
             <a href="{{ route('checkout.index') }}" wire:click="close"
-               class="flex items-center justify-center gap-2 w-full py-3 border border-slate-200 hover:border-blue-500 text-slate-700 hover:text-blue-600 font-semibold text-sm rounded-lg transition-colors duration-150">
+               class="flex items-center justify-center gap-2 w-full py-3 border border-slate-200 hover:border-primary-500 text-slate-700 hover:text-primary-600 font-semibold text-sm rounded-lg transition-colors duration-150">
                 Paiement en ligne
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -256,7 +256,7 @@
         <div wire:loading.flex
              class="absolute inset-0 bg-white/60 flex items-center justify-center z-10 pointer-events-none">
             <div class="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-4 py-2 shadow-sm">
-                <svg class="w-4 h-4 animate-spin text-blue-600" fill="none" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 animate-spin text-primary-600" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 12 0 12 12h-4z"/>
                 </svg>

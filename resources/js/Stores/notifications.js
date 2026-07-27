@@ -5,6 +5,11 @@ export const useNotificationStore = defineStore('notifications', () => {
     const notifications = ref([]);
 
     function add(message, type = 'info', duration = 5000) {
+        if (message !== null && typeof message === 'object') {
+            type     = message.type     ?? type;
+            duration = message.duration ?? duration;
+            message  = message.message  ?? '';
+        }
         const id = Date.now() + Math.random();
         notifications.value.push({ id, message, type });
 

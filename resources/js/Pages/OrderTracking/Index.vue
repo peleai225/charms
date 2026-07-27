@@ -43,8 +43,8 @@ const submit = () => {
             <div class="max-w-md mx-auto w-full">
                 <!-- Icon -->
                 <div class="text-center mb-6">
-                    <div class="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-14 h-14 bg-primary-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-7 h-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
                         </svg>
                     </div>
@@ -92,13 +92,13 @@ const submit = () => {
 
                 <!-- Auth link -->
                 <p v-if="$page.props.auth.user" class="text-center text-sm text-slate-500 mt-4">
-                    <Link href="/mon-compte/commandes" class="text-blue-600 hover:underline font-medium">
+                    <Link href="/mon-compte/commandes" class="text-primary-600 hover:underline font-medium">
                         Voir toutes mes commandes
                     </Link>
                 </p>
                 <p v-else class="text-center text-sm text-slate-500 mt-4">
                     Vous avez un compte ?
-                    <Link href="/connexion" class="text-blue-600 hover:underline font-medium">Connectez-vous</Link>
+                    <Link href="/connexion" class="text-primary-600 hover:underline font-medium">Connectez-vous</Link>
                 </p>
 
                 <!-- Aide -->

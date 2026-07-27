@@ -24,7 +24,7 @@
 
     {{-- Notre histoire --}}
     <div class="mb-12">
-        <span class="text-xs font-semibold text-blue-600 uppercase tracking-widest">Notre histoire</span>
+        <span class="text-xs font-semibold text-primary-600 uppercase tracking-widest">Notre histoire</span>
         <h2 class="text-2xl font-bold text-slate-900 mt-1 mb-4">Qui sommes-nous ?</h2>
         @php
             $aboutText = \App\Models\Setting::get('about_text');
@@ -59,14 +59,14 @@
 
     {{-- Nos valeurs --}}
     <div class="mb-12">
-        <span class="text-xs font-semibold text-blue-600 uppercase tracking-widest">Nos valeurs</span>
+        <span class="text-xs font-semibold text-primary-600 uppercase tracking-widest">Nos valeurs</span>
         <h2 class="text-2xl font-bold text-slate-900 mt-1 mb-6">Ce qui nous guide</h2>
         <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
             {{-- Qualité --}}
             <div class="bg-white border border-slate-200 rounded-2xl p-5 text-center shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
-                <div class="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-3">
-                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="w-11 h-11 bg-primary-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
                     </svg>
                 </div>
@@ -115,7 +115,7 @@
         <p class="text-sm text-slate-500 mb-6">Explorez notre catalogue et trouvez ce qu'il vous faut.</p>
         <div class="flex flex-col sm:flex-row gap-3 justify-center">
             <a href="{{ route('shop.index') }}"
-               class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-colors">
+               class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm rounded-xl transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                 Voir la boutique
             </a>

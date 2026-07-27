@@ -56,12 +56,21 @@ class HandleInertiaRequests extends Middleware
                 : (object) [],
 
             // Site settings (cached)
-            'settings' => fn () => cache()->remember('site_settings', 3600, function () {
+            'settings' => fn () => cache()->remember('site_settings', 300, function () {
                 return [
                     'site_name'          => \App\Models\Setting::get('site_name', config('app.name', 'Chamse')),
+                    'site_description'   => \App\Models\Setting::get('site_description'),
                     'logo'               => \App\Models\Setting::get('logo'),
                     'favicon'            => \App\Models\Setting::get('favicon'),
                     'primary_color'      => \App\Models\Setting::get('primary_color', '#2563EB'),
+                    'secondary_color'    => \App\Models\Setting::get('secondary_color', '#8b5cf6'),
+                    'accent_color'       => \App\Models\Setting::get('accent_color', '#f59e0b'),
+                    'theme_mode'         => \App\Models\Setting::get('theme_mode', 'light'),
+                    'footer_text'        => \App\Models\Setting::get('footer_text'),
+                    'contact_phone'      => \App\Models\Setting::get('contact_phone'),
+                    'contact_email'      => \App\Models\Setting::get('contact_email'),
+                    'contact_address'    => \App\Models\Setting::get('contact_address'),
+                    'currency_symbol'    => \App\Models\Setting::get('currency_symbol', 'F CFA'),
                     'social_whatsapp'    => \App\Models\Setting::get('social_whatsapp'),
                     'social_facebook'    => \App\Models\Setting::get('social_facebook'),
                     'social_instagram'   => \App\Models\Setting::get('social_instagram'),

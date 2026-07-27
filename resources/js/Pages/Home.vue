@@ -13,6 +13,7 @@ const props = defineProps({
     reviews:             Array,
     review_stats:        Object,
     whatsapp_number:     String,
+    banners:             Object,
 });
 
 const page = usePage();
@@ -218,6 +219,26 @@ const currentProducts = computed(() => {
         </section>
 
         <!-- ─────────────────────────────────────────────────────────────── -->
+        <!-- BANNIÈRES HOME HERO                                              -->
+        <!-- ─────────────────────────────────────────────────────────────── -->
+        <section v-if="banners?.home_hero?.length" class="w-full">
+            <a v-for="b in banners.home_hero" :key="b.id"
+               :href="b.link || '#'"
+               class="block relative overflow-hidden"
+               :style="b.background_color ? { backgroundColor: b.background_color } : {}">
+                <img v-if="b.image" :src="b.image" :alt="b.title || ''" class="w-full max-h-80 object-cover" />
+                <div v-if="b.title" class="absolute inset-0 flex flex-col items-center justify-center text-center p-6"
+                     :style="{ color: b.text_color || '#fff' }">
+                    <h2 class="text-2xl md:text-3xl font-bold drop-shadow">{{ b.title }}</h2>
+                    <p v-if="b.subtitle" class="mt-2 text-lg drop-shadow">{{ b.subtitle }}</p>
+                    <span v-if="b.button_text" class="mt-4 inline-block px-6 py-2 bg-white/20 hover:bg-white/30 rounded-full text-sm font-semibold backdrop-blur transition">
+                        {{ b.button_text }}
+                    </span>
+                </div>
+            </a>
+        </section>
+
+        <!-- ─────────────────────────────────────────────────────────────── -->
         <!-- BANDE DE CONFIANCE                                               -->
         <!-- ─────────────────────────────────────────────────────────────── -->
         <section class="bg-white border-b border-slate-100">
@@ -250,7 +271,7 @@ const currentProducts = computed(() => {
                 <!-- Titre section -->
                 <div class="flex items-end justify-between mb-7">
                     <div>
-                        <p class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1.5">Collections</p>
+                        <p class="text-xs font-bold text-primary-600 uppercase tracking-widest mb-1.5">Collections</p>
                         <h2 class="text-2xl md:text-3xl font-black text-slate-900">Nos catégories</h2>
                     </div>
                     <Link href="/boutique" class="text-sm font-medium text-slate-500 hover:text-slate-900 transition hidden sm:block">
@@ -300,6 +321,27 @@ const currentProducts = computed(() => {
         </section>
 
         <!-- ─────────────────────────────────────────────────────────────── -->
+        <!-- BANNIÈRES HOME MIDDLE                                            -->
+        <!-- ─────────────────────────────────────────────────────────────── -->
+        <section v-if="banners?.home_middle?.length" class="py-8 px-4">
+            <div class="container mx-auto max-w-7xl">
+                <div class="grid gap-4" :class="banners.home_middle.length > 1 ? 'md:grid-cols-2' : 'grid-cols-1'">
+                    <a v-for="b in banners.home_middle" :key="b.id"
+                       :href="b.link || '#'"
+                       class="relative rounded-2xl overflow-hidden"
+                       :style="{ backgroundColor: b.background_color || '#f1f5f9' }">
+                        <img v-if="b.image" :src="b.image" :alt="b.title || ''" class="w-full h-48 object-cover" />
+                        <div v-if="b.title" class="absolute inset-0 flex flex-col justify-end p-5"
+                             :style="{ color: b.text_color || '#fff' }">
+                            <h3 class="text-xl font-bold drop-shadow">{{ b.title }}</h3>
+                            <p v-if="b.subtitle" class="text-sm drop-shadow">{{ b.subtitle }}</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ─────────────────────────────────────────────────────────────── -->
         <!-- PRODUITS — ONGLETS (Sélection / Nouveautés / Promotions)        -->
         <!-- ─────────────────────────────────────────────────────────────── -->
         <section class="py-14 md:py-16 bg-white">
@@ -308,7 +350,7 @@ const currentProducts = computed(() => {
                 <!-- Titre + tabs -->
                 <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-7">
                     <div>
-                        <p class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1.5">Catalogue</p>
+                        <p class="text-xs font-bold text-primary-600 uppercase tracking-widest mb-1.5">Catalogue</p>
                         <h2 class="text-2xl md:text-3xl font-black text-slate-900">Nos produits</h2>
                     </div>
                     <!-- Onglets -->
@@ -389,7 +431,7 @@ const currentProducts = computed(() => {
         <section class="py-14 md:py-16 bg-slate-50">
             <div class="container mx-auto px-4">
                 <div class="text-center mb-10">
-                    <p class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1.5">Notre engagement</p>
+                    <p class="text-xs font-bold text-primary-600 uppercase tracking-widest mb-1.5">Notre engagement</p>
                     <h2 class="text-2xl md:text-3xl font-black text-slate-900">Pourquoi nous choisir ?</h2>
                 </div>
                 <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -424,7 +466,7 @@ const currentProducts = computed(() => {
             <div class="container mx-auto px-4">
                 <!-- En-tête -->
                 <div class="text-center mb-10">
-                    <p class="text-xs font-bold text-blue-600 uppercase tracking-widest mb-1.5">Témoignages</p>
+                    <p class="text-xs font-bold text-primary-600 uppercase tracking-widest mb-1.5">Témoignages</p>
                     <h2 class="text-2xl md:text-3xl font-black text-slate-900 mb-3">Ce que disent nos clients</h2>
                     <div v-if="review_stats" class="inline-flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-full px-5 py-2">
                         <div class="flex gap-0.5">
@@ -467,6 +509,26 @@ const currentProducts = computed(() => {
                         </div>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- ─────────────────────────────────────────────────────────────── -->
+        <!-- BANNIÈRES HOME BOTTOM                                            -->
+        <!-- ─────────────────────────────────────────────────────────────── -->
+        <section v-if="banners?.home_bottom?.length" class="py-8 px-4">
+            <div class="container mx-auto max-w-7xl space-y-4">
+                <a v-for="b in banners.home_bottom" :key="b.id"
+                   :href="b.link || '#'"
+                   class="block relative rounded-2xl overflow-hidden"
+                   :style="{ backgroundColor: b.background_color || '#0f172a' }">
+                    <img v-if="b.image" :src="b.image" :alt="b.title || ''" class="w-full max-h-60 object-cover opacity-80" />
+                    <div v-if="b.title" class="absolute inset-0 flex flex-col items-center justify-center text-center p-6"
+                         :style="{ color: b.text_color || '#fff' }">
+                        <h2 class="text-2xl font-bold drop-shadow">{{ b.title }}</h2>
+                        <p v-if="b.subtitle" class="mt-1 drop-shadow">{{ b.subtitle }}</p>
+                        <span v-if="b.button_text" class="mt-3 inline-block px-5 py-2 bg-white/20 rounded-full text-sm font-semibold">{{ b.button_text }}</span>
+                    </div>
+                </a>
             </div>
         </section>
 

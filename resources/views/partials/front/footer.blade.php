@@ -1,6 +1,6 @@
 @php
     $fSiteName    = \App\Models\Setting::get('site_name', config('app.name'));
-    $fSiteLogo    = \App\Models\Setting::get('site_logo');
+    $fSiteLogo    = \App\Models\Setting::get('logo');
     $fDesc        = \App\Models\Setting::get('site_description', 'Votre boutique en ligne de confiance — qualité premium, prix imbattables.');
     $fPhone       = \App\Models\Setting::get('contact_phone');
     $fEmail       = \App\Models\Setting::get('contact_email');

@@ -12,7 +12,7 @@
         {{-- Logo + Titre --}}
         <div class="text-center mb-8">
             <a href="{{ route('home') }}" class="inline-flex items-center justify-center gap-2 text-slate-900 mb-4">
-                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                <div class="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                     </svg>
@@ -45,7 +45,7 @@
                 <div>
                     <label for="email" class="block text-sm font-medium text-slate-700 mb-1.5">Adresse email</label>
                     <input type="email" name="email" id="email" value="{{ old('email') }}"
-                        class="w-full px-4 py-3 bg-slate-50 border @error('email') border-red-400 bg-red-50 @else border-slate-200 @enderror rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                        class="w-full px-4 py-3 bg-slate-50 border @error('email') border-red-400 bg-red-50 @else border-slate-200 @enderror rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm"
                         placeholder="votre@email.com" required autofocus>
                     @error('email')
                         <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
@@ -55,13 +55,13 @@
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
                         <label for="password" class="text-sm font-medium text-slate-700">Mot de passe</label>
-                        <a href="{{ route('password.request') }}" class="text-xs text-blue-600 hover:text-blue-700 font-medium">
+                        <a href="{{ route('password.request') }}" class="text-xs text-primary-600 hover:text-primary-700 font-medium">
                             Mot de passe oublié ?
                         </a>
                     </div>
                     <div class="relative">
                         <input :type="showPass ? 'text' : 'password'" name="password" id="password"
-                            class="w-full pl-4 pr-12 py-3 bg-slate-50 border @error('password') border-red-400 bg-red-50 @else border-slate-200 @enderror rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                            class="w-full pl-4 pr-12 py-3 bg-slate-50 border @error('password') border-red-400 bg-red-50 @else border-slate-200 @enderror rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm"
                             placeholder="••••••••" required>
                         <button type="button" @click="showPass = !showPass"
                             class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition-colors">
@@ -81,12 +81,12 @@
 
                 <label class="flex items-center gap-2.5 cursor-pointer">
                     <input type="checkbox" name="remember" id="remember"
-                        class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                        class="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500">
                     <span class="text-sm text-slate-600 select-none">Se souvenir de moi</span>
                 </label>
 
                 <button type="submit"
-                    class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors">
+                    class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-colors">
                     Se connecter
                 </button>
             </form>
@@ -102,7 +102,7 @@
 
             <p class="text-center text-sm text-slate-600">
                 Pas encore de compte ?
-                <a href="{{ route('register') }}" class="text-blue-600 font-semibold hover:text-blue-700 transition-colors">
+                <a href="{{ route('register') }}" class="text-primary-600 font-semibold hover:text-primary-700 transition-colors">
                     Créer un compte
                 </a>
             </p>
@@ -110,9 +110,9 @@
 
         <p class="mt-6 text-center text-xs text-slate-400">
             En vous connectant vous acceptez nos
-            <a href="{{ route('legal', 'conditions-generales') }}" class="underline underline-offset-2 hover:text-blue-600">CGV</a>
+            <a href="{{ route('legal', 'conditions-generales') }}" class="underline underline-offset-2 hover:text-primary-600">CGV</a>
             et notre
-            <a href="{{ route('legal', 'politique-de-confidentialite') }}" class="underline underline-offset-2 hover:text-blue-600">politique de confidentialité</a>
+            <a href="{{ route('legal', 'politique-de-confidentialite') }}" class="underline underline-offset-2 hover:text-primary-600">politique de confidentialité</a>
         </p>
     </div>
 </div>

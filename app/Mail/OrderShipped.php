@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Order;
+use App\Services\MailConfigService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,6 +20,12 @@ class OrderShipped extends Mailable
     public function __construct(
         public Order $order
     ) {}
+
+    public function build(): static
+    {
+        MailConfigService::configureFromSettings();
+        return $this;
+    }
 
     public function envelope(): Envelope
     {

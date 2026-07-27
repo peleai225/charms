@@ -13,7 +13,7 @@
         {{-- Logo + Titre --}}
         <div class="text-center mb-8">
             <a href="{{ route('home') }}" class="inline-flex items-center justify-center gap-2 text-slate-900 mb-4">
-                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                <div class="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
                     <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
                     </svg>
@@ -42,7 +42,7 @@
                             Prénom <span class="text-red-500">*</span>
                         </label>
                         <input type="text" name="first_name" id="first_name" value="{{ old('first_name') }}"
-                            class="w-full px-3 py-3 bg-slate-50 border @error('first_name') border-red-400 bg-red-50 @else border-slate-200 @enderror rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                            class="w-full px-3 py-3 bg-slate-50 border @error('first_name') border-red-400 bg-red-50 @else border-slate-200 @enderror rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm"
                             placeholder="Jean" required>
                         @error('first_name')
                             <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
@@ -53,7 +53,7 @@
                             Nom <span class="text-red-500">*</span>
                         </label>
                         <input type="text" name="last_name" id="last_name" value="{{ old('last_name') }}"
-                            class="w-full px-3 py-3 bg-slate-50 border @error('last_name') border-red-400 bg-red-50 @else border-slate-200 @enderror rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                            class="w-full px-3 py-3 bg-slate-50 border @error('last_name') border-red-400 bg-red-50 @else border-slate-200 @enderror rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm"
                             placeholder="Dupont" required>
                         @error('last_name')
                             <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
@@ -67,7 +67,7 @@
                         Email <span class="text-red-500">*</span>
                     </label>
                     <input type="email" name="email" id="email" value="{{ old('email') }}"
-                        class="w-full px-4 py-3 bg-slate-50 border @error('email') border-red-400 bg-red-50 @else border-slate-200 @enderror rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                        class="w-full px-4 py-3 bg-slate-50 border @error('email') border-red-400 bg-red-50 @else border-slate-200 @enderror rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm"
                         placeholder="votre@email.com" required>
                     @error('email')
                         <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
@@ -82,7 +82,7 @@
                     <div class="flex">
                         <span class="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-slate-200 bg-slate-100 text-slate-500 text-sm">+225</span>
                         <input type="tel" name="phone" id="phone" value="{{ old('phone') }}"
-                            class="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-r-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                            class="flex-1 px-4 py-3 bg-slate-50 border border-slate-200 rounded-r-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm"
                             placeholder="07 07 07 07 07">
                     </div>
                     @error('phone')
@@ -97,7 +97,7 @@
                     </label>
                     <div class="relative">
                         <input :type="showPass ? 'text' : 'password'" name="password" id="password"
-                            class="w-full pl-4 pr-12 py-3 bg-slate-50 border @error('password') border-red-400 bg-red-50 @else border-slate-200 @enderror rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                            class="w-full pl-4 pr-12 py-3 bg-slate-50 border @error('password') border-red-400 bg-red-50 @else border-slate-200 @enderror rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm"
                             placeholder="Minimum 8 caractères" required>
                         <button type="button" @click="showPass = !showPass"
                             class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition-colors">
@@ -122,7 +122,7 @@
                     </label>
                     <div class="relative">
                         <input :type="showPassConfirm ? 'text' : 'password'" name="password_confirmation" id="password_confirmation"
-                            class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                            class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm"
                             placeholder="Même mot de passe" required>
                         <button type="button" @click="showPassConfirm = !showPassConfirm"
                             class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition-colors">
@@ -141,12 +141,12 @@
                 <div>
                     <label class="flex items-start gap-2.5 cursor-pointer">
                         <input type="checkbox" name="terms" id="terms" value="1" required
-                            class="w-4 h-4 mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 flex-shrink-0">
+                            class="w-4 h-4 mt-0.5 rounded border-slate-300 text-primary-600 focus:ring-primary-500 flex-shrink-0">
                         <span class="text-sm text-slate-600 select-none leading-relaxed">
                             J'accepte les
-                            <a href="{{ route('legal', 'conditions-generales') }}" target="_blank" class="text-blue-600 hover:underline font-medium">conditions générales</a>
+                            <a href="{{ route('legal', 'conditions-generales') }}" target="_blank" class="text-primary-600 hover:underline font-medium">conditions générales</a>
                             et la
-                            <a href="{{ route('legal', 'politique-de-confidentialite') }}" target="_blank" class="text-blue-600 hover:underline font-medium">politique de confidentialité</a>
+                            <a href="{{ route('legal', 'politique-de-confidentialite') }}" target="_blank" class="text-primary-600 hover:underline font-medium">politique de confidentialité</a>
                             <span class="text-red-500">*</span>
                         </span>
                     </label>
@@ -156,14 +156,14 @@
                 </div>
 
                 <button type="submit"
-                    class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors mt-2">
+                    class="w-full py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl transition-colors mt-2">
                     S'inscrire
                 </button>
             </form>
 
             <p class="mt-5 text-center text-sm text-slate-600">
                 Déjà un compte ?
-                <a href="{{ route('login') }}" class="text-blue-600 font-semibold hover:text-blue-700 transition-colors">
+                <a href="{{ route('login') }}" class="text-primary-600 font-semibold hover:text-primary-700 transition-colors">
                     Connexion
                 </a>
             </p>

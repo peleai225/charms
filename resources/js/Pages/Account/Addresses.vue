@@ -71,10 +71,10 @@ const fields = [
                 v-for="address in addresses"
                 :key="address.id"
                 class="bg-white rounded-xl border p-5 relative"
-                :class="address.is_default ? 'border-blue-200 ring-1 ring-blue-100' : 'border-slate-200'"
+                :class="address.is_default ? 'border-primary-200 ring-1 ring-primary-100' : 'border-slate-200'"
             >
                 <div v-if="address.is_default" class="absolute top-3 right-3">
-                    <span class="text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">Par défaut</span>
+                    <span class="text-xs font-semibold text-primary-700 bg-primary-50 border border-primary-200 px-2 py-0.5 rounded-full">Par défaut</span>
                 </div>
                 <p class="text-sm font-semibold text-slate-900 pr-20 mb-1">{{ address.first_name }} {{ address.last_name }}</p>
                 <p class="text-sm text-slate-500 leading-relaxed">{{ address.address }}</p>

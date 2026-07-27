@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Models\Refund;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class RefundController extends Controller
 {
@@ -25,7 +26,25 @@ class RefundController extends Controller
 
         $refunds = $query->latest()->paginate(20)->withQueryString();
 
-        return view('admin.refunds.index', compact('refunds'));
+        $refundsData = $refunds->through(fn ($refund) => [
+            'id'                => $refund->id,
+            'refund_number'     => $refund->refund_number,
+            'order_id'          => $refund->order_id,
+            'order_number'      => $refund->order?->order_number,
+            'amount'            => $refund->amount,
+            'reason'            => $refund->reason,
+            'reason_label'      => $refund->reason_label,
+            'notes'             => $refund->notes,
+            'status'            => $refund->status,
+            'processed_by_name' => $refund->processedBy?->name,
+            'created_at_fmt'    => $refund->created_at->format('d/m/Y H:i'),
+        ]);
+
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Refunds/Index', [
+            'refunds' => $refundsData,
+            'filters' => $request->only(['status']),
+        ]);
     }
 
     /**

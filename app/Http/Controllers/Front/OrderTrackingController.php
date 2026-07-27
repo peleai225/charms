@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Front;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class OrderTrackingController extends Controller
 {
@@ -13,7 +14,9 @@ class OrderTrackingController extends Controller
      */
     public function index()
     {
-        return view('front.order-tracking.index');
+        return Inertia::render('OrderTracking/Index', [
+            'whatsapp_number' => config('app.whatsapp_number', '2250506805382'),
+        ]);
     }
 
     /**
@@ -51,6 +54,44 @@ class OrderTrackingController extends Controller
             'items.productVariant.attributeValues',
         ]);
 
-        return view('front.order-tracking.show', compact('order'));
+        // Format data for Inertia
+        $orderData = [
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'status' => $order->status,
+            'status_label' => $order->status_label,
+            'total' => $order->total,
+            'subtotal' => $order->subtotal,
+            'shipping_amount' => $order->shipping_amount,
+            'discount_amount' => $order->discount_amount,
+            'created_at' => $order->created_at->toISOString(),
+            'paid_at' => $order->paid_at?->toISOString(),
+            'shipped_at' => $order->shipped_at?->toISOString(),
+            'delivered_at' => $order->delivered_at?->toISOString(),
+            'cancellation_reason' => $order->cancellation_reason,
+            'shipping_first_name' => $order->shipping_first_name,
+            'shipping_last_name' => $order->shipping_last_name,
+            'shipping_address' => $order->shipping_address,
+            'shipping_city' => $order->shipping_city,
+            'shipping_country' => $order->shipping_country,
+            'shipping_phone' => $order->shipping_phone,
+            'items_count' => $order->items->sum('quantity'),
+            'items' => $order->items->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'variant_name' => $item->variant_name,
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->unit_price,
+                    'total' => $item->total,
+                    'image' => $item->product?->images->where('is_primary', true)->first()?->path ?? $item->product?->images->first()?->path,
+                ];
+            }),
+        ];
+
+        return Inertia::render('OrderTracking/Show', [
+            'order' => $orderData,
+            'whatsapp_number' => config('app.whatsapp_number', '2250506805382'),
+        ]);
     }
 }

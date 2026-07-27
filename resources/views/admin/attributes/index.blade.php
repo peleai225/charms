@@ -130,18 +130,51 @@
                 @if($attribute->values->count() > 0)
                 <div class="flex flex-wrap gap-2 mb-5">
                     @foreach($attribute->values as $val)
-                    <span class="inline-flex items-center gap-1.5 pl-2 pr-1 py-1 bg-slate-100 rounded-lg text-sm group">
-                        @if($val->color_code)
+                    <div class="inline-flex items-center gap-1.5 pl-2 pr-1 py-1 bg-slate-100 rounded-lg text-sm group"
+                         x-data="{ editing: false, uploading: false }">
+                        @if($val->image)
+                            <img src="{{ asset('storage/' . $val->image) }}" alt="{{ $val->value }}"
+                                 class="w-6 h-6 rounded object-cover border border-slate-300 flex-shrink-0"
+                                 id="attr-val-img-{{ $val->id }}">
+                        @elseif($val->color_code)
                             <span class="w-4 h-4 rounded-full border border-slate-300 flex-shrink-0" style="background:{{ $val->color_code }}"></span>
                         @endif
                         <span class="font-medium text-slate-800">{{ $val->value }}</span>
+
+                        {{-- Bouton upload image (couleur uniquement) --}}
+                        @if($attribute->type === 'color')
+                        <label class="p-0.5 text-slate-400 hover:text-blue-600 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer rounded"
+                               title="Ajouter/changer image">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                            <input type="file" class="hidden" accept="image/jpeg,image/png,image/webp"
+                                   @change="uploading=true; let fd=new FormData(); fd.append('image', $event.target.files[0]);
+                                   fetch('{{ route('admin.attributes.values.update', [$attribute, $val]) }}', {
+                                       method:'POST', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'}, body:fd
+                                   }).then(r=>r.json()).then(d=>{
+                                       if(d.success && d.image_url) { location.reload(); }
+                                       uploading=false;
+                                   }).catch(()=>{ uploading=false; })">
+                        </label>
+                        @if($val->image)
+                        <button type="button" @click="if(!confirm('Supprimer l\'image ?')) return;
+                            fetch('{{ route('admin.attributes.values.update', [$attribute, $val]) }}', {
+                                method:'POST', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json','Content-Type':'application/json'},
+                                body:JSON.stringify({remove_image:true})
+                            }).then(r=>r.json()).then(d=>{ if(d.success) location.reload(); })"
+                            class="p-0.5 text-slate-400 hover:text-orange-500 transition-colors opacity-0 group-hover:opacity-100 rounded"
+                            title="Supprimer image">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                        @endif
+                        @endif
+
                         <form method="POST" action="{{ route('admin.attributes.values.destroy', [$attribute, $val]) }}" class="inline" onsubmit="return confirm('Supprimer ?')">
                             @csrf @method('DELETE')
                             <button type="submit" class="p-0.5 text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 rounded">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
                             </button>
                         </form>
-                    </span>
+                    </div>
                     @endforeach
                 </div>
                 @else
@@ -150,6 +183,7 @@
 
                 {{-- Formulaire ajout unitaire --}}
                 <form method="POST" action="{{ route('admin.attributes.values.store', $attribute) }}"
+                      enctype="multipart/form-data"
                       class="flex gap-2 items-end flex-wrap">
                     @csrf
                     <div class="flex-1 min-w-36">
@@ -163,6 +197,11 @@
                         <label class="block text-xs font-medium text-slate-500 mb-1">Code couleur</label>
                         <input type="color" name="color_code" value="#000000"
                                class="h-9 w-14 px-1 py-1 border border-slate-300 rounded-xl cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">Image</label>
+                        <input type="file" name="image" accept="image/jpeg,image/png,image/webp"
+                               class="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                     </div>
                     @endif
                     <button type="submit" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl text-sm transition-colors h-9">

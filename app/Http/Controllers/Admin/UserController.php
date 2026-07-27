@@ -7,11 +7,14 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Inertia\Inertia;
 
 class UserController extends Controller
 {
     public function index(Request $request)
     {
+        Inertia::setRootView('layouts.admin-inertia');
+
         $query = User::query();
 
         if ($request->filled('search')) {
@@ -26,14 +29,52 @@ class UserController extends Controller
             $query->where('role', $request->role);
         }
 
+        $currentUserId = auth()->id();
+
         $users = $query->latest()->paginate(20)->withQueryString();
 
-        return view('admin.users.index', compact('users'));
+        // Ajouter le flag is_current_user dans chaque item
+        $users->getCollection()->transform(function (User $u) use ($currentUserId) {
+            return [
+                'id'              => $u->id,
+                'name'            => $u->name,
+                'email'           => $u->email,
+                'role'            => $u->role,
+                'is_active'       => (bool) $u->is_active,
+                'created_at'      => $u->created_at->format('d/m/Y'),
+                'is_current_user' => $u->id === $currentUserId,
+            ];
+        });
+
+        return Inertia::render('Admin/Users/Index', [
+            'users'   => $users,
+            'filters' => $request->only('search', 'role'),
+        ]);
     }
 
     public function create()
     {
-        return redirect()->route('admin.users.index', ['open_modal' => 'create']);
+        Inertia::setRootView('layouts.admin-inertia');
+
+        return Inertia::render('Admin/Users/Create');
+    }
+
+    public function show(User $user)
+    {
+        Inertia::setRootView('layouts.admin-inertia');
+
+        $userData = [
+            'id'              => $user->id,
+            'name'            => $user->name,
+            'email'           => $user->email,
+            'role'            => $user->role,
+            'is_active'       => (bool) $user->is_active,
+            'created_at'      => $user->created_at->format('d/m/Y à H:i'),
+            'updated_at'      => $user->updated_at->format('d/m/Y à H:i'),
+            'is_current_user' => $user->id === auth()->id(),
+        ];
+
+        return Inertia::render('Admin/Users/Show', ['user' => $userData]);
     }
 
     public function store(Request $request)
@@ -58,7 +99,19 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        return view('admin.users.edit', compact('user'));
+        Inertia::setRootView('layouts.admin-inertia');
+
+        $userData = [
+            'id'              => $user->id,
+            'name'            => $user->name,
+            'email'           => $user->email,
+            'role'            => $user->role,
+            'is_active'       => (bool) $user->is_active,
+            'created_at'      => $user->created_at->format('d/m/Y'),
+            'is_current_user' => $user->id === auth()->id(),
+        ];
+
+        return Inertia::render('Admin/Users/Edit', ['user' => $userData]);
     }
 
     public function update(Request $request, User $user)

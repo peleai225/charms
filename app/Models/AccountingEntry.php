@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Order;
 use Illuminate\Database\Eloquent\Model;
 
 class AccountingEntry extends Model
@@ -69,6 +70,23 @@ class AccountingEntry extends Model
     public function getTotalCreditAttribute()
     {
         return $this->lines()->sum('credit');
+    }
+
+    /**
+     * Commande liée (via reference_type / reference_id)
+     */
+    public function order()
+    {
+        return $this->belongsTo(Order::class, 'reference_id')
+            ->where('reference_type', Order::class);
+    }
+
+    /**
+     * Accesseur de compatibilité : renvoie entry_number sous l'alias "reference"
+     */
+    public function getReferenceAttribute(): ?string
+    {
+        return $this->entry_number;
     }
 
     /**

@@ -1,9 +1,23 @@
 <?php
 /**
- * Script de vérification — à placer dans public_html/ et exécuter une fois
- * URL : https://votre-domaine.com/verifier-env.php
- * SUPPRIMER CE FICHIER après utilisation (sécurité)
+ * Script de vérification — À SUPPRIMER après utilisation.
+ * Accès : ?token=VOTRE_ADMIN_SCRIPT_TOKEN (défini dans .env)
  */
+
+// Guard — refuse tout accès sans token valide
+(function () {
+    $envFile = dirname(__DIR__) . '/.env';
+    $expected = getenv('ADMIN_SCRIPT_TOKEN') ?: (
+        file_exists($envFile)
+            ? (preg_match('/^ADMIN_SCRIPT_TOKEN=(.+)$/m', file_get_contents($envFile), $m) ? trim($m[1]) : null)
+            : null
+    );
+    if (!$expected || ($_GET['token'] ?? '') !== $expected) {
+        http_response_code(403);
+        die('Accès refusé. Utilisez ?token=ADMIN_SCRIPT_TOKEN');
+    }
+})();
+
 header('Content-Type: text/plain; charset=utf-8');
 
 $chamsePath = __DIR__ . '/chamse';

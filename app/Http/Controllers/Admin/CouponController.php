@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class CouponController extends Controller
 {
@@ -39,7 +40,30 @@ class CouponController extends Controller
 
         $coupons = $query->withCount('usages')->latest()->paginate(20)->withQueryString();
 
-        return view('admin.coupons.index', compact('coupons'));
+        // Map to flat arrays for Inertia
+        $coupons->getCollection()->transform(fn($c) => [
+            'id'                    => $c->id,
+            'code'                  => $c->code,
+            'name'                  => $c->name,
+            'type'                  => $c->type,
+            'type_label'            => $c->type_label,
+            'value'                 => $c->value,
+            'min_order_amount'      => $c->min_order_amount,
+            'min_order_amount_fmt'  => $c->min_order_amount ? number_format($c->min_order_amount, 0, ',', ' ') . ' F' : null,
+            'usage_limit'           => $c->usage_limit,
+            'usage_count'           => $c->usage_count,
+            'usages_count'          => $c->usages_count,
+            'starts_at_fmt'         => $c->starts_at?->format('d/m/Y'),
+            'expires_at_fmt'        => $c->expires_at?->format('d/m/Y'),
+            'is_active'             => $c->is_active,
+            'status'                => $c->status,
+        ]);
+
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Coupons/Index', [
+            'coupons' => $coupons,
+            'filters' => $request->only('search', 'status'),
+        ]);
     }
 
     public function create()
@@ -47,7 +71,11 @@ class CouponController extends Controller
         $categories = Category::active()->orderBy('name')->get();
         $products = Product::active()->orderBy('name')->get(['id', 'name']);
 
-        return view('admin.coupons.create', compact('categories', 'products'));
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Coupons/Create', [
+            'categories' => $categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name]),
+            'products'   => $products->map(fn($p) => ['id' => $p->id, 'name' => $p->name]),
+        ]);
     }
 
     public function store(Request $request)
@@ -73,7 +101,7 @@ class CouponController extends Controller
 
         if ($validator->fails()) {
             return redirect()
-                ->route('admin.coupons.index', ['open_modal' => 'create'])
+                ->route('admin.coupons.create')
                 ->withInput()
                 ->withErrors($validator);
         }
@@ -95,7 +123,28 @@ class CouponController extends Controller
         $categories = Category::active()->orderBy('name')->get();
         $products = Product::active()->orderBy('name')->get(['id', 'name']);
 
-        return view('admin.coupons.edit', compact('coupon', 'categories', 'products'));
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Coupons/Edit', [
+            'coupon' => [
+                'id'                   => $coupon->id,
+                'code'                 => $coupon->code,
+                'name'                 => $coupon->name,
+                'description'          => $coupon->description,
+                'type'                 => $coupon->type,
+                'value'                => $coupon->value,
+                'min_order_amount'     => $coupon->min_order_amount,
+                'max_discount_amount'  => $coupon->max_discount_amount,
+                'usage_limit'          => $coupon->usage_limit,
+                'usage_limit_per_user' => $coupon->usage_limit_per_user,
+                'usage_count'          => $coupon->usage_count,
+                'starts_at_input'      => $coupon->starts_at?->format('Y-m-d'),
+                'expires_at_input'     => $coupon->expires_at?->format('Y-m-d'),
+                'is_active'            => $coupon->is_active,
+                'first_order_only'     => $coupon->first_order_only,
+            ],
+            'categories' => $categories->map(fn($c) => ['id' => $c->id, 'name' => $c->name]),
+            'products'   => $products->map(fn($p) => ['id' => $p->id, 'name' => $p->name]),
+        ]);
     }
 
     public function update(Request $request, Coupon $coupon)
@@ -121,7 +170,7 @@ class CouponController extends Controller
 
         if ($validator->fails()) {
             return redirect()
-                ->route('admin.coupons.index', ['open_modal' => 'edit', 'coupon_id' => $coupon->id])
+                ->route('admin.coupons.edit', $coupon)
                 ->withInput()
                 ->withErrors($validator);
         }
@@ -153,7 +202,39 @@ class CouponController extends Controller
     {
         $coupon->load(['usages.order', 'usages.customer']);
 
-        return view('admin.coupons.show', compact('coupon'));
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Coupons/Show', [
+            'coupon' => [
+                'id'                       => $coupon->id,
+                'code'                     => $coupon->code,
+                'name'                     => $coupon->name,
+                'description'              => $coupon->description,
+                'type'                     => $coupon->type,
+                'type_label'               => $coupon->type_label,
+                'value'                    => $coupon->value,
+                'min_order_amount'         => $coupon->min_order_amount,
+                'min_order_amount_fmt'     => $coupon->min_order_amount ? number_format($coupon->min_order_amount, 0, ',', ' ') . ' F' : null,
+                'max_discount_amount'      => $coupon->max_discount_amount,
+                'max_discount_amount_fmt'  => $coupon->max_discount_amount ? number_format($coupon->max_discount_amount, 0, ',', ' ') . ' F' : null,
+                'usage_limit'              => $coupon->usage_limit,
+                'usage_limit_per_user'     => $coupon->usage_limit_per_user,
+                'usage_count'              => $coupon->usages->count(),
+                'starts_at'                => $coupon->starts_at?->format('d/m/Y'),
+                'expires_at'               => $coupon->expires_at?->format('d/m/Y'),
+                'is_active'                => $coupon->is_active,
+                'first_order_only'         => $coupon->first_order_only,
+                'status'                   => $coupon->status,
+                'usages' => $coupon->usages->map(fn($u) => [
+                    'id'                  => $u->id,
+                    'order_id'            => $u->order?->id,
+                    'order_number'        => $u->order?->order_number,
+                    'customer_name'       => $u->customer?->full_name ?? $u->customer?->name,
+                    'discount_amount'     => $u->discount_amount,
+                    'discount_amount_fmt' => $u->discount_amount ? number_format($u->discount_amount, 0, ',', ' ') . ' F' : null,
+                    'used_at'             => $u->created_at->format('d/m/Y H:i'),
+                ]),
+            ],
+        ]);
     }
 
     /**

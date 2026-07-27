@@ -7,7 +7,7 @@ use App\Models\Attribute;
 use App\Models\AttributeValue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-
+use Inertia\Inertia;
 class AttributeController extends Controller
 {
     public function index()
@@ -17,7 +17,11 @@ class AttributeController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('admin.attributes.index', compact('attributes'));
+        Inertia::setRootView('layouts.admin-inertia');
+
+        return Inertia::render('Admin/Attributes/Index', [
+            'attributes' => $attributes,
+        ]);
     }
 
     public function storeAttribute(Request $request)
@@ -53,6 +57,7 @@ class AttributeController extends Controller
         $request->validate([
             'value'      => 'required|string|max:100',
             'color_code' => 'nullable|string|max:20|regex:/^#[0-9A-Fa-f]{3,6}$/',
+            'image'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
         ]);
 
         // Vérifier doublon
@@ -60,18 +65,56 @@ class AttributeController extends Controller
             return back()->with('error', '"' . $request->value . '" existe déjà dans cet attribut.');
         }
 
+        // Upload image si fournie
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('attributes', 'public');
+        }
+
         $attribute->values()->create([
             'value'      => $request->value,
             'slug'       => Str::slug($request->value),
             'color_code' => $request->color_code,
+            'image'      => $imagePath,
             'order'      => $attribute->values()->max('order') + 1,
         ]);
 
         return back()->with('success', '"' . $request->value . '" ajouté à ' . $attribute->name . '.');
     }
 
+    public function updateValue(Request $request, Attribute $attribute, AttributeValue $value)
+    {
+        $request->validate([
+            'color_code'    => 'nullable|string|max:20|regex:/^#[0-9A-Fa-f]{3,6}$/',
+            'image'         => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'remove_image'  => 'nullable|boolean',
+        ]);
+
+        if ($request->has('color_code')) {
+            $value->color_code = $request->color_code;
+        }
+
+        if ($request->boolean('remove_image')) {
+            $value->deleteImage();
+        } elseif ($request->hasFile('image')) {
+            if ($value->image) {
+                \Storage::disk('public')->delete($value->image);
+            }
+            $value->image = $request->file('image')->store('attributes', 'public');
+        }
+
+        $value->save();
+
+        return response()->json([
+            'success'   => true,
+            'image'     => $value->image,
+            'image_url' => $value->image_url,
+        ]);
+    }
+
     public function destroyValue(Attribute $attribute, AttributeValue $value)
     {
+        $value->deleteImage();
         $value->delete();
         return back()->with('success', 'Valeur supprimée.');
     }

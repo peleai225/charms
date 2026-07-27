@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\LoyaltyTransaction;
@@ -95,11 +96,46 @@ class Customer extends Model
         return $this->hasMany(LoyaltyTransaction::class)->latest();
     }
 
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(CustomerTag::class, 'customer_customer_tag', 'customer_id', 'customer_tag_id');
+    }
+
+    public function whatsappMessages(): HasMany
+    {
+        return $this->hasMany(WhatsAppMessage::class)->latest();
+    }
+
     // ========== SCOPES ==========
 
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
+    }
+
+    public function scopeVip($query)
+    {
+        return $query->whereHas('tags', fn($q) => $q->where('slug', 'vip'))
+            ->orWhere('customer_group', 'vip')
+            ->orWhere(fn($q) => $q->where('orders_count', '>=', 10)->orWhere('total_spent', '>=', 500000));
+    }
+
+    public function scopeLoyal($query)
+    {
+        return $query->where('orders_count', '>=', 3)->where('orders_count', '<', 10);
+    }
+
+    public function scopeNew($query)
+    {
+        return $query->where('created_at', '>=', now()->subDays(30));
+    }
+
+    public function scopeInactive($query)
+    {
+        return $query->where(function($q) {
+            $q->whereNull('last_order_at')
+              ->orWhere('last_order_at', '<', now()->subDays(90));
+        })->where('orders_count', '>', 0);
     }
 
     public function scopeWithOrders($query)

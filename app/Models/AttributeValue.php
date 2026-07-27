@@ -17,12 +17,15 @@ class AttributeValue extends Model
         'value',
         'slug',
         'color_code',
+        'image',
         'order',
     ];
 
     protected $casts = [
         'order' => 'integer',
     ];
+
+    protected $appends = ['image_url'];
 
     protected static function boot()
     {
@@ -53,6 +56,23 @@ class AttributeValue extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('order');
+    }
+
+    // ========== ACCESSORS ==========
+
+    public function getImageUrlAttribute(): ?string
+    {
+        return $this->image ? asset('storage/' . $this->image) : null;
+    }
+
+    // ========== METHODS ==========
+
+    public function deleteImage(): void
+    {
+        if ($this->image) {
+            \Storage::disk('public')->delete($this->image);
+            $this->update(['image' => null]);
+        }
     }
 }
 

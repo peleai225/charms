@@ -7,6 +7,7 @@ use App\Mail\ContactMessage;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Inertia\Inertia;
 
 class ContactController extends Controller
 {
@@ -15,7 +16,12 @@ class ContactController extends Controller
      */
     public function index()
     {
-        return view('front.pages.contact');
+        return Inertia::render('Contact', [
+            'contact_email' => Setting::get('contact_email', 'contact@chamse.ci'),
+            'contact_phone' => Setting::get('contact_phone', '+225 07 00 00 00 00'),
+            'contact_address' => Setting::get('contact_address', 'Abidjan, Cocody, Côte d\'Ivoire'),
+            'whatsapp_number' => config('app.whatsapp_number', '2250506805382'),
+        ]);
     }
 
     /**

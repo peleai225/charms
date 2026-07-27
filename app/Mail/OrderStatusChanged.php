@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Order;
+use App\Services\MailConfigService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -20,6 +21,12 @@ class OrderStatusChanged extends Mailable
         public Order $order,
         public string $oldStatus
     ) {}
+
+    public function build(): static
+    {
+        MailConfigService::configureFromSettings();
+        return $this;
+    }
 
     public function envelope(): Envelope
     {

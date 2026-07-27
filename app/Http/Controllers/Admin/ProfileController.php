@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Inertia\Inertia;
 
 class ProfileController extends Controller
 {
@@ -14,9 +15,23 @@ class ProfileController extends Controller
      */
     public function edit()
     {
+        Inertia::setRootView('layouts.admin-inertia');
+
         $user = auth()->user();
 
-        return view('admin.profile.edit', compact('user'));
+        return Inertia::render('Admin/Profile/Edit', [
+            'user' => [
+                'id'                 => $user->id,
+                'name'               => $user->name,
+                'email'              => $user->email,
+                'phone'              => $user->phone ?? null,
+                'role'               => $user->role ?? 'admin',
+                'role_label'         => ucfirst($user->role ?? 'Admin'),
+                'avatar_url'         => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                'created_at_formatted' => $user->created_at->format('d/m/Y'),
+                'last_login_at_human'  => $user->last_login_at?->diffForHumans() ?? null,
+            ],
+        ]);
     }
 
     /**
@@ -40,7 +55,7 @@ class ProfileController extends Controller
 
         $user->update($validated);
 
-        return back()->with('success', 'Profil mis à jour.');
+        return redirect()->route('admin.profile.edit')->with('success', 'Profil mis à jour.');
     }
 
     /**
@@ -57,7 +72,7 @@ class ProfileController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        return back()->with('success', 'Mot de passe mis à jour.');
+        return redirect()->route('admin.profile.edit')->with('success', 'Mot de passe mis à jour.');
     }
 }
 

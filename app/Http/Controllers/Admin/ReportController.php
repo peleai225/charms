@@ -6,40 +6,34 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Customer;
-use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Inertia\Inertia;
 
 class ReportController extends Controller
 {
-    /**
-     * Page principale des rapports
-     */
     public function index()
     {
         return view('admin.reports.index');
     }
 
-    /**
-     * Rapport des ventes
-     */
     public function sales(Request $request)
     {
-        $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->get('end_date', now()->format('Y-m-d'));
-        $groupBy = $request->get('group_by', 'day');
+        Inertia::setRootView('layouts.admin-inertia');
 
-        // Format de groupement
+        $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate   = $request->get('end_date',   now()->format('Y-m-d'));
+        $groupBy   = in_array($request->get('group_by'), ['day', 'week', 'month'])
+            ? $request->get('group_by') : 'day';
+
         $dateFormat = match ($groupBy) {
-            'day' => '%Y-%m-%d',
-            'week' => '%Y-%u',
+            'week'  => '%Y-%u',
             'month' => '%Y-%m',
             default => '%Y-%m-%d',
         };
 
-        // Ventes par période
         $salesData = Order::where('payment_status', 'paid')
             ->whereBetween('created_at', [$startDate, Carbon::parse($endDate)->endOfDay()])
             ->select(
@@ -49,98 +43,135 @@ class ReportController extends Controller
                 DB::raw('SUM(discount_amount) as discounts'),
                 DB::raw('AVG(total) as average_order')
             )
-            ->groupBy('period')
-            ->orderBy('period')
-            ->get();
+            ->groupBy('period')->orderBy('period')->get();
 
-        // Totaux
         $totals = [
-            'orders' => $salesData->sum('orders_count'),
-            'revenue' => $salesData->sum('revenue'),
+            'orders'    => $salesData->sum('orders_count'),
+            'revenue'   => $salesData->sum('revenue'),
             'discounts' => $salesData->sum('discounts'),
-            'average' => $salesData->avg('average_order') ?? 0,
+            'average'   => $salesData->avg('average_order') ?? 0,
         ];
 
-        // Comparaison période précédente
-        $daysDiff = Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate));
+        $daysDiff      = Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate));
         $previousStart = Carbon::parse($startDate)->subDays($daysDiff + 1)->format('Y-m-d');
-        $previousEnd = Carbon::parse($startDate)->subDay()->format('Y-m-d');
-
-        $previousTotals = Order::where('payment_status', 'paid')
+        $previousEnd   = Carbon::parse($startDate)->subDay()->format('Y-m-d');
+        $prev = Order::where('payment_status', 'paid')
             ->whereBetween('created_at', [$previousStart, Carbon::parse($previousEnd)->endOfDay()])
-            ->select(
-                DB::raw('COUNT(*) as orders'),
-                DB::raw('SUM(total) as revenue')
-            )
-            ->first();
+            ->selectRaw('COUNT(*) as orders, SUM(total) as revenue')->first();
 
         $comparison = [
-            'orders' => $this->calculateGrowth($totals['orders'], $previousTotals->orders ?? 0),
-            'revenue' => $this->calculateGrowth($totals['revenue'], $previousTotals->revenue ?? 0),
+            'orders'  => $this->calculateGrowth($totals['orders'],  $prev->orders  ?? 0),
+            'revenue' => $this->calculateGrowth($totals['revenue'], $prev->revenue ?? 0),
         ];
 
-        return view('admin.reports.sales', compact('salesData', 'totals', 'comparison', 'startDate', 'endDate', 'groupBy'));
+        $chartData = [
+            'labels'      => $salesData->pluck('period')->toArray(),
+            'revenues'    => $salesData->pluck('revenue')->map(fn($v) => (float) $v)->toArray(),
+            'orderCounts' => $salesData->pluck('orders_count')->map(fn($v) => (int) $v)->toArray(),
+        ];
+
+        return Inertia::render('Admin/Reports/Sales', [
+            'salesData'  => $salesData,
+            'totals'     => $totals,
+            'comparison' => $comparison,
+            'chartData'  => $chartData,
+            'filters'    => compact('startDate', 'endDate', 'groupBy'),
+        ]);
     }
 
-    /**
-     * Rapport des produits
-     */
     public function products(Request $request)
     {
-        $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->get('end_date', now()->format('Y-m-d'));
+        Inertia::setRootView('layouts.admin-inertia');
 
-        // Top produits vendus
+        $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate   = $request->get('end_date',   now()->format('Y-m-d'));
+        $endOfDay  = Carbon::parse($endDate)->endOfDay();
+
         $topProducts = DB::table('order_items')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->join('orders',    'order_items.order_id',    '=', 'orders.id')
+            ->join('products',  'order_items.product_id',  '=', 'products.id')
             ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
             ->where('orders.payment_status', 'paid')
-            ->whereBetween('orders.created_at', [$startDate, Carbon::parse($endDate)->endOfDay()])
+            ->whereBetween('orders.created_at', [$startDate, $endOfDay])
             ->select(
-                'products.id',
-                'products.name',
-                'products.sku',
+                'products.id', 'products.name', 'products.sku',
                 'categories.name as category_name',
                 DB::raw('SUM(order_items.quantity) as quantity_sold'),
                 DB::raw('SUM(order_items.total) as revenue'),
                 DB::raw('COUNT(DISTINCT orders.id) as orders_count')
             )
             ->groupBy('products.id', 'products.name', 'products.sku', 'categories.name')
-            ->orderByDesc('revenue')
-            ->limit(50)
-            ->get();
+            ->orderByDesc('revenue')->limit(50)->get();
 
-        // Produits sans vente
-        $noSalesProducts = Product::active()
-            ->whereDoesntHave('orderItems', function ($query) use ($startDate, $endDate) {
-                $query->whereHas('order', function ($q) use ($startDate, $endDate) {
-                    $q->where('payment_status', 'paid')
-                        ->whereBetween('created_at', [$startDate, Carbon::parse($endDate)->endOfDay()]);
-                });
-            })
-            ->select('id', 'name', 'sku', 'stock_quantity', 'sale_price')
-            ->take(20)
-            ->get();
-
-        // Ventes par catégorie
         $categoryStats = DB::table('order_items')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->join('categories', 'products.category_id', '=', 'categories.id')
+            ->join('orders',     'order_items.order_id',    '=', 'orders.id')
+            ->join('products',   'order_items.product_id',  '=', 'products.id')
+            ->join('categories', 'products.category_id',    '=', 'categories.id')
             ->where('orders.payment_status', 'paid')
-            ->whereBetween('orders.created_at', [$startDate, Carbon::parse($endDate)->endOfDay()])
+            ->whereBetween('orders.created_at', [$startDate, $endOfDay])
             ->select(
-                'categories.id',
-                'categories.name',
+                'categories.id', 'categories.name',
                 DB::raw('SUM(order_items.quantity) as quantity_sold'),
                 DB::raw('SUM(order_items.total) as revenue')
             )
-            ->groupBy('categories.id', 'categories.name')
-            ->orderByDesc('revenue')
-            ->get();
+            ->groupBy('categories.id', 'categories.name')->orderByDesc('revenue')->get();
 
-        return view('admin.reports.products', compact('topProducts', 'noSalesProducts', 'categoryStats', 'startDate', 'endDate'));
+        $noSalesProducts = Product::active()
+            ->whereDoesntHave('orderItems', fn($q) => $q->whereHas('order', fn($o) => $o
+                ->where('payment_status', 'paid')
+                ->whereBetween('created_at', [$startDate, $endOfDay])
+            ))
+            ->select('id', 'name', 'sku', 'stock_quantity', 'sale_price')
+            ->take(20)->get();
+
+        $chartData = [
+            'labels'   => $categoryStats->pluck('name')->toArray(),
+            'revenues' => $categoryStats->pluck('revenue')->map(fn($v) => (float) $v)->toArray(),
+        ];
+
+        return Inertia::render('Admin/Reports/Products', [
+            'topProducts'     => $topProducts,
+            'categoryStats'   => $categoryStats,
+            'noSalesProducts' => $noSalesProducts,
+            'chartData'       => $chartData,
+            'filters'         => compact('startDate', 'endDate'),
+        ]);
+    }
+
+    public function stock()
+    {
+        Inertia::setRootView('layouts.admin-inertia');
+
+        $outOfStock = Product::active()
+            ->where('stock_quantity', 0)->where('track_stock', true)
+            ->select('id', 'name', 'sku', 'stock_quantity')->get();
+
+        $lowStock = Product::active()
+            ->where('track_stock', true)
+            ->whereColumn('stock_quantity', '<=', 'stock_alert_threshold')
+            ->where('stock_quantity', '>', 0)
+            ->select('id', 'name', 'sku', 'stock_quantity', 'stock_alert_threshold')->get();
+
+        $stockValue = Product::active()
+            ->selectRaw('SUM(stock_quantity * cost_price) as cost_value, SUM(stock_quantity * sale_price) as sale_value, SUM(stock_quantity) as total_units')
+            ->first();
+
+        $stockRotation = DB::table('order_items')
+            ->join('orders',   'order_items.order_id',   '=', 'orders.id')
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->where('orders.payment_status', 'paid')
+            ->where('orders.created_at', '>=', now()->subDays(30))
+            ->select('products.id', 'products.name', 'products.stock_quantity', DB::raw('SUM(order_items.quantity) as sold_30d'))
+            ->groupBy('products.id', 'products.name', 'products.stock_quantity')
+            ->orderByDesc('sold_30d')->take(20)->get()
+            ->map(function ($p) {
+                $p->days_of_stock = $p->sold_30d > 0
+                    ? round(($p->stock_quantity / ($p->sold_30d / 30)), 1)
+                    : null;
+                return $p;
+            });
+
+        return Inertia::render('Admin/Reports/Stock', compact('outOfStock', 'lowStock', 'stockValue', 'stockRotation'));
     }
 
     /**
@@ -148,36 +179,45 @@ class ReportController extends Controller
      */
     public function customers(Request $request)
     {
+        Inertia::setRootView('layouts.admin-inertia');
+
         $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
-        $endDate = $request->get('end_date', now()->format('Y-m-d'));
+        $endDate   = $request->get('end_date', now()->format('Y-m-d'));
+        $endOfDay  = Carbon::parse($endDate)->endOfDay();
 
         // Nouveaux clients
-        $newCustomers = Customer::whereBetween('created_at', [$startDate, Carbon::parse($endDate)->endOfDay()])
-            ->count();
+        $newCustomers = Customer::whereBetween('created_at', [$startDate, $endOfDay])->count();
 
         // Clients avec commandes
-        $activeCustomers = Customer::whereHas('orders', function ($query) use ($startDate, $endDate) {
+        $activeCustomers = Customer::whereHas('orders', function ($query) use ($startDate, $endOfDay) {
             $query->where('payment_status', 'paid')
-                ->whereBetween('created_at', [$startDate, Carbon::parse($endDate)->endOfDay()]);
+                ->whereBetween('created_at', [$startDate, $endOfDay]);
         })->count();
 
         // Top clients
-        $topCustomers = Customer::withCount(['orders' => function ($query) use ($startDate, $endDate) {
+        $topCustomers = Customer::withCount(['orders' => function ($query) use ($startDate, $endOfDay) {
             $query->where('payment_status', 'paid')
-                ->whereBetween('created_at', [$startDate, Carbon::parse($endDate)->endOfDay()]);
+                ->whereBetween('created_at', [$startDate, $endOfDay]);
         }])
-            ->withSum(['orders' => function ($query) use ($startDate, $endDate) {
+            ->withSum(['orders' => function ($query) use ($startDate, $endOfDay) {
                 $query->where('payment_status', 'paid')
-                    ->whereBetween('created_at', [$startDate, Carbon::parse($endDate)->endOfDay()]);
+                    ->whereBetween('created_at', [$startDate, $endOfDay]);
             }], 'total')
             ->having('orders_count', '>', 0)
             ->orderByDesc('orders_sum_total')
             ->take(20)
-            ->get();
+            ->get()
+            ->map(fn ($c) => [
+                'id'               => $c->id,
+                'full_name'        => trim($c->first_name . ' ' . $c->last_name),
+                'email'            => $c->user?->email,
+                'orders_count'     => $c->orders_count,
+                'orders_sum_total' => $c->orders_sum_total ?? 0,
+            ]);
 
         // Répartition géographique
         $geoStats = Order::where('payment_status', 'paid')
-            ->whereBetween('created_at', [$startDate, Carbon::parse($endDate)->endOfDay()])
+            ->whereBetween('created_at', [$startDate, $endOfDay])
             ->select(
                 'shipping_city',
                 DB::raw('COUNT(*) as orders_count'),
@@ -188,69 +228,24 @@ class ReportController extends Controller
             ->take(10)
             ->get();
 
-        return view('admin.reports.customers', compact(
-            'newCustomers',
-            'activeCustomers',
-            'topCustomers',
-            'geoStats',
-            'startDate',
-            'endDate'
-        ));
-    }
+        $avgRevenue = $activeCustomers > 0 && $topCustomers->sum('orders_sum_total') > 0
+            ? round($topCustomers->sum('orders_sum_total') / $activeCustomers)
+            : 0;
 
-    /**
-     * Rapport du stock
-     */
-    public function stock()
-    {
-        // Produits en rupture
-        $outOfStock = Product::active()
-            ->where('stock_quantity', 0)
-            ->where('track_stock', true)
-            ->select('id', 'name', 'sku', 'stock_quantity')
-            ->get();
+        $chartData = [
+            'labels'   => $geoStats->pluck('shipping_city')->map(fn ($v) => $v ?? 'Non renseigné')->toArray(),
+            'revenues' => $geoStats->pluck('revenue')->map(fn ($v) => (float) $v)->toArray(),
+        ];
 
-        // Produits en alerte stock
-        $lowStock = Product::active()
-            ->where('track_stock', true)
-            ->whereColumn('stock_quantity', '<=', 'stock_alert_threshold')
-            ->where('stock_quantity', '>', 0)
-            ->select('id', 'name', 'sku', 'stock_quantity', 'stock_alert_threshold')
-            ->get();
-
-        // Valeur du stock
-        $stockValue = Product::active()
-            ->select(
-                DB::raw('SUM(stock_quantity * cost_price) as cost_value'),
-                DB::raw('SUM(stock_quantity * sale_price) as sale_value'),
-                DB::raw('SUM(stock_quantity) as total_units')
-            )
-            ->first();
-
-        // Rotation du stock (derniers 30 jours)
-        $stockRotation = DB::table('order_items')
-            ->join('orders', 'order_items.order_id', '=', 'orders.id')
-            ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->where('orders.payment_status', 'paid')
-            ->where('orders.created_at', '>=', now()->subDays(30))
-            ->select(
-                'products.id',
-                'products.name',
-                'products.stock_quantity',
-                DB::raw('SUM(order_items.quantity) as sold_30d')
-            )
-            ->groupBy('products.id', 'products.name', 'products.stock_quantity')
-            ->orderByDesc('sold_30d')
-            ->take(20)
-            ->get()
-            ->map(function ($product) {
-                $product->days_of_stock = $product->sold_30d > 0
-                    ? round(($product->stock_quantity / ($product->sold_30d / 30)), 1)
-                    : null;
-                return $product;
-            });
-
-        return view('admin.reports.stock', compact('outOfStock', 'lowStock', 'stockValue', 'stockRotation'));
+        return Inertia::render('Admin/Reports/Customers', [
+            'newCustomers'    => $newCustomers,
+            'activeCustomers' => $activeCustomers,
+            'avgRevenue'      => $avgRevenue,
+            'topCustomers'    => $topCustomers->values(),
+            'geoStats'        => $geoStats,
+            'chartData'       => $chartData,
+            'filters'         => compact('startDate', 'endDate'),
+        ]);
     }
 
     /**

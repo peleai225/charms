@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Picqer\Barcode\BarcodeGeneratorPNG;
 use Picqer\Barcode\BarcodeGeneratorSVG;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -17,7 +18,9 @@ class BarcodeController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Product::active()->with('variants');
+        Inertia::setRootView('layouts.admin-inertia');
+
+        $query = Product::active()->with(['variants.attributeValues.attribute']);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -30,7 +33,43 @@ class BarcodeController extends Controller
 
         $products = $query->orderBy('name')->paginate(30)->withQueryString();
 
-        return view('admin.barcodes.index', compact('products'));
+        $totalProducts  = Product::active()->count();
+        $withBarcode    = Product::active()->whereNotNull('barcode')->where('barcode', '!=', '')->count();
+        $withoutBarcode = Product::active()->where(fn($q) => $q->whereNull('barcode')->orWhere('barcode', ''))->count();
+        $totalVariants  = ProductVariant::count();
+
+        // Mapper les produits en tableaux plats
+        $products->getCollection()->transform(function (Product $product) {
+            return [
+                'id'                 => $product->id,
+                'name'               => $product->name,
+                'sku'                => $product->sku,
+                'barcode'            => $product->barcode,
+                'sale_price_formatted' => format_price($product->sale_price),
+                'primary_image_url'  => $product->primary_image_url,
+                'variants_count'     => $product->variants->count(),
+                'variants'           => $product->variants->map(function (ProductVariant $v) {
+                    $colorAttr = $v->attributeValues->first(fn($av) => $av->attribute && $av->attribute->slug === 'couleur');
+                    return [
+                        'id'                   => $v->id,
+                        'sku'                  => $v->sku,
+                        'barcode'              => $v->barcode,
+                        'label'                => $v->name ?: ($colorAttr?->value ?? 'Variante'),
+                        'color_code'           => $colorAttr?->color_code,
+                        'sale_price_formatted' => $v->sale_price ? format_price($v->sale_price) : null,
+                    ];
+                })->values()->all(),
+            ];
+        });
+
+        return Inertia::render('Admin/Barcodes/Index', [
+            'products'       => $products,
+            'totalProducts'  => $totalProducts,
+            'withBarcode'    => $withBarcode,
+            'withoutBarcode' => $withoutBarcode,
+            'totalVariants'  => $totalVariants,
+            'filters'        => ['search' => $request->get('search', '')],
+        ]);
     }
 
     /**
@@ -101,8 +140,17 @@ class BarcodeController extends Controller
             $productIds = array_filter(explode(',', $productIds));
         }
         
-        $labelFormat = $request->get('format', 'standard'); // standard, small, price_tag
-        $quantity = (int) $request->get('quantity', 1);
+        // Accepte les anciens noms (standard/small/price_tag) ET les nouveaux (50x30, 40x12…)
+        $formatMap = ['standard' => '50x30', 'small' => '40x12', 'price_tag' => '60x40'];
+        $rawFormat = $request->get('format', '50x30');
+        $labelFormat = $formatMap[$rawFormat] ?? $rawFormat;
+
+        $validFormats = ['50x30','40x30','60x40','80x50','40x12','50x15','57x32','a4'];
+        if (!in_array($labelFormat, $validFormats)) {
+            $labelFormat = '50x30';
+        }
+
+        $quantity = max(1, (int) $request->get('quantity', 1));
 
         // Si aucun produit sélectionné, rediriger vers la liste
         if (empty($productIds)) {

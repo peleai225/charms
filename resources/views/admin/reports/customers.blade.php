@@ -159,10 +159,13 @@
 </div>
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const ctx = document.getElementById('geoChart').getContext('2d');
-    new Chart(ctx, {
+    const ctx = document.getElementById('geoChart');
+    if (ctx) {
+        const existingChart = Chart.getChart(ctx);
+        if (existingChart) existingChart.destroy();
+
+        new Chart(ctx.getContext('2d'), {
         type: 'bar',
         data: {
             labels: @json($geoStats->pluck('shipping_city')->map(fn($v) => $v ?? 'Non renseigné')),
@@ -199,7 +202,8 @@
                 }
             }
         }
-    });
+        });
+    }
 </script>
 @endpush
 @endsection

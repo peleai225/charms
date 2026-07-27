@@ -15,53 +15,35 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class ProductController extends Controller
 {
     /**
-     * Liste des produits
+     * Liste des produits (Inertia)
      */
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'images'])
-            ->withCount('variants');
+        Inertia::setRootView('layouts.admin-inertia');
 
-        // Filtres
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('barcode', 'like', "%{$search}%");
-            });
-        }
+        $products = Product::query()
+            ->with(['images', 'category', 'variants'])
+            ->when($request->search, fn($q) => $q->where('name', 'like', "%{$request->search}%")
+                ->orWhere('sku', 'like', "%{$request->search}%"))
+            ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->when($request->category, fn($q) => $q->where('category_id', $request->category))
+            ->when($request->stock === 'out', fn($q) => $q->where('stock_quantity', '<=', 0))
+            ->when($request->stock === 'low', fn($q) => $q->whereColumn('stock_quantity', '<=', 'stock_alert_threshold')->where('stock_quantity', '>', 0))
+            ->orderBy('created_at', 'desc')
+            ->paginate(20)
+            ->withQueryString();
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->filled('category')) {
-            $query->where('category_id', $request->category);
-        }
-
-        if ($request->filled('stock')) {
-            if ($request->stock === 'low') {
-                $query->lowStock();
-            } elseif ($request->stock === 'out') {
-                $query->outOfStock();
-            }
-        }
-
-        // Tri (whitelist pour éviter l'injection)
-        $allowedSort = ['name', 'sku', 'sale_price', 'stock_quantity', 'created_at', 'updated_at', 'status'];
-        $sortBy = in_array($request->get('sort'), $allowedSort) ? $request->get('sort') : 'created_at';
-        $sortDir = strtolower($request->get('dir', 'desc')) === 'asc' ? 'asc' : 'desc';
-        $query->orderBy($sortBy, $sortDir);
-
-        $products = $query->paginate(20)->withQueryString();
-        $categories = Category::active()->ordered()->get();
-
-        return view('admin.products.index', compact('products', 'categories'));
+        return Inertia::render('Admin/Products/Index', [
+            'pageTitle' => 'Produits',
+            'products' => $products,
+            'categories' => Category::orderBy('name')->get(['id', 'name']),
+            'filters' => $request->only('search', 'status', 'category', 'stock'),
+        ]);
     }
 
     /**
@@ -69,11 +51,19 @@ class ProductController extends Controller
      */
     public function create()
     {
-        $categories = Category::active()->ordered()->get();
-        $attributes = Attribute::with('values')->ordered()->get();
-        $colors = AttributeValue::whereHas('attribute', fn($q) => $q->where('slug', 'couleur'))->get();
+        Inertia::setRootView('layouts.admin-inertia');
 
-        return view('admin.products.create', compact('categories', 'attributes', 'colors'));
+        $categories = Category::active()->ordered()->get()->map(fn($c) => [
+            'id'        => $c->id,
+            'full_path' => $c->full_path,
+        ]);
+
+        $attributes = $this->formatAttributesForFrontend();
+
+        return Inertia::render('Admin/Products/Create', [
+            'categories' => $categories,
+            'attributes' => $attributes,
+        ]);
     }
 
     /**
@@ -168,11 +158,70 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
+        Inertia::setRootView('layouts.admin-inertia');
+
         $product->load(['category', 'images', 'variants.attributeValues.attribute', 'stockMovements' => function ($q) {
             $q->latest()->take(10);
         }]);
 
-        return view('admin.products.show', compact('product'));
+        $totalSales   = $product->orderItems()->sum('quantity');
+        $totalRevenue = $product->orderItems()->sum(\DB::raw('quantity * unit_price'));
+
+        $productData = [
+            'id'                    => $product->id,
+            'name'                  => $product->name,
+            'sku'                   => $product->sku,
+            'barcode'               => $product->barcode,
+            'short_description'     => $product->short_description,
+            'description'           => $product->description,
+            'purchase_price'        => $product->purchase_price,
+            'sale_price'            => $product->sale_price,
+            'compare_price'         => $product->compare_price,
+            'tax_rate'              => $product->tax_rate,
+            'weight'                => $product->weight,
+            'stock_quantity'        => $product->stock_quantity,
+            'stock_alert_threshold' => $product->stock_alert_threshold,
+            'status'                => $product->status,
+            'is_featured'           => $product->is_featured,
+            'is_new'                => $product->is_new,
+            'has_variants'          => $product->has_variants,
+            'track_stock'           => $product->track_stock,
+            'sales_count'           => $totalSales,
+            'category'              => $product->category ? ['id' => $product->category->id, 'name' => $product->category->name] : null,
+            'images'                => $product->images->map(fn($i) => [
+                'id'         => $i->id,
+                'path'       => $i->path,
+                'is_primary' => $i->is_primary,
+            ]),
+            'variants'              => $product->variants->map(fn($v) => [
+                'id'             => $v->id,
+                'sku'            => $v->sku,
+                'name'           => $v->name,
+                'stock_quantity' => $v->stock_quantity,
+                'sale_price'     => $v->sale_price,
+                'image'          => $v->image,
+                'attribute_values' => $v->attributeValues->map(fn($av) => [
+                    'id'    => $av->id,
+                    'value' => $av->value,
+                    'attribute' => $av->attribute ? ['name' => $av->attribute->name, 'slug' => $av->attribute->slug] : null,
+                ]),
+            ]),
+        ];
+
+        $movements = $product->stockMovements->map(fn($m) => [
+            'id'             => $m->id,
+            'type'           => $m->type,
+            'quantity'       => $m->quantity,
+            'note'           => $m->note,
+            'created_at_fmt' => $m->created_at->format('d/m/Y H:i'),
+        ]);
+
+        return Inertia::render('Admin/Products/Show', [
+            'product'        => $productData,
+            'stockMovements' => $movements,
+            'totalSales'     => (int) $totalSales,
+            'totalRevenue'   => (float) $totalRevenue,
+        ]);
     }
 
     /**
@@ -180,12 +229,51 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
-        $product->load(['images' => fn($q) => $q->orderBy('position'), 'variants.attributeValues.attribute', 'attributes']);
-        $categories = Category::active()->ordered()->get();
-        $attributes = Attribute::with('values')->ordered()->get();
-        $colors = AttributeValue::whereHas('attribute', fn($q) => $q->where('slug', 'couleur'))->get();
+        Inertia::setRootView('layouts.admin-inertia');
 
-        return view('admin.products.edit', compact('product', 'categories', 'attributes', 'colors'));
+        $product->load(['images' => fn($q) => $q->orderBy('position'), 'variants.attributeValues.attribute']);
+
+        $categories = Category::active()->ordered()->get()->map(fn($c) => [
+            'id'        => $c->id,
+            'full_path' => $c->full_path,
+        ]);
+
+        $attributes = $this->formatAttributesForFrontend();
+
+        $productData = [
+            'id'                    => $product->id,
+            'name'                  => $product->name,
+            'sku'                   => $product->sku,
+            'barcode'               => $product->barcode,
+            'short_description'     => $product->short_description,
+            'description'           => $product->description,
+            'purchase_price'        => $product->purchase_price,
+            'sale_price'            => $product->sale_price,
+            'compare_price'         => $product->compare_price,
+            'tax_rate'              => $product->tax_rate,
+            'weight'                => $product->weight,
+            'stock_quantity'        => $product->stock_quantity,
+            'stock_alert_threshold' => $product->stock_alert_threshold,
+            'status'                => $product->status,
+            'category_id'           => $product->category_id,
+            'is_featured'           => $product->is_featured,
+            'is_new'                => $product->is_new,
+            'has_variants'          => $product->has_variants,
+            'track_stock'           => $product->track_stock,
+            'sales_count'           => $product->orderItems()->sum('quantity'),
+            'images'                => $product->images->map(fn($i) => [
+                'id'         => $i->id,
+                'path'       => $i->path,
+                'is_primary' => $i->is_primary,
+            ]),
+            'variants'              => $product->variants->map(fn($v) => $this->formatVariantForFrontend($v)),
+        ];
+
+        return Inertia::render('Admin/Products/Edit', [
+            'product'    => $productData,
+            'categories' => $categories,
+            'attributes' => $attributes,
+        ]);
     }
 
     /**
@@ -342,6 +430,86 @@ class ProductController extends Controller
     }
 
     /**
+     * Suppression en masse de produits
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids'   => 'required|array|min:1',
+            'ids.*' => 'integer|exists:products,id',
+        ]);
+
+        $deleted  = 0;
+        $archived = 0;
+        $errors   = 0;
+
+        foreach ($validated['ids'] as $id) {
+            $product = Product::with(['variants', 'images'])->find($id);
+            if (! $product) {
+                continue;
+            }
+
+            if ($product->orderItems()->exists()) {
+                $product->update(['status' => 'archived']);
+                $archived++;
+
+                continue;
+            }
+
+            DB::beginTransaction();
+
+            try {
+                foreach ($product->variants as $variant) {
+                    if ($variant->image) {
+                        Storage::disk('public')->delete($variant->image);
+                    }
+                }
+
+                foreach ($product->images as $image) {
+                    Storage::disk('public')->delete($image->path);
+                }
+
+                $productId   = $product->id;
+                $productName = $product->name;
+
+                ActivityLog::logDeleted($product, "Produit {$productName} supprimé (bulk)");
+
+                $product->delete();
+
+                $productImagesDir = 'products/'.$productId;
+                if (Storage::disk('public')->exists($productImagesDir)) {
+                    Storage::disk('public')->deleteDirectory($productImagesDir);
+                }
+
+                DB::commit();
+                $deleted++;
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $errors++;
+                \Log::error('Erreur bulk destroy produit', [
+                    'product_id' => $id,
+                    'error'      => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $parts = [];
+        if ($deleted > 0) {
+            $parts[] = "{$deleted} supprimé(s)";
+        }
+        if ($archived > 0) {
+            $parts[] = "{$archived} archivé(s) (commandes associées)";
+        }
+        if ($errors > 0) {
+            $parts[] = "{$errors} en erreur";
+        }
+
+        $message = $parts ? implode(', ', $parts).'.' : 'Aucun produit traité.';
+
+        return back()->with($errors > 0 && $deleted === 0 && $archived === 0 ? 'error' : 'success', $message);
+    }
+
+    /**
      * Ajouter une variante (générique : N attributs).
      *
      * Le formulaire envoie :
@@ -392,6 +560,18 @@ class ProductController extends Controller
             if ($request->hasFile('image')) {
                 $path = $this->resizeAndStoreImage($request->file('image'), 'products/' . $product->id . '/variants');
                 $variant->update(['image' => $path]);
+            } elseif (!$variant->image) {
+                // Copier l'image de la valeur couleur si disponible
+                $colorAttrIds = \App\Models\Attribute::where('type', 'color')->pluck('id')->all();
+                foreach ($pairs as $attrId => $attrValId) {
+                    if (in_array($attrId, $colorAttrIds)) {
+                        $colorVal = \App\Models\AttributeValue::find($attrValId);
+                        if ($colorVal?->image) {
+                            $variant->update(['image' => $colorVal->image]);
+                        }
+                        break;
+                    }
+                }
             }
 
             if (!$product->has_variants) {
@@ -400,10 +580,25 @@ class ProductController extends Controller
 
             DB::commit();
 
+            $variant->load('attributeValues.attribute');
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'variant' => $this->formatVariantForFrontend($variant),
+                    'message' => 'Variante ajoutée avec succès.',
+                ]);
+            }
+
             return back()->with('success', 'Variante ajoutée avec succès.');
 
         } catch (\Exception $e) {
             DB::rollBack();
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+
             return back()->with('error', 'Erreur : ' . $e->getMessage());
         }
     }
@@ -420,15 +615,19 @@ class ProductController extends Controller
     public function bulkStoreVariants(Request $request, Product $product)
     {
         $request->validate([
-            'rows'                    => 'required|array|min:1',
-            'rows.*.sku'              => 'required|string|max:100',
-            'rows.*.stock_quantity'   => 'required|integer|min:0',
-            'rows.*.sale_price'       => 'nullable|numeric|min:0',
-            'rows.*.attributes'       => 'nullable|array',
-            'rows.*.attributes.*'     => 'nullable|integer|exists:attribute_values,id',
-            // Rétro-compat : anciens champs s'ils sont encore envoyés
-            'rows.*.size_id'          => 'nullable|exists:attribute_values,id',
-            'rows.*.color_id'         => 'nullable|exists:attribute_values,id',
+            'rows'                           => 'required|array|min:1',
+            'rows.*.sku'                     => 'required|string|max:100',
+            'rows.*.stock_quantity'          => 'required|integer|min:0',
+            'rows.*.sale_price'              => 'nullable|numeric|min:0',
+            'rows.*.purchase_price'          => 'nullable|numeric|min:0',
+            'rows.*.compare_price'           => 'nullable|numeric|min:0',
+            'rows.*.barcode'                 => 'nullable|string|max:100',
+            'rows.*.weight'                  => 'nullable|numeric|min:0',
+            'rows.*.stock_alert_threshold'   => 'nullable|integer|min:0',
+            'rows.*.attributes'              => 'nullable|array',
+            'rows.*.attributes.*'            => 'nullable|integer|exists:attribute_values,id',
+            'rows.*.size_id'                 => 'nullable|exists:attribute_values,id',
+            'rows.*.color_id'                => 'nullable|exists:attribute_values,id',
         ]);
 
         // Vérifie que chaque clé d'attribut est bien un attribute_id valide
@@ -458,11 +657,16 @@ class ProductController extends Controller
                 }
 
                 $variant = ProductVariant::create([
-                    'product_id'     => $product->id,
-                    'sku'            => $sku,
-                    'stock_quantity' => (int) ($row['stock_quantity'] ?? 0),
-                    'sale_price'     => !empty($row['sale_price']) ? $row['sale_price'] : null,
-                    'is_active'      => true,
+                    'product_id'            => $product->id,
+                    'sku'                   => $sku,
+                    'stock_quantity'        => (int) ($row['stock_quantity'] ?? 0),
+                    'sale_price'            => !empty($row['sale_price']) ? $row['sale_price'] : null,
+                    'purchase_price'        => !empty($row['purchase_price']) ? $row['purchase_price'] : null,
+                    'compare_price'         => !empty($row['compare_price']) ? $row['compare_price'] : null,
+                    'barcode'               => !empty($row['barcode']) ? $row['barcode'] : null,
+                    'weight'                => !empty($row['weight']) ? $row['weight'] : null,
+                    'stock_alert_threshold' => isset($row['stock_alert_threshold']) && $row['stock_alert_threshold'] !== '' ? (int)$row['stock_alert_threshold'] : null,
+                    'is_active'             => true,
                 ]);
 
                 foreach ($pairs as $attributeId => $attributeValueId) {
@@ -471,6 +675,20 @@ class ProductController extends Controller
                         'attribute_id'       => $attributeId,
                         'attribute_value_id' => $attributeValueId,
                     ]);
+                }
+
+                // Auto-assign color image to variant
+                if (!$variant->image) {
+                    $colorAttributeIds = Attribute::where('type', 'color')->pluck('id')->all();
+                    foreach ($pairs as $attrId => $attrValId) {
+                        if (in_array($attrId, $colorAttributeIds)) {
+                            $colorValue = AttributeValue::find($attrValId);
+                            if ($colorValue && $colorValue->image) {
+                                $variant->update(['image' => $colorValue->image]);
+                            }
+                            break;
+                        }
+                    }
                 }
 
                 $variant->generateName();
@@ -486,10 +704,24 @@ class ProductController extends Controller
             $msg = "{$created} variante(s) créée(s)";
             if ($skipped > 0) $msg .= ", {$skipped} ignorée(s) (SKU déjà existant ou ligne invalide)";
 
-            return back()->with('success', $msg . '.');
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => $created > 0,
+                    'message' => $msg,
+                    'created' => $created,
+                    'skipped' => $skipped,
+                ], $created > 0 ? 200 : 422);
+            }
+
+            return back()->with($created > 0 ? 'success' : 'error', $msg . '.');
 
         } catch (\Exception $e) {
             DB::rollBack();
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+
             return back()->with('error', 'Erreur : ' . $e->getMessage());
         }
     }
@@ -575,10 +807,33 @@ class ProductController extends Controller
         }
 
         $validated = $request->validate([
-            'stock_quantity' => 'sometimes|required|integer|min:0',
-            'sale_price'     => 'sometimes|nullable|numeric|min:0',
-            'is_active'      => 'sometimes|boolean',
+            'stock_quantity'        => 'sometimes|required|integer|min:0',
+            'sale_price'            => 'sometimes|nullable|numeric|min:0',
+            'purchase_price'        => 'sometimes|nullable|numeric|min:0',
+            'compare_price'         => 'sometimes|nullable|numeric|min:0',
+            'barcode'               => 'sometimes|nullable|string|max:100',
+            'weight'                => 'sometimes|nullable|numeric|min:0',
+            'stock_alert_threshold' => 'sometimes|nullable|integer|min:0',
+            'is_active'             => 'sometimes|boolean',
+            'image'                 => 'sometimes|nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'remove_image'          => 'sometimes|boolean',
         ]);
+
+        // Gérer l'image séparément
+        unset($validated['image'], $validated['remove_image']);
+
+        if ($request->hasFile('image')) {
+            if ($variant->image) {
+                Storage::disk('public')->delete($variant->image);
+            }
+            $validated['image'] = $this->resizeAndStoreImage(
+                $request->file('image'),
+                'products/' . $product->id . '/variants'
+            );
+        } elseif ($request->boolean('remove_image') && $variant->image) {
+            Storage::disk('public')->delete($variant->image);
+            $validated['image'] = null;
+        }
 
         if (empty($validated)) {
             return $request->wantsJson() || $request->ajax()
@@ -590,10 +845,16 @@ class ProductController extends Controller
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
-                'success'        => true,
-                'stock_quantity' => $variant->stock_quantity,
-                'sale_price'     => $variant->sale_price,
-                'is_active'      => (bool) $variant->is_active,
+                'success'               => true,
+                'image'                 => $variant->image,
+                'stock_quantity'        => $variant->stock_quantity,
+                'sale_price'            => $variant->sale_price,
+                'purchase_price'        => $variant->purchase_price,
+                'compare_price'         => $variant->compare_price,
+                'barcode'               => $variant->barcode,
+                'weight'                => $variant->weight,
+                'stock_alert_threshold' => $variant->stock_alert_threshold,
+                'is_active'             => (bool) $variant->is_active,
             ]);
         }
 
@@ -614,6 +875,14 @@ class ProductController extends Controller
         // Vérifier s'il reste des variantes
         if ($product->variants()->count() === 0) {
             $product->update(['has_variants' => false]);
+        }
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json([
+                'success'       => true,
+                'has_variants'  => (bool) $product->fresh()->has_variants,
+                'message'       => 'Variante supprimée.',
+            ]);
         }
 
         return back()->with('success', 'Variante supprimée.');
@@ -788,5 +1057,48 @@ class ProductController extends Controller
 
         // Le chemin stocké en base pointe vers la version medium
         return $directory . '/medium/' . $filename;
+    }
+
+    private function formatAttributesForFrontend()
+    {
+        return Attribute::with('values')->ordered()->get()->map(fn($a) => [
+            'id'     => $a->id,
+            'name'   => $a->name,
+            'type'   => $a->type,
+            'values' => $a->values->map(fn($v) => [
+                'id'         => $v->id,
+                'value'      => $v->value,
+                'color_code' => $v->color_code,
+                'image'      => $v->image,
+            ]),
+        ]);
+    }
+
+    private function formatVariantForFrontend(ProductVariant $variant): array
+    {
+        return [
+            'id'                    => $variant->id,
+            'sku'                   => $variant->sku,
+            'barcode'               => $variant->barcode,
+            'name'                  => $variant->name,
+            'stock_quantity'        => $variant->stock_quantity,
+            'stock_alert_threshold' => $variant->stock_alert_threshold,
+            'sale_price'            => $variant->sale_price,
+            'purchase_price'        => $variant->purchase_price,
+            'compare_price'         => $variant->compare_price,
+            'weight'                => $variant->weight,
+            'is_active'             => (bool) $variant->is_active,
+            'image'                 => $variant->image,
+            'attribute_values'      => $variant->attributeValues->map(fn($av) => [
+                'id'        => $av->id,
+                'value'     => $av->value,
+                'color_code'=> $av->color_code,
+                'attribute' => $av->attribute ? [
+                    'name' => $av->attribute->name,
+                    'slug' => $av->attribute->slug,
+                    'type' => $av->attribute->type,
+                ] : null,
+            ]),
+        ];
     }
 }

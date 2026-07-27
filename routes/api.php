@@ -16,36 +16,43 @@ Route::get('/user', function (Request $request) {
 |--------------------------------------------------------------------------
 */
 
-// Vérifier le statut d'une commande (pour le polling) - protégé par session web
+// Vérifier le statut d'une commande par ID (checkout) - protégé par session web
 Route::get('/orders/{order}/status', function (Order $order) {
-    // Vérifier que la commande appartient à la session (checkout en cours) ou au client connecté
     $allowed = false;
-    if (auth()->check() && $order->customer?->user_id === auth()->id()) {
-        $allowed = true;
-    }
-    if (in_array($order->id, session('checkout_order_ids', []))) {
-        $allowed = true;
-    }
-    if (auth()->check() && in_array(auth()->user()->role ?? '', ['admin', 'manager', 'staff'])) {
-        $allowed = true;
-    }
-    if (!$allowed) {
-        return response()->json(['error' => 'Unauthorized'], 403);
-    }
+    if (auth()->check() && $order->customer?->user_id === auth()->id()) $allowed = true;
+    if (in_array($order->id, session('checkout_order_ids', []))) $allowed = true;
+    if (auth()->check() && in_array(auth()->user()->role ?? '', ['admin', 'manager', 'staff'])) $allowed = true;
+    if (!$allowed) return response()->json(['error' => 'Unauthorized'], 403);
     return response()->json([
-        'order_number' => $order->order_number,
-        'status' => $order->status,
-        'payment_status' => $order->payment_status,
-        'paid_at' => $order->paid_at?->toISOString(),
-        'total' => $order->total,
-        'is_paid' => $order->payment_status === 'paid',
-        'is_failed' => $order->payment_status === 'failed',
-        'is_pending' => $order->payment_status === 'pending',
-        'redirect_url' => $order->payment_status === 'paid' 
+        'order_number'  => $order->order_number,
+        'status'        => $order->status,
+        'payment_status'=> $order->payment_status,
+        'paid_at'       => $order->paid_at?->toISOString(),
+        'total'         => $order->total,
+        'is_paid'       => $order->payment_status === 'paid',
+        'is_failed'     => $order->payment_status === 'failed',
+        'is_pending'    => $order->payment_status === 'pending',
+        'redirect_url'  => $order->payment_status === 'paid'
             ? route('checkout.success', ['order' => $order->id])
             : null,
     ]);
 })->middleware('web')->name('api.orders.status');
+
+// Polling statut commande par order_number (espace client)
+Route::get('/account/orders/{orderNumber}/status', function (string $orderNumber) {
+    if (!auth()->check()) return response()->json(['error' => 'Unauthorized'], 403);
+    $order = Order::where('order_number', $orderNumber)
+        ->where('customer_id', auth()->user()->customer?->id)
+        ->first();
+    if (!$order) return response()->json(['error' => 'Not found'], 404);
+    return response()->json([
+        'status'         => $order->status,
+        'status_label'   => $order->status_label,
+        'shipped_at'     => $order->shipped_at?->format('d/m/Y H:i'),
+        'delivered_at'   => $order->delivered_at?->format('d/m/Y H:i'),
+        'tracking_number'=> $order->tracking_number,
+    ]);
+})->middleware('web')->name('api.account.order.status');
 
 // Calculer les frais de livraison
 Route::post('/shipping-cost', function (Request $request) {
@@ -220,15 +227,6 @@ Route::get('/admin/poll-stats', function (Request $request) {
     ]);
 })->middleware('web')->name('api.admin.poll-stats');
 
-// Dashboard KPI filtrés par période
-Route::get('/admin/dashboard-stats', [\App\Http\Controllers\Admin\DashboardController::class, 'apiStats'])
-    ->middleware('web')
-    ->name('api.admin.dashboard-stats');
-
-// Commandes récentes (rafraîchissement AJAX)
-Route::get('/admin/recent-orders', [\App\Http\Controllers\Admin\DashboardController::class, 'recentOrders'])
-    ->middleware('web')
-    ->name('api.admin.recent-orders');
 
 // Détail commande pour le drawer AJAX
 Route::get('/admin/order-detail/{order}', function (\App\Models\Order $order) {
@@ -247,20 +245,106 @@ Route::get('/admin/order-detail/{order}', function (\App\Models\Order $order) {
             'image'   => $img ? asset('storage/' . $img->path) : null,
         ];
     });
+    $paymentLabels = ['pending' => 'En attente', 'paid' => 'Payée', 'failed' => 'Échouée', 'refunded' => 'Remboursée'];
+    $billingAddress = collect([
+        $order->billing_address,
+        $order->billing_city,
+        $order->billing_state,
+        $order->billing_country,
+    ])->filter()->implode(', ');
+
     return response()->json([
-        'id'             => $order->id,
-        'order_number'   => $order->order_number,
-        'status'         => $order->status,
-        'created_at'     => $order->created_at->format('d/m/Y à H:i'),
-        'customer_name'  => trim($order->billing_first_name . ' ' . $order->billing_last_name),
-        'billing_email'  => $order->billing_email,
-        'billing_phone'  => $order->billing_phone,
-        'items'          => $items,
-        'total_fmt'      => number_format($order->total, 0, ',', ' ') . ' F CFA',
-        'discount_amount'=> $order->discount_amount,
-        'discount_fmt'   => $order->discount_amount > 0 ? number_format($order->discount_amount, 0, ',', ' ') . ' F' : null,
-        'shipping_fmt'   => $order->shipping_amount > 0 ? number_format($order->shipping_amount, 0, ',', ' ') . ' F' : 'Gratuite',
-        'show_url'       => route('admin.orders.show', $order->id),
-        'invoice_url'    => route('admin.orders.invoice.view', $order->id),
+        'id'              => $order->id,
+        'order_number'    => $order->order_number,
+        'status'          => $order->status,
+        'payment_status'  => $order->payment_status,
+        'payment_label'   => $paymentLabels[$order->payment_status] ?? $order->payment_status,
+        'payment_method'  => $order->payment_method,
+        'created_at'      => $order->created_at->format('d/m/Y à H:i'),
+        'customer_name'   => trim($order->billing_first_name . ' ' . $order->billing_last_name),
+        'billing_email'   => $order->billing_email,
+        'billing_phone'   => $order->billing_phone,
+        'billing_address' => $billingAddress ?: null,
+        'items'           => $items,
+        'subtotal_fmt'    => number_format($order->subtotal ?? $order->total, 0, ',', ' ') . ' F',
+        'total_fmt'       => number_format($order->total, 0, ',', ' ') . ' F',
+        'discount_amount' => $order->discount_amount,
+        'discount_fmt'    => $order->discount_amount > 0 ? number_format($order->discount_amount, 0, ',', ' ') . ' F' : null,
+        'shipping_fmt'    => $order->shipping_amount > 0 ? number_format($order->shipping_amount, 0, ',', ' ') . ' F' : 'Gratuite',
+        'notes'           => $order->notes,
+        'show_url'        => route('admin.orders.show', $order->id),
+        'invoice_url'     => route('admin.orders.invoice.view', $order->id),
+        'receipt_url'     => route('admin.scanner.receipt', $order->id),
     ]);
 })->middleware('web')->name('api.admin.order-detail');
+
+// Recherche globale admin (Command Palette Ctrl+K)
+Route::get('/admin/search', function (Illuminate\Http\Request $request) {
+    if (!auth()->check() || !in_array(auth()->user()->role ?? '', ['admin', 'manager', 'staff'])) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+
+    $q = trim($request->input('q', ''));
+    if (strlen($q) < 2) {
+        return response()->json(['results' => []]);
+    }
+
+    $results = [];
+
+    // Commandes — par numéro ou nom client
+    $orders = \App\Models\Order::where('order_number', 'like', "%{$q}%")
+        ->orWhere('billing_first_name', 'like', "%{$q}%")
+        ->orWhere('billing_last_name', 'like', "%{$q}%")
+        ->orWhere('billing_email', 'like', "%{$q}%")
+        ->latest()
+        ->take(4)
+        ->get(['id', 'order_number', 'billing_first_name', 'billing_last_name', 'total', 'status']);
+
+    foreach ($orders as $o) {
+        $results[] = [
+            'type'     => 'order',
+            'label'    => '# ' . $o->order_number . ' — ' . trim($o->billing_first_name . ' ' . $o->billing_last_name),
+            'sublabel' => number_format($o->total, 0, ',', ' ') . ' F · ' . $o->status,
+            'url'      => route('admin.orders.show', $o->id),
+            'icon'     => 'order',
+        ];
+    }
+
+    // Produits — par nom ou SKU
+    $products = \App\Models\Product::with('images')
+        ->where('name', 'like', "%{$q}%")
+        ->orWhere('sku', 'like', "%{$q}%")
+        ->orWhere('barcode', 'like', "%{$q}%")
+        ->take(4)
+        ->get(['id', 'name', 'sku', 'price', 'status']);
+
+    foreach ($products as $p) {
+        $results[] = [
+            'type'     => 'product',
+            'label'    => $p->name,
+            'sublabel' => 'SKU: ' . ($p->sku ?? '—') . ' · ' . number_format($p->price, 0, ',', ' ') . ' F',
+            'url'      => route('admin.products.edit', $p->id),
+            'icon'     => 'product',
+        ];
+    }
+
+    // Clients — par nom ou email
+    $customers = \App\Models\Customer::where('first_name', 'like', "%{$q}%")
+        ->orWhere('last_name', 'like', "%{$q}%")
+        ->orWhere('email', 'like', "%{$q}%")
+        ->orWhere('phone', 'like', "%{$q}%")
+        ->take(3)
+        ->get(['id', 'first_name', 'last_name', 'email']);
+
+    foreach ($customers as $c) {
+        $results[] = [
+            'type'     => 'customer',
+            'label'    => trim($c->first_name . ' ' . $c->last_name),
+            'sublabel' => $c->email,
+            'url'      => route('admin.customers.show', $c->id),
+            'icon'     => 'customer',
+        ];
+    }
+
+    return response()->json(['results' => $results]);
+})->middleware('web')->name('api.admin.search');

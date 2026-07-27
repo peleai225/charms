@@ -34,11 +34,13 @@ class Setting extends Model
             ['value' => $value]
         );
 
-        // Vider le cache pour ce paramètre spécifique
         Cache::forget("setting.{$key}");
-        
-        // Vider aussi le cache global des paramètres
         Cache::forget('settings.all');
+        Cache::forget('site_settings');
+        // Vider le cache groupé mail si ce paramètre en fait partie
+        if (str_starts_with($key, 'mail_')) {
+            Cache::forget('settings.mail');
+        }
     }
 
     /**
@@ -66,6 +68,7 @@ class Setting extends Model
     public static function clearCache(): void
     {
         Cache::forget('settings.all');
+        Cache::forget('site_settings');
         // Vider tous les caches de paramètres individuels
         $keys = static::pluck('key');
         foreach ($keys as $key) {

@@ -13,17 +13,21 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Setting;
 use App\Services\MoneyFusionService;
+use App\Services\JekoAfricaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class CheckoutController extends Controller
 {
     protected MoneyFusionService $moneyFusion;
+    protected JekoAfricaService $jeko;
 
-    public function __construct(MoneyFusionService $moneyFusion)
+    public function __construct(MoneyFusionService $moneyFusion, JekoAfricaService $jeko)
     {
         $this->moneyFusion = $moneyFusion;
+        $this->jeko        = $jeko;
     }
 
     /**
@@ -50,13 +54,66 @@ class CheckoutController extends Controller
             }
         }
 
+        // Format cart data
+        $cartData = [
+            'id' => $cart->id,
+            'items' => $cart->items->map(function ($item) {
+                $primaryImage = $item->product->images->where('is_primary', true)->first()
+                    ?? $item->product->images->first();
+
+                return [
+                    'id' => $item->id,
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->unit_price,
+                    'total' => $item->unit_price * $item->quantity,
+                    'product' => [
+                        'id' => $item->product->id,
+                        'name' => $item->product->name,
+                        'slug' => $item->product->slug,
+                        'primary_image' => $primaryImage?->path,
+                    ],
+                ];
+            })->toArray(),
+            'subtotal' => $cart->subtotal,
+            'discount' => $cart->discount_amount ?? 0,
+            'total' => $cart->total,
+        ];
+
         // Récupérer les paramètres de paiement
         $settings = [
             'payment_moneyfusion_enabled' => Setting::get('payment_moneyfusion_enabled', '0'),
-            'payment_cod_enabled' => Setting::get('payment_cod_enabled', '1'),
+            'payment_cod_enabled'         => Setting::get('payment_cod_enabled', '1'),
+            'payment_jeko_enabled'        => Setting::get('payment_jeko_enabled', '0'),
         ];
 
-        return view('front.checkout.index', compact('cart', 'customer', 'addresses', 'settings'));
+        $customerData = $customer ? [
+            'id' => $customer->id,
+            'first_name' => $customer->first_name,
+            'last_name' => $customer->last_name,
+            'email' => $customer->email,
+            'phone' => $customer->phone,
+        ] : null;
+
+        $addressesData = $addresses->map(function ($address) {
+            return [
+                'id' => $address->id,
+                'first_name' => $address->first_name,
+                'last_name' => $address->last_name,
+                'address_line1' => $address->address_line1,
+                'city' => $address->city,
+                'postal_code' => $address->postal_code,
+                'country' => $address->country,
+                'phone' => $address->phone,
+                'is_default' => $address->is_default,
+            ];
+        })->toArray();
+
+        return Inertia::render('Checkout/Index', [
+            'cart' => $cartData,
+            'customer' => $customerData,
+            'addresses' => $addressesData,
+            'settings' => $settings,
+        ]);
     }
 
     /**
@@ -105,6 +162,9 @@ class CheckoutController extends Controller
                     $allowedMethods = [];
                     if (Setting::get('payment_moneyfusion_enabled', '0') === '1') {
                         $allowedMethods[] = 'moneyfusion';
+                    }
+                    if (Setting::get('payment_jeko_enabled', '0') === '1') {
+                        $allowedMethods[] = 'jeko';
                     }
                     if (Setting::get('payment_cod_enabled', '1') === '1') {
                         $allowedMethods[] = 'cod';
@@ -168,7 +228,7 @@ class CheckoutController extends Controller
                 // Adresse de livraison
                 'shipping_first_name' => $validated['shipping_first_name'],
                 'shipping_last_name' => $validated['shipping_last_name'],
-                'shipping_email' => $validated['email'] ?? null,
+                'shipping_email' => $validated['email'] ?? auth()->user()?->email ?? 'noreply@chamse.ci',
                 'shipping_phone' => $validated['phone'],
                 'shipping_address' => $validated['shipping_address'],
                 'shipping_address_2' => $validated['shipping_address_2'] ?? null,
@@ -179,7 +239,7 @@ class CheckoutController extends Controller
                 // Adresse de facturation
                 'billing_first_name' => $sameBilling ? $validated['shipping_first_name'] : $validated['billing_first_name'],
                 'billing_last_name' => $sameBilling ? $validated['shipping_last_name'] : $validated['billing_last_name'],
-                'billing_email' => $validated['email'] ?? null,
+                'billing_email' => $validated['email'] ?? auth()->user()?->email ?? 'noreply@chamse.ci',
                 'billing_phone' => $validated['phone'],
                 'billing_address' => $sameBilling ? $validated['shipping_address'] : $validated['billing_address'],
                 'billing_address_2' => $sameBilling ? ($validated['shipping_address_2'] ?? null) : ($validated['billing_address_2'] ?? null),
@@ -270,6 +330,10 @@ class CheckoutController extends Controller
                 return $this->redirectToPayment($order);
             }
 
+            if ($validated['payment_method'] === 'jeko') {
+                return $this->redirectToJeko($order);
+            }
+
             // Paiement à la livraison → page de succès
             return redirect()->route('checkout.success', ['order' => $order->id]);
 
@@ -278,6 +342,21 @@ class CheckoutController extends Controller
             \Log::error('Checkout error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return back()->withInput()->with('error', 'Erreur lors de la création de la commande : ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Rediriger vers Jeko Africa
+     */
+    protected function redirectToJeko(Order $order)
+    {
+        $result = $this->jeko->initializePayment($order);
+
+        if ($result['success']) {
+            return \Inertia\Inertia::location($result['payment_url']);
+        }
+
+        return redirect()->route('checkout.payment', ['order' => $order->id])
+            ->with('error', $result['message'] ?? 'Erreur Jeko Africa.');
     }
 
     /**
@@ -297,7 +376,7 @@ class CheckoutController extends Controller
         ]);
 
         if ($result['success']) {
-            return redirect()->away($result['payment_url']);
+            return \Inertia\Inertia::location($result['payment_url']);
         }
 
         return redirect()->route('checkout.payment', ['order' => $order->id])
@@ -334,16 +413,21 @@ class CheckoutController extends Controller
                 $status = $this->moneyFusion->checkPaymentStatus($payment->transaction_id);
 
                 if ($status['success'] && $status['status'] === 'paid') {
-                    $payment->update([
-                        'status' => 'completed',
-                        'paid_at' => now(),
-                    ]);
-                    $order->update([
-                        'payment_status' => 'paid',
-                        'status' => 'processing',
-                        'paid_at' => now(),
-                    ]);
+                    $payment->update(['status' => 'completed', 'paid_at' => now()]);
+                    $order->update(['payment_status' => 'paid', 'status' => 'processing', 'paid_at' => now()]);
+                    event(new \App\Events\OrderPaid($order, $payment));
+                }
+            }
+        }
 
+        if ($order->payment_status === 'pending' && $order->payment_method === 'jeko') {
+            $payment = $order->payments()->latest()->first();
+            if ($payment && $payment->transaction_id) {
+                $status = $this->jeko->checkPaymentStatus($payment->transaction_id);
+
+                if ($status['success'] && $status['status'] === 'paid') {
+                    $payment->update(['status' => 'completed', 'paid_at' => now()]);
+                    $order->update(['payment_status' => 'paid', 'status' => 'processing', 'paid_at' => now()]);
                     event(new \App\Events\OrderPaid($order, $payment));
                 }
             }
@@ -368,7 +452,9 @@ class CheckoutController extends Controller
             $this->authorizeOrderAccess($order);
         }
 
-        return view('front.checkout.cancel', compact('order'));
+        return Inertia::render('Checkout/Cancel', [
+            'order' => $order ? ['order_number' => $order->order_number, 'id' => $order->id] : null,
+        ]);
     }
 
     /**
@@ -377,14 +463,42 @@ class CheckoutController extends Controller
     public function success(Request $request)
     {
         $orderId = $request->get('order');
-        $order = Order::with(['items.product', 'items.variant'])->findOrFail($orderId);
+        $order = Order::with(['items.product.images', 'items.variant'])->findOrFail($orderId);
         $this->authorizeOrderAccess($order);
 
-        // Retirer la commande de la session (checkout terminé)
+        // Retirer la commande de la session
         $orderIds = array_filter(session('checkout_order_ids', []), fn($id) => $id !== $order->id);
         session(['checkout_order_ids' => array_values($orderIds)]);
 
-        return view('front.checkout.success', compact('order'));
+        $orderData = [
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'status' => $order->status,
+            'payment_method' => $order->payment_method,
+            'payment_status' => $order->payment_status,
+            'total' => $order->total,
+            'shipping_first_name' => $order->shipping_first_name,
+            'shipping_last_name' => $order->shipping_last_name,
+            'shipping_address' => $order->shipping_address,
+            'shipping_city' => $order->shipping_city,
+            'shipping_phone' => $order->shipping_phone,
+            'items' => $order->items->map(function ($item) {
+                $primaryImage = $item->product->images->where('is_primary', true)->first()
+                    ?? $item->product->images->first();
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'variant_name' => $item->variant_name ?? null,
+                    'unit_price' => $item->unit_price,
+                    'quantity' => $item->quantity,
+                    'product' => ['primary_image' => $primaryImage?->path],
+                ];
+            })->toArray(),
+        ];
+
+        return Inertia::render('Checkout/Success', [
+            'order' => $orderData,
+        ]);
     }
 
     /**

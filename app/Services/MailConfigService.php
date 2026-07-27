@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 
 class MailConfigService
@@ -14,16 +15,18 @@ class MailConfigService
      */
     public static function configureFromSettings(): void
     {
-        $mailDriver = Setting::get('mail_driver');
-        $mailHost = Setting::get('mail_host');
-        $mailPort = Setting::get('mail_port');
-        $mailUsername = Setting::get('mail_username');
-        $mailPassword = Setting::get('mail_password');
-        $mailEncryption = Setting::get('mail_encryption');
-        $mailFromName = Setting::get('mail_from_name');
-        $mailFromAddress = Setting::get('mail_from_address');
+        $keys = ['mail_driver','mail_host','mail_port','mail_username','mail_password','mail_encryption','mail_from_name','mail_from_address'];
+        $settings = Cache::remember('settings.mail', 60, fn () => Setting::getMany($keys));
 
-        // Si aucun paramètre n'est configuré, utiliser les valeurs par défaut
+        $mailDriver   = $settings['mail_driver']      ?? null;
+        $mailHost     = $settings['mail_host']         ?? null;
+        $mailPort     = $settings['mail_port']         ?? null;
+        $mailUsername = $settings['mail_username']     ?? null;
+        $mailPassword = $settings['mail_password']     ?? null;
+        $mailEncryption = $settings['mail_encryption'] ?? null;
+        $mailFromName   = $settings['mail_from_name']  ?? null;
+        $mailFromAddress = $settings['mail_from_address'] ?? null;
+
         if (!$mailDriver && !$mailHost) {
             return;
         }

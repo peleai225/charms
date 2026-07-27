@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\WhatsAppMessage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Inertia\Inertia;
 
 class CrmController extends Controller
 {
@@ -25,35 +26,86 @@ class CrmController extends Controller
         $totalRevenue = Customer::sum('total_spent');
 
         $topCustomers = Customer::active()
+            ->with('tags')
             ->orderByDesc('total_spent')
             ->take(10)
-            ->get();
+            ->get()
+            ->map(fn($c) => [
+                'id'             => $c->id,
+                'full_name'      => $c->full_name,
+                'email'          => $c->email,
+                'initials'       => $c->initials,
+                'orders_count'   => $c->orders_count,
+                'total_spent'    => $c->total_spent,
+                'avg_order_value' => $c->avg_order_value,
+                'tags'           => $c->tags->map(fn($t) => ['id' => $t->id, 'name' => $t->name, 'color' => $t->color])->toArray(),
+            ]);
 
         $recentOrders = Order::with('customer')
             ->latest()
             ->take(5)
-            ->get();
+            ->get()
+            ->map(fn($o) => [
+                'id'            => $o->id,
+                'reference'     => $o->reference ?? ('#' . $o->id),
+                'total'         => $o->total,
+                'customer_name' => $o->customer?->full_name,
+                'created_at_fmt' => $o->created_at->format('d/m/Y H:i'),
+            ]);
 
-        $tags = CustomerTag::withCount('customers')->orderBy('sort_order')->get();
+        $tags = CustomerTag::withCount('customers')
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn($t) => [
+                'id'              => $t->id,
+                'name'            => $t->name,
+                'color'           => $t->color,
+                'customers_count' => $t->customers_count,
+            ]);
 
         $segmentData = [
-            'vip' => Customer::vip()->count(),
-            'loyal' => Customer::loyal()->count(),
-            'new' => Customer::new()->count(),
+            'vip'      => Customer::vip()->count(),
+            'loyal'    => Customer::loyal()->count(),
+            'new'      => Customer::new()->count(),
             'inactive' => Customer::inactive()->count(),
         ];
 
-        return view('admin.crm.dashboard', compact(
-            'totalCustomers', 'activeCustomers', 'vipCustomers', 'newCustomers',
-            'inactiveCustomers', 'avgOrderValue', 'avgLifetimeValue', 'totalRevenue',
-            'topCustomers', 'recentOrders', 'tags', 'segmentData'
-        ));
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Crm/Dashboard', [
+            'totalCustomers'    => $totalCustomers,
+            'activeCustomers'   => $activeCustomers,
+            'vipCustomers'      => $vipCustomers,
+            'newCustomers'      => $newCustomers,
+            'inactiveCustomers' => $inactiveCustomers,
+            'avgOrderValue'     => round((float) $avgOrderValue, 2),
+            'avgLifetimeValue'  => round((float) $avgLifetimeValue, 2),
+            'totalRevenue'      => round((float) $totalRevenue, 2),
+            'topCustomers'      => $topCustomers,
+            'recentOrders'      => $recentOrders,
+            'tags'              => $tags,
+            'segmentData'       => $segmentData,
+        ]);
     }
 
     public function tags()
     {
-        $tags = CustomerTag::withCount('customers')->orderBy('sort_order')->get();
-        return view('admin.crm.tags', compact('tags'));
+        $tags = CustomerTag::withCount('customers')
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn($t) => [
+                'id'              => $t->id,
+                'name'            => $t->name,
+                'slug'            => $t->slug,
+                'color'           => $t->color,
+                'description'     => $t->description,
+                'is_auto'         => $t->is_auto,
+                'customers_count' => $t->customers_count,
+            ]);
+
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Crm/Tags', [
+            'tags' => $tags,
+        ]);
     }
 
     public function storeTag(Request $request)

@@ -1,8 +1,12 @@
 <?php
 
 use App\Http\Controllers\Auth\AdminAuthController;
+use App\Http\Controllers\Auth\SuperAdminAuthController;
 use App\Http\Controllers\Auth\CustomerAuthController;
-use App\Http\Controllers\Admin\DashboardController;
+// use App\Livewire\Admin\Dashboard as DashboardLivewire; // migré vers Inertia
+// use App\Livewire\Admin\Orders\Index as OrdersIndex; // migré vers Inertia
+use App\Livewire\Admin\Products\Index as ProductsIndex;
+// Reports migrés vers Inertia — Livewire classes supprimées des routes
 use App\Http\Controllers\Front\HomeController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Artisan;
@@ -34,92 +38,14 @@ Route::get('build/{path}', function (string $path) {
     }
 })->where('path', '.*')->name('build.serve');
 
-// Servir les fichiers storage (images) quand symlink impossible — uniquement pour les URLs /storage/xxx
-Route::get('storage/{path}', function (string $path) {
-    try {
-        if ($path === '' || strpos($path, '..') !== false) {
-            abort(404);
-        }
-        $storagePath = storage_path('app/public/' . $path);
-        $realPath = realpath($storagePath);
-        $allowedRoot = realpath(storage_path('app/public'));
-        if (!$allowedRoot || !$realPath || strpos($realPath, $allowedRoot) !== 0 || !File::isFile($realPath)) {
-            abort(404);
-        }
-        return response()->file($realPath, ['Content-Type' => File::mimeType($realPath)]);
-    } catch (\Throwable $e) {
-        abort(404);
-    }
-})->where('path', '.*')->name('storage.serve');
+// Storage files served natively by Laravel 12 (filesystems.php 'serve' => true)
 
-// Setup sans terminal/SSH — pour hébergement mutualisé
-// Utiliser : /setup?token=VOTRE_CLE_SECRETE (définir DEPLOY_TOKEN dans .env)
-Route::get('/setup', function () {
-    $token = request('token');
-    $expected = config('app.deploy_token');
-    if (!$expected || !$token || !hash_equals($expected, $token)) {
-        abort(404);
-    }
-    $results = [];
-
-    // Créer le lien storage dans public_html (cPanel : public_html != app/public)
-    $docRoot = $_SERVER['DOCUMENT_ROOT'] ?? public_path();
-    $storageLink = rtrim($docRoot, '/') . '/storage';
-    $storageTarget = storage_path('app/public');
-    if (!file_exists($storageLink) && is_dir($storageTarget)) {
-        $ok = @symlink($storageTarget, $storageLink);
-        $results[] = $ok ? '✓ Lien storage créé dans public_html' : '✗ Échec symlink public_html/storage';
-    } elseif (is_link($storageLink)) {
-        $results[] = '✓ Lien storage existe déjà dans public_html';
-    } else {
-        $results[] = 'ℹ storage existe dans public_html (type: ' . filetype($storageLink) . ')';
-    }
-
-    // Aussi créer dans app/public (standard Laravel)
-    try {
-        Artisan::call('storage:link');
-        $results[] = '✓ Lien storage Laravel créé';
-    } catch (\Throwable $e) {
-        $results[] = 'Storage Laravel : ' . ($e->getMessage());
-    }
-
-    // Migrations
-    try {
-        Artisan::call('migrate', ['--force' => true]);
-        $results[] = '✓ Migrations exécutées';
-    } catch (\Throwable $e) {
-        $results[] = 'Migrations : ' . $e->getMessage();
-    }
-
-    // Vider tous les caches
-    try {
-        Artisan::call('route:clear');
-        Artisan::call('view:clear');
-        Artisan::call('config:clear');
-        Artisan::call('cache:clear');
-        $results[] = '✓ Caches vidés (route, view, config, cache)';
-    } catch (\Throwable $e) {
-        $results[] = 'Cache : ' . $e->getMessage();
-    }
-
-    return '<pre style="font-family:sans-serif;padding:20px;">' . implode("\n", $results) . '</pre>';
-});
-
-// Ancienne route (rétrocompatibilité local)
-Route::get('/setup-storage', function () {
-    if (!app()->environment('local')) {
-        abort(404);
-    }
-    try {
-        Artisan::call('storage:link');
-        return 'Le lien storage a été créé avec succès !';
-    } catch (\Throwable $e) {
-        return 'Erreur : ' . $e->getMessage();
-    }
-});
+// Setup sans terminal/SSH — GET /setup?token=APP_DEPLOY_TOKEN
+Route::get('/setup', [\App\Http\Controllers\Admin\SystemController::class, 'setup'])->middleware('throttle:3,10');
 
 // Page d'accueil
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/accueil-v2', [HomeController::class, 'indexV2'])->name('home.v2');
 
 // Sitemap XML
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
@@ -140,15 +66,12 @@ Route::post('/deconnexion', [CustomerAuthController::class, 'logout'])->name('lo
 
 // Espace client (protégé)
 Route::middleware('customer')->prefix('mon-compte')->name('account.')->group(function () {
-    Route::get('/', function () {
-        return view('front.account.dashboard');
-    })->name('dashboard');
-    Route::get('/commandes', function () {
-        return view('front.account.orders');
-    })->name('orders');
-    Route::get('/commandes/{order}', [App\Http\Controllers\Front\AccountController::class, 'showOrder'])->name('orders.show');
+    Route::get('/', [App\Http\Controllers\Front\AccountController::class, 'dashboard'])->name('dashboard');
+    Route::get('/commandes', [App\Http\Controllers\Front\AccountController::class, 'orders'])->name('orders');
+    Route::get('/commandes/{orderNumber}', [App\Http\Controllers\Front\AccountController::class, 'showOrder'])->name('orders.show');
     Route::get('/adresses', [App\Http\Controllers\Front\AccountController::class, 'addresses'])->name('addresses');
     Route::post('/adresses', [App\Http\Controllers\Front\AccountController::class, 'storeAddress'])->name('addresses.store');
+    Route::delete('/adresses/{address}', [App\Http\Controllers\Front\AccountController::class, 'destroyAddress'])->name('addresses.destroy');
     Route::get('/fidelite', [App\Http\Controllers\Front\AccountController::class, 'loyalty'])->name('loyalty');
     Route::get('/favoris', [App\Http\Controllers\Front\WishlistController::class, 'index'])->name('wishlist.index');
 });
@@ -202,14 +125,18 @@ Route::get('/webhook/moneyfusion', function () {
     ]);
 })->withoutMiddleware(['web']);
 
+// Webhook Jeko Africa (sans CSRF, throttle anti-abus)
+Route::post('/webhook/jeko', [App\Http\Controllers\Front\JekoAfricaWebhookController::class, 'handle'])
+    ->middleware('throttle:60,1')
+    ->name('webhook.jeko')
+    ->withoutMiddleware(['web']);
+
 // Pages statiques
 Route::get('/contact', [\App\Http\Controllers\Front\ContactController::class, 'index'])->name('contact');
 Route::post('/contact', [\App\Http\Controllers\Front\ContactController::class, 'store'])->middleware('throttle:5,5')->name('contact.store');
 Route::post('/newsletter/subscribe', [\App\Http\Controllers\Front\NewsletterController::class, 'subscribe'])->name('newsletter.subscribe');
 
-Route::get('/a-propos', function () {
-    return view('front.pages.about');
-})->name('about');
+Route::get('/a-propos', [\App\Http\Controllers\Front\PageController::class, 'about'])->name('about');
 
 Route::get('/offline', function () {
     return view('front.pages.offline');
@@ -276,7 +203,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     // Routes protégées (nécessite rôle admin/manager/staff)
     Route::middleware('admin')->group(function () {
         // Dashboard — tous les rôles
-        Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
 
         // Profil admin — tous les rôles
         Route::get('/profile', [\App\Http\Controllers\Admin\ProfileController::class, 'edit'])->name('profile.edit');
@@ -284,7 +211,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/profile/password', [\App\Http\Controllers\Admin\ProfileController::class, 'updatePassword'])->name('profile.password');
 
         // Commandes — tous les rôles (consultation + mise à jour statut)
-        Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->names('orders');
+        Route::get('orders', [\App\Http\Controllers\Admin\OrderController::class, 'index'])->name('orders.index');
+        Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->only(['show','store','update','destroy'])->names('orders');
         Route::patch('orders/{order}/status', [\App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('orders.status');
         Route::get('orders/{order}/invoice', [\App\Http\Controllers\Admin\OrderController::class, 'invoice'])->name('orders.invoice');
         Route::get('orders/{order}/invoice/view', [\App\Http\Controllers\Admin\OrderController::class, 'viewInvoice'])->name('orders.invoice.view');
@@ -316,6 +244,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/scanner/cart', [\App\Http\Controllers\Admin\ScannerController::class, 'clearCart'])->name('scanner.cart.clear');
         Route::post('/scanner/checkout', [\App\Http\Controllers\Admin\ScannerController::class, 'checkout'])->name('scanner.checkout');
         Route::get('/scanner/receipt/{order}', [\App\Http\Controllers\Admin\ScannerController::class, 'receipt'])->name('scanner.receipt');
+        Route::get('/scanner/receipt/{order}/thermal', [\App\Http\Controllers\Admin\ScannerController::class, 'thermalReceipt'])->name('scanner.receipt.thermal');
+        Route::get('/scanner/receipt/{order}/text', [\App\Http\Controllers\Admin\ScannerController::class, 'textReceipt'])->name('scanner.receipt.text');
+        Route::post('/scanner/receipt/{order}/print-direct', [\App\Http\Controllers\Admin\ScannerController::class, 'printDirect'])->name('scanner.receipt.print-direct');
         Route::post('/scanner/stock-movement', [\App\Http\Controllers\Admin\ScannerController::class, 'stockMovement'])->name('scanner.stock-movement');
 
         // Codes-barres — tous les rôles
@@ -352,10 +283,31 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/whatsapp/catalog', [\App\Http\Controllers\Admin\WhatsAppController::class, 'exportCatalog'])->name('whatsapp.catalog');
         Route::post('/whatsapp/product-link', [\App\Http\Controllers\Admin\WhatsAppController::class, 'productLink'])->name('whatsapp.product-link');
 
+        // CRM — tous les rôles (admin + manager + staff)
+        Route::get('/crm', [\App\Http\Controllers\Admin\CrmController::class, 'dashboard'])->name('crm.dashboard');
+        Route::get('/crm/tags', [\App\Http\Controllers\Admin\CrmController::class, 'tags'])->name('crm.tags');
+        Route::post('/crm/tags', [\App\Http\Controllers\Admin\CrmController::class, 'storeTag'])->name('crm.tags.store');
+        Route::delete('/crm/tags/{tag}', [\App\Http\Controllers\Admin\CrmController::class, 'destroyTag'])->name('crm.tags.destroy');
+        Route::post('/crm/tags/assign', [\App\Http\Controllers\Admin\CrmController::class, 'assignTag'])->name('crm.tags.assign');
+        Route::post('/crm/auto-classify', [\App\Http\Controllers\Admin\CrmController::class, 'autoClassifyAll'])->name('crm.auto-classify');
+        Route::get('/crm/customers/{customer}', [\App\Http\Controllers\Admin\CrmController::class, 'customerAnalytics'])->name('crm.customer-analytics');
+
+        // Marketing — tous les rôles
+        Route::get('/marketing/campaigns', [\App\Http\Controllers\Admin\MarketingController::class, 'campaigns'])->name('marketing.campaigns');
+        Route::post('/marketing/campaigns', [\App\Http\Controllers\Admin\MarketingController::class, 'storeCampaign'])->name('marketing.campaigns.store');
+        Route::delete('/marketing/campaigns/{campaign}', [\App\Http\Controllers\Admin\MarketingController::class, 'destroyCampaign'])->name('marketing.campaigns.destroy');
+        Route::get('/marketing/automations', [\App\Http\Controllers\Admin\MarketingController::class, 'automations'])->name('marketing.automations');
+        Route::post('/marketing/automations', [\App\Http\Controllers\Admin\MarketingController::class, 'storeAutomation'])->name('marketing.automations.store');
+        Route::post('/marketing/automations/{automation}/toggle', [\App\Http\Controllers\Admin\MarketingController::class, 'toggleAutomation'])->name('marketing.automations.toggle');
+        Route::delete('/marketing/automations/{automation}', [\App\Http\Controllers\Admin\MarketingController::class, 'destroyAutomation'])->name('marketing.automations.destroy');
+        Route::get('/marketing/whatsapp-history', [\App\Http\Controllers\Admin\MarketingController::class, 'whatsappHistory'])->name('marketing.whatsapp-history');
+
         // ===== ADMIN + MANAGER uniquement =====
         Route::middleware('admin:admin,manager')->group(function () {
             // Produits (CRUD complet)
-            Route::resource('products', \App\Http\Controllers\Admin\ProductController::class)->names('products');
+            Route::get('products', [\App\Http\Controllers\Admin\ProductController::class, 'index'])->name('products.index');
+            Route::post('products/bulk-destroy', [\App\Http\Controllers\Admin\ProductController::class, 'bulkDestroy'])->name('products.bulk-destroy');
+            Route::resource('products', \App\Http\Controllers\Admin\ProductController::class)->only(['create','store','show','edit','update','destroy'])->names('products');
             Route::post('products/{product}/variants', [\App\Http\Controllers\Admin\ProductController::class, 'storeVariant'])->name('products.variants.store');
             Route::post('products/{product}/variants/bulk', [\App\Http\Controllers\Admin\ProductController::class, 'bulkStoreVariants'])->name('products.variants.bulk');
             Route::patch('products/{product}/variants/{variant}', [\App\Http\Controllers\Admin\ProductController::class, 'updateVariant'])->name('products.variants.update');
@@ -371,6 +323,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('attributes/{attribute}', [\App\Http\Controllers\Admin\AttributeController::class, 'destroyAttribute'])->name('attributes.destroy');
             Route::post('attributes/{attribute}/values', [\App\Http\Controllers\Admin\AttributeController::class, 'storeValue'])->name('attributes.values.store');
             Route::post('attributes/{attribute}/values/bulk', [\App\Http\Controllers\Admin\AttributeController::class, 'bulkStoreValues'])->name('attributes.values.bulk');
+            Route::post('attributes/{attribute}/values/{value}', [\App\Http\Controllers\Admin\AttributeController::class, 'updateValue'])->name('attributes.values.update');
             Route::delete('attributes/{attribute}/values/{value}', [\App\Http\Controllers\Admin\AttributeController::class, 'destroyValue'])->name('attributes.values.destroy');
 
             // Catégories
@@ -385,7 +338,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('customers/{customer}', [\App\Http\Controllers\Admin\CustomerController::class, 'destroy'])->name('customers.destroy');
 
             // Remboursements
-            Route::get('/refunds', [\App\Http\Controllers\Admin\RefundController::class, 'index'])->name('refunds.index');
+            Route::get('/refunds', \App\Livewire\Admin\Refunds\Index::class)->name('refunds.index');
             Route::post('orders/{order}/refunds', [\App\Http\Controllers\Admin\RefundController::class, 'store'])->name('refunds.store');
 
             // Coupons / Codes promo
@@ -393,7 +346,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/coupons-generate-code', [\App\Http\Controllers\Admin\CouponController::class, 'generateCode'])->name('coupons.generate-code');
 
             // Bannières
-            Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class)->names('banners');
+            Route::get('banners', \App\Livewire\Admin\Banners\Index::class)->name('banners.index');
+            Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class)->only(['create','store','edit','update','destroy'])->names('banners');
             Route::patch('banners/{banner}/toggle', [\App\Http\Controllers\Admin\BannerController::class, 'toggle'])->name('banners.toggle');
 
             // Fournisseurs
@@ -408,7 +362,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         // ===== ADMIN uniquement =====
         Route::middleware('admin:admin')->group(function () {
             // Utilisateurs admin
-            Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->names('users');
+            Route::get('users', \App\Livewire\Admin\Users\Index::class)->name('users.index');
+            Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->only(['create','store','show','edit','update','destroy'])->names('users');
 
             // Paramètres
             Route::get('/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('settings.index');
@@ -421,6 +376,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/settings/emails', [\App\Http\Controllers\Admin\SettingsController::class, 'updateEmails'])->name('settings.emails.update');
             Route::post('/settings/emails/test', [\App\Http\Controllers\Admin\SettingsController::class, 'testEmail'])->name('settings.emails.test');
             Route::post('/settings/payment/test-moneyfusion', [\App\Http\Controllers\Admin\SettingsController::class, 'testMoneyFusion'])->name('settings.payment.test-moneyfusion');
+            Route::post('/settings/payment/test-jeko', [\App\Http\Controllers\Admin\SettingsController::class, 'testJeko'])->name('settings.payment.test-jeko');
+            Route::get('/settings/pos', [\App\Http\Controllers\Admin\SettingsController::class, 'pos'])->name('settings.pos');
+            Route::post('/settings/pos', [\App\Http\Controllers\Admin\SettingsController::class, 'updatePos'])->name('settings.pos.update');
+            Route::post('/settings/pos/test-printer', [\App\Http\Controllers\Admin\SettingsController::class, 'testPrinter'])->name('settings.pos.test-printer');
 
             // Système / Déploiement (admin uniquement)
             Route::get('/system', [\App\Http\Controllers\Admin\SystemController::class, 'index'])->name('system.index');
@@ -444,5 +403,29 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/import-export/template', [\App\Http\Controllers\Admin\ImportExportController::class, 'downloadTemplate'])->name('import-export.template');
             Route::post('/import-export/import-products', [\App\Http\Controllers\Admin\ImportExportController::class, 'importProducts'])->name('import-export.import-products');
         });
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Routes SuperAdmin (Super Administration)
+|--------------------------------------------------------------------------
+*/
+
+// Authentification SuperAdmin
+Route::prefix('superadmin')->name('superadmin.')->group(function () {
+    // Login (accessible sans auth)
+    Route::middleware('guest')->group(function () {
+        Route::get('/login', [SuperAdminAuthController::class, 'showLoginForm'])->name('login');
+        Route::post('/login', [SuperAdminAuthController::class, 'login'])->middleware('throttle:5,1')->name('login.post');
+    });
+
+    // Logout
+    Route::post('/logout', [SuperAdminAuthController::class, 'logout'])->name('logout');
+
+    // Routes protégées (nécessite rôle superadmin)
+    Route::middleware('superadmin')->group(function () {
+        // Dashboard SuperAdmin
+        Route::get('/', [\App\Http\Controllers\SuperAdmin\DashboardController::class, 'index'])->name('dashboard');
     });
 });

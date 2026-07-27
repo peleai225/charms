@@ -9,6 +9,7 @@ use App\Models\Customer;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class CartController extends Controller
 {
@@ -20,7 +21,50 @@ class CartController extends Controller
         $cart = $this->getCart();
         $cart->load(['items.product.images', 'items.variant.attributeValues.attribute', 'coupon']);
 
-        return view('front.cart.index', compact('cart'));
+        // Format cart data for Inertia
+        $cartData = [
+            'id' => $cart->id,
+            'items' => $cart->items->map(function ($item) {
+                $primaryImage = $item->product->images->where('is_primary', true)->first()
+                    ?? $item->product->images->first();
+
+                $variantAttributes = [];
+                if ($item->variant) {
+                    foreach ($item->variant->attributeValues as $attrValue) {
+                        $variantAttributes[] = [
+                            'name' => $attrValue->attribute->name,
+                            'value' => $attrValue->value,
+                        ];
+                    }
+                }
+
+                return [
+                    'id' => $item->id,
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->unit_price,
+                    'total' => $item->unit_price * $item->quantity,
+                    'product' => [
+                        'id' => $item->product->id,
+                        'name' => $item->product->name,
+                        'slug' => $item->product->slug,
+                        'primary_image' => $primaryImage?->path,
+                    ],
+                    'variant' => $item->variant ? [
+                        'id' => $item->variant->id,
+                        'attributes' => $variantAttributes,
+                    ] : null,
+                ];
+            })->toArray(),
+            'subtotal' => $cart->subtotal,
+            'discount' => $cart->discount_amount ?? 0,
+            'shipping_cost' => $cart->shipping_cost ?? 0,
+            'total' => $cart->total,
+            'coupon_code' => $cart->coupon_code,
+        ];
+
+        return Inertia::render('Cart/Index', [
+            'cart' => $cartData,
+        ]);
     }
 
     /**
@@ -52,7 +96,13 @@ class CartController extends Controller
         $cart = $this->getCart();
         $cart->addItem($product, $request->quantity, $variant);
 
-        if ($request->ajax()) {
+        // Inertia envoie X-Inertia: true → retourner redirect (pas JSON)
+        if ($request->header('X-Inertia')) {
+            return back()->with('success', 'Produit ajouté au panier !');
+        }
+
+        // Fetch brut (ProductCard, etc.) → JSON
+        if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Produit ajouté au panier',
@@ -73,14 +123,31 @@ class CartController extends Controller
         ]);
 
         $cart = $this->getCart();
+        $item = $cart->items()->with(['product', 'variant'])->findOrFail($itemId);
+
+        if ($request->quantity > 0) {
+            $stock = $item->variant
+                ? $item->variant->stock_quantity
+                : $item->product->stock_quantity;
+            $allowBackorder = $item->product->allow_backorder ?? false;
+            if (!$allowBackorder && $request->quantity > $stock) {
+                $msg = "Stock insuffisant (max {$stock}).";
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json(['success' => false, 'message' => $msg], 422);
+                }
+                return back()->withErrors(['quantity' => $msg]);
+            }
+        }
+
         $cart->updateItemQuantity($itemId, $request->quantity);
 
-        if ($request->ajax()) {
+        // Fetch pur (pas Inertia) → JSON pour mise à jour réactive sans rechargement
+        if (!$request->header('X-Inertia') && ($request->wantsJson() || $request->ajax())) {
             $cart->refresh();
             return response()->json([
-                'success' => true,
-                'subtotal' => number_format($cart->subtotal, 0, ',', ' ') . ' F CFA',
-                'total' => number_format($cart->total, 0, ',', ' ') . ' F CFA',
+                'success'    => true,
+                'subtotal'   => $cart->subtotal,
+                'total'      => $cart->total,
                 'cart_count' => $cart->items_count,
             ]);
         }
@@ -96,10 +163,12 @@ class CartController extends Controller
         $cart = $this->getCart();
         $cart->removeItem($itemId);
 
-        if (request()->ajax()) {
+        if (!request()->header('X-Inertia') && (request()->wantsJson() || request()->ajax())) {
             $cart->refresh();
             return response()->json([
-                'success' => true,
+                'success'    => true,
+                'subtotal'   => $cart->subtotal,
+                'total'      => $cart->total,
                 'cart_count' => $cart->items_count,
             ]);
         }
@@ -201,6 +270,11 @@ class CartController extends Controller
         $cart = $this->getCart();
         $cart->removeCoupon();
 
+        if (request()->wantsJson() || request()->ajax()) {
+            $cart->refresh();
+            return response()->json(['success' => true, 'cart_count' => $cart->items_count]);
+        }
+
         return back()->with('success', 'Code promo retiré.');
     }
 
@@ -239,6 +313,7 @@ class CartController extends Controller
                 'price_fmt'    => number_format($item->unit_price, 0, ',', ' ') . ' F CFA',
                 'quantity'     => $item->quantity,
                 'subtotal_fmt' => number_format($item->unit_price * $item->quantity, 0, ',', ' ') . ' F CFA',
+                'variant_id'   => $item->product_variant_id,
                 'variant'      => $item->variant
                     ? $item->variant->attributeValues->pluck('value')->implode(' / ')
                     : null,

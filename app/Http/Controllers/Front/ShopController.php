@@ -7,6 +7,7 @@ use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ShopController extends Controller
 {
@@ -82,12 +83,42 @@ class ShopController extends Controller
 
         // Données pour les filtres
         $categories = Category::active()->roots()->with('children')->ordered()->get();
-        $colors = Attribute::where('slug', 'couleur')->first()?->values ?? collect();
 
-        // Prix min/max
-        $priceRange = Product::active()->selectRaw('MIN(sale_price) as min, MAX(sale_price) as max')->first();
+        // Format data for Inertia
+        $productsData = [
+            'data' => $products->map(function ($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'slug' => $product->slug,
+                    'price' => $product->sale_price,
+                    'compare_price' => $product->compare_price,
+                    'stock' => $product->stock_quantity,
+                    'primary_image' => $product->images->where('is_primary', true)->first()?->path ?? $product->images->first()?->path,
+                ];
+            }),
+            'current_page' => $products->currentPage(),
+            'last_page' => $products->lastPage(),
+            'per_page' => $products->perPage(),
+            'total' => $products->total(),
+            'prev_page_url' => $products->previousPageUrl(),
+            'next_page_url' => $products->nextPageUrl(),
+        ];
 
-        return view('front.shop.index', compact('products', 'categories', 'colors', 'priceRange'));
+        $categoriesData = $categories->map(function ($cat) {
+            return [
+                'id' => $cat->id,
+                'name' => $cat->name,
+                'slug' => $cat->slug,
+            ];
+        });
+
+        return Inertia::render('Shop/Index', [
+            'products' => $productsData,
+            'categories' => $categoriesData,
+            'filters' => $request->only(['category', 'search', 'min_price', 'max_price', 'sort', 'on_sale', 'featured']),
+            'currentCategory' => isset($category) ? ['id' => $category->id, 'name' => $category->name, 'slug' => $category->slug] : null,
+        ]);
     }
 
     /**
@@ -125,7 +156,42 @@ class ShopController extends Controller
 
         $subcategories = $category->children()->active()->ordered()->get();
 
-        return view('front.shop.category', compact('category', 'products', 'subcategories'));
+        $formatProduct = fn($p) => [
+            'id'            => $p->id,
+            'name'          => $p->name,
+            'slug'          => $p->slug,
+            'price'         => $p->sale_price,
+            'compare_price' => $p->compare_price,
+            'stock'         => $p->stock_quantity,
+            'has_variants'  => $p->variants->isNotEmpty(),
+            'category_name' => $p->category?->name,
+            'primary_image' => $p->images->where('is_primary', true)->first()?->path ?? $p->images->first()?->path,
+        ];
+
+        return Inertia::render('Shop/Category', [
+            'category' => [
+                'id'          => $category->id,
+                'name'        => $category->name,
+                'slug'        => $category->slug,
+                'description' => $category->description,
+                'image'       => $category->image,
+            ],
+            'subcategories' => $subcategories->map(fn($s) => [
+                'id'    => $s->id,
+                'name'  => $s->name,
+                'slug'  => $s->slug,
+                'image' => $s->image,
+            ])->toArray(),
+            'products' => [
+                'data'          => $products->map($formatProduct)->toArray(),
+                'current_page'  => $products->currentPage(),
+                'last_page'     => $products->lastPage(),
+                'total'         => $products->total(),
+                'prev_page_url' => $products->previousPageUrl(),
+                'next_page_url' => $products->nextPageUrl(),
+            ],
+            'filters' => $request->only(['sort']),
+        ]);
     }
 
     /**
@@ -195,14 +261,112 @@ class ShopController extends Controller
             ->take(2)
             ->get();
 
-        // Points de fidélité que le client gagnerait sur cet achat
-        $pointsToEarn = (int) floor($product->sale_price / 1000 * \App\Models\Setting::get('loyalty_points_per_1000', 10));
+        // Format colors
+        $colorsData = $availableColors->map(function ($attrValue) {
+            return [
+                'id'    => $attrValue->id,
+                'name'  => $attrValue->value,
+                'hex'   => $attrValue->color_code ?? null,
+                'image' => $attrValue->image_url,
+            ];
+        })->values()->toArray();
 
-        return view('front.shop.product', compact(
-            'product', 'variantsByColor', 'availableColors',
-            'secondaryAttributeSlug', 'secondaryAttributeName',
-            'relatedProducts', 'upsellProducts', 'pointsToEarn'
-        ));
+        // Format secondary attribute values
+        $secondaryValues = $product->variants
+            ->pluck('attributeValues')
+            ->flatten()
+            ->filter(fn($av) => $av->attribute && $av->attribute->slug !== 'couleur')
+            ->unique('id')
+            ->map(function ($attrValue) {
+                return [
+                    'id' => $attrValue->id,
+                    'value' => $attrValue->value,
+                ];
+            })
+            ->values()
+            ->toArray();
+
+        // Format variants
+        $variantsData = $product->variants->map(function ($variant) {
+            $colorAttr = $variant->attributeValues->firstWhere('attribute.slug', 'couleur');
+            $secondaryAttr = $variant->attributeValues->firstWhere(fn($av) => $av->attribute && $av->attribute->slug !== 'couleur');
+
+            return [
+                'id'           => $variant->id,
+                'sku'          => $variant->sku,
+                'price'        => $variant->sale_price ?? $variant->product->sale_price,
+                'stock'        => $variant->stock_quantity,
+                'color_id'     => $colorAttr?->id,
+                'secondary_id' => $secondaryAttr?->id,
+                'image'        => $variant->image ? asset('storage/' . $variant->image) : null,
+            ];
+        })->toArray();
+
+        $formatSmallProduct = fn($p) => [
+            'id'            => $p->id,
+            'name'          => $p->name,
+            'slug'          => $p->slug,
+            'price'         => $p->sale_price,
+            'compare_price' => $p->compare_price,
+            'stock'         => $p->stock_quantity,
+            'has_variants'  => false,
+            'primary_image' => $p->images->where('is_primary', true)->first()?->path ?? $p->images->first()?->path,
+        ];
+
+        $reviewsData = $product->reviews->map(function ($r) {
+            return [
+                'id'         => $r->id,
+                'rating'     => $r->rating,
+                'body'       => $r->body,
+                'author'     => $r->customer
+                    ? $r->customer->first_name . ' ' . mb_substr($r->customer->last_name ?? '', 0, 1) . '.'
+                    : 'Client',
+                'created_at' => $r->created_at->format('d/m/Y'),
+            ];
+        })->toArray();
+
+        $reviewAvg   = $product->reviews->avg('rating');
+        $reviewCount = $product->reviews->count();
+
+        $whatsapp = \App\Models\Setting::get('social_whatsapp');
+        $whatsappNumber = $whatsapp ? preg_replace('/\D/', '', $whatsapp) : null;
+
+        // Format data for Inertia
+        $productData = [
+            'id'                 => $product->id,
+            'name'               => $product->name,
+            'slug'               => $product->slug,
+            'sku'                => $product->sku,
+            'price'              => $product->sale_price,
+            'compare_price'      => $product->compare_price,
+            'stock'              => $product->stock_quantity,
+            'short_description'  => $product->short_description,
+            'description'        => $product->description,
+            'weight'             => $product->weight,
+            'images'             => $product->images->pluck('path')->toArray(),
+            'category'           => $product->category ? [
+                'id'   => $product->category->id,
+                'name' => $product->category->name,
+                'slug' => $product->category->slug,
+            ] : null,
+            'has_variants'       => $product->variants->isNotEmpty(),
+            'variants'           => $variantsData,
+            'colors'             => $colorsData,
+            'secondary_attribute'=> $secondaryAttribute ? [
+                'slug'   => $secondaryAttribute->slug,
+                'name'   => $secondaryAttribute->name,
+                'values' => $secondaryValues,
+            ] : null,
+            'reviews'            => $reviewsData,
+            'review_avg'         => $reviewAvg ? round($reviewAvg, 1) : null,
+            'review_count'       => $reviewCount,
+        ];
+
+        return Inertia::render('Shop/Product', [
+            'product'          => $productData,
+            'related_products' => $relatedProducts->map($formatSmallProduct),
+            'whatsapp_number'  => $whatsappNumber,
+        ]);
     }
 
     /**

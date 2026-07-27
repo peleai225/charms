@@ -13,6 +13,10 @@
             </svg>
             Retour au tableau de bord
         </a>
+        <a href="{{ route('admin.accounting.entries.create') }}" class="inline-flex items-center gap-2 h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium rounded-xl transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Nouvelle écriture
+        </a>
     </div>
 
     <!-- Filtres -->

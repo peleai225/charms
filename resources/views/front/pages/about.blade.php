@@ -4,200 +4,129 @@
 @section('meta_description', 'Découvrez notre histoire, nos valeurs et notre engagement envers la qualité. Une boutique de confiance au service de nos clients en Côte d\'Ivoire.')
 
 @section('content')
-<!-- Hero header -->
-<div class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white py-20 relative overflow-hidden">
-    <div class="absolute -top-20 -right-20 w-80 h-80 bg-primary-600/10 rounded-full blur-3xl"></div>
-    <div class="absolute -bottom-20 -left-20 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl"></div>
-    <div class="absolute inset-0 opacity-[0.03]" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 32px 32px;"></div>
-    <div class="container mx-auto px-4 relative">
-        <nav class="text-sm text-slate-400 mb-5 flex items-center gap-2">
+
+{{-- Hero --}}
+<div class="bg-slate-900 text-white py-16">
+    <div class="container mx-auto px-4">
+        <nav class="flex items-center gap-2 text-sm text-slate-400 mb-5">
             <a href="{{ route('home') }}" class="hover:text-white transition-colors">Accueil</a>
-            <span class="text-slate-600">/</span>
-            <span class="text-white">À propos</span>
+            <svg class="w-3 h-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <span class="text-slate-300">À propos</span>
         </nav>
-        <h1 class="text-4xl md:text-5xl font-extrabold mb-4 leading-tight">
-            Notre <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-violet-400 to-amber-400">Histoire</span>
-        </h1>
-        <p class="text-lg text-slate-200 max-w-2xl leading-relaxed">
-            Chamse est né d'une passion : offrir des produits de qualité accessibles à tous,
-            avec une expérience d'achat exceptionnelle.
+        <h1 class="text-3xl md:text-4xl font-bold mb-3">À propos de nous</h1>
+        <p class="text-slate-300 max-w-xl text-base">
+            Chamse est né d'une passion : offrir des produits de qualité accessibles à tous, avec une expérience d'achat simple et agréable en Côte d'Ivoire.
         </p>
     </div>
 </div>
 
-<div class="container mx-auto px-4 py-16">
+<div class="container mx-auto px-4 py-12 max-w-5xl">
 
-    <!-- Mission Section -->
-    <div class="grid lg:grid-cols-2 gap-16 items-center mb-24">
-        <div>
-            <span class="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 text-primary-700 rounded-full text-xs font-semibold uppercase tracking-wider mb-5">
-                <span class="w-1.5 h-1.5 bg-primary-500 rounded-full"></span>
-                Notre Mission
-            </span>
-            <h2 class="text-3xl font-bold text-slate-900 mb-6 leading-tight">
-                Rendre le shopping en ligne<br>simple et agréable
-            </h2>
-            <p class="text-slate-600 mb-4 leading-relaxed">
-                Nous croyons que chaque client mérite une expérience d'achat exceptionnelle.
-                C'est pourquoi nous sélectionnons soigneusement chaque produit et nous
-                assurons un service client irréprochable.
-            </p>
-            <p class="text-slate-600 leading-relaxed">
-                Notre plateforme combine technologie moderne et attention personnalisée
-                pour vous offrir le meilleur du e-commerce.
-            </p>
-        </div>
-        <div class="relative">
-            <div class="aspect-video bg-gradient-to-br from-primary-50 to-primary-100 rounded-3xl flex items-center justify-center shadow-sm border border-primary-100/80">
-                <div class="text-center p-8">
-                    <div class="w-20 h-20 bg-white rounded-2xl shadow-lg flex items-center justify-center mx-auto mb-4 border border-primary-100">
-                        <span class="text-4xl font-bold text-primary-600">C</span>
-                    </div>
-                    <p class="text-primary-800 font-semibold">Chamse E-Commerce</p>
-                </div>
-            </div>
+    {{-- Notre histoire --}}
+    <div class="mb-12">
+        <span class="text-xs font-semibold text-primary-600 uppercase tracking-widest">Notre histoire</span>
+        <h2 class="text-2xl font-bold text-slate-900 mt-1 mb-4">Qui sommes-nous ?</h2>
+        @php
+            $aboutText = \App\Models\Setting::get('about_text');
+        @endphp
+        <div class="text-slate-600 leading-relaxed text-sm max-w-2xl">
+            @if($aboutText)
+                {!! nl2br(e($aboutText)) !!}
+            @else
+                <p class="mb-3">Chamse est une boutique en ligne ivoirienne dédiée à vous offrir les meilleurs produits au meilleur prix. Notre mission est de simplifier vos achats quotidiens grâce à une plateforme fiable, des produits soigneusement sélectionnés et un service client réactif.</p>
+                <p>Basés à Abidjan, nous livrons dans toute la Côte d'Ivoire et nous nous engageons à vous apporter satisfaction à chaque commande.</p>
+            @endif
         </div>
     </div>
 
-    <!-- Values Section -->
-    <div class="mb-24">
-        <div class="text-center mb-14">
-            <span class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-full text-xs font-semibold uppercase tracking-wider mb-4">
-                <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
-                Nos Valeurs
-            </span>
-            <h2 class="text-3xl font-bold text-slate-900">Ce qui nous définit</h2>
+    {{-- Stats --}}
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
+        @php
+            $stats = [
+                ['value' => \App\Models\Product::active()->count() . '+', 'label' => 'Produits'],
+                ['value' => \App\Models\Customer::count() . '+',          'label' => 'Clients'],
+                ['value' => \App\Models\Order::where('status','delivered')->count() . '+', 'label' => 'Commandes livrées'],
+                ['value' => '7j/7', 'label' => 'Support client'],
+            ];
+        @endphp
+        @foreach($stats as $stat)
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
+            <p class="text-2xl font-bold text-slate-900">{{ $stat['value'] }}</p>
+            <p class="text-xs text-slate-500 mt-0.5">{{ $stat['label'] }}</p>
         </div>
+        @endforeach
+    </div>
 
-        <div class="grid md:grid-cols-3 gap-6">
-            <!-- Qualité -->
-            <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
-                <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform duration-300">
-                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    {{-- Nos valeurs --}}
+    <div class="mb-12">
+        <span class="text-xs font-semibold text-primary-600 uppercase tracking-widest">Nos valeurs</span>
+        <h2 class="text-2xl font-bold text-slate-900 mt-1 mb-6">Ce qui nous guide</h2>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+            {{-- Qualité --}}
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 text-center shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div class="w-11 h-11 bg-primary-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
                     </svg>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 mb-2">Qualité</h3>
-                <p class="text-sm text-slate-500 leading-relaxed">
-                    Nous sélectionnons rigoureusement chaque produit pour garantir une qualité irréprochable.
-                </p>
+                <h3 class="font-bold text-slate-900 text-sm mb-1">Qualité</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">Chaque produit est sélectionné avec soin pour garantir votre satisfaction.</p>
             </div>
 
-            <!-- Confiance -->
-            <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
-                <div class="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform duration-300">
-                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                    </svg>
-                </div>
-                <h3 class="text-lg font-bold text-slate-900 mb-2">Confiance</h3>
-                <p class="text-sm text-slate-500 leading-relaxed">
-                    Paiements sécurisés, données protégées : votre sécurité est notre priorité absolue.
-                </p>
-            </div>
-
-            <!-- Service -->
-            <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300 group">
-                <div class="w-14 h-14 bg-gradient-to-br from-violet-500 to-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-violet-500/20 group-hover:scale-110 transition-transform duration-300">
-                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {{-- Service --}}
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 text-center shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div class="w-11 h-11 bg-emerald-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                     </svg>
                 </div>
-                <h3 class="text-lg font-bold text-slate-900 mb-2">Service</h3>
-                <p class="text-sm text-slate-500 leading-relaxed">
-                    Une équipe dédiée à votre satisfaction, disponible pour répondre à toutes vos questions.
-                </p>
+                <h3 class="font-bold text-slate-900 text-sm mb-1">Service</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">Une équipe dédiée disponible pour vous accompagner à chaque étape.</p>
+            </div>
+
+            {{-- Confiance --}}
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 text-center shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div class="w-11 h-11 bg-amber-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <h3 class="font-bold text-slate-900 text-sm mb-1">Confiance</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">Paiements sécurisés et données protégées : votre sécurité prime.</p>
+            </div>
+
+            {{-- Livraison --}}
+            <div class="bg-white border border-slate-200 rounded-2xl p-5 text-center shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                <div class="w-11 h-11 bg-slate-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/>
+                    </svg>
+                </div>
+                <h3 class="font-bold text-slate-900 text-sm mb-1">Livraison</h3>
+                <p class="text-xs text-slate-500 leading-relaxed">Livraison rapide partout en Côte d'Ivoire, suivie en temps réel.</p>
             </div>
         </div>
     </div>
 
-    <!-- Stats Section -->
-    <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-primary-900 rounded-3xl p-10 md:p-14 text-white mb-24 shadow-2xl relative overflow-hidden">
-        <div class="absolute -top-20 -right-20 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl"></div>
-        <div class="absolute -bottom-20 -left-20 w-72 h-72 bg-violet-500/10 rounded-full blur-3xl"></div>
-        <div class="relative grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-                <p class="text-4xl font-extrabold mb-1">{{ \App\Models\Product::active()->count() }}+</p>
-                <p class="text-sm text-slate-300">Produits</p>
-            </div>
-            <div>
-                <p class="text-4xl font-extrabold mb-1">{{ \App\Models\Customer::count() }}+</p>
-                <p class="text-sm text-slate-300">Clients satisfaits</p>
-            </div>
-            <div>
-                <p class="text-4xl font-extrabold mb-1">{{ \App\Models\Order::where('status', 'delivered')->count() }}+</p>
-                <p class="text-sm text-slate-300">Commandes livrées</p>
-            </div>
-            <div>
-                <p class="text-4xl font-extrabold mb-1">24/7</p>
-                <p class="text-sm text-slate-300">Support client</p>
-            </div>
+    {{-- CTA --}}
+    <div class="bg-slate-50 border border-slate-200 rounded-2xl p-8 text-center">
+        <h2 class="text-xl font-bold text-slate-900 mb-2">Prêt à découvrir nos produits ?</h2>
+        <p class="text-sm text-slate-500 mb-6">Explorez notre catalogue et trouvez ce qu'il vous faut.</p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+            <a href="{{ route('shop.index') }}"
+               class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm rounded-xl transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                Voir la boutique
+            </a>
+            <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', config('app.whatsapp_number', '2250506805382')) }}?text={{ urlencode('Bonjour, j\'aimerais en savoir plus sur Chamse.') }}"
+               target="_blank" rel="noopener"
+               class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#25D366] hover:opacity-90 text-white font-semibold text-sm rounded-xl transition-opacity">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                Nous contacter sur WhatsApp
+            </a>
         </div>
     </div>
 
-    <!-- Advantages Section -->
-    <div class="mb-24">
-        <div class="text-center mb-14">
-            <span class="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-full text-xs font-semibold uppercase tracking-wider mb-4">
-                <span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
-                Pourquoi nous choisir ?
-            </span>
-            <h2 class="text-3xl font-bold text-slate-900">Les avantages Chamse</h2>
-        </div>
-
-        <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div class="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 text-center">
-                <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
-                    </svg>
-                </div>
-                <h3 class="font-bold text-slate-900 mb-1 text-sm">Livraison rapide</h3>
-                <p class="text-xs text-slate-500">Expédition sous 24-48h</p>
-            </div>
-
-            <div class="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 text-center">
-                <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                    </svg>
-                </div>
-                <h3 class="font-bold text-slate-900 mb-1 text-sm">Retours gratuits</h3>
-                <p class="text-xs text-slate-500">30 jours pour changer d'avis</p>
-            </div>
-
-            <div class="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 text-center">
-                <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <h3 class="font-bold text-slate-900 mb-1 text-sm">Meilleurs prix</h3>
-                <p class="text-xs text-slate-500">Garantie prix bas</p>
-            </div>
-
-            <div class="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 text-center">
-                <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <h3 class="font-bold text-slate-900 mb-1 text-sm">Support réactif</h3>
-                <p class="text-xs text-slate-500">Réponse sous 24h</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- CTA -->
-    <div class="text-center py-16 bg-gradient-to-br from-slate-50 to-primary-50/50 rounded-3xl border border-slate-100 shadow-sm">
-        <h2 class="text-2xl font-bold text-slate-900 mb-3">Prêt à découvrir nos produits ?</h2>
-        <p class="text-slate-500 mb-8 text-sm">Explorez notre catalogue et trouvez ce qu'il vous faut.</p>
-        <a href="{{ route('shop.index') }}" class="inline-flex items-center gap-2 px-8 py-3.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 shadow-lg shadow-primary-500/20 hover:-translate-y-0.5 transition-all text-sm">
-            Découvrir la boutique
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-            </svg>
-        </a>
-    </div>
 </div>
 @endsection

@@ -1,189 +1,263 @@
 @extends('layouts.admin')
 
-@section('title', 'Client - ' . $customer->full_name)
-@section('page-title', 'Détails du client')
+@section('title', 'Client — ' . $customer->full_name)
 
 @section('content')
-<div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-            <a href="{{ route('admin.customers.index') }}" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
+<div class="p-4 sm:p-6 space-y-5">
+
+    {{-- Header --}}
+    <div class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <a href="{{ route('admin.customers.index') }}" class="p-2 hover:bg-gray-100 rounded-lg transition text-gray-500 hover:text-gray-900">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                 </svg>
             </a>
             <div>
-                <h1 class="text-2xl font-bold text-slate-900">{{ $customer->full_name }}</h1>
-                <p class="text-slate-500">Client depuis {{ $customer->created_at->format('d/m/Y') }}</p>
-            </div>
-        </div>
-        <div class="flex items-center gap-3">
-            <a href="{{ route('admin.customers.edit', $customer) }}" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors">
-                Modifier
-            </a>
-        </div>
-    </div>
-
-    <div class="grid lg:grid-cols-3 gap-6">
-        <!-- Infos client -->
-        <div class="lg:col-span-1 space-y-6">
-            <!-- Carte profil -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                <div class="text-center mb-6">
-                    <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span class="text-3xl font-bold text-white">{{ strtoupper(substr($customer->first_name, 0, 1) . substr($customer->last_name, 0, 1)) }}</span>
-                    </div>
-                    <h2 class="text-xl font-semibold text-slate-900">{{ $customer->full_name }}</h2>
-                    <span class="inline-flex px-3 py-1 mt-2 rounded-full text-sm font-medium
-                        @if($customer->status === 'active') bg-green-100 text-green-800
-                        @elseif($customer->status === 'blocked') bg-red-100 text-red-800
-                        @else bg-slate-100 text-slate-800 @endif">
-                        @if($customer->status === 'active') Actif
-                        @elseif($customer->status === 'blocked') Bloqué
-                        @else Inactif @endif
+                <div class="flex items-center gap-2">
+                    <h1 class="text-xl font-bold text-gray-900">{{ $customer->full_name }}</h1>
+                    @php
+                        $headerStatusColors = [
+                            'active'   => 'bg-green-50 text-green-700 border-green-200',
+                            'inactive' => 'bg-gray-50 text-gray-700 border-gray-200',
+                            'blocked'  => 'bg-red-50 text-red-700 border-red-200',
+                        ];
+                        $headerStatusLabels = ['active' => 'Actif', 'inactive' => 'Inactif', 'blocked' => 'Bloqué'];
+                        $hsc = $headerStatusColors[$customer->status] ?? 'bg-gray-50 text-gray-700 border-gray-200';
+                        $hsl = $headerStatusLabels[$customer->status] ?? ucfirst($customer->status);
+                    @endphp
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border {{ $hsc }}">
+                        {{ $hsl }}
                     </span>
                 </div>
-
-                <div class="space-y-4 text-sm">
-                    <div class="flex items-center gap-3">
-                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                        </svg>
-                        <span class="text-slate-600">{{ $customer->email }}</span>
-                    </div>
-                    @if($customer->phone)
-                    <div class="flex items-center gap-3">
-                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                        </svg>
-                        <span class="text-slate-600">{{ $customer->phone }}</span>
-                    </div>
-                    @endif
-                    @if($customer->birthdate)
-                    <div class="flex items-center gap-3">
-                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                        <span class="text-slate-600">{{ $customer->birthdate->format('d/m/Y') }}</span>
-                    </div>
-                    @endif
-                </div>
+                <p class="text-[13px] text-gray-500 mt-0.5">Client depuis {{ $customer->created_at->format('d/m/Y') }}</p>
             </div>
-
-            <!-- Stats -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                <h3 class="text-lg font-semibold text-slate-900 mb-4">Statistiques</h3>
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center">
-                        <span class="text-slate-600">Commandes</span>
-                        <span class="font-semibold text-slate-900">{{ $customer->orders_count ?? $customer->orders()->count() }}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-slate-600">Total dépensé</span>
-                        <span class="font-semibold text-slate-900">{{ format_price($customer->total_spent ?? $customer->orders()->where('payment_status', 'paid')->sum('total')) }}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-slate-600">Panier moyen</span>
-                        <span class="font-semibold text-slate-900">{{ format_price($customer->average_order_value ?? ($customer->orders()->where('payment_status', 'paid')->avg('total') ?? 0)) }}</span>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-slate-600">Dernière commande</span>
-                        <span class="text-slate-600">{{ $customer->last_order_at ? $customer->last_order_at->diffForHumans() : 'Jamais' }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Notes -->
-            @if($customer->notes)
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                <h3 class="text-lg font-semibold text-slate-900 mb-4">Notes</h3>
-                <p class="text-slate-600 text-sm">{{ $customer->notes }}</p>
-            </div>
-            @endif
         </div>
+        <a href="{{ route('admin.customers.edit', $customer) }}"
+           class="h-9 px-4 flex items-center gap-2 bg-orange-600 text-white text-[13px] font-semibold rounded-lg hover:bg-orange-700 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            Modifier
+        </a>
+    </div>
 
-        <!-- Commandes et adresses -->
-        <div class="lg:col-span-2 space-y-6">
-            <!-- Dernières commandes -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200">
-                <div class="p-6 border-b border-slate-100 flex items-center justify-between">
-                    <h3 class="text-lg font-semibold text-slate-900">Dernières commandes</h3>
-                    <a href="{{ route('admin.orders.index', ['customer' => $customer->id]) }}" class="text-sm text-blue-600 hover:underline">
-                        Voir tout
+    {{-- 2-column grid --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        {{-- ── Left: Orders + Addresses (lg:col-span-2) ── --}}
+        <div class="lg:col-span-2 space-y-5">
+
+            {{-- Dernières commandes --}}
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                    <h2 class="text-sm font-semibold text-gray-900">Dernières commandes</h2>
+                    <a href="{{ route('admin.orders.index', ['customer' => $customer->id]) }}"
+                       class="text-[12px] text-orange-500 hover:text-orange-600 font-semibold transition">
+                        Voir tout →
                     </a>
                 </div>
-                
+
                 @if($customer->orders->count() > 0)
-                <div class="divide-y divide-slate-100">
-                    @foreach($customer->orders as $order)
-                    <div class="p-4 flex items-center justify-between hover:bg-slate-50">
-                        <div>
-                            <a href="{{ route('admin.orders.show', $order) }}" class="font-medium text-slate-900 hover:text-blue-600">
-                                #{{ $order->order_number }}
-                            </a>
-                            <p class="text-sm text-slate-500">{{ $order->created_at->format('d/m/Y H:i') }}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="font-semibold text-slate-900">{{ format_price($order->total) }}</p>
-                            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full
-                                @if($order->status === 'delivered') bg-green-100 text-green-800
-                                @elseif($order->status === 'cancelled') bg-red-100 text-red-800
-                                @elseif($order->status === 'shipped') bg-blue-100 text-blue-800
-                                @else bg-amber-100 text-amber-800 @endif">
-                                {{ $order->status_label }}
-                            </span>
-                        </div>
-                    </div>
-                    @endforeach
+                <div class="overflow-x-auto">
+                    <table class="w-full text-[13px]">
+                        <thead class="bg-gray-50 border-b border-gray-100">
+                            <tr>
+                                <th class="px-4 py-2.5 text-left font-semibold text-gray-700 whitespace-nowrap">N° Commande</th>
+                                <th class="px-4 py-2.5 text-left font-semibold text-gray-700 whitespace-nowrap">Date</th>
+                                <th class="px-4 py-2.5 text-right font-semibold text-gray-700 whitespace-nowrap">Montant</th>
+                                <th class="px-4 py-2.5 text-center font-semibold text-gray-700 whitespace-nowrap">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            @foreach($customer->orders as $order)
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="px-4 py-2.5">
+                                    <a href="{{ route('admin.orders.show', $order) }}"
+                                       class="font-semibold text-gray-900 hover:text-orange-600 transition">
+                                        #{{ $order->order_number }}
+                                    </a>
+                                </td>
+                                <td class="px-4 py-2.5 text-gray-600 whitespace-nowrap">
+                                    {{ $order->created_at->format('d/m/Y H:i') }}
+                                </td>
+                                <td class="px-4 py-2.5 text-right font-semibold text-gray-900 tabular-nums whitespace-nowrap">
+                                    {{ format_price($order->total) }}
+                                </td>
+                                <td class="px-4 py-2.5 text-center">
+                                    @php
+                                        $orderStatusColors = [
+                                            'pending'    => 'bg-yellow-50 text-yellow-700 border-yellow-200',
+                                            'confirmed'  => 'bg-blue-50 text-blue-700 border-blue-200',
+                                            'processing' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                                            'shipped'    => 'bg-purple-50 text-purple-700 border-purple-200',
+                                            'delivered'  => 'bg-green-50 text-green-700 border-green-200',
+                                            'cancelled'  => 'bg-red-50 text-red-700 border-red-200',
+                                            'refunded'   => 'bg-orange-50 text-orange-700 border-orange-200',
+                                        ];
+                                        $osc = $orderStatusColors[$order->status] ?? 'bg-gray-50 text-gray-700 border-gray-200';
+                                    @endphp
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border {{ $osc }}">
+                                        {{ $order->status_label }}
+                                    </span>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
                 @else
-                <div class="p-8 text-center text-slate-500">
-                    <svg class="w-12 h-12 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                <div class="px-4 py-10 text-center">
+                    <svg class="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                     </svg>
-                    <p>Aucune commande</p>
+                    <p class="text-[13px] text-gray-500">Aucune commande</p>
                 </div>
                 @endif
             </div>
 
-            <!-- Adresses -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200">
-                <div class="p-6 border-b border-slate-100">
-                    <h3 class="text-lg font-semibold text-slate-900">Adresses</h3>
+            {{-- Adresses --}}
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                    <h2 class="text-sm font-semibold text-gray-900">Adresses</h2>
                 </div>
-                
+
                 @if($customer->addresses->count() > 0)
-                <div class="grid md:grid-cols-2 gap-4 p-6">
+                <div class="grid sm:grid-cols-2 gap-4 p-4">
                     @foreach($customer->addresses as $address)
-                    <div class="p-4 border border-slate-200 rounded-xl">
+                    <div class="p-4 border border-gray-200 rounded-lg text-[13px]">
                         @if($address->is_default_shipping)
-                            <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800 mb-2">Par défaut</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-green-50 text-green-700 border-green-200 mb-2">
+                            Par défaut
+                        </span>
                         @endif
-                        <p class="font-medium text-slate-900">{{ $address->first_name }} {{ $address->last_name }}</p>
+                        <p class="font-medium text-gray-900">{{ $address->first_name }} {{ $address->last_name }}</p>
                         @if($address->company)
-                            <p class="text-slate-600">{{ $address->company }}</p>
+                            <p class="text-gray-500 mt-0.5">{{ $address->company }}</p>
                         @endif
-                        <p class="text-slate-600">{{ $address->address }}</p>
-                        <p class="text-slate-600">{{ $address->postal_code }} {{ $address->city }}</p>
-                        <p class="text-slate-600">{{ $address->country }}</p>
+                        <p class="text-gray-600 mt-1">{{ $address->address }}</p>
+                        <p class="text-gray-600">{{ $address->postal_code }} {{ $address->city }}</p>
+                        <p class="text-gray-600">{{ $address->country }}</p>
                         @if($address->phone)
-                            <p class="text-slate-600 mt-2">📞 {{ $address->phone }}</p>
+                            <p class="text-gray-500 mt-1.5">{{ $address->phone }}</p>
                         @endif
                     </div>
                     @endforeach
                 </div>
                 @else
-                <div class="p-8 text-center text-slate-500">
-                    <svg class="w-12 h-12 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                <div class="px-4 py-10 text-center">
+                    <svg class="w-10 h-10 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
-                    <p>Aucune adresse enregistrée</p>
+                    <p class="text-[13px] text-gray-500">Aucune adresse enregistrée</p>
                 </div>
                 @endif
             </div>
+
+        </div>
+
+        {{-- ── Right sidebar ── --}}
+        <div class="space-y-5">
+
+            {{-- Infos client --}}
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                    <h2 class="text-sm font-semibold text-gray-900">Informations</h2>
+                </div>
+                <div class="p-4 space-y-3 text-[13px]">
+                    <div>
+                        <p class="text-xs font-medium text-gray-700 mb-0.5">Email</p>
+                        <p class="text-gray-900 break-all">{{ $customer->email }}</p>
+                    </div>
+                    @if($customer->phone)
+                    <div>
+                        <p class="text-xs font-medium text-gray-700 mb-0.5">Téléphone</p>
+                        <p class="text-gray-900">{{ $customer->phone }}</p>
+                    </div>
+                    @endif
+                    <div>
+                        <p class="text-xs font-medium text-gray-700 mb-0.5">Date d'inscription</p>
+                        <p class="text-gray-900">{{ $customer->created_at->format('d/m/Y à H:i') }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-700 mb-0.5">Statut</p>
+                        @php
+                            $infoStatusColors = [
+                                'active'   => 'bg-green-50 text-green-700 border-green-200',
+                                'inactive' => 'bg-gray-50 text-gray-700 border-gray-200',
+                                'blocked'  => 'bg-red-50 text-red-700 border-red-200',
+                            ];
+                            $infoStatusLabels = ['active' => 'Actif', 'inactive' => 'Inactif', 'blocked' => 'Bloqué'];
+                            $isc = $infoStatusColors[$customer->status] ?? 'bg-gray-50 text-gray-700 border-gray-200';
+                            $isl = $infoStatusLabels[$customer->status] ?? ucfirst($customer->status);
+                        @endphp
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border {{ $isc }}">
+                            {{ $isl }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Stats --}}
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                    <h2 class="text-sm font-semibold text-gray-900">Statistiques</h2>
+                </div>
+                <div class="divide-y divide-gray-100 text-[13px]">
+                    <div class="px-4 py-3 flex items-center justify-between">
+                        <span class="text-gray-600">Total commandes</span>
+                        <span class="font-semibold text-gray-900 tabular-nums">{{ $customer->orders->count() }}</span>
+                    </div>
+                    <div class="px-4 py-3 flex items-center justify-between">
+                        <span class="text-gray-600">CA total</span>
+                        <span class="font-semibold text-gray-900 tabular-nums">
+                            {{ format_price($customer->orders->where('payment_status', 'paid')->sum('total')) }}
+                        </span>
+                    </div>
+                    @if(isset($customer->loyalty_points) && $customer->loyalty_points > 0)
+                    <div class="px-4 py-3 flex items-center justify-between">
+                        <span class="text-gray-600">Points fidélité</span>
+                        <span class="font-semibold text-orange-600 tabular-nums">{{ number_format($customer->loyalty_points) }} pts</span>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Changer statut --}}
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                    <h2 class="text-sm font-semibold text-gray-900">Changer le statut</h2>
+                </div>
+                <div class="p-4">
+                    <form action="{{ route('admin.customers.update', $customer) }}" method="POST" class="space-y-3">
+                        @csrf
+                        @method('PATCH')
+                        <div>
+                            <label for="status_quick" class="text-xs font-medium text-gray-700 block mb-1.5">Statut du compte</label>
+                            <select
+                                id="status_quick"
+                                name="status"
+                                class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            >
+                                <option value="active" {{ $customer->status === 'active' ? 'selected' : '' }}>Actif</option>
+                                <option value="inactive" {{ $customer->status === 'inactive' ? 'selected' : '' }}>Inactif</option>
+                                <option value="blocked" {{ $customer->status === 'blocked' ? 'selected' : '' }}>Bloqué</option>
+                            </select>
+                            <p class="mt-1.5 text-[11px] text-gray-400">Un client bloqué ne peut plus passer commande.</p>
+                        </div>
+                        <button
+                            type="submit"
+                            class="w-full h-9 flex items-center justify-center bg-orange-600 text-white text-[13px] font-semibold rounded-lg hover:bg-orange-700 transition"
+                        >
+                            Mettre à jour
+                        </button>
+                    </form>
+                </div>
+            </div>
+
         </div>
     </div>
+
 </div>
 @endsection
-

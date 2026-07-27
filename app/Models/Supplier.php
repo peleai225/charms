@@ -16,8 +16,10 @@ class Supplier extends Model
         'phone',
         'address',
         'city',
+        'postal_code',
         'country',
         'contact_name',
+        'payment_terms',
         'notes',
         'is_active',
     ];

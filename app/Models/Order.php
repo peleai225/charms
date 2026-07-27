@@ -265,12 +265,26 @@ class Order extends Model
     public function getPaymentMethodLabelAttribute(): string
     {
         return match ($this->payment_method) {
-            'cinetpay' => 'CinetPay (Orange Money, MTN MoMo, etc.)',
-            'lygos' => 'Lygos Pay',
-            'cod' => 'Paiement à la livraison',
-            'bank_transfer' => 'Virement bancaire',
-            'cash' => 'Espèces',
-            default => ucfirst(str_replace('_', ' ', $this->payment_method ?? 'Non spécifié')),
+            'cinetpay'     => 'CinetPay (Orange Money, MTN MoMo, etc.)',
+            'lygos'        => 'Lygos Pay',
+            'moneyfusion'  => 'MoneyFusion',
+            'jeko'         => 'Jeko Africa (Wave, Orange, MTN, Moov, Djamo)',
+            'cod'          => 'Paiement à la livraison',
+            'bank_transfer'=> 'Virement bancaire',
+            'cash'         => 'Espèces',
+            default        => ucfirst(str_replace('_', ' ', $this->payment_method ?? 'Non spécifié')),
+        };
+    }
+
+    public function getPaymentStatusLabelAttribute(): string
+    {
+        return match ($this->payment_status) {
+            self::PAYMENT_PENDING => 'En attente',
+            self::PAYMENT_PAID => 'Payée',
+            self::PAYMENT_PARTIALLY_PAID => 'Partiellement payée',
+            self::PAYMENT_REFUNDED => 'Remboursée',
+            self::PAYMENT_FAILED => 'Échouée',
+            default => 'Non défini',
         };
     }
 

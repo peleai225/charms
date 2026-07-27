@@ -9,6 +9,7 @@ use App\Models\StockMovement;
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class StockController extends Controller
 {
@@ -43,7 +44,26 @@ class StockController extends Controller
             ->take(15)
             ->get();
 
-        return view('admin.stock.index', compact('stats', 'alertProducts', 'recentMovements'));
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Stock/Index', [
+            'pageTitle' => 'Gestion du Stock',
+            'stats' => $stats,
+            'alertProducts' => $alertProducts->map(fn ($p) => [
+                'id'                    => $p->id,
+                'name'                  => $p->name,
+                'sku'                   => $p->sku,
+                'stock_quantity'        => $p->stock_quantity,
+                'stock_alert_threshold' => $p->stock_alert_threshold,
+            ])->values(),
+            'recentMovements' => $recentMovements->map(fn ($m) => [
+                'id'           => $m->id,
+                'type'         => $m->type,
+                'quantity'     => $m->quantity,
+                'product_name' => $m->product?->name,
+                'reason'       => $m->reason,
+                'created_at'   => $m->created_at->diffForHumans(),
+            ])->values(),
+        ]);
     }
 
     /**
@@ -72,7 +92,32 @@ class StockController extends Controller
         $movements = $query->latest()->paginate(30)->withQueryString();
         $products = Product::active()->orderBy('name')->get(['id', 'name']);
 
-        return view('admin.stock.movements', compact('movements', 'products'));
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Stock/Movements', [
+            'pageTitle' => 'Mouvements de stock',
+            'movements' => [
+                'data'          => $movements->map(fn ($m) => [
+                    'id'              => $m->id,
+                    'type'            => $m->type,
+                    'quantity'        => $m->quantity,
+                    'quantity_before' => $m->quantity_before,
+                    'quantity_after'  => $m->quantity_after,
+                    'product_name'    => $m->product?->name,
+                    'variant_sku'     => $m->variant?->sku,
+                    'reason'          => $m->reason,
+                    'user_name'       => $m->user?->name,
+                    'created_at'      => $m->created_at->format('d/m/Y H:i'),
+                ])->values(),
+                'current_page'  => $movements->currentPage(),
+                'last_page'     => $movements->lastPage(),
+                'total'         => $movements->total(),
+                'prev_page_url' => $movements->previousPageUrl(),
+                'next_page_url' => $movements->nextPageUrl(),
+                'links'         => $movements->linkCollection()->toArray(),
+            ],
+            'products' => $products->map(fn ($p) => ['id' => $p->id, 'name' => $p->name])->values(),
+            'filters' => $request->only(['product_id', 'type', 'start_date', 'end_date']),
+        ]);
     }
 
     /**
@@ -83,7 +128,23 @@ class StockController extends Controller
         $products = Product::active()->with('variants')->orderBy('name')->get();
         $suppliers = Supplier::active()->orderBy('name')->get();
 
-        return view('admin.stock.create-movement', compact('products', 'suppliers'));
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Stock/CreateMovement', [
+            'pageTitle' => 'Nouveau mouvement de stock',
+            'products' => $products->map(fn ($p) => [
+                'id'             => $p->id,
+                'name'           => $p->name,
+                'sku'            => $p->sku,
+                'stock_quantity' => $p->stock_quantity,
+                'variants'       => $p->variants->map(fn ($v) => [
+                    'id'             => $v->id,
+                    'sku'            => $v->sku,
+                    'stock_quantity' => $v->stock_quantity,
+                ])->values(),
+            ])->values(),
+            'suppliers' => $suppliers->map(fn ($s) => ['id' => $s->id, 'name' => $s->name])->values(),
+            'prefillProductId' => request('product_id'),
+        ]);
     }
 
     /**
@@ -149,7 +210,22 @@ class StockController extends Controller
         $suppliers = Supplier::active()->orderBy('name')->get();
         $products = Product::active()->with('variants')->orderBy('name')->get();
 
-        return view('admin.stock.reception', compact('suppliers', 'products'));
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Stock/Reception', [
+            'pageTitle' => 'Réception de marchandises',
+            'suppliers' => $suppliers->map(fn ($s) => ['id' => $s->id, 'name' => $s->name])->values(),
+            'products' => $products->map(fn ($p) => [
+                'id'             => $p->id,
+                'name'           => $p->name,
+                'sku'            => $p->sku,
+                'stock_quantity' => $p->stock_quantity,
+                'variants'       => $p->variants->map(fn ($v) => [
+                    'id'             => $v->id,
+                    'sku'            => $v->sku,
+                    'stock_quantity' => $v->stock_quantity,
+                ])->values(),
+            ])->values(),
+        ]);
     }
 
     /**
@@ -232,7 +308,32 @@ class StockController extends Controller
 
         $products = $query->orderBy('name')->paginate(50)->withQueryString();
 
-        return view('admin.stock.inventory', compact('products'));
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Stock/Inventory', [
+            'pageTitle' => 'Inventaire des stocks',
+            'products' => [
+                'data'          => $products->map(fn ($p) => [
+                    'id'                => $p->id,
+                    'name'              => $p->name,
+                    'sku'               => $p->sku,
+                    'stock_quantity'    => $p->stock_quantity,
+                    'primary_image_url' => $p->primary_image_url ?? null,
+                    'variants_count'    => $p->variants->count(),
+                    'variants'          => $p->variants->map(fn ($v) => [
+                        'id'             => $v->id,
+                        'sku'            => $v->sku,
+                        'stock_quantity' => $v->stock_quantity,
+                    ])->values(),
+                ])->values(),
+                'current_page'  => $products->currentPage(),
+                'last_page'     => $products->lastPage(),
+                'total'         => $products->total(),
+                'prev_page_url' => $products->previousPageUrl(),
+                'next_page_url' => $products->nextPageUrl(),
+                'links'         => $products->linkCollection()->toArray(),
+            ],
+            'filters' => $request->only(['search', 'category_id']),
+        ]);
     }
 
     /**
@@ -299,7 +400,25 @@ class StockController extends Controller
             ->with('category')
             ->get();
 
-        return view('admin.stock.alerts', compact('outOfStock', 'lowStock'));
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Stock/Alerts', [
+            'pageTitle' => 'Alertes de stock',
+            'outOfStock' => $outOfStock->map(fn ($p) => [
+                'id'             => $p->id,
+                'name'           => $p->name,
+                'sku'            => $p->sku,
+                'stock_quantity' => $p->stock_quantity,
+                'category_name'  => $p->category?->name,
+            ])->values(),
+            'lowStock' => $lowStock->map(fn ($p) => [
+                'id'                    => $p->id,
+                'name'                  => $p->name,
+                'sku'                   => $p->sku,
+                'stock_quantity'        => $p->stock_quantity,
+                'stock_alert_threshold' => $p->stock_alert_threshold,
+                'category_name'         => $p->category?->name,
+            ])->values(),
+        ]);
     }
 }
 

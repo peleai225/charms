@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Hash;
 
 class SystemController extends Controller
 {
@@ -59,6 +60,65 @@ class SystemController extends Controller
         return back()
             ->with($exit === 0 ? 'success' : 'error', $exit === 0 ? 'Déploiement terminé.' : 'Le déploiement a échoué (voir détails).')
             ->with('deploy_output', $output);
+    }
+
+    /**
+     * Setup rapide (storage:link + migrate + cache:clear) pour hébergement sans SSH.
+     * Accès : GET /setup?token=DEPLOY_TOKEN (défini dans .env APP_DEPLOY_TOKEN)
+     */
+    public function setup(Request $request)
+    {
+        $token = $request->query('token');
+        $expected = config('app.deploy_token');
+
+        if (!$expected || !$token || !hash_equals((string) $expected, (string) $token)) {
+            abort(404);
+        }
+
+        $results = [];
+
+        // Lien storage dans le document root (cPanel)
+        $docRoot  = $_SERVER['DOCUMENT_ROOT'] ?? public_path();
+        $linkPath = rtrim($docRoot, '/') . '/storage';
+        $target   = storage_path('app/public');
+
+        if (!file_exists($linkPath) && is_dir($target)) {
+            $results[] = @symlink($target, $linkPath)
+                ? '✓ Lien storage créé dans document_root'
+                : '✗ Échec symlink document_root/storage';
+        } elseif (is_link($linkPath)) {
+            $results[] = '✓ Lien storage existe déjà';
+        } else {
+            $results[] = 'ℹ storage : ' . filetype($linkPath);
+        }
+
+        // storage:link standard Laravel
+        try {
+            Artisan::call('storage:link');
+            $results[] = '✓ Lien storage Laravel créé';
+        } catch (\Throwable $e) {
+            $results[] = 'Storage Laravel : ' . $e->getMessage();
+        }
+
+        // Migrations
+        try {
+            Artisan::call('migrate', ['--force' => true]);
+            $results[] = '✓ Migrations exécutées : ' . trim(Artisan::output());
+        } catch (\Throwable $e) {
+            $results[] = 'Migrations : ' . $e->getMessage();
+        }
+
+        // Vider les caches
+        try {
+            foreach (['route:clear', 'view:clear', 'config:clear', 'cache:clear'] as $cmd) {
+                Artisan::call($cmd);
+            }
+            $results[] = '✓ Caches vidés';
+        } catch (\Throwable $e) {
+            $results[] = 'Cache : ' . $e->getMessage();
+        }
+
+        return response('<pre style="font-family:sans-serif;padding:20px">' . implode("\n", $results) . '</pre>');
     }
 
     /**

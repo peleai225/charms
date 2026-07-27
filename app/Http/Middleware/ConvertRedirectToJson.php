@@ -21,6 +21,11 @@ class ConvertRedirectToJson
             return $response;
         }
 
+        // Ne jamais intercepter les requêtes Inertia — Inertia gère ses propres redirects
+        if ($request->header('X-Inertia')) {
+            return $response;
+        }
+
         if (!$request->expectsJson() && !$request->ajax()) {
             return $response;
         }

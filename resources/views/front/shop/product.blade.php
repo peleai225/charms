@@ -335,7 +335,7 @@ function productPage() {
             try{
                 const r=await fetch('{{ route("cart.add") }}',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content,'X-Requested-With':'XMLHttpRequest'},body:JSON.stringify({product_id:{{ $product->id }},variant_id:this.selectedVariantId||null,quantity:this.quantity})});
                 const d=await r.json();
-                if(d.success){if(Alpine.store('cart'))Alpine.store('cart').count=d.cart_count;window.dispatchEvent(new CustomEvent('open-cart-drawer'));this.showSuccess=true;setTimeout(()=>{this.showSuccess=false;},3000);window.dispatchEvent(new CustomEvent('cart-item-added'));}
+                if(d.success){if(Alpine.store('cart'))Alpine.store('cart').count=d.cart_count;window.dispatchEvent(new CustomEvent('open-cart-drawer'));this.showSuccess=true;setTimeout(()=>{this.showSuccess=false;},3000);window.dispatchEvent(new CustomEvent('cart-item-added'));if(window.trackPixel&&window._pixelProduct)window.trackPixel.addToCart(window._pixelProduct,this.quantity);if(window.trackGA4&&window._pixelProduct)window.trackGA4.addToCart(window._pixelProduct,this.quantity);}
                 else alert(d.message||"Erreur lors de l'ajout au panier");
             }catch(e){alert("Erreur lors de l'ajout au panier");}
             finally{this.isAdding=false;}
@@ -343,9 +343,9 @@ function productPage() {
     };
 }
 document.addEventListener('DOMContentLoaded',function(){
-    var _p={id:{{ $product->id }},name:{{ Js::from($product->name) }},price:{{ $product->sale_price??0 }}};
-    if(window.trackPixel)window.trackPixel.viewContent(_p);
-    if(window.trackGA4)window.trackGA4.viewItem(_p);
+    window._pixelProduct={id:{{ $product->id }},name:{{ Js::from($product->name) }},price:{{ $product->sale_price??0 }},category:{{ Js::from($product->category?->name ?? '') }}};
+    if(window.trackPixel)window.trackPixel.viewContent(window._pixelProduct);
+    if(window.trackGA4)window.trackGA4.viewItem(window._pixelProduct);
 });
 </script>
 <style>.scrollbar-none::-webkit-scrollbar{display:none}.scrollbar-none{-ms-overflow-style:none;scrollbar-width:none}</style>

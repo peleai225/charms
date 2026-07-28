@@ -405,12 +405,9 @@ function applyFormat(key) {
     root.style.setProperty('--font-price', f.fp);
     root.style.setProperty('--font-sku',   f.fs);
 
-    // @page dynamique — forcer landscape si largeur > hauteur
-    const wNum = parseFloat(f.w);
-    const hNum = parseFloat(f.h);
-    const orientation = wNum > hNum ? 'landscape' : 'portrait';
+    // @page dynamique — dimensions seules (pas de mot-clé orientation, invalide avec des valeurs explicites)
     document.getElementById('page-style').textContent =
-        `@page { size: ${f.w} ${f.h} ${orientation}; margin: 0; }`;
+        `@page { size: ${f.w} ${f.h}; margin: 0; }`;
 
     rebuildLabels();
 }

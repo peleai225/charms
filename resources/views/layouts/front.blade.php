@@ -568,11 +568,13 @@
         // Helpers Meta Pixel pour les événements produit
         window.trackPixel = {
             viewContent: (product) => fbq('track', 'ViewContent', {
-                content_ids: [product.id], content_type: 'product',
+                content_ids: [String(product.id)], content_type: 'product',
+                content_name: product.name || '', content_category: product.category || '',
                 value: product.price, currency: 'XOF'
             }),
             addToCart: (product, qty) => fbq('track', 'AddToCart', {
-                content_ids: [product.id], content_type: 'product',
+                content_ids: [String(product.id)], content_type: 'product',
+                content_name: product.name || '',
                 value: product.price * qty, currency: 'XOF', num_items: qty
             }),
             initiateCheckout: (value, numItems) => fbq('track', 'InitiateCheckout', {

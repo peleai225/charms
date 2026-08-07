@@ -49,8 +49,9 @@ class PosService
                 'found' => true,
                 'type' => 'variant',
                 'data' => [
-                    'id' => $variant->id,
+                    'id' => $variant->product_id,
                     'product_id' => $variant->product_id,
+                    'variant_id' => $variant->id,
                     'name' => $variant->product->name,
                     'variant_name' => $variant->name,
                     'sku' => $variant->sku,

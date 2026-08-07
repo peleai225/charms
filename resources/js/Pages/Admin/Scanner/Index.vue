@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps({
     receiptAutoPrint: Boolean,
@@ -298,9 +298,21 @@ function closeCamera() {
     setTimeout(() => scanInputRef.value?.focus(), 50)
 }
 
+function refocusScan() {
+    // Ne pas voler le focus si l'utilisateur tape dans un autre champ (recherche, remise, etc.)
+    const tag = document.activeElement?.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+    scanInputRef.value?.focus()
+}
+
 onMounted(() => {
     loadCart()
     setTimeout(() => scanInputRef.value?.focus(), 100)
+    document.addEventListener('click', refocusScan)
+})
+
+onUnmounted(() => {
+    document.removeEventListener('click', refocusScan)
 })
 </script>
 

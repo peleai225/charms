@@ -53,7 +53,7 @@ class ProductController extends Controller
     {
         Inertia::setRootView('layouts.admin-inertia');
 
-        $categories = Category::active()->ordered()->get()->map(fn($c) => [
+        $categories = Category::active()->ordered()->with('parent.parent.parent')->get()->map(fn($c) => [
             'id'        => $c->id,
             'full_path' => $c->full_path,
         ]);
@@ -233,7 +233,7 @@ class ProductController extends Controller
 
         $product->load(['images' => fn($q) => $q->orderBy('position'), 'variants.attributeValues.attribute']);
 
-        $categories = Category::active()->ordered()->get()->map(fn($c) => [
+        $categories = Category::active()->ordered()->with('parent.parent.parent')->get()->map(fn($c) => [
             'id'        => $c->id,
             'full_path' => $c->full_path,
         ]);

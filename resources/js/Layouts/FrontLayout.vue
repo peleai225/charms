@@ -58,6 +58,14 @@ const submitSearch = () => {
     closeSearch();
 };
 
+// ─── Bannière admin ────────────────────────────────────────────────────────────
+const authUser  = computed(() => page.props.auth?.user || null)
+const userRole  = computed(() => authUser.value?.role || null)
+const showAdminBar       = computed(() => ['admin', 'manager', 'staff'].includes(userRole.value))
+const showSuperAdminBar  = computed(() => userRole.value === 'superadmin')
+const adminBarVisible    = ref(true)
+const superAdminBarVisible = ref(true)
+
 // ─── Flash messages ────────────────────────────────────────────────────────────
 const flash = computed(() => page.props.flash || {});
 watch(flash, (f) => {
@@ -102,6 +110,93 @@ onUnmounted(() => {
 <template>
     <div class="min-h-screen bg-white flex flex-col">
         <Head :title="title ? `${title} — ${siteName}` : siteName" />
+
+        <!-- ───────────────────────────────────────────────────────────────── -->
+        <!-- BANNIÈRE SUPER ADMIN                                               -->
+        <!-- ───────────────────────────────────────────────────────────────── -->
+        <div v-if="showSuperAdminBar && superAdminBarVisible"
+             class="bg-violet-700 text-white text-xs flex items-center shrink-0"
+             style="height:36px">
+            <div class="max-w-7xl mx-auto px-3 w-full flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2 min-w-0">
+                    <div class="w-5 h-5 bg-white/20 rounded-md flex items-center justify-center shrink-0">
+                        <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                    </div>
+                    <span class="text-violet-200 hidden sm:inline">Super Admin</span>
+                    <span class="font-semibold text-white truncate">{{ authUser?.name }}</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <a :href="route('superadmin.dashboard')"
+                       class="flex items-center gap-1.5 px-3 py-1 rounded-md bg-white text-violet-700 font-semibold hover:bg-violet-50 transition-colors whitespace-nowrap text-[11px]">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
+                        </svg>
+                        Espace Super Admin
+                    </a>
+                    <button @click="superAdminBarVisible = false"
+                        class="ml-1 p-1 text-violet-300 hover:text-white transition-colors shrink-0" title="Masquer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ───────────────────────────────────────────────────────────────── -->
+        <!-- BANNIÈRE ADMIN / MANAGER / STAFF                                  -->
+        <!-- ───────────────────────────────────────────────────────────────── -->
+        <div v-if="showAdminBar && adminBarVisible"
+             class="bg-slate-900 text-white text-xs flex items-center shrink-0"
+             style="height:36px">
+            <div class="max-w-7xl mx-auto px-3 w-full flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2 min-w-0">
+                    <div class="w-5 h-5 bg-indigo-600 rounded-md flex items-center justify-center shrink-0">
+                        <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <span class="text-slate-400 hidden sm:inline">Connecté en tant que</span>
+                    <span class="font-semibold text-indigo-300 truncate">{{ authUser?.name }}</span>
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase"
+                          :class="{
+                              'bg-red-500/20 text-red-300':    userRole === 'admin',
+                              'bg-amber-500/20 text-amber-300': userRole === 'manager',
+                              'bg-slate-500/20 text-slate-300': userRole === 'staff',
+                          }">{{ userRole }}</span>
+                </div>
+                <div class="flex items-center gap-1 overflow-x-auto">
+                    <a :href="route('admin.dashboard')" class="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-700 text-slate-300 hover:text-white transition-colors whitespace-nowrap">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                        <span class="hidden sm:inline">Tableau de bord</span>
+                    </a>
+                    <a :href="route('admin.orders.index')" class="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-700 text-slate-300 hover:text-white transition-colors whitespace-nowrap">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                        <span class="hidden sm:inline">Commandes</span>
+                    </a>
+                    <a v-if="['admin','manager'].includes(userRole)" :href="route('admin.products.index')" class="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-700 text-slate-300 hover:text-white transition-colors whitespace-nowrap">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        <span class="hidden sm:inline">Produits</span>
+                    </a>
+                    <a :href="route('admin.stock.index')" class="flex items-center gap-1 px-2 py-1 rounded hover:bg-slate-700 text-slate-300 hover:text-white transition-colors whitespace-nowrap">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+                        <span class="hidden sm:inline">Stock</span>
+                    </a>
+                    <a :href="route('admin.scanner.index')" class="flex items-center gap-1 px-2 py-1 rounded hover:bg-indigo-700 bg-indigo-600/30 text-indigo-300 hover:text-white transition-colors whitespace-nowrap">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                        <span class="hidden sm:inline">Caisse</span>
+                    </a>
+                </div>
+                <button @click="adminBarVisible = false"
+                    class="shrink-0 p-1 text-slate-500 hover:text-slate-300 transition-colors ml-1" title="Masquer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
 
         <!-- ───────────────────────────────────────────────────────────────── -->
         <!-- TOPBAR PROMO                                                       -->

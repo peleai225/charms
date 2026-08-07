@@ -41,9 +41,9 @@ const isAnnouncementBar = computed(() => form.position === 'announcement_bar')
 
 function submit() {
     form.transform(data => ({ ...data, _method: 'PUT' }))
-        .post(route('admin.banners.update', props.banner.id), {
-            forceFormData: true,
-        })
+    form.post(route('admin.banners.update', props.banner.id), {
+        forceFormData: true,
+    })
 }
 
 function deleteBanner() {

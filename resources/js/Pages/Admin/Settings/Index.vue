@@ -1,10 +1,11 @@
 <script setup>
 import { ref } from 'vue'
-import TabGeneral  from './Partials/TabGeneral.vue'
-import TabShipping from './Partials/TabShipping.vue'
-import TabPayment  from './Partials/TabPayment.vue'
-import TabEmails   from './Partials/TabEmails.vue'
-import TabPos      from './Partials/TabPos.vue'
+import TabGeneral       from './Partials/TabGeneral.vue'
+import TabShipping      from './Partials/TabShipping.vue'
+import TabPayment       from './Partials/TabPayment.vue'
+import TabEmails        from './Partials/TabEmails.vue'
+import TabPos           from './Partials/TabPos.vue'
+import TabNotifications from './Partials/TabNotifications.vue'
 
 const props = defineProps({
     settings:  Object,
@@ -18,7 +19,8 @@ const tabs = [
     { key: 'shipping', label: 'Livraison' },
     { key: 'payment',  label: 'Paiement' },
     { key: 'emails',   label: 'Emails' },
-    { key: 'pos',      label: 'Caisse / Impression' },
+    { key: 'pos',           label: 'Caisse / Impression' },
+    { key: 'notifications', label: 'Notifications' },
 ]
 </script>
 
@@ -48,7 +50,8 @@ const tabs = [
         <TabShipping v-show="tab === 'shipping'" :settings="settings" />
         <TabPayment  v-show="tab === 'payment'"  :settings="settings" />
         <TabEmails   v-show="tab === 'emails'"   :settings="settings" />
-        <TabPos      v-show="tab === 'pos'"      :settings="settings" />
+        <TabPos           v-show="tab === 'pos'"           :settings="settings" />
+        <TabNotifications v-show="tab === 'notifications'" :settings="settings" />
 
     </div>
 </template>

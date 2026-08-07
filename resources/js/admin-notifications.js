@@ -40,19 +40,56 @@ function playNotificationSound() {
     }
 }
 
-// --- Voix "Nouvelle commande" ---
-function speakNotification(text) {
-    if (!soundEnabled) return;
+// --- Voix fallback (navigateur) ---
+function speakFallback(text) {
     try {
         if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'fr-FR';
-            utterance.rate = 0.9;
-            utterance.volume = 0.8;
-            window.speechSynthesis.speak(utterance);
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'fr-FR'; u.rate = 0.9; u.volume = 0.8;
+            window.speechSynthesis.speak(u);
         }
     } catch (err) {
         console.debug('[Admin] Speech non disponible:', err);
+    }
+}
+
+// --- Voix "Nouvelle commande" (ElevenLabs si clé configurée, sinon navigateur) ---
+async function speakNotification(text) {
+    if (!soundEnabled) return;
+    const cfg     = window.adminConfig || {};
+    const apiKey  = cfg.elevenlabsApiKey || '';
+    const voiceId = cfg.elevenlabsVoiceId || '21m00Tcm4TlvDq8ikWAM';
+
+    if (apiKey) {
+        try {
+            const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
+                method: 'POST',
+                headers: {
+                    'xi-api-key':   apiKey,
+                    'Content-Type': 'application/json',
+                    'Accept':       'audio/mpeg',
+                },
+                body: JSON.stringify({
+                    text,
+                    model_id:       'eleven_multilingual_v2',
+                    voice_settings: { stability: 0.5, similarity_boost: 0.8 },
+                }),
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const buf = await res.arrayBuffer();
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
+            const decoded = await audioCtx.decodeAudioData(buf);
+            const src = audioCtx.createBufferSource();
+            src.buffer = decoded;
+            src.connect(audioCtx.destination);
+            src.start(0);
+        } catch (err) {
+            console.debug('[Admin] ElevenLabs error, fallback navigateur:', err);
+            speakFallback(text);
+        }
+    } else {
+        speakFallback(text);
     }
 }
 

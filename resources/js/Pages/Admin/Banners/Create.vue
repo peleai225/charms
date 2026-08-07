@@ -104,7 +104,6 @@ function submit() {
                         <label class="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-medium rounded-lg transition-colors">
                             Choisir un fichier
                             <input type="file" accept="image/*" class="hidden"
-                                :required="!isPopup"
                                 @change="onFileChange">
                         </label>
                         <p class="text-[11px] text-gray-400">PNG, JPG, WEBP — max 5 Mo. Recommandé : 1920×600px</p>

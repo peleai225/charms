@@ -419,6 +419,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/settings/pos', [\App\Http\Controllers\Admin\SettingsController::class, 'pos'])->name('settings.pos');
             Route::post('/settings/pos', [\App\Http\Controllers\Admin\SettingsController::class, 'updatePos'])->name('settings.pos.update');
             Route::post('/settings/pos/test-printer', [\App\Http\Controllers\Admin\SettingsController::class, 'testPrinter'])->name('settings.pos.test-printer');
+            Route::get('/settings/notifications', [\App\Http\Controllers\Admin\SettingsController::class, 'notifications'])->name('settings.notifications');
+            Route::post('/settings/notifications', [\App\Http\Controllers\Admin\SettingsController::class, 'updateNotifications'])->name('settings.notifications.update');
 
             // Système / Déploiement (admin uniquement)
             Route::get('/system', [\App\Http\Controllers\Admin\SystemController::class, 'index'])->name('system.index');

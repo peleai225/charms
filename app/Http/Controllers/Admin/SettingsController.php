@@ -377,6 +377,38 @@ class SettingsController extends Controller
     }
 
     /**
+     * Page paramètres notifications / voix
+     */
+    public function notifications()
+    {
+        $settings = Setting::pluck('value', 'key')->toArray();
+
+        Inertia::setRootView('layouts.admin-inertia');
+        return Inertia::render('Admin/Settings/Index', [
+            'settings'  => $settings,
+            'activeTab' => 'notifications',
+        ]);
+    }
+
+    /**
+     * Mettre à jour les paramètres notifications / ElevenLabs
+     */
+    public function updateNotifications(Request $request)
+    {
+        $request->validate([
+            'elevenlabs_api_key'  => 'nullable|string|max:255',
+            'elevenlabs_voice_id' => 'nullable|string|max:255',
+        ]);
+
+        $this->setSetting('elevenlabs_api_key',  trim($request->input('elevenlabs_api_key', '')));
+        $this->setSetting('elevenlabs_voice_id', trim($request->input('elevenlabs_voice_id', '')));
+
+        Setting::clearCache();
+
+        return back()->with('success', 'Paramètres de notifications mis à jour.');
+    }
+
+    /**
      * Helper pour sauvegarder un paramètre (temps réel)
      */
     protected function setSetting(string $key, $value): void

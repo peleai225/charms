@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 
 const props = defineProps({
@@ -34,14 +35,19 @@ function submit() {
     })
 }
 
+const imagePreviews = ref([])
+
 function handleFiles(e) {
-    form.images = Array.from(e.target.files)
+    const files = Array.from(e.target.files)
+    form.images = files
+    imagePreviews.value = files.map(f => URL.createObjectURL(f))
 }
 
 function removeFile(i) {
-    const arr = Array.from(form.images)
-    arr.splice(i, 1)
-    form.images = arr
+    const files = Array.from(form.images)
+    files.splice(i, 1)
+    imagePreviews.value.splice(i, 1)
+    form.images = files
 }
 </script>
 
@@ -187,9 +193,9 @@ function removeFile(i) {
                             <p class="text-[11px] text-gray-400 mt-1">JPEG, PNG, WEBP — max 5 Mo par image</p>
                             <input ref="fileInput" type="file" multiple accept="image/*" class="hidden" @change="handleFiles">
                         </div>
-                        <div v-if="form.images.length" class="mt-3 grid grid-cols-3 sm:grid-cols-5 gap-3">
-                            <div v-for="(f, i) in form.images" :key="i" class="relative group aspect-square">
-                                <img :src="URL.createObjectURL(f)" class="w-full h-full object-cover rounded-lg border border-gray-200">
+                        <div v-if="imagePreviews.length" class="mt-3 grid grid-cols-3 sm:grid-cols-5 gap-3">
+                            <div v-for="(src, i) in imagePreviews" :key="i" class="relative group aspect-square">
+                                <img :src="src" class="w-full h-full object-cover rounded-lg border border-gray-200">
                                 <button type="button" @click="removeFile(i)"
                                     class="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow">
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>

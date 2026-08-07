@@ -98,6 +98,33 @@ class HandleInertiaRequests extends Middleware
                 ->withSum('items', 'quantity')
                 ->first()
                 ?->items_sum_quantity ?? 0,
+
+            // Bannières globales (announcement_bar + popup_center) — toutes les pages
+            'banners' => fn () => cache()->remember('banners_global', 120, function () {
+                $fmt = fn($b) => [
+                    'id'               => $b->id,
+                    'title'            => $b->title,
+                    'subtitle'         => $b->subtitle,
+                    'description'      => $b->description,
+                    'link'             => $b->link,
+                    'button_text'      => $b->button_text,
+                    'image_url'        => $b->image_url,
+                    'background_color' => $b->background_color,
+                    'text_color'       => $b->text_color,
+                ];
+                return [
+                    'announcement' => \App\Models\Banner::active()
+                        ->position('announcement_bar')
+                        ->orderBy('order')
+                        ->get()
+                        ->map($fmt)
+                        ->values()
+                        ->all(),
+                    'popup' => ($p = \App\Models\Banner::active()->position('popup_center')->orderBy('order')->first())
+                        ? $fmt($p)
+                        : null,
+                ];
+            }),
         ]);
     }
 }

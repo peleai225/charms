@@ -77,7 +77,15 @@ class CustomerAuthController extends Controller
 
         $request->session()->regenerate();
 
-        // Rediriger vers l'URL prévue ou l'accueil
+        // Rediriger vers le backoffice approprié selon le rôle
+        if ($user->role === 'superadmin') {
+            return redirect()->route('superadmin.dashboard');
+        }
+
+        if (in_array($user->role, ['admin', 'manager', 'staff'])) {
+            return redirect()->route('admin.dashboard');
+        }
+
         return redirect()->intended(route('home'));
     }
 

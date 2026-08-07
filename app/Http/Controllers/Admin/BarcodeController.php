@@ -181,7 +181,7 @@ class BarcodeController extends Controller
             'code' => 'required|string',
         ]);
 
-        $code = $request->code;
+        $code = trim($request->code);
 
         // Chercher dans les produits
         $product = Product::where('barcode', $code)
@@ -205,7 +205,7 @@ class BarcodeController extends Controller
         }
 
         // Chercher dans les variantes
-        $variant = ProductVariant::where('sku', $code)->with('product')->first();
+        $variant = ProductVariant::where('barcode', $code)->orWhere('sku', $code)->with('product')->first();
 
         if ($variant) {
             return response()->json([

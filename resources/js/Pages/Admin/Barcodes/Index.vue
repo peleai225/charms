@@ -35,10 +35,10 @@ function toggleAll(e) {
 }
 
 // ── Modal barcode/QR ──────────────────────────────────────────────────────────
-const modal = ref({ open: false, title: '', loading: false, content: '', code: '' })
+const modal = ref({ open: false, title: '', loading: false, content: '', code: '', productId: null })
 
 async function showBarcode(productId, name) {
-    modal.value = { open: true, title: 'Code-barres — ' + name, loading: true, content: '', code: '' }
+    modal.value = { open: true, title: 'Code-barres — ' + name, loading: true, content: '', code: '', productId }
     try {
         const res  = await fetch(`/admin/barcodes/${productId}/generate`)
         const data = await res.json()
@@ -52,7 +52,7 @@ async function showBarcode(productId, name) {
 }
 
 async function showQrCode(productId, name) {
-    modal.value = { open: true, title: 'QR Code — ' + name, loading: true, content: '', code: '' }
+    modal.value = { open: true, title: 'QR Code — ' + name, loading: true, content: '', code: '', productId }
     try {
         const res  = await fetch(`/admin/barcodes/${productId}/qrcode`)
         const data = await res.json()
@@ -442,7 +442,8 @@ function goPage(url) {
                     </div>
                 </div>
                 <div class="flex gap-2 px-5 pb-5">
-                    <button @click="window.print()" class="flex-1 h-9 bg-green-600 text-white text-[13px] font-semibold rounded-lg hover:bg-green-700 transition">
+                    <button @click="window.open(route('admin.barcodes.print-labels') + '?products=' + modal.productId, '_blank')"
+                            class="flex-1 h-9 bg-green-600 text-white text-[13px] font-semibold rounded-lg hover:bg-green-700 transition">
                         Imprimer
                     </button>
                     <button @click="closeModal" class="h-9 px-4 border border-gray-200 text-[13px] text-gray-600 rounded-lg hover:bg-gray-50 transition">

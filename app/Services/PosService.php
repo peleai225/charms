@@ -42,7 +42,7 @@ class PosService
             ];
         }
 
-        $variant = ProductVariant::where('sku', $code)->with('product')->first();
+        $variant = ProductVariant::where('barcode', $code)->orWhere('sku', $code)->with('product')->first();
 
         if ($variant) {
             return [

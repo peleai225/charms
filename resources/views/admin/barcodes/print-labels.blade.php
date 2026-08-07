@@ -193,11 +193,14 @@
         /* ─── IMPRESSION ─────────────────────────────────────────────────── */
         @media print {
             #control-panel { display: none !important; }
-            #preview-zone { margin-top: 0; padding: 0; background: #fff; gap: 0; }
-
             body { background: #fff; }
 
-            .label {
+            /* Mode étiquettes individuelles (label printer) */
+            #preview-zone:not(.fmt-a4) {
+                margin-top: 0; padding: 0; background: #fff; gap: 0;
+                display: block;
+            }
+            #preview-zone:not(.fmt-a4) .label {
                 border: none;
                 page-break-after: always;
                 page-break-inside: avoid;
@@ -207,7 +210,25 @@
                 height: var(--lh);
                 overflow: hidden;
             }
-            .label:last-child { page-break-after: avoid; break-after: avoid; }
+            #preview-zone:not(.fmt-a4) .label:last-child {
+                page-break-after: avoid;
+                break-after: avoid;
+            }
+
+            /* Mode A4 — grille, plusieurs étiquettes par feuille */
+            #preview-zone.fmt-a4 {
+                margin-top: 0; padding: 4mm; background: #fff; gap: 2mm;
+                display: flex; flex-wrap: wrap; align-content: flex-start;
+            }
+            #preview-zone.fmt-a4 .label {
+                border: 1px dashed #ccc;
+                page-break-inside: avoid;
+                break-inside: avoid;
+                margin: 0;
+                width: var(--lw);
+                height: var(--lh);
+                overflow: hidden;
+            }
         }
 
         /* @page sera injecté par JS selon le format choisi */
@@ -405,9 +426,14 @@ function applyFormat(key) {
     root.style.setProperty('--font-price', f.fp);
     root.style.setProperty('--font-sku',   f.fs);
 
-    // @page dynamique — dimensions seules (pas de mot-clé orientation, invalide avec des valeurs explicites)
-    document.getElementById('page-style').textContent =
-        `@page { size: ${f.w} ${f.h}; margin: 0; }`;
+    // @page dynamique
+    if (f.a4) {
+        document.getElementById('page-style').textContent = `@page { size: A4 portrait; margin: 4mm; }`;
+        document.getElementById('preview-zone').classList.add('fmt-a4');
+    } else {
+        document.getElementById('page-style').textContent = `@page { size: ${f.w} ${f.h}; margin: 0; }`;
+        document.getElementById('preview-zone').classList.remove('fmt-a4');
+    }
 
     rebuildLabels();
 }

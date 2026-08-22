@@ -18,7 +18,8 @@ const generalForm = useForm({
     social_facebook:         props.settings.social_facebook ?? '',
     social_instagram:        props.settings.social_instagram ?? '',
     social_twitter:          props.settings.social_twitter ?? '',
-    social_whatsapp:         props.settings.social_whatsapp ?? '',
+    social_whatsapp:          props.settings.social_whatsapp ?? '',
+    whatsapp_order_enabled:   props.settings.whatsapp_order_enabled !== '0',
     social_tiktok:           props.settings.social_tiktok ?? '',
     primary_color:           props.settings.primary_color ?? '#6366f1',
     secondary_color:         props.settings.secondary_color ?? '#8b5cf6',
@@ -103,6 +104,21 @@ const textareaCls = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-[13
                                 <input v-model="generalForm.social_whatsapp" type="text" placeholder="+225 XX XX XX XX XX" :class="inputCls">
                             </div>
                         </div>
+
+                        <!-- Toggle Commander sur WhatsApp -->
+                        <div class="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg">
+                            <div>
+                                <p class="text-[13px] font-medium text-gray-900">Bouton "Commander sur WhatsApp"</p>
+                                <p class="text-[11px] text-gray-500 mt-0.5">Afficher le bouton sur la page produit, le panier et le checkout</p>
+                            </div>
+                            <button type="button" @click="generalForm.whatsapp_order_enabled = !generalForm.whatsapp_order_enabled"
+                                :class="generalForm.whatsapp_order_enabled ? 'bg-green-500' : 'bg-gray-300'"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none shrink-0">
+                                <span :class="generalForm.whatsapp_order_enabled ? 'translate-x-6' : 'translate-x-1'"
+                                    class="inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"/>
+                            </button>
+                        </div>
+
                         <div>
                             <label class="block text-[13px] font-medium text-gray-700 mb-1">Adresse</label>
                             <textarea v-model="generalForm.contact_address" rows="2" :class="textareaCls"></textarea>

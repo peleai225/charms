@@ -1,9 +1,0 @@
-# Forcer LiteSpeed à servir ces fichiers statiquement (sans passer par PHP)
-<FilesMatch "\.(js|mjs|css|json|map|woff|woff2|ttf|eot|svg|ico|png|jpg|gif|webp)$">
-    SetHandler default-handler
-</FilesMatch>
-
-AddType application/javascript .js .mjs
-AddType text/javascript .js .mjs
-AddType text/css .css
-AddType application/json .json

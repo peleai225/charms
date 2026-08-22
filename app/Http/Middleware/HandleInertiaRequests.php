@@ -71,9 +71,10 @@ class HandleInertiaRequests extends Middleware
                     'contact_email'      => \App\Models\Setting::get('contact_email'),
                     'contact_address'    => \App\Models\Setting::get('contact_address'),
                     'currency_symbol'    => \App\Models\Setting::get('currency_symbol', 'F CFA'),
-                    'social_whatsapp'    => \App\Models\Setting::get('social_whatsapp'),
-                    'social_facebook'    => \App\Models\Setting::get('social_facebook'),
-                    'social_instagram'   => \App\Models\Setting::get('social_instagram'),
+                    'social_whatsapp'         => \App\Models\Setting::get('social_whatsapp'),
+                    'social_facebook'         => \App\Models\Setting::get('social_facebook'),
+                    'social_instagram'        => \App\Models\Setting::get('social_instagram'),
+                    'whatsapp_order_enabled'  => \App\Models\Setting::get('whatsapp_order_enabled', '1'),
                 ];
             }),
 

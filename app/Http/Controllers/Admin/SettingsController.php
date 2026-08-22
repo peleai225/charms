@@ -53,7 +53,8 @@ class SettingsController extends Controller
             'secondary_color' => 'nullable|string|max:7',
             'accent_color' => 'nullable|string|max:7',
             'theme_mode' => 'nullable|in:light,dark,auto',
-            'pos_receipt_auto_print' => 'boolean',
+            'pos_receipt_auto_print'   => 'boolean',
+            'whatsapp_order_enabled'   => 'boolean',
             // Fidélité
             'loyalty_points_per_1000' => 'nullable|integer|min:0|max:1000',
             'loyalty_points_value'    => 'nullable|integer|min:0',
@@ -78,7 +79,7 @@ class SettingsController extends Controller
         // Sauvegarder les autres paramètres
         foreach ($validated as $key => $value) {
             if (!in_array($key, ['logo', 'favicon'])) {
-                $this->setSetting($key, $value);
+                $this->setSetting($key, is_bool($value) ? ($value ? '1' : '0') : $value);
             }
         }
 

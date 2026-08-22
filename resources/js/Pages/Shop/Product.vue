@@ -281,7 +281,7 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                         </button>
 
                         <a
-                            v-if="whatsapp_number && currentStock > 0"
+                            v-if="whatsapp_number && currentStock > 0 && $page.props.settings?.whatsapp_order_enabled !== '0'"
                             :href="`https://wa.me/${whatsapp_number}?text=${waMessage}`"
                             target="_blank"
                             rel="noopener"

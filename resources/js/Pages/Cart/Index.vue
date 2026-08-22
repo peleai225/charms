@@ -328,6 +328,7 @@ const waCartMessage = computed(() => {
 
                             <!-- CTA WhatsApp -->
                             <a
+                                v-if="$page.props.settings?.social_whatsapp && $page.props.settings?.whatsapp_order_enabled !== '0'"
                                 :href="waCartMessage"
                                 target="_blank"
                                 rel="noopener"

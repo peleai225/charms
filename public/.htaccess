@@ -1,22 +1,28 @@
-<IfModule mod_mime.c>
-    AddType application/javascript .js .mjs
-    AddType text/css .css
-    AddType application/json .json
-    AddType font/woff2 .woff2
-    AddType font/woff .woff
-</IfModule>
+# LiteSpeed : servir les assets statiques sans PHP
+<FilesMatch "\.(js|mjs|css|json|map|woff|woff2|ttf|eot|svg|ico|png|jpg|gif|webp)$">
+    SetHandler default-handler
+</FilesMatch>
+
+AddType application/javascript .js .mjs
+AddType text/javascript .js .mjs
+AddType text/css .css
+AddType application/json .json
+AddType font/woff2 .woff2
+AddType font/woff .woff
 
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         # +FollowSymLinks requis pour servir les fichiers via public/storage (lien vers storage/app/public)
-        Options +FollowSymLinks -MultiViews -Indexes
+        Options +FollowSymLinks +SymLinksIfOwnerMatch -MultiViews -Indexes
     </IfModule>
 
     RewriteEngine On
     RewriteBase /
 
-    # /build/* → servis en direct par Apache (fichiers dans public/build/)
-    # /storage/* → passé à Laravel (route storage.serve) pour éviter 403 sur junction/symlink sous Windows
+    # Servir /build/* directement — LiteSpeed ne suit pas les symlinks pour !-f
+    RewriteRule ^build/ - [L]
+
+    # /storage/* → passé à Laravel (route storage.serve)
     RewriteCond %{REQUEST_URI} ^/storage/
     RewriteRule ^storage/(.*)$ index.php [L]
 

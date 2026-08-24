@@ -33,9 +33,8 @@
          x-transition:leave-end="opacity-0"></div>
 
     {{-- ── PANEL "PLUS" ── --}}
-    <div x-show="open" style="display:none" @click.self="open = false"
+    <div x-show="open" style="display:none; bottom:64px;" @click.self="open = false"
          class="fixed inset-x-0 z-50"
-         style="bottom: 64px; display: none;"
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0 translate-y-3"
          x-transition:enter-end="opacity-100 translate-y-0"

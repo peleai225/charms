@@ -156,7 +156,8 @@
              x-transition:leave-end="opacity-0"></div>
 
         {{-- ═══════════════════════ SIDEBAR ═══════════════════════ --}}
-        <aside class="flex flex-col bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-300 z-50 fixed lg:relative inset-y-0 left-0 h-full"
+        {{-- w-[220px] + lg:translate-x-0 = valeurs par défaut avant Alpine --}}
+        <aside class="flex flex-col bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-300 z-50 fixed lg:relative inset-y-0 left-0 h-full w-[220px] lg:translate-x-0"
                :class="[
                    sidebarCollapsed ? 'w-[56px]' : 'w-[220px]',
                    mobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
@@ -279,8 +280,8 @@
             </div>
         </aside>
 
-        {{-- Spacer desktop pour compenser la sidebar fixed --}}
-        <div class="hidden lg:block flex-shrink-0 transition-all duration-300"
+        {{-- Spacer desktop — w-[220px] par défaut avant Alpine --}}
+        <div class="hidden lg:block flex-shrink-0 transition-all duration-300 w-[220px]"
              :class="sidebarCollapsed ? 'w-[56px]' : 'w-[220px]'"></div>
 
         {{-- ═══════════════════════ MAIN ═══════════════════════ --}}

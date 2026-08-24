@@ -145,9 +145,22 @@
 
     <div class="flex h-screen overflow-hidden">
 
+        {{-- Overlay mobile --}}
+        <div x-show="mobileOpen" x-cloak @click="mobileOpen = false"
+             class="fixed inset-0 bg-black/50 z-40 lg:hidden"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"></div>
+
         {{-- ═══════════════════════ SIDEBAR ═══════════════════════ --}}
-        <aside class="flex flex-col bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-200 z-50"
-               :class="sidebarCollapsed ? 'w-[56px]' : 'w-[220px]'">
+        <aside class="flex flex-col bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-300 z-50 fixed lg:relative inset-y-0 left-0 h-full"
+               :class="[
+                   sidebarCollapsed ? 'w-[56px]' : 'w-[220px]',
+                   mobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
+               ]">
 
             {{-- Logo --}}
             <div class="flex items-center h-[64px] border-b border-gray-100 flex-shrink-0 overflow-hidden"
@@ -265,6 +278,10 @@
                 </div>
             </div>
         </aside>
+
+        {{-- Spacer desktop pour compenser la sidebar fixed --}}
+        <div class="hidden lg:block flex-shrink-0 transition-all duration-300"
+             :class="sidebarCollapsed ? 'w-[56px]' : 'w-[220px]'"></div>
 
         {{-- ═══════════════════════ MAIN ═══════════════════════ --}}
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">

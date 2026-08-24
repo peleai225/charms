@@ -1,3 +1,10 @@
+# Supprimer les CSP restrictifs éventuellement injectés par LiteSpeed/cPanel
+<IfModule mod_headers.c>
+    Header always unset Content-Security-Policy
+    Header always unset X-Content-Security-Policy
+    Header always unset X-WebKit-CSP
+</IfModule>
+
 # LiteSpeed : servir les assets statiques sans PHP
 <FilesMatch "\.(js|mjs|css|json|map|woff|woff2|ttf|eot|svg|ico|png|jpg|gif|webp)$">
     SetHandler default-handler

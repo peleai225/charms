@@ -1,9 +1,9 @@
 <script setup>
 import FrontLayout from '@/Layouts/FrontLayout.vue';
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import ProductCard from '@/Components/ProductCard.vue';
 import { useHelpers } from '@/Composables/useHelpers';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 const props = defineProps({
     product:          Object,
@@ -12,6 +12,14 @@ const props = defineProps({
 });
 
 const { formatPrice } = useHelpers();
+
+onMounted(() => {
+    window.trackPixel?.viewContent({
+        id: props.product.id,
+        name: props.product.name,
+        price: props.product.price,
+    });
+});
 
 // ─── Galerie ──────────────────────────────────────────────────────────────────
 const activeImage = ref(0);
@@ -77,7 +85,16 @@ const addToCart = () => {
     if (props.product.has_variants && !selectedVariant.value) return;
     form.variant_id = selectedVariant.value?.id ?? null;
     form.quantity   = quantity.value;
-    form.post('/panier/ajouter', { preserveScroll: true });
+    form.post('/panier/ajouter', {
+        preserveScroll: true,
+        onSuccess: () => {
+            window.trackPixel?.addToCart({
+                id: props.product.id,
+                name: props.product.name,
+                price: currentPrice.value,
+            }, quantity.value);
+        },
+    });
 };
 
 // ─── WhatsApp ─────────────────────────────────────────────────────────────────

@@ -2,7 +2,7 @@
 import FrontLayout from '@/Layouts/FrontLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { useHelpers } from '@/Composables/useHelpers';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 const props = defineProps({
     cart:      Object,
@@ -53,6 +53,13 @@ if (props.addresses?.length) {
 const submit = () => {
     form.post('/commander');
 };
+
+onMounted(() => {
+    window.trackPixel?.initiateCheckout(
+        props.cart?.total ?? 0,
+        props.cart?.items?.length ?? 0
+    );
+});
 
 // ─── Méthodes paiement disponibles ───────────────────────────────────────────
 const paymentMethods = computed(() => {

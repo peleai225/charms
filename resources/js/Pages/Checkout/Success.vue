@@ -2,12 +2,17 @@
 import FrontLayout from '@/Layouts/FrontLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { useHelpers } from '@/Composables/useHelpers';
+import { onMounted } from 'vue';
 
 const props = defineProps({
     order: Object,
 });
 
 const { formatPrice } = useHelpers();
+
+onMounted(() => {
+    window.trackPixel?.purchase(props.order.order_number, props.order.total);
+});
 </script>
 
 <template>

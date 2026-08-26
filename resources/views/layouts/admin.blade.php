@@ -285,7 +285,7 @@
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
 
             {{-- Header --}}
-            <header class="h-[56px] bg-white border-b border-gray-200 flex items-center justify-between px-6 flex-shrink-0">
+            <header class="h-[64px] bg-white border-b border-gray-200 flex items-center justify-between px-6 flex-shrink-0">
                 <div class="flex items-center gap-3 min-w-0">
                     {{-- Mobile menu --}}
                     <button @click="mobileOpen = !mobileOpen" class="lg:hidden text-gray-500 hover:text-gray-800">

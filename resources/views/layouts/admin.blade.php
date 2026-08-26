@@ -280,9 +280,6 @@
             </div>
         </aside>
 
-        {{-- Spacer desktop — w-[220px] par défaut avant Alpine --}}
-        <div class="hidden lg:block flex-shrink-0 transition-all duration-300 w-[220px]"
-             :class="sidebarCollapsed ? 'w-[56px]' : 'w-[220px]'"></div>
 
         {{-- ═══════════════════════ MAIN ═══════════════════════ --}}
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">

@@ -156,12 +156,10 @@
              x-transition:leave-end="opacity-0"></div>
 
         {{-- ═══════════════════════ SIDEBAR ═══════════════════════ --}}
-        {{-- w-[220px] + lg:translate-x-0 = valeurs par défaut avant Alpine --}}
-        <aside class="flex flex-col bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-300 z-50 fixed lg:relative inset-y-0 left-0 h-full w-[220px] lg:translate-x-0"
-               :class="[
-                   sidebarCollapsed ? 'w-[56px]' : 'w-[220px]',
-                   mobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
-               ]">
+        <aside class="flex flex-col bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-300 z-50 fixed lg:relative inset-y-0 left-0 h-full"
+               style="width:220px"
+               :style="{ width: sidebarCollapsed ? '56px' : '220px' }"
+               :class="mobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'">
 
             {{-- Logo --}}
             <div class="flex items-center h-[64px] border-b border-gray-100 flex-shrink-0 overflow-hidden"

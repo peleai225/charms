@@ -49,6 +49,16 @@ function resetFilters() {
     router.get(route('admin.products.index'), {}, { preserveState: false })
 }
 
+function goToPage(page) {
+    router.get(route('admin.products.index'), {
+        page,
+        search: search.value || undefined,
+        status: status.value || undefined,
+        category: category.value || undefined,
+        stock: stock.value || undefined,
+    }, { preserveState: true, replace: true })
+}
+
 let debounceTimer = null
 function onSearch(val) {
     search.value = val
@@ -283,7 +293,7 @@ const breadcrumbs = [
         </Table>
 
         <!-- Pagination -->
-        <Pagination :meta="products.meta ?? products" :links="products.links" />
+        <Pagination :meta="products.meta ?? products" :links="products.links" @change="goToPage" />
 
     </div>
 </template>

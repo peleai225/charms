@@ -9,5 +9,7 @@
 @endpush
 
 @section('content')
+<div class="-m-6">
     @inertia
+</div>
 @endsection

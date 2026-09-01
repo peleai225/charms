@@ -34,7 +34,13 @@ if (props.product.has_variants && props.product.colors?.length) {
 }
 
 const availableSecondaryValues = computed(() => {
-    if (!selectedColorId.value || !props.product.secondary_attribute) return [];
+    if (!props.product.secondary_attribute) return [];
+    // Produit sans couleur (taille uniquement) — afficher toutes les valeurs disponibles
+    if (!props.product.colors?.length) {
+        const ids = props.product.variants.map(v => v.secondary_id).filter(Boolean);
+        return (props.product.secondary_attribute.values ?? []).filter(v => ids.includes(v.id));
+    }
+    if (!selectedColorId.value) return [];
     const ids = props.product.variants
         .filter(v => v.color_id === selectedColorId.value)
         .map(v => v.secondary_id);

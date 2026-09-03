@@ -13,10 +13,35 @@ const props = defineProps({
 
 const { formatPrice } = useHelpers();
 
+// ─── SEO ──────────────────────────────────────────────────────────────────────
+const pageUrl      = computed(() => typeof window !== 'undefined' ? window.location.href : '');
+const primaryImage = computed(() => {
+    const img = props.product.images?.[0];
+    if (!img) return '';
+    return (typeof window !== 'undefined' ? window.location.origin : '') + '/storage/' + img;
+});
+const jsonLd = computed(() => JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type':    'Product',
+    name:        props.product.name,
+    description: props.product.short_description || props.product.name,
+    image:       primaryImage.value,
+    sku:         props.product.sku,
+    offers: {
+        '@type':        'Offer',
+        price:          props.product.price,
+        priceCurrency:  'XOF',
+        availability:   props.product.stock > 0
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock',
+        url: pageUrl.value,
+    },
+}));
+
 onMounted(() => {
     window.trackPixel?.viewContent({
-        id: props.product.id,
-        name: props.product.name,
+        id:    props.product.id,
+        name:  props.product.name,
         price: props.product.price,
     });
 });
@@ -121,7 +146,17 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
     <FrontLayout :title="product.name">
         <Head>
             <title>{{ product.name }}</title>
-            <meta name="description" :content="product.short_description" />
+            <meta name="description" :content="product.short_description || product.name" />
+            <link rel="canonical" :href="pageUrl" />
+            <meta property="og:type" content="product" />
+            <meta property="og:title" :content="product.name" />
+            <meta property="og:description" :content="product.short_description || product.name" />
+            <meta property="og:url" :content="pageUrl" />
+            <meta property="og:image" :content="primaryImage" />
+            <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:title" :content="product.name" />
+            <meta name="twitter:image" :content="primaryImage" />
+            <component :is="'script'" type="application/ld+json" v-text="jsonLd" />
         </Head>
 
         <!-- Barre top "annonce" style Beauty Shop -->

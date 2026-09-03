@@ -14,6 +14,46 @@
         $metaPixelId   = \App\Models\Setting::get('meta_pixel_id');
         $tiktokPixelId = \App\Models\Setting::get('tiktok_pixel_id');
         $ga4Id         = \App\Models\Setting::get('ga4_id');
+
+        // OG / Social preview — rendered server-side so WhatsApp/Facebook crawlers see them
+        $ogTitle  = $siteName;
+        $ogDesc   = \App\Models\Setting::get('meta_description', '');
+        $ogImage  = $siteFavicon ? asset('storage/' . $siteFavicon) : '';
+        $ogUrl    = url()->current();
+        $ogType   = 'website';
+
+        try {
+            if (request()->routeIs('shop.product')) {
+                $ogSlug = request()->route('slug');
+                if ($ogSlug) {
+                    $ogProduct = \App\Models\Product::where('slug', $ogSlug)
+                        ->select(['id', 'name', 'slug', 'short_description'])
+                        ->with(['images' => fn($q) => $q->orderByDesc('is_primary')->orderBy('position')->limit(1)])
+                        ->first();
+                    if ($ogProduct) {
+                        $ogTitle = $ogProduct->name . ' — ' . $siteName;
+                        $ogDesc  = $ogProduct->short_description ?? $ogProduct->name;
+                        $ogType  = 'product';
+                        $ogImg   = $ogProduct->images->first();
+                        if ($ogImg) $ogImage = asset('storage/' . $ogImg->path);
+                    }
+                }
+            } elseif (request()->routeIs('shop.category')) {
+                $ogSlug = request()->route('slug');
+                if ($ogSlug) {
+                    $ogCat = \App\Models\Category::where('slug', $ogSlug)
+                        ->select(['id', 'name', 'description', 'image'])
+                        ->first();
+                    if ($ogCat) {
+                        $ogTitle = $ogCat->name . ' — ' . $siteName;
+                        $ogDesc  = $ogCat->description ?? '';
+                        if ($ogCat->image) $ogImage = asset('storage/' . $ogCat->image);
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Silently degrade — OG defaults already set above
+        }
     @endphp
 
     @if($siteFavicon)
@@ -21,6 +61,24 @@
     @else
         <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%232563EB' rx='15' width='100' height='100'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-size='50' fill='white'>{{ substr($siteName, 0, 1) }}</text></svg>">
     @endif
+
+    {{-- OG / Social preview tags — lisibles par WhatsApp, Facebook, etc. --}}
+    <meta property="og:site_name" content="{{ $siteName }}" />
+    <meta property="og:type"      content="{{ $ogType }}" />
+    <meta property="og:title"     content="{{ $ogTitle }}" />
+    <meta property="og:url"       content="{{ $ogUrl }}" />
+    @if($ogDesc)
+    <meta property="og:description" content="{{ $ogDesc }}" />
+    <meta name="description"        content="{{ $ogDesc }}" />
+    @endif
+    @if($ogImage)
+    <meta property="og:image"        content="{{ $ogImage }}" />
+    <meta property="og:image:width"  content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:image"       content="{{ $ogImage }}" />
+    @endif
+    <meta name="twitter:title"       content="{{ $ogTitle }}" />
 
     @routes
     @vite(['resources/css/app.css', 'resources/js/app.js'])

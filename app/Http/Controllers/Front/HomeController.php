@@ -79,9 +79,9 @@ class HomeController extends Controller
 
         $reviews = Review::where('status', Review::STATUS_APPROVED)
             ->where('rating', '>=', 4)
-            ->with('customer')
+            ->with(['customer', 'product'])
             ->latest()
-            ->take(4)
+            ->take(6)
             ->get();
 
         $reviewAggregate = Review::where('status', Review::STATUS_APPROVED)
@@ -141,13 +141,14 @@ class HomeController extends Controller
             'new_products'      => $newProducts->map($formatProduct),
             'sale_products'     => $saleProducts->map($formatProduct),
             'reviews'           => $reviews->map(fn($r) => [
-                'id'         => $r->id,
-                'rating'     => $r->rating,
-                'body'       => $r->body,
-                'author'     => $r->customer
+                'id'           => $r->id,
+                'rating'       => $r->rating,
+                'body'         => $r->body,
+                'author'       => $r->customer
                     ? $r->customer->first_name . ' ' . mb_substr($r->customer->last_name, 0, 1) . '.'
                     : 'Client',
-                'created_at' => $r->created_at->diffForHumans(),
+                'product_name' => $r->product?->name,
+                'created_at'   => $r->created_at->diffForHumans(),
             ]),
             'review_stats'    => $reviewStats,
             'whatsapp_number' => $whatsapp ? preg_replace('/\D/', '', $whatsapp) : null,

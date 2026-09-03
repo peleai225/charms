@@ -85,10 +85,12 @@ class Category extends Model
 
     public function getFullPathAttribute(): string
     {
-        $path = collect([$this->name]);
-        $parent = $this->parent;
+        $path    = collect([$this->name]);
+        $parent  = $this->parent;
+        $visited = [$this->id];
 
-        while ($parent) {
+        while ($parent && !in_array($parent->id, $visited)) {
+            $visited[] = $parent->id;
             $path->prepend($parent->name);
             $parent = $parent->parent;
         }

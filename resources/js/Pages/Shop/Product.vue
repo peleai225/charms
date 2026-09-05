@@ -3,6 +3,8 @@ import FrontLayout from '@/Layouts/FrontLayout.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import ProductCard from '@/Components/ProductCard.vue';
 import { useHelpers } from '@/Composables/useHelpers';
+import { useCartStore } from '@/Stores/cart';
+import { useNotificationStore } from '@/Stores/notifications';
 import { ref, computed, onMounted } from 'vue';
 
 const props = defineProps({
@@ -12,6 +14,8 @@ const props = defineProps({
 });
 
 const { formatPrice } = useHelpers();
+const cartStore        = useCartStore();
+const notifications    = useNotificationStore();
 
 // ─── SEO ──────────────────────────────────────────────────────────────────────
 const pageUrl      = computed(() => typeof window !== 'undefined' ? window.location.href : '');
@@ -119,11 +123,16 @@ const addToCart = () => {
     form.post('/panier/ajouter', {
         preserveScroll: true,
         onSuccess: () => {
+            cartStore.addProductId(props.product.id, form.variant_id);
+            notifications.success(`${props.product.name} ajouté au panier !`);
             window.trackPixel?.addToCart({
                 id: props.product.id,
                 name: props.product.name,
                 price: currentPrice.value,
             }, quantity.value);
+        },
+        onError: () => {
+            notifications.error('Impossible d\'ajouter ce produit au panier.');
         },
     });
 };

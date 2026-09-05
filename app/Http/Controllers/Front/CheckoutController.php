@@ -84,7 +84,17 @@ class CheckoutController extends Controller
             'payment_moneyfusion_enabled' => Setting::get('payment_moneyfusion_enabled', '0'),
             'payment_cod_enabled'         => Setting::get('payment_cod_enabled', '1'),
             'payment_jeko_enabled'        => Setting::get('payment_jeko_enabled', '0'),
+            'social_whatsapp'             => Setting::get('social_whatsapp'),
+            'whatsapp_order_enabled'      => Setting::get('whatsapp_order_enabled', '1'),
         ];
+
+        // Zones de livraison pour le sélecteur
+        $rawZones = json_decode(Setting::get('shipping_zones', '[]'), true) ?: [];
+        $shippingZonesData = array_values(array_map(fn($z) => [
+            'name'   => $z['name']   ?? '',
+            'cities' => $z['cities'] ?? '',
+            'price'  => (float) ($z['price'] ?? 0),
+        ], $rawZones));
 
         $customerData = $customer ? [
             'id' => $customer->id,
@@ -109,10 +119,11 @@ class CheckoutController extends Controller
         })->toArray();
 
         return Inertia::render('Checkout/Index', [
-            'cart' => $cartData,
-            'customer' => $customerData,
-            'addresses' => $addressesData,
-            'settings' => $settings,
+            'cart'           => $cartData,
+            'customer'       => $customerData,
+            'addresses'      => $addressesData,
+            'settings'       => $settings,
+            'shipping_zones' => $shippingZonesData,
         ]);
     }
 
@@ -139,6 +150,7 @@ class CheckoutController extends Controller
             'shipping_address' => 'required|string|max:255',
             'shipping_address_2' => 'nullable|string|max:255',
             'shipping_city' => 'required|string|max:100',
+            'shipping_zone' => 'nullable|integer|min:0',
             'shipping_postal_code' => 'nullable|string|max:20',
             'shipping_country' => 'required|string|size:2',
 
@@ -602,11 +614,22 @@ class CheckoutController extends Controller
         }
 
         // Vérifier les zones de livraison configurées
-        $shippingZones = json_decode(Setting::get('shipping_zones', '[]'), true) ?: [];
+        $shippingZones = array_values(json_decode(Setting::get('shipping_zones', '[]'), true) ?: []);
+
+        // Correspondance par index (sélecteur dropdown)
+        if (isset($data['shipping_zone']) && is_numeric($data['shipping_zone'])) {
+            $idx = (int) $data['shipping_zone'];
+            if (array_key_exists($idx, $shippingZones)) {
+                return (float) ($shippingZones[$idx]['price'] ?? 0);
+            }
+        }
+
+        // Correspondance par nom ou ville (fallback)
         $city = strtolower(trim($data['shipping_city'] ?? ''));
-        
-        // Chercher dans les zones par ville
         foreach ($shippingZones as $zone) {
+            if (strtolower(trim($zone['name'] ?? '')) === $city) {
+                return (float) ($zone['price'] ?? 0);
+            }
             $cities = array_map('trim', explode(',', strtolower($zone['cities'] ?? '')));
             if (in_array($city, $cities)) {
                 return (float) ($zone['price'] ?? 0);

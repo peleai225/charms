@@ -5,10 +5,11 @@ import { useHelpers } from '@/Composables/useHelpers';
 import { ref, computed, onMounted } from 'vue';
 
 const props = defineProps({
-    cart:      Object,
-    customer:  Object,
-    addresses: Array,
-    settings:  Object,
+    cart:           Object,
+    customer:       Object,
+    addresses:      Array,
+    settings:       Object,
+    shipping_zones: Array,
 });
 
 const { formatPrice } = useHelpers();
@@ -37,6 +38,7 @@ const form = useForm({
     shipping_last_name:   props.customer?.last_name  || '',
     shipping_address:     '',
     shipping_city:        '',
+    shipping_zone:        null,
     shipping_postal_code: '',
     shipping_country:     'CI',
     payment_method:       props.settings?.payment_cod_enabled === '1' ? 'cod'
@@ -44,6 +46,31 @@ const form = useForm({
                         : 'moneyfusion',
     notes:                '',
 });
+
+// ─── Zones de livraison ────────────────────────────────────────────────────────
+const hasZones = computed(() => props.shipping_zones?.length > 0);
+
+const zoneLabel = (zone) => {
+    const name   = (zone.name   ?? '').trim();
+    const cities = (zone.cities ?? '').trim();
+    if (!cities || cities.toLowerCase() === name.toLowerCase() || cities.length > 30) return name;
+    return `${name} – ${cities}`;
+};
+
+const selectedZone = computed(() => {
+    if (form.shipping_zone === null || !props.shipping_zones?.length) return null;
+    return props.shipping_zones[form.shipping_zone] ?? null;
+});
+
+const onZoneChange = (e) => {
+    const idx = e.target.value === '' ? null : parseInt(e.target.value);
+    form.shipping_zone = idx;
+    if (idx !== null && props.shipping_zones?.[idx]) {
+        form.shipping_city = props.shipping_zones[idx].name;
+    } else {
+        form.shipping_city = '';
+    }
+};
 
 // Pré-remplir depuis la première adresse
 if (props.addresses?.length) {
@@ -177,12 +204,33 @@ const paymentMethods = computed(() => {
                                         :class="form.errors.shipping_address ? 'border-red-400' : 'border-slate-200'" />
                                     <p v-if="form.errors.shipping_address" class="text-xs text-red-600 mt-1">{{ form.errors.shipping_address }}</p>
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-medium text-slate-700 mb-1">Ville *</label>
-                                    <input v-model="form.shipping_city" type="text" required
-                                        class="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
-                                        :class="form.errors.shipping_city ? 'border-red-400' : 'border-slate-200'" />
-                                    <p v-if="form.errors.shipping_city" class="text-xs text-red-600 mt-1">{{ form.errors.shipping_city }}</p>
+                                <div :class="hasZones ? 'sm:col-span-2' : ''">
+                                    <label class="block text-xs font-medium text-slate-700 mb-1">
+                                        Zone de livraison *
+                                    </label>
+                                    <!-- Dropdown zones configurées -->
+                                    <template v-if="hasZones">
+                                        <select
+                                            :value="form.shipping_zone ?? ''"
+                                            @change="onZoneChange"
+                                            required
+                                            class="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 bg-white"
+                                            :class="form.errors.shipping_city ? 'border-red-400' : 'border-slate-200'"
+                                        >
+                                            <option value="" disabled>Choisissez votre zone…</option>
+                                            <option v-for="(zone, idx) in shipping_zones" :key="idx" :value="idx">
+                                                {{ zoneLabel(zone) }} — {{ zone.price === 0 ? 'Gratuit' : zone.price.toLocaleString('fr-FR') + ' F CFA' }}
+                                            </option>
+                                        </select>
+                                        <p v-if="form.errors.shipping_city" class="text-xs text-red-600 mt-1">{{ form.errors.shipping_city }}</p>
+                                    </template>
+                                    <!-- Fallback texte si pas de zones configurées -->
+                                    <template v-else>
+                                        <input v-model="form.shipping_city" type="text" required
+                                            class="w-full px-3 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
+                                            :class="form.errors.shipping_city ? 'border-red-400' : 'border-slate-200'" />
+                                        <p v-if="form.errors.shipping_city" class="text-xs text-red-600 mt-1">{{ form.errors.shipping_city }}</p>
+                                    </template>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-medium text-slate-700 mb-1">Code postal</label>
@@ -269,7 +317,10 @@ const paymentMethods = computed(() => {
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-slate-500">Livraison</span>
-                                    <span class="text-slate-400 italic text-xs">À calculer</span>
+                                    <span v-if="selectedZone" class="font-medium text-slate-900">
+                                        {{ selectedZone.price === 0 ? 'Gratuit' : selectedZone.price.toLocaleString('fr-FR') + ' F CFA' }}
+                                    </span>
+                                    <span v-else class="text-slate-400 italic text-xs">Choisissez une zone</span>
                                 </div>
                             </div>
 

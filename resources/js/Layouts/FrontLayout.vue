@@ -20,16 +20,21 @@ const settings = computed(() => page.props.settings || {});
 const siteName = computed(() => settings.value.site_name || 'Chamse');
 const logoPath  = computed(() => settings.value.logo || null);
 
-// Sync depuis shared props à chaque navigation
+// Sync immédiat depuis les shared props (premier chargement)
 watch(() => page.props.cart_count, (val) => {
     if (val !== undefined) {
         cartStore.setCount(val);
-        // Si des articles dans le panier, sync les IDs pour les indicateurs de carte
         if (val > 0 && cartStore.productIds.size === 0) {
             cartStore.sync();
         }
     }
 }, { immediate: true });
+
+// Sync fiable après chaque navigation Inertia (source de vérité = DB via /panier/drawer)
+const unsubNavigate = router.on('navigate', () => {
+    cartStore.sync();
+});
+onUnmounted(() => unsubNavigate());
 
 watch(() => page.props.auth?.user, (val) => {
     if (val) userStore.setUser(val);

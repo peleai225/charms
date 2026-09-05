@@ -225,16 +225,16 @@ class ShopController extends Controller
             ->filter(fn($av) => $av->attribute && $av->attribute->slug === 'couleur')
             ->unique('id');
 
-        // Détecter dynamiquement l'attribut secondaire (le premier attribut
-        // non-couleur réellement utilisé sur les variantes : taille, pointure,
-        // capacité, matière...).
+        // Détecter l'attribut secondaire : parmi les attributs non-couleur,
+        // prendre celui qui a le plus de valeurs distinctes sur ce produit.
+        // Ex: coloring book → design(17 valeurs) > âge(1 valeur) → design est retenu.
         $secondaryAttribute = $product->variants
             ->pluck('attributeValues')
             ->flatten()
-            ->map(fn($av) => $av->attribute)
-            ->filter(fn($a) => $a && $a->slug !== 'couleur')
-            ->unique('id')
-            ->sortBy('order')
+            ->filter(fn($av) => $av->attribute && $av->attribute->slug !== 'couleur')
+            ->groupBy('attribute_id')
+            ->sortByDesc(fn($avs) => $avs->unique('id')->count())
+            ->map(fn($avs) => $avs->first()->attribute)
             ->first();
         $secondaryAttributeSlug = $secondaryAttribute?->slug;
         $secondaryAttributeName = $secondaryAttribute?->name ?? 'Taille';
@@ -271,25 +271,27 @@ class ShopController extends Controller
             ];
         })->values()->toArray();
 
-        // Format secondary attribute values
-        $secondaryValues = $product->variants
-            ->pluck('attributeValues')
-            ->flatten()
-            ->filter(fn($av) => $av->attribute && $av->attribute->slug !== 'couleur')
-            ->unique('id')
-            ->map(function ($attrValue) {
-                return [
-                    'id' => $attrValue->id,
+        // Format secondary attribute values (uniquement l'attribut secondaire retenu)
+        $secondaryValues = $secondaryAttribute
+            ? $product->variants
+                ->pluck('attributeValues')
+                ->flatten()
+                ->filter(fn($av) => $av->attribute && $av->attribute->id === $secondaryAttribute->id)
+                ->unique('id')
+                ->map(fn($attrValue) => [
+                    'id'    => $attrValue->id,
                     'value' => $attrValue->value,
-                ];
-            })
-            ->values()
-            ->toArray();
+                ])
+                ->values()
+                ->toArray()
+            : [];
 
         // Format variants
-        $variantsData = $product->variants->map(function ($variant) {
-            $colorAttr = $variant->attributeValues->firstWhere('attribute.slug', 'couleur');
-            $secondaryAttr = $variant->attributeValues->firstWhere(fn($av) => $av->attribute && $av->attribute->slug !== 'couleur');
+        $variantsData = $product->variants->map(function ($variant) use ($secondaryAttribute) {
+            $colorAttr     = $variant->attributeValues->firstWhere('attribute.slug', 'couleur');
+            $secondaryAttr = $secondaryAttribute
+                ? $variant->attributeValues->firstWhere(fn($av) => $av->attribute?->id === $secondaryAttribute->id)
+                : null;
 
             return [
                 'id'           => $variant->id,

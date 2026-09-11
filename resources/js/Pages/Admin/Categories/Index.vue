@@ -117,6 +117,22 @@ async function deleteCategory(cat) {
     })
 }
 
+// Chemin breadcrumb calculé côté Vue (évite les requêtes SQL N+1 côté PHP)
+const categoryPath = computed(() => {
+    if (!editingCat.value) return ''
+    const parts = [editingCat.value.name]
+    let parentId = editingCat.value.parent_id
+    let depth = 0
+    while (parentId && depth < 5) {
+        const parent = (props.categories ?? []).find(c => c.id === parentId)
+        if (!parent) break
+        parts.unshift(parent.name)
+        parentId = parent.parent_id
+        depth++
+    }
+    return parts.join(' › ')
+})
+
 // Catégories parentes valides (exclut la catégorie en cours d'édition et ses descendants)
 const editableParents = computed(() => {
     if (!editingId.value) return props.tree ?? []
@@ -394,6 +410,11 @@ function getDescendantIds(id, set = new Set()) {
                         </div>
                     </div>
 
+                    <!-- Erreurs globales -->
+                    <div v-if="Object.keys(createForm.errors).length" class="rounded-lg bg-red-50 border border-red-100 px-3 py-2.5 space-y-1">
+                        <p v-for="(msg, field) in createForm.errors" :key="field" class="text-[12px] text-red-600">• {{ msg }}</p>
+                    </div>
+
                     <!-- Actions -->
                     <div class="flex gap-3 pt-2 border-t border-gray-100">
                         <button type="submit" :disabled="createForm.processing"
@@ -417,7 +438,7 @@ function getDescendantIds(id, set = new Set()) {
                 <!-- En-tête avec breadcrumb -->
                 <div>
                     <h2 class="text-base font-semibold text-gray-900">Modifier la catégorie</h2>
-                    <p v-if="editingCat?.full_path" class="text-[12px] text-gray-400 mt-0.5">{{ editingCat.full_path }}</p>
+                    <p v-if="categoryPath" class="text-[12px] text-gray-400 mt-0.5">{{ categoryPath }}</p>
                 </div>
 
                 <form @submit.prevent="submitEdit(editingId)" enctype="multipart/form-data" class="space-y-4">
@@ -521,6 +542,11 @@ function getDescendantIds(id, set = new Set()) {
                                 </p>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Erreurs globales -->
+                    <div v-if="Object.keys(editForm.errors).length" class="rounded-lg bg-red-50 border border-red-100 px-3 py-2.5 space-y-1">
+                        <p v-for="(msg, field) in editForm.errors" :key="field" class="text-[12px] text-red-600">• {{ msg }}</p>
                     </div>
 
                     <!-- Actions -->

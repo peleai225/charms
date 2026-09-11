@@ -36,7 +36,6 @@ class CategoryController extends Controller
             'description'      => $c->description,
             'meta_title'       => $c->meta_title,
             'meta_description' => $c->meta_description,
-            'full_path'        => $c->full_path,
         ];
 
         $treeData = $tree->map(function ($cat) use ($mapCat) {

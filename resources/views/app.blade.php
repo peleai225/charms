@@ -56,7 +56,25 @@
                     if ($ogCat) {
                         $ogTitle = $ogCat->name . ' — ' . $siteName;
                         $ogDesc  = $ogCat->description ?? '';
-                        if ($ogCat->image) $ogImage = asset('storage/' . $ogCat->image);
+                        if ($ogCat->image) {
+                            $ogImage = asset('storage/' . $ogCat->image);
+                        } else {
+                            // Pas d'image catégorie → utiliser la photo du 1er produit actif
+                            $firstImg = \App\Models\ProductImage::query()
+                                ->whereHas('product', fn($q) => $q->where('status', 'active')
+                                    ->where('category_id', $ogCat->id))
+                                ->where('is_primary', true)
+                                ->select(['path'])
+                                ->first();
+                            if ($firstImg) {
+                                $ogJpeg = preg_replace('#/medium/(.+)\.webp$#', '/og/$1.jpg', $firstImg->path);
+                                $ogImage = asset('storage/' . (
+                                    $ogJpeg !== $firstImg->path && \Illuminate\Support\Facades\Storage::disk('public')->exists($ogJpeg)
+                                        ? $ogJpeg
+                                        : $firstImg->path
+                                ));
+                            }
+                        }
                     }
                 }
             }

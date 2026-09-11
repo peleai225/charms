@@ -24,16 +24,19 @@ class CategoryController extends Controller
         $tree = $categories->whereNull('parent_id')->values();
 
         $mapCat = fn($c) => [
-            'id'             => $c->id,
-            'name'           => $c->name,
-            'slug'           => $c->slug,
-            'image'          => $c->image,
-            'is_active'      => $c->is_active,
-            'is_featured'    => $c->is_featured,
-            'parent_id'      => $c->parent_id,
-            'order'          => $c->order,
-            'products_count' => $c->products_count,
-            'description'    => $c->description,
+            'id'               => $c->id,
+            'name'             => $c->name,
+            'slug'             => $c->slug,
+            'image'            => $c->image,
+            'is_active'        => $c->is_active,
+            'is_featured'      => $c->is_featured,
+            'parent_id'        => $c->parent_id,
+            'order'            => $c->order,
+            'products_count'   => $c->products_count,
+            'description'      => $c->description,
+            'meta_title'       => $c->meta_title,
+            'meta_description' => $c->meta_description,
+            'full_path'        => $c->full_path,
         ];
 
         $treeData = $tree->map(function ($cat) use ($mapCat) {
@@ -63,12 +66,15 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'parent_id' => 'nullable|exists:categories,id',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'is_active' => 'boolean',
-            'is_featured' => 'boolean',
+            'name'             => 'required|string|max:255',
+            'description'      => 'nullable|string',
+            'parent_id'        => 'nullable|exists:categories,id',
+            'image'            => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'is_active'        => 'boolean',
+            'is_featured'      => 'boolean',
+            'order'            => 'nullable|integer|min:0',
+            'meta_title'       => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
@@ -80,8 +86,8 @@ class CategoryController extends Controller
 
         $validated = $validator->validated();
 
-        $validated['slug'] = Str::slug($validated['name']);
-        $validated['is_active'] = $request->boolean('is_active');
+        $validated['slug']        = Str::slug($validated['name']);
+        $validated['is_active']   = $request->boolean('is_active');
         $validated['is_featured'] = $request->boolean('is_featured');
 
         if ($request->hasFile('image')) {
@@ -106,13 +112,15 @@ class CategoryController extends Controller
     public function update(Request $request, Category $category)
     {
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'parent_id' => 'nullable|exists:categories,id',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'is_active' => 'boolean',
-            'is_featured' => 'boolean',
-            'order' => 'nullable|integer|min:0',
+            'name'             => 'required|string|max:255',
+            'description'      => 'nullable|string',
+            'parent_id'        => 'nullable|exists:categories,id',
+            'image'            => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'is_active'        => 'boolean',
+            'is_featured'      => 'boolean',
+            'order'            => 'nullable|integer|min:0',
+            'meta_title'       => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {

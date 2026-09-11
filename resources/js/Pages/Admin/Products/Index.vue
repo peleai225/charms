@@ -11,6 +11,8 @@ import SearchInput from '@/Components/UI/SearchInput.vue'
 import FilterBar from '@/Components/UI/FilterBar.vue'
 import FilterSelect from '@/Components/UI/FilterSelect.vue'
 import Breadcrumb from '@/Components/UI/Breadcrumb.vue'
+import ConfirmModal from '@/Components/UI/ConfirmModal.vue'
+import ToastContainer from '@/Components/UI/ToastContainer.vue'
 
 const props = defineProps({
     products: Object,
@@ -296,4 +298,7 @@ const breadcrumbs = [
         <Pagination :meta="products.meta ?? products" :links="products.links" @change="goToPage" />
 
     </div>
+
+    <ConfirmModal />
+    <ToastContainer />
 </template>

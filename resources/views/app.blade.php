@@ -35,7 +35,16 @@
                         $ogDesc  = $ogProduct->short_description ?? $ogProduct->name;
                         $ogType  = 'product';
                         $ogImg   = $ogProduct->images->first();
-                        if ($ogImg) $ogImage = asset('storage/' . $ogImg->path);
+                        if ($ogImg) {
+                            // Priorité : version og/ JPEG (compatible Facebook/WhatsApp)
+                            // Dérivée de medium/uuid.webp → og/uuid.jpg
+                            $ogJpegPath = preg_replace('#/medium/(.+)\.webp$#', '/og/$1.jpg', $ogImg->path);
+                            if ($ogJpegPath !== $ogImg->path && \Illuminate\Support\Facades\Storage::disk('public')->exists($ogJpegPath)) {
+                                $ogImage = asset('storage/' . $ogJpegPath);
+                            } else {
+                                $ogImage = asset('storage/' . $ogImg->path);
+                            }
+                        }
                     }
                 }
             } elseif (request()->routeIs('shop.category')) {

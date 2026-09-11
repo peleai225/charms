@@ -1032,6 +1032,7 @@ class ProductController extends Controller
         // Chemin de stockage sur le disque
         Storage::disk('public')->makeDirectory($directory . '/medium');
         Storage::disk('public')->makeDirectory($directory . '/thumb');
+        Storage::disk('public')->makeDirectory($directory . '/og');
 
         foreach (['medium' => 800, 'thumb' => 400] as $size => $maxPx) {
             [$newW, $newH] = $origW > $origH
@@ -1053,9 +1054,22 @@ class ProductController extends Controller
             imagedestroy($dst);
         }
 
+        // Version JPEG pour les OG tags (Facebook/WhatsApp ne supportent pas WebP)
+        // Même UUID que $filename mais avec extension .jpg → dérivable depuis app.blade.php
+        $ogBasename = pathinfo($filename, PATHINFO_FILENAME) . '.jpg';
+        $ogW = min($origW, 1200);
+        $ogH = (int) round($ogW * $origH / $origW);
+        $ogDst = imagecreatetruecolor($ogW, $ogH);
+        imagefill($ogDst, 0, 0, imagecolorallocate($ogDst, 255, 255, 255));
+        imagecopyresampled($ogDst, $src, 0, 0, 0, 0, $ogW, $ogH, $origW, $origH);
+        $ogFullPath = storage_path('app/public/' . $directory . '/og/' . $ogBasename);
+        imagejpeg($ogDst, $ogFullPath, 90);
+        imagedestroy($ogDst);
+
         imagedestroy($src);
 
-        // Le chemin stocké en base pointe vers la version medium
+        // Le chemin stocké en base pointe vers la version medium (WebP)
+        // La version OG (JPEG) est dérivée côté PHP en remplaçant /medium/uuid.webp → /og/uuid.jpg
         return $directory . '/medium/' . $filename;
     }
 

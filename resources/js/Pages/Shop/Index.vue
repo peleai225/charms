@@ -102,32 +102,32 @@ const sortOptions = [
             <meta name="description" content="Découvrez notre sélection de produits. Livraison rapide en Côte d'Ivoire." />
         </Head>
 
-        <!-- Hero / breadcrumb band -->
-        <div class="bg-slate-900 text-white py-8">
-            <div class="container mx-auto px-4">
-                <nav class="flex items-center gap-1.5 text-xs text-slate-400 mb-3">
-                    <Link href="/" class="hover:text-white transition">Accueil</Link>
+        <!-- Barre titre + breadcrumb -->
+        <div class="bg-white border-b border-slate-200">
+            <div class="container mx-auto px-4 py-4 max-w-7xl">
+                <nav class="flex items-center gap-1.5 text-xs text-slate-400 mb-2">
+                    <Link href="/" class="hover:text-slate-600 transition">Accueil</Link>
                     <span>/</span>
-                    <Link href="/boutique" class="hover:text-white transition">Boutique</Link>
+                    <Link href="/boutique" class="hover:text-slate-600 transition">Boutique</Link>
                     <template v-if="currentCategory">
                         <span>/</span>
-                        <span class="text-white">{{ currentCategory.name }}</span>
+                        <span class="text-slate-600 font-medium">{{ currentCategory.name }}</span>
                     </template>
                 </nav>
-                <div class="flex items-end justify-between">
-                    <div>
-                        <h1 class="text-2xl md:text-3xl font-bold">
+                <div class="flex items-center justify-between gap-4">
+                    <div class="flex items-baseline gap-3">
+                        <h1 class="text-xl font-bold text-slate-900">
                             {{ currentCategory ? currentCategory.name : 'Tous les produits' }}
                         </h1>
-                        <p class="text-sm text-slate-400 mt-1">{{ products.total }} produit{{ products.total > 1 ? 's' : '' }}</p>
+                        <span class="text-sm text-slate-400">{{ products.total }} résultat{{ products.total > 1 ? 's' : '' }}</span>
                     </div>
-                    <!-- Sort — desktop header right -->
+                    <!-- Sort desktop -->
                     <div class="hidden md:flex items-center gap-2">
-                        <span class="text-xs text-slate-400">Trier par</span>
+                        <span class="text-xs text-slate-500">Trier par</span>
                         <select
                             :value="localFilters.sort"
                             @change="applySort($event.target.value)"
-                            class="text-sm bg-slate-800 border border-slate-700 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-500"
+                            class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                         </select>

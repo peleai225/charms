@@ -82,9 +82,9 @@ class HandleInertiaRequests extends Middleware
             'nav_categories' => fn () => cache()->remember('nav_categories', 1800, function () {
                 return \App\Models\Category::active()
                     ->roots()
-                    ->with('children')
+                    ->with('children.children')
                     ->ordered()
-                    ->take(8)
+                    ->take(10)
                     ->get()
                     ->map(fn($c) => [
                         'id'       => $c->id,
@@ -92,9 +92,14 @@ class HandleInertiaRequests extends Middleware
                         'slug'     => $c->slug,
                         'image'    => $c->image,
                         'children' => $c->children->map(fn($ch) => [
-                            'id'   => $ch->id,
-                            'name' => $ch->name,
-                            'slug' => $ch->slug,
+                            'id'       => $ch->id,
+                            'name'     => $ch->name,
+                            'slug'     => $ch->slug,
+                            'children' => $ch->children->map(fn($gc) => [
+                                'id'   => $gc->id,
+                                'name' => $gc->name,
+                                'slug' => $gc->slug,
+                            ])->values()->toArray(),
                         ])->values()->toArray(),
                     ])
                     ->toArray();

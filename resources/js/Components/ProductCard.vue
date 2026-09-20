@@ -17,7 +17,8 @@ const addingToCart = ref(false);
 const wishlistLoading = ref(false);
 const inWishlist = ref(props.product.in_wishlist ?? false);
 
-const inCart = computed(() => cartStore.hasProduct(props.product.id));
+const inCart      = computed(() => cartStore.hasProduct(props.product.id));
+const isInStock   = computed(() => props.product.stock > 0 || props.product.allow_backorder);
 
 // Génération stable de l'ID pour le gradient de demi-étoile
 const halfId = `half-${props.product.id}`;
@@ -131,7 +132,7 @@ const stars = computed(() => {
                 <span v-if="product.is_new" class="px-2.5 py-1 bg-primary-600 text-white text-xs font-bold rounded-full shadow-sm">
                     Nouveau
                 </span>
-                <span v-if="product.stock === 0" class="px-2.5 py-1 bg-slate-500 text-white text-xs font-bold rounded-full shadow-sm">
+                <span v-if="!isInStock" class="px-2.5 py-1 bg-slate-500 text-white text-xs font-bold rounded-full shadow-sm">
                     Rupture
                 </span>
             </div>
@@ -174,7 +175,7 @@ const stars = computed(() => {
 
                 <!-- Panier -->
                 <button
-                    v-if="product.stock > 0 && !product.has_variants"
+                    v-if="isInStock && !product.has_variants"
                     @click.prevent="addToCart"
                     :disabled="addingToCart"
                     class="w-9 h-9 rounded-full flex items-center justify-center shadow-md

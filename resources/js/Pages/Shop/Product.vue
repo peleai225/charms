@@ -107,6 +107,7 @@ const selectColor = (colorId) => {
 
 const currentPrice = computed(() => selectedVariant.value?.price ?? props.product.price);
 const currentStock = computed(() => selectedVariant.value?.stock ?? props.product.stock);
+const isInStock    = computed(() => currentStock.value > 0 || props.product.allow_backorder);
 const discountPct  = computed(() => {
     if (!props.product.compare_price) return null;
     return Math.round((1 - currentPrice.value / props.product.compare_price) * 100);
@@ -315,9 +316,9 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
 
                     <!-- Stock badge -->
                     <div class="mb-5">
-                        <span v-if="currentStock > 0" class="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-3 py-1 rounded-full">
+                        <span v-if="isInStock" class="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-3 py-1 rounded-full">
                             <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                            En stock · {{ currentStock }} disponibles
+                            En stock<template v-if="currentStock > 0"> · {{ currentStock }} disponibles</template>
                         </span>
                         <span v-else class="inline-flex items-center gap-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 px-3 py-1 rounded-full">
                             <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
@@ -326,7 +327,7 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                     </div>
 
                     <!-- Quantité -->
-                    <div v-if="currentStock > 0" class="flex items-center gap-3 mb-5">
+                    <div v-if="isInStock" class="flex items-center gap-3 mb-5">
                         <div class="flex items-center border border-slate-300 rounded-lg overflow-hidden">
                             <button @click="quantity = Math.max(1, quantity - 1)" class="w-10 h-10 flex items-center justify-center bg-slate-50 hover:bg-slate-100 transition text-lg font-medium text-slate-700">−</button>
                             <span class="w-12 text-center text-sm font-semibold text-slate-900">{{ quantity }}</span>
@@ -348,7 +349,7 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                         </button>
 
                         <a
-                            v-if="whatsapp_number && currentStock > 0 && $page.props.settings?.whatsapp_order_enabled !== '0'"
+                            v-if="whatsapp_number && isInStock && $page.props.settings?.whatsapp_order_enabled !== '0'"
                             :href="`https://wa.me/${whatsapp_number}?text=${waMessage}`"
                             target="_blank"
                             rel="noopener"
@@ -395,7 +396,7 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                             <tr><td class="py-2.5 pr-6 text-slate-500 w-36">SKU</td><td class="py-2.5 font-medium text-slate-900">{{ product.sku }}</td></tr>
                             <tr v-if="product.category"><td class="py-2.5 text-slate-500">Catégorie</td><td class="py-2.5 font-medium text-slate-900">{{ product.category.name }}</td></tr>
                             <tr v-if="product.weight"><td class="py-2.5 text-slate-500">Poids</td><td class="py-2.5 font-medium text-slate-900">{{ product.weight }} g</td></tr>
-                            <tr><td class="py-2.5 text-slate-500">Disponibilité</td><td class="py-2.5 font-medium" :class="currentStock > 0 ? 'text-green-600' : 'text-red-600'">{{ currentStock > 0 ? 'En stock' : 'Rupture' }}</td></tr>
+                            <tr><td class="py-2.5 text-slate-500">Disponibilité</td><td class="py-2.5 font-medium" :class="isInStock ? 'text-green-600' : 'text-red-600'">{{ isInStock ? 'En stock' : 'Rupture' }}</td></tr>
                         </tbody>
                     </table>
                 </div>

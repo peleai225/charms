@@ -163,7 +163,7 @@ const goToPage = (p) => {
                         </button>
 
                         <!-- Overlay rupture -->
-                        <div v-if="product.stock === 0" class="absolute inset-0 bg-white/60 flex items-center justify-center">
+                        <div v-if="!product.allow_backorder && product.stock === 0" class="absolute inset-0 bg-white/60 flex items-center justify-center">
                             <span class="text-xs font-semibold text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200">Rupture</span>
                         </div>
                     </Link>
@@ -182,7 +182,7 @@ const goToPage = (p) => {
 
                         <!-- CTA -->
                         <button
-                            v-if="product.stock > 0 && !product.has_variants && !inCart(product.id)"
+                            v-if="(product.stock > 0 || product.allow_backorder) && !product.has_variants && !inCart(product.id)"
                             @click="addToCart(product)"
                             :disabled="addingToCart === product.id"
                             class="w-full py-2 bg-slate-900 text-white text-xs font-semibold rounded-lg hover:bg-slate-800 transition flex items-center justify-center gap-1.5 disabled:opacity-60"
@@ -194,7 +194,7 @@ const goToPage = (p) => {
 
                         <!-- Déjà dans le panier -->
                         <div
-                            v-else-if="product.stock > 0 && !product.has_variants && inCart(product.id)"
+                            v-else-if="(product.stock > 0 || product.allow_backorder) && !product.has_variants && inCart(product.id)"
                             class="w-full py-2 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5"
                         >
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
@@ -202,7 +202,7 @@ const goToPage = (p) => {
                         </div>
 
                         <Link
-                            v-else-if="product.stock > 0 && product.has_variants"
+                            v-else-if="(product.stock > 0 || product.allow_backorder) && product.has_variants"
                             :href="`/produit/${product.slug}`"
                             class="block w-full py-2 text-center bg-slate-100 text-slate-700 text-xs font-semibold rounded-lg hover:bg-slate-200 transition"
                         >

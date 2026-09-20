@@ -93,7 +93,9 @@ class ShopController extends Controller
                     'slug' => $product->slug,
                     'price' => $product->sale_price,
                     'compare_price' => $product->compare_price,
-                    'stock' => $product->stock_quantity,
+                    'stock'         => $product->has_variants ? $product->variants->sum('stock_quantity') : $product->stock_quantity,
+                    'allow_backorder'=> (bool) $product->allow_backorder,
+                    'has_variants'  => $product->variants->isNotEmpty(),
                     'primary_image' => $product->images->where('is_primary', true)->first()?->path ?? $product->images->first()?->path,
                 ];
             }),
@@ -162,9 +164,10 @@ class ShopController extends Controller
             'slug'          => $p->slug,
             'price'         => $p->sale_price,
             'compare_price' => $p->compare_price,
-            'stock'         => $p->stock_quantity,
-            'has_variants'  => $p->variants->isNotEmpty(),
-            'category_name' => $p->category?->name,
+            'stock'          => $p->has_variants ? $p->variants->sum('stock_quantity') : $p->stock_quantity,
+            'allow_backorder'=> (bool) $p->allow_backorder,
+            'has_variants'   => $p->variants->isNotEmpty(),
+            'category_name'  => $p->category?->name,
             'primary_image' => $p->images->where('is_primary', true)->first()?->path ?? $p->images->first()?->path,
         ];
 
@@ -310,9 +313,10 @@ class ShopController extends Controller
             'slug'          => $p->slug,
             'price'         => $p->sale_price,
             'compare_price' => $p->compare_price,
-            'stock'         => $p->stock_quantity,
-            'has_variants'  => false,
-            'primary_image' => $p->images->where('is_primary', true)->first()?->path ?? $p->images->first()?->path,
+            'stock'          => $p->has_variants ? $p->variants->sum('stock_quantity') : $p->stock_quantity,
+            'allow_backorder'=> (bool) $p->allow_backorder,
+            'has_variants'   => $p->variants->isNotEmpty(),
+            'primary_image'  => $p->images->where('is_primary', true)->first()?->path ?? $p->images->first()?->path,
         ];
 
         $reviewsData = $product->reviews->map(function ($r) {
@@ -341,7 +345,8 @@ class ShopController extends Controller
             'sku'                => $product->sku,
             'price'              => $product->sale_price,
             'compare_price'      => $product->compare_price,
-            'stock'              => $product->stock_quantity,
+            'stock'              => $product->has_variants ? $product->variants->sum('stock_quantity') : $product->stock_quantity,
+            'allow_backorder'    => (bool) $product->allow_backorder,
             'short_description'  => $product->short_description,
             'description'        => $product->description,
             'weight'             => $product->weight,

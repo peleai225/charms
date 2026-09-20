@@ -52,10 +52,14 @@ const goToPage = (url) => {
             />
             <div class="relative container mx-auto px-4 py-14">
                 <!-- Breadcrumb -->
-                <nav class="flex items-center gap-1.5 text-xs text-slate-400 mb-4">
+                <nav class="flex items-center flex-wrap gap-1.5 text-xs text-slate-400 mb-4">
                     <Link href="/" class="hover:text-slate-200 transition">Accueil</Link>
                     <span>/</span>
                     <Link href="/boutique" class="hover:text-slate-200 transition">Boutique</Link>
+                    <template v-for="ancestor in (category.ancestors ?? [])" :key="ancestor.id">
+                        <span>/</span>
+                        <Link :href="`/categorie/${ancestor.slug}`" class="hover:text-slate-200 transition">{{ ancestor.name }}</Link>
+                    </template>
                     <span>/</span>
                     <span class="text-slate-200">{{ category.name }}</span>
                 </nav>

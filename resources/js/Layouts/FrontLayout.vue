@@ -392,7 +392,8 @@ onUnmounted(() => {
                                 <Transition name="dropdown">
                                     <div
                                         v-if="shopDropdownOpen"
-                                        class="absolute left-0 top-full mt-1 w-72 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50"
+                                        class="absolute left-0 top-full mt-1 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50"
+                                        :class="navCategories.some(c => c.children?.length) ? 'w-[520px]' : 'w-72'"
                                         @mouseenter="openShopDropdown"
                                         @mouseleave="closeShopDropdown"
                                     >
@@ -401,20 +402,31 @@ onUnmounted(() => {
                                             <p class="text-xs font-semibold uppercase tracking-widest text-slate-400">Catégories</p>
                                             <Link href="/boutique" class="text-xs text-slate-500 hover:text-slate-900 transition">Voir tout →</Link>
                                         </div>
-                                        <!-- Catégories -->
-                                        <div v-if="navCategories.length" class="py-2">
-                                            <Link
-                                                v-for="cat in navCategories"
-                                                :key="cat.id"
-                                                :href="`/categorie/${cat.slug}`"
-                                                class="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition group"
-                                            >
-                                                <div class="w-8 h-8 rounded-lg bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
-                                                    <img v-if="cat.image" :src="`/storage/${cat.image}`" :alt="cat.name" class="w-full h-full object-cover" />
-                                                    <svg v-else class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                                        <!-- Catégories avec sous-catégories -->
+                                        <div v-if="navCategories.length" class="p-3 grid grid-cols-2 gap-1">
+                                            <div v-for="cat in navCategories" :key="cat.id">
+                                                <Link
+                                                    :href="`/categorie/${cat.slug}`"
+                                                    class="flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 rounded-xl transition group"
+                                                >
+                                                    <div class="w-7 h-7 rounded-lg bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+                                                        <img v-if="cat.image" :src="`/storage/${cat.image}`" :alt="cat.name" class="w-full h-full object-cover" />
+                                                        <svg v-else class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                                                    </div>
+                                                    <span class="text-sm text-slate-800 font-semibold group-hover:text-primary-600 transition">{{ cat.name }}</span>
+                                                </Link>
+                                                <!-- Sous-catégories -->
+                                                <div v-if="cat.children?.length" class="ml-10 mt-0.5 space-y-0.5 mb-1">
+                                                    <Link
+                                                        v-for="child in cat.children"
+                                                        :key="child.id"
+                                                        :href="`/categorie/${child.slug}`"
+                                                        class="block text-xs text-slate-500 hover:text-primary-600 py-0.5 transition"
+                                                    >
+                                                        {{ child.name }}
+                                                    </Link>
                                                 </div>
-                                                <span class="text-sm text-slate-700 group-hover:text-slate-900 font-medium transition">{{ cat.name }}</span>
-                                            </Link>
+                                            </div>
                                         </div>
                                         <div v-else class="py-4 px-4 text-sm text-slate-400">Aucune catégorie</div>
                                         <!-- Footer -->

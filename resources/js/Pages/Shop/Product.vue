@@ -183,6 +183,10 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                     <span>/</span>
                     <Link href="/boutique" class="hover:text-slate-600 transition">Boutique</Link>
                     <template v-if="product.category">
+                        <template v-for="ancestor in (product.category.ancestors ?? [])" :key="ancestor.id">
+                            <span>/</span>
+                            <Link :href="`/categorie/${ancestor.slug}`" class="hover:text-slate-600 transition">{{ ancestor.name }}</Link>
+                        </template>
                         <span>/</span>
                         <Link :href="`/categorie/${product.category.slug}`" class="hover:text-slate-600 transition">{{ product.category.name }}</Link>
                     </template>

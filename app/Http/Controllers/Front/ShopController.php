@@ -81,8 +81,8 @@ class ShopController extends Controller
 
         $products = $query->paginate(12)->withQueryString();
 
-        // Données pour les filtres
-        $categories = Category::active()->roots()->with('children')->ordered()->get();
+        // Données pour les filtres — 3 niveaux de catégories pour la sidebar
+        $categories = Category::active()->roots()->with('children.children')->ordered()->get();
 
         // Format data for Inertia
         $productsData = [
@@ -109,9 +109,19 @@ class ShopController extends Controller
 
         $categoriesData = $categories->map(function ($cat) {
             return [
-                'id' => $cat->id,
-                'name' => $cat->name,
-                'slug' => $cat->slug,
+                'id'       => $cat->id,
+                'name'     => $cat->name,
+                'slug'     => $cat->slug,
+                'children' => $cat->children->map(fn($child) => [
+                    'id'       => $child->id,
+                    'name'     => $child->name,
+                    'slug'     => $child->slug,
+                    'children' => $child->children->map(fn($gc) => [
+                        'id'   => $gc->id,
+                        'name' => $gc->name,
+                        'slug' => $gc->slug,
+                    ])->values()->toArray(),
+                ])->values()->toArray(),
             ];
         });
 
@@ -129,8 +139,19 @@ class ShopController extends Controller
     public function category(string $slug, Request $request)
     {
         $category = Category::where('slug', $slug)->active()->firstOrFail();
-        
+
+        // Eager loading pour éviter N+1 dans getAllChildrenIds() et pour le fil d'ariane
+        $category->load('children.children.children', 'parent.parent.parent');
+
         $categoryIds = $category->getAllChildrenIds();
+
+        // Construire la chaîne d'ancêtres pour le fil d'ariane
+        $ancestors = [];
+        $p = $category->parent;
+        while ($p) {
+            array_unshift($ancestors, ['id' => $p->id, 'name' => $p->name, 'slug' => $p->slug]);
+            $p = $p->parent ?? null;
+        }
         
         $query = Product::active()
             ->whereIn('category_id', $categoryIds)
@@ -178,6 +199,7 @@ class ShopController extends Controller
                 'slug'        => $category->slug,
                 'description' => $category->description,
                 'image'       => $category->image,
+                'ancestors'   => $ancestors,
             ],
             'subcategories' => $subcategories->map(fn($s) => [
                 'id'    => $s->id,
@@ -206,7 +228,7 @@ class ShopController extends Controller
             ->active()
             ->with([
                 'images' => fn($q) => $q->orderBy('position'),
-                'category',
+                'category.parent.parent',
                 'variants' => fn($q) => $q->active()->with('attributeValues.attribute'),
                 'reviews' => fn($q) => $q->approved()->latest()->take(5),
             ])
@@ -353,11 +375,20 @@ class ShopController extends Controller
             'description'        => $product->description,
             'weight'             => $product->weight,
             'images'             => $product->images->pluck('path')->toArray(),
-            'category'           => $product->category ? [
-                'id'   => $product->category->id,
-                'name' => $product->category->name,
-                'slug' => $product->category->slug,
-            ] : null,
+            'category'           => $product->category ? (function () use ($product) {
+                $ancestors = [];
+                $p = $product->category->parent;
+                while ($p) {
+                    array_unshift($ancestors, ['id' => $p->id, 'name' => $p->name, 'slug' => $p->slug]);
+                    $p = $p->parent ?? null;
+                }
+                return [
+                    'id'        => $product->category->id,
+                    'name'      => $product->category->name,
+                    'slug'      => $product->category->slug,
+                    'ancestors' => $ancestors,
+                ];
+            })() : null,
             'has_variants'       => $product->variants->isNotEmpty(),
             'variants'           => $variantsData,
             'colors'             => $colorsData,

@@ -103,7 +103,7 @@ class HomeController extends Controller
             'is_new'        => (bool) $p->is_new,
             'category_name' => $p->category?->name,
             'primary_image' => ($img = $p->images->where('is_primary', true)->first() ?? $p->images->first())
-                ? asset('storage/' . $img->path)
+                ? (str_starts_with($img->path, 'http') ? $img->path : asset('storage/' . $img->path))
                 : null,
         ];
 

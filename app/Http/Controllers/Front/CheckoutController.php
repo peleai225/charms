@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Front;
 
 use App\Events\OrderCreated;
+use App\Events\OrderPaid;
 use App\Http\Controllers\Controller;
 use App\Mail\OrderConfirmation;
 use Illuminate\Support\Facades\Mail;
@@ -195,20 +196,24 @@ class CheckoutController extends Controller
 
         $cart->load(['items.product', 'items.variant']);
 
-        // Vérifier le stock
-        foreach ($cart->items as $item) {
-            $stockAvailable = $item->variant 
-                ? $item->variant->stock_quantity 
-                : $item->product->stock_quantity;
-
-            if ($stockAvailable < $item->quantity && !$item->product->allow_backorder) {
-                return back()->with('error', "Stock insuffisant pour {$item->product->name}");
-            }
-        }
-
         DB::beginTransaction();
 
         try {
+            // Vérifier le stock avec verrou pour éviter les race conditions (deux achats simultanés du dernier article)
+            foreach ($cart->items as $item) {
+                if ($item->variant) {
+                    $locked = \App\Models\ProductVariant::where('id', $item->variant->id)->lockForUpdate()->first();
+                    $stockAvailable = $locked->stock_quantity;
+                } else {
+                    $locked = \App\Models\Product::where('id', $item->product->id)->lockForUpdate()->first();
+                    $stockAvailable = $locked->stock_quantity;
+                }
+                if ($stockAvailable < $item->quantity && !$item->product->allow_backorder) {
+                    DB::rollBack();
+                    return back()->with('error', "Stock insuffisant pour {$item->product->name}");
+                }
+            }
+
             // Créer ou récupérer le client
             $customer = $this->getOrCreateCustomer($validated);
 
@@ -321,7 +326,7 @@ class CheckoutController extends Controller
                 \Log::error('Failed to send WhatsApp order confirmation: ' . $e->getMessage());
             }
 
-            // Pour COD, mettre à jour le statut avant le commit
+            // Pour COD, confirmer la commande
             if ($validated['payment_method'] === 'cod') {
                 $order->update([
                     'payment_status' => 'pending',
@@ -330,6 +335,11 @@ class CheckoutController extends Controller
             }
 
             DB::commit();
+
+            // COD : décrémentation du stock après commit (paiement à la livraison = commande ferme)
+            if ($validated['payment_method'] === 'cod') {
+                event(new OrderPaid($order));
+            }
 
             // Vider le panier uniquement après le commit réussi
             $cart->clear();

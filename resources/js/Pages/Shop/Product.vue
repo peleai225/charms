@@ -10,6 +10,7 @@ import { ref, computed, onMounted } from 'vue';
 const props = defineProps({
     product:          Object,
     related_products: Array,
+    upsell_products:  Array,
     whatsapp_number:  String,
 });
 
@@ -437,6 +438,19 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                         </div>
                     </div>
                     <div v-else class="text-sm text-slate-500 py-4">Aucun avis pour ce produit.</div>
+                </div>
+            </div>
+
+            <!-- ─── Upsell ─────────────────────────────────────────── -->
+            <div v-if="upsell_products?.length" class="mb-10">
+                <div class="flex items-end justify-between mb-5">
+                    <div>
+                        <p class="text-xs font-semibold text-amber-600 uppercase tracking-widest mb-1">Premium</p>
+                        <h2 class="text-xl font-bold text-slate-900">Version supérieure</h2>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-2 gap-4">
+                    <ProductCard v-for="p in upsell_products" :key="p.id" :product="p" />
                 </div>
             </div>
 

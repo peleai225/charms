@@ -17,7 +17,7 @@ class ShopController extends Controller
     public function index(Request $request)
     {
         $query = Product::active()
-            ->with(['images', 'category']);
+            ->with(['images', 'category', 'variants']);
 
         // Filtres
         if ($request->filled('category')) {
@@ -243,15 +243,17 @@ class ShopController extends Controller
         $secondaryAttributeName = $secondaryAttribute?->name ?? 'Taille';
 
         // Cross-sell : produits de la même catégorie (prix similaire ±30%)
+        // inRandomOrder() remplacé par shuffle PHP pour éviter ORDER BY RAND() (full table scan)
         $relatedProducts = Product::active()
             ->where('id', '!=', $product->id)
             ->where('category_id', $product->category_id)
             ->where('sale_price', '>=', $product->sale_price * 0.7)
             ->where('sale_price', '<=', $product->sale_price * 1.3)
-            ->with(['images'])
-            ->inRandomOrder()
-            ->take(4)
-            ->get();
+            ->with(['images', 'variants'])
+            ->take(12)
+            ->get()
+            ->shuffle()
+            ->take(4);
 
         // Upsell : produit plus premium (même catégorie, prix 20-100% plus élevé)
         $upsellProducts = Product::active()
@@ -259,7 +261,7 @@ class ShopController extends Controller
             ->where('category_id', $product->category_id)
             ->where('sale_price', '>', $product->sale_price * 1.2)
             ->where('sale_price', '<=', $product->sale_price * 2)
-            ->with(['images'])
+            ->with(['images', 'variants'])
             ->orderBy('sale_price')
             ->take(2)
             ->get();
@@ -372,6 +374,7 @@ class ShopController extends Controller
         return Inertia::render('Shop/Product', [
             'product'          => $productData,
             'related_products' => $relatedProducts->map($formatSmallProduct),
+            'upsell_products'  => $upsellProducts->map($formatSmallProduct),
             'whatsapp_number'  => $whatsappNumber,
         ]);
     }

@@ -16,9 +16,10 @@ const cartStore = useCartStore();
 const userStore = useUserStore();
 const notificationStore = useNotificationStore();
 
-const settings = computed(() => page.props.settings || {});
-const siteName = computed(() => settings.value.site_name || 'Chamse');
-const logoPath  = computed(() => settings.value.logo || null);
+const settings     = computed(() => page.props.settings || {});
+const siteName     = computed(() => settings.value.site_name || 'Chamse');
+const logoPath     = computed(() => settings.value.logo || null);
+const primaryColor = computed(() => settings.value.primary_color || '#2563EB');
 
 // Sync immédiat depuis les shared props (premier chargement)
 watch(() => page.props.cart_count, (val) => {
@@ -374,10 +375,11 @@ onUnmounted(() => {
                                 v-model="searchQuery"
                                 type="search"
                                 placeholder="Rechercher des produits, marques..."
-                                class="flex-1 px-4 text-sm border border-r-0 border-slate-300 rounded-l-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                class="flex-1 px-4 text-sm border border-r-0 border-slate-300 rounded-l-lg focus:outline-none focus:ring-1 focus:ring-slate-400"
                             />
                             <button type="submit"
-                                    class="px-5 bg-blue-600 hover:bg-blue-700 text-white rounded-r-lg flex items-center justify-center transition shrink-0">
+                                    class="px-5 text-white rounded-r-lg flex items-center justify-center transition shrink-0 nav-primary-btn"
+                                    :style="{ '--nav-primary': primaryColor }">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
                                 </svg>
@@ -413,7 +415,8 @@ onUnmounted(() => {
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
                                 </svg>
                                 <span v-if="cartStore.count > 0"
-                                      class="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 leading-none">
+                                      class="absolute -top-1 -right-1 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 leading-none"
+                                      :style="{ backgroundColor: primaryColor }">
                                     {{ cartStore.count > 99 ? '99+' : cartStore.count }}
                                 </span>
                             </Link>
@@ -490,14 +493,16 @@ onUnmounted(() => {
             </div>
 
             <!-- Ligne 2 : Barre catégories (desktop uniquement) + Mega menu -->
-            <div class="hidden lg:block relative bg-blue-600" @mouseleave="closeMegaMenu">
+            <div class="hidden lg:block relative nav-catbar"
+                 :style="{ '--nav-primary': primaryColor }"
+                 @mouseleave="closeMegaMenu">
                 <div class="container mx-auto px-4">
                     <div class="flex items-stretch h-10">
 
                         <!-- "Toutes les catégories" -->
                         <button @mouseenter="navCategories.length && openMegaMenu(navCategories[0])"
-                                class="flex items-center gap-2 px-4 h-full text-white text-sm font-semibold shrink-0 transition"
-                                :class="megaMenuOpen ? 'bg-blue-800' : 'bg-blue-700 hover:bg-blue-800'">
+                                class="flex items-center gap-2 px-4 h-full text-white text-sm font-semibold shrink-0 transition nav-allcat-btn"
+                                :class="megaMenuOpen ? 'is-active' : ''">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                             </svg>
@@ -508,17 +513,17 @@ onUnmounted(() => {
                         <div class="flex items-stretch overflow-x-auto scrollbar-none flex-1">
                             <button v-for="cat in navCategories" :key="cat.id"
                                     @mouseenter="openMegaMenu(cat)"
-                                    class="px-4 h-full text-white/90 text-sm font-medium hover:text-white hover:bg-blue-700 transition shrink-0 whitespace-nowrap"
-                                    :class="activeMegaCategory?.id === cat.id && megaMenuOpen ? 'bg-blue-700 text-white' : ''">
+                                    class="px-4 h-full text-white/90 text-sm font-medium hover:text-white transition shrink-0 whitespace-nowrap nav-cat-btn"
+                                    :class="activeMegaCategory?.id === cat.id && megaMenuOpen ? 'is-active' : ''">
                                 {{ cat.name }}
                             </button>
                         </div>
 
                         <!-- Liens supplémentaires -->
-                        <div class="flex items-stretch border-l border-blue-500 shrink-0">
-                            <Link href="/" class="px-4 h-full flex items-center text-white/80 text-sm hover:text-white hover:bg-blue-700 transition whitespace-nowrap">Accueil</Link>
-                            <Link href="/a-propos" class="px-4 h-full flex items-center text-white/80 text-sm hover:text-white hover:bg-blue-700 transition whitespace-nowrap">À propos</Link>
-                            <Link href="/contact" class="px-4 h-full flex items-center text-white/80 text-sm hover:text-white hover:bg-blue-700 transition whitespace-nowrap">Contact</Link>
+                        <div class="flex items-stretch nav-catbar-sep shrink-0">
+                            <Link href="/" class="px-4 h-full flex items-center text-white/80 text-sm hover:text-white transition whitespace-nowrap nav-cat-link">Accueil</Link>
+                            <Link href="/a-propos" class="px-4 h-full flex items-center text-white/80 text-sm hover:text-white transition whitespace-nowrap nav-cat-link">À propos</Link>
+                            <Link href="/contact" class="px-4 h-full flex items-center text-white/80 text-sm hover:text-white transition whitespace-nowrap nav-cat-link">Contact</Link>
                         </div>
                     </div>
                 </div>
@@ -526,7 +531,8 @@ onUnmounted(() => {
                 <!-- Panneau mega menu -->
                 <Transition name="megamenu">
                     <div v-if="megaMenuOpen && activeMegaCategory"
-                         class="absolute left-0 right-0 top-full bg-white shadow-2xl border-t-2 border-blue-600 z-50"
+                         class="absolute left-0 right-0 top-full bg-white shadow-2xl border-t-2 z-50"
+                         :style="{ borderTopColor: primaryColor }"
                          @mouseenter="keepMegaMenuOpen"
                          @mouseleave="closeMegaMenu">
                         <div class="container mx-auto px-4 py-6">
@@ -534,7 +540,8 @@ onUnmounted(() => {
                             <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
                                 <h3 class="font-bold text-slate-900 text-base">{{ activeMegaCategory.name }}</h3>
                                 <Link :href="`/categorie/${activeMegaCategory.slug}`"
-                                      class="text-sm text-blue-600 hover:text-blue-700 font-medium transition">
+                                      class="text-sm font-medium transition nav-primary-link"
+                                      :style="{ color: primaryColor }">
                                     Voir tout →
                                 </Link>
                             </div>
@@ -543,13 +550,13 @@ onUnmounted(() => {
                                  class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-8 gap-y-1">
                                 <div v-for="child in activeMegaCategory.children" :key="child.id" class="mb-4">
                                     <Link :href="`/categorie/${child.slug}`"
-                                          class="block font-semibold text-sm text-slate-800 hover:text-blue-600 mb-1.5 transition">
+                                          class="block font-semibold text-sm text-slate-800 mb-1.5 transition nav-mega-link">
                                         {{ child.name }}
                                     </Link>
                                     <div v-if="child.children?.length" class="space-y-0.5">
                                         <Link v-for="gc in child.children.slice(0, 5)" :key="gc.id"
                                               :href="`/categorie/${gc.slug}`"
-                                              class="block text-xs text-slate-500 hover:text-blue-600 py-0.5 transition">
+                                              class="block text-xs text-slate-500 py-0.5 transition nav-mega-link">
                                             {{ gc.name }}
                                         </Link>
                                     </div>
@@ -558,7 +565,8 @@ onUnmounted(() => {
                             <!-- Catégorie sans sous-catégories -->
                             <div v-else class="py-3">
                                 <Link :href="`/categorie/${activeMegaCategory.slug}`"
-                                      class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition">
+                                      class="inline-flex items-center gap-2 px-5 py-2.5 text-white text-sm font-semibold rounded-xl transition nav-primary-btn"
+                                      :style="{ '--nav-primary': primaryColor }">
                                     Voir les produits
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                                 </Link>
@@ -904,5 +912,39 @@ onUnmounted(() => {
 }
 .scrollbar-none::-webkit-scrollbar {
     display: none;
+}
+
+/* ─── Navbar couleur primaire dynamique ─────────────────────────── */
+.nav-catbar {
+    background-color: var(--nav-primary, #2563EB);
+}
+.nav-catbar-sep {
+    border-left: 1px solid color-mix(in srgb, var(--nav-primary, #2563EB) 60%, white);
+}
+.nav-allcat-btn {
+    background-color: color-mix(in srgb, var(--nav-primary, #2563EB) 80%, black);
+}
+.nav-allcat-btn:hover,
+.nav-allcat-btn.is-active {
+    background-color: color-mix(in srgb, var(--nav-primary, #2563EB) 65%, black);
+}
+.nav-cat-btn:hover,
+.nav-cat-btn.is-active {
+    background-color: color-mix(in srgb, var(--nav-primary, #2563EB) 80%, black);
+}
+.nav-cat-link:hover {
+    background-color: color-mix(in srgb, var(--nav-primary, #2563EB) 80%, black);
+}
+.nav-primary-btn {
+    background-color: var(--nav-primary, #2563EB);
+}
+.nav-primary-btn:hover {
+    background-color: color-mix(in srgb, var(--nav-primary, #2563EB) 85%, black);
+}
+.nav-mega-link:hover {
+    color: var(--nav-primary, #2563EB);
+}
+.nav-primary-link:hover {
+    opacity: 0.8;
 }
 </style>

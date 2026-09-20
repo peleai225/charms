@@ -102,9 +102,8 @@ class HomeController extends Controller
             'has_variants'  => $p->variants_count > 0,
             'is_new'        => (bool) $p->is_new,
             'category_name' => $p->category?->name,
-            'primary_image' => ($img = $p->images->where('is_primary', true)->first() ?? $p->images->first())
-                ? (str_starts_with($img->path, 'http') ? $img->path : asset('storage/' . $img->path))
-                : null,
+            'primary_image' => $p->images->where('is_primary', true)->first()?->path
+                ?? $p->images->first()?->path,
         ];
 
         $mapBanner = fn($b) => [

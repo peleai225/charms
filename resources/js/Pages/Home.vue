@@ -176,7 +176,9 @@ const trustItems = [
                         <Link v-for="p in featured_products.slice(0, 6)" :key="p.id"
                               :href="`/produit/${p.slug}`"
                               class="relative bg-slate-700 overflow-hidden group">
-                            <img v-if="p.primary_image" :src="p.primary_image" :alt="p.name"
+                            <img v-if="p.primary_image"
+                                 :src="p.primary_image.startsWith('http') ? p.primary_image : `/storage/${p.primary_image}`"
+                                 :alt="p.name"
                                  class="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300"/>
                             <div v-else class="absolute inset-0 flex items-center justify-center text-slate-500 text-lg font-bold">
                                 {{ p.name[0] }}

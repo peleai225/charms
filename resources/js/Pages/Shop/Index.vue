@@ -3,7 +3,7 @@ import FrontLayout from '@/Layouts/FrontLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import ProductCard from '@/Components/ProductCard.vue';
 import { useHelpers } from '@/Composables/useHelpers';
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps({
     products:        Object,
@@ -93,6 +93,15 @@ const sortOptions = [
     { value: 'popular',    label: 'Meilleures ventes' },
     { value: 'name',       label: 'Nom A-Z' },
 ];
+
+// ─── Loading state ────────────────────────────────────────────────────────────
+const loading = ref(false);
+let unsubStart, unsubFinish;
+onMounted(() => {
+    unsubStart  = router.on('start',  () => { loading.value = true; });
+    unsubFinish = router.on('finish', () => { loading.value = false; });
+});
+onUnmounted(() => { unsubStart?.(); unsubFinish?.(); });
 </script>
 
 <template>
@@ -127,7 +136,7 @@ const sortOptions = [
                         <select
                             :value="localFilters.sort"
                             @change="applySort($event.target.value)"
-                            class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-600"
                         >
                             <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                         </select>
@@ -180,7 +189,7 @@ const sortOptions = [
                                 <button
                                     @click="localFilters.category = ''; applyFilters()"
                                     class="w-full text-left px-3 py-2 rounded-lg text-sm transition"
-                                    :class="!localFilters.category ? 'bg-slate-900 text-white font-medium' : 'text-slate-700 hover:bg-slate-50'"
+                                    :class="!localFilters.category ? 'bg-primary-600 text-white font-medium' : 'text-slate-700 hover:bg-slate-50'"
                                 >
                                     Tous les produits
                                 </button>
@@ -189,7 +198,7 @@ const sortOptions = [
                                 <button
                                     @click="localFilters.category = cat.slug; applyFilters()"
                                     class="w-full text-left px-3 py-2 rounded-lg text-sm transition"
-                                    :class="localFilters.category === cat.slug ? 'bg-slate-900 text-white font-medium' : 'text-slate-700 hover:bg-slate-50'"
+                                    :class="localFilters.category === cat.slug ? 'bg-primary-600 text-white font-medium' : 'text-slate-700 hover:bg-slate-50'"
                                 >
                                     {{ cat.name }}
                                 </button>
@@ -254,7 +263,7 @@ const sortOptions = [
                     <!-- Bouton appliquer -->
                     <button
                         @click="applyFilters"
-                        class="w-full py-2.5 bg-slate-900 text-white text-sm font-semibold rounded-xl hover:bg-slate-800 transition"
+                        class="w-full py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 transition"
                     >
                         Appliquer les filtres
                     </button>
@@ -271,7 +280,7 @@ const sortOptions = [
                         >
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 110 2H4a1 1 0 01-1-1zm0 6a1 1 0 011-1h10a1 1 0 110 2H4a1 1 0 01-1-1zm0 6a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z"/></svg>
                             Filtres
-                            <span v-if="activeChips.length" class="bg-slate-900 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">{{ activeChips.length }}</span>
+                            <span v-if="activeChips.length" class="bg-primary-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">{{ activeChips.length }}</span>
                         </button>
                         <select
                             :value="localFilters.sort"
@@ -282,8 +291,19 @@ const sortOptions = [
                         </select>
                     </div>
 
+                    <!-- Skeleton loading -->
+                    <div v-if="loading" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div v-for="i in 8" :key="i" class="bg-white rounded-2xl border border-slate-100 overflow-hidden animate-pulse">
+                            <div class="aspect-square bg-slate-100"/>
+                            <div class="p-3 space-y-2">
+                                <div class="h-2.5 bg-slate-100 rounded w-3/4"/>
+                                <div class="h-4 bg-slate-100 rounded w-1/2"/>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Grille produits -->
-                    <div v-if="products.data.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div v-else-if="products.data.length" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                         <ProductCard v-for="product in products.data" :key="product.id" :product="product" />
                     </div>
 
@@ -293,10 +313,18 @@ const sortOptions = [
                             <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
                         </div>
                         <h3 class="text-lg font-semibold text-slate-900 mb-2">Aucun produit trouvé</h3>
-                        <p class="text-sm text-slate-500 mb-5">Essayez de modifier vos filtres ou effacez-les tous.</p>
-                        <button @click="clearAll" class="px-5 py-2.5 bg-slate-900 text-white text-sm font-semibold rounded-xl hover:bg-slate-800 transition">
-                            Voir tous les produits
+                        <p class="text-sm text-slate-500 mb-5 max-w-xs">
+                            <template v-if="activeChips.length">Aucun résultat pour ces filtres. Essayez de les modifier.</template>
+                            <template v-else>Notre catalogue est vide pour le moment. Revenez bientôt !</template>
+                        </p>
+                        <button v-if="activeChips.length" @click="clearAll"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            Effacer les filtres
                         </button>
+                        <Link v-else href="/" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 transition">
+                            Retour à l'accueil
+                        </Link>
                     </div>
 
                     <!-- ─── Pagination numérotée ──────────────────── -->
@@ -318,7 +346,7 @@ const sortOptions = [
                                 @click="goToPage(p)"
                                 class="w-9 h-9 flex items-center justify-center rounded-lg text-sm font-medium transition"
                                 :class="p === products.current_page
-                                    ? 'bg-slate-900 text-white'
+                                    ? 'bg-primary-600 text-white'
                                     : 'border border-slate-200 text-slate-700 hover:bg-slate-50'"
                             >
                                 {{ p }}

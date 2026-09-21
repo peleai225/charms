@@ -1,1 +1,0 @@
-import{u as s,c as t}from"./ConfirmModal-BsX_V2__.js";function a(){const o=s();return{success:(r,e={})=>o.add({type:"success",message:r,...e}),error:(r,e={})=>o.add({type:"error",message:r,...e}),warning:(r,e={})=>o.add({type:"warning",message:r,...e}),info:(r,e={})=>o.add({type:"info",message:r,...e})}}function u(){const o=t();return r=>o.open(r)}export{u as a,a as u};

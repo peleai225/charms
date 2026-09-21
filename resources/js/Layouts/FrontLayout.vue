@@ -174,7 +174,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="min-h-screen bg-white flex flex-col">
+    <div class="min-h-screen bg-white flex flex-col"
+         :style="{
+             '--color-primary-600': primaryColor,
+             '--color-primary-700': `color-mix(in srgb, ${primaryColor} 85%, black)`,
+         }">
         <Head :title="title ? `${title} — ${siteName}` : siteName" />
 
         <!-- ═══════════════════════════════════════════════════════════════ -->

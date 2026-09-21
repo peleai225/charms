@@ -1,6 +1,6 @@
 <script setup>
 import FrontLayout from '@/Layouts/FrontLayout.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import ProductCard from '@/Components/ProductCard.vue';
 import { useHelpers } from '@/Composables/useHelpers';
 import { useCartStore } from '@/Stores/cart';
@@ -17,6 +17,8 @@ const props = defineProps({
 const { formatPrice } = useHelpers();
 const cartStore        = useCartStore();
 const notifications    = useNotificationStore();
+const page             = usePage();
+const announcement     = computed(() => page.props.banners?.announcement_bar?.[0] || null);
 
 // ─── SEO ──────────────────────────────────────────────────────────────────────
 const pageUrl      = computed(() => typeof window !== 'undefined' ? window.location.href : '');
@@ -170,9 +172,12 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
             <component :is="'script'" type="application/ld+json" v-text="jsonLd" />
         </Head>
 
-        <!-- Barre top "annonce" style Beauty Shop -->
-        <div class="bg-slate-800 text-slate-300 text-xs text-center py-2 px-4">
-            Livraison rapide en Côte d'Ivoire &nbsp;·&nbsp; Paiement sécurisé &nbsp;·&nbsp; Support 7j/7
+        <!-- Barre d'annonce dynamique depuis DB -->
+        <div v-if="announcement"
+             class="text-xs text-center py-2 px-4"
+             :style="{ backgroundColor: announcement.background_color || '#1e293b', color: announcement.text_color || '#cbd5e1' }">
+            <a v-if="announcement.link" :href="announcement.link" class="hover:opacity-80 transition">{{ announcement.title }}</a>
+            <span v-else>{{ announcement.title }}</span>
         </div>
 
         <!-- Breadcrumb -->

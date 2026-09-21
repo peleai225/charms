@@ -46,16 +46,14 @@ class HomeController extends Controller
 
         $featuredProducts = Product::active()
             ->featured()
-            ->with(['images', 'category'])
-            ->withCount('variants')
+            ->with(['images', 'category', 'variants'])
             ->latest('updated_at')
             ->take(8)
             ->get();
 
         if ($featuredProducts->isEmpty()) {
             $featuredProducts = Product::active()
-                ->with(['images', 'category'])
-                ->withCount('variants')
+                ->with(['images', 'category', 'variants'])
                 ->latest()
                 ->take(8)
                 ->get();
@@ -63,8 +61,7 @@ class HomeController extends Controller
 
         $newProducts = Product::active()
             ->new()
-            ->with(['images', 'category'])
-            ->withCount('variants')
+            ->with(['images', 'category', 'variants'])
             ->latest()
             ->take(8)
             ->get();
@@ -72,8 +69,7 @@ class HomeController extends Controller
         $saleProducts = Product::active()
             ->whereNotNull('compare_price')
             ->whereColumn('compare_price', '>', 'sale_price')
-            ->with(['images', 'category'])
-            ->withCount('variants')
+            ->with(['images', 'category', 'variants'])
             ->take(8)
             ->get();
 
@@ -98,8 +94,9 @@ class HomeController extends Controller
             'slug'          => $p->slug,
             'price'         => $p->sale_price,
             'compare_price' => $p->compare_price,
-            'stock'         => $p->stock_quantity,
-            'has_variants'  => $p->variants_count > 0,
+            'stock'          => $p->variants->isNotEmpty() ? $p->variants->sum('stock_quantity') : $p->stock_quantity,
+            'allow_backorder'=> (bool) $p->allow_backorder,
+            'has_variants'   => $p->variants->isNotEmpty(),
             'is_new'        => (bool) $p->is_new,
             'category_name' => $p->category?->name,
             'primary_image' => $p->images->where('is_primary', true)->first()?->path

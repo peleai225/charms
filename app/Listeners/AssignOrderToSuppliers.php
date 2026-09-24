@@ -19,8 +19,15 @@ class AssignOrderToSuppliers
      */
     public function handle(OrderCreated $event): void
     {
-        $order = $event->order;
-        
+        try {
+            $this->process($event->order);
+        } catch (\Exception $e) {
+            Log::error('AssignOrderToSuppliers failed: ' . $e->getMessage(), ['order_id' => $event->order->id]);
+        }
+    }
+
+    private function process(\App\Models\Order $order): void
+    {
         // Grouper les items par fournisseur
         $supplierItems = [];
         

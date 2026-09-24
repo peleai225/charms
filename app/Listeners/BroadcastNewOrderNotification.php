@@ -7,11 +7,12 @@ use App\Events\OrderCreated;
 
 class BroadcastNewOrderNotification
 {
-    /**
-     * Diffuser la notification en temps réel aux admins
-     */
     public function handle(OrderCreated $event): void
     {
-        NewOrderNotification::dispatch($event->order);
+        try {
+            NewOrderNotification::dispatch($event->order);
+        } catch (\Exception $e) {
+            \Log::warning('BroadcastNewOrderNotification failed: ' . $e->getMessage());
+        }
     }
 }

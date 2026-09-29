@@ -12,6 +12,7 @@ const nav = [
     { href: '/mon-compte/adresses',   label: 'Mes adresses',   icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z' },
     { href: '/mon-compte/fidelite',   label: 'Fidélité',       icon: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z' },
     { href: '/mon-compte/favoris',    label: 'Mes favoris',    icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z' },
+    { href: '/mon-compte/affiliation', label: 'Affiliation',    icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
 ];
 
 const isActive = (href) => {

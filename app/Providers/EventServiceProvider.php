@@ -10,6 +10,7 @@ use App\Events\StockUpdated;
 use App\Listeners\AssignOrderToSuppliers;
 use App\Listeners\AwardLoyaltyPointsOnPayment;
 use App\Listeners\BroadcastNewOrderNotification;
+use App\Listeners\CreateAffiliateCommission;
 use App\Listeners\CheckLowStockAlert;
 use App\Listeners\CreateAccountingEntryOnPayment;
 use App\Listeners\CreateRefundAccountingEntry;
@@ -46,6 +47,7 @@ class EventServiceProvider extends ServiceProvider
             SendInvoiceOnPayment::class,
             IncrementCouponUsage::class,
             AwardLoyaltyPointsOnPayment::class,
+            CreateAffiliateCommission::class,
             SendPushOnOrderUpdate::class,
             InvalidateAdminCaches::class,
         ],

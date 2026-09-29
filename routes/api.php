@@ -348,3 +348,8 @@ Route::get('/admin/search', function (Illuminate\Http\Request $request) {
 
     return response()->json(['results' => $results]);
 })->middleware('web')->name('api.admin.search');
+
+// Valider un code affilié (checkout)
+Route::get('/affiliate/validate', [\App\Http\Controllers\Front\AffiliateController::class, 'validateCode'])
+    ->middleware('web')
+    ->name('api.affiliate.validate');

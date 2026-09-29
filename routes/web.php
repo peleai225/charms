@@ -72,6 +72,12 @@ Route::middleware('customer')->prefix('mon-compte')->name('account.')->group(fun
     Route::delete('/adresses/{address}', [App\Http\Controllers\Front\AccountController::class, 'destroyAddress'])->name('addresses.destroy');
     Route::get('/fidelite', [App\Http\Controllers\Front\AccountController::class, 'loyalty'])->name('loyalty');
     Route::get('/favoris', [App\Http\Controllers\Front\WishlistController::class, 'index'])->name('wishlist.index');
+
+    // Affiliation
+    Route::get('/affiliation', [App\Http\Controllers\Front\AffiliateController::class, 'show'])->name('affiliate');
+    Route::post('/affiliation/apply', [App\Http\Controllers\Front\AffiliateController::class, 'apply'])->name('affiliate.apply');
+    Route::put('/affiliation/payment', [App\Http\Controllers\Front\AffiliateController::class, 'updatePayment'])->name('affiliate.updatePayment');
+    Route::post('/affiliation/withdraw', [App\Http\Controllers\Front\AffiliateController::class, 'withdraw'])->name('affiliate.withdraw');
 });
 
 // Wishlist toggle (accessible même hors espace client pour rediriger)
@@ -436,6 +442,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/accounting/balance', [\App\Http\Controllers\Admin\AccountingController::class, 'balance'])->name('accounting.balance');
             Route::get('/accounting/ledger', [\App\Http\Controllers\Admin\AccountingController::class, 'ledger'])->name('accounting.ledger');
             Route::post('/accounting/export', [\App\Http\Controllers\Admin\AccountingController::class, 'export'])->name('accounting.export');
+
+            // Affiliations
+            Route::get('/affiliates', [\App\Http\Controllers\Admin\AffiliateController::class, 'index'])->name('affiliates.index');
+            Route::get('/affiliates/{affiliate}/commissions', [\App\Http\Controllers\Admin\AffiliateController::class, 'commissions'])->name('affiliates.commissions');
+            Route::post('/affiliates/{affiliate}/approve', [\App\Http\Controllers\Admin\AffiliateController::class, 'approve'])->name('affiliates.approve');
+            Route::post('/affiliates/{affiliate}/suspend', [\App\Http\Controllers\Admin\AffiliateController::class, 'suspend'])->name('affiliates.suspend');
+            Route::post('/affiliates/withdrawals/{withdrawal}/pay', [\App\Http\Controllers\Admin\AffiliateController::class, 'payWithdrawal'])->name('affiliates.withdrawals.pay');
+            Route::post('/affiliates/withdrawals/{withdrawal}/reject', [\App\Http\Controllers\Admin\AffiliateController::class, 'rejectWithdrawal'])->name('affiliates.withdrawals.reject');
 
             // Import/Export
             Route::get('/import-export', [\App\Http\Controllers\Admin\ImportExportController::class, 'index'])->name('import-export.index');

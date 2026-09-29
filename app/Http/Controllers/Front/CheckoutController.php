@@ -273,6 +273,7 @@ class CheckoutController extends Controller
                 
                 // Infos
                 'coupon_code' => $cart->coupon_code,
+                'affiliate_code' => $request->cookie('affiliate_ref'),
                 'notes' => $validated['notes'] ?? null,
                 'payment_method' => $validated['payment_method'],
                 'payment_status' => 'pending',
@@ -353,6 +354,11 @@ class CheckoutController extends Controller
 
             // Vider le panier uniquement après le commit réussi
             $cart->clear();
+
+            // Effacer le cookie affilié après utilisation
+            if ($request->cookie('affiliate_ref')) {
+                cookie()->queue(cookie()->forget('affiliate_ref'));
+            }
 
             // Stocker l'ID de commande en session pour vérification d'accès (guest + auth)
             session()->push('checkout_order_ids', $order->id);

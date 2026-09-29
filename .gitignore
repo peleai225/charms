@@ -30,3 +30,7 @@ public/*-cache.php
 public/*-vite.php
 public/*-production.php
 # /public/build — commité pour déploiement (serveur sans npm)
+
+# Claude Code worktrees & Playwright MCP
+.claude/worktrees/
+.playwright-mcp/

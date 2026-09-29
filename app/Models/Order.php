@@ -57,6 +57,7 @@ class Order extends Model
         'notes',
         'customer_notes',
         'admin_notes',
+        'affiliate_code',
         'source',
         'ip_address',
         'user_agent',
@@ -93,6 +94,8 @@ class Order extends Model
     protected static function boot()
     {
         parent::boot();
+
+        static::observe(\App\Observers\OrderObserver::class);
 
         static::creating(function ($order) {
             if (empty($order->order_number)) {

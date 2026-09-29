@@ -106,11 +106,13 @@ class Cart extends Model
             ->first();
 
         if ($existingItem) {
-            $existingItem->increment('quantity', $quantity);
+            $newQty = $existingItem->quantity + $quantity;
+            $unitPrice = $variant ? ($variant->effective_price ?? $product->sale_price) : $product->getBulkUnitPrice($newQty);
+            $existingItem->update(['quantity' => $newQty, 'unit_price' => $unitPrice]);
             return $existingItem->fresh();
         }
 
-        $price = $variant?->effective_price ?? $product->sale_price;
+        $price = $variant ? ($variant->effective_price ?? $product->sale_price) : $product->getBulkUnitPrice($quantity);
 
         return $this->items()->create([
             'product_id' => $product->id,
@@ -125,7 +127,13 @@ class Cart extends Model
         if ($quantity <= 0) {
             $this->items()->where('id', $itemId)->delete();
         } else {
-            $this->items()->where('id', $itemId)->update(['quantity' => $quantity]);
+            $item = $this->items()->with('product')->find($itemId);
+            if ($item) {
+                $unitPrice = $item->product_variant_id
+                    ? $item->unit_price
+                    : $item->product->getBulkUnitPrice($quantity);
+                $item->update(['quantity' => $quantity, 'unit_price' => $unitPrice]);
+            }
         }
     }
 

@@ -44,6 +44,7 @@ class Product extends Model
         'status',
         'is_featured',
         'is_new',
+        'bulk_pricing_rules',
     ];
 
     protected $appends = ['primary_image_url'];
@@ -52,6 +53,7 @@ class Product extends Model
         'purchase_price' => 'decimal:2',
         'sale_price' => 'decimal:2',
         'compare_price' => 'decimal:2',
+        'bulk_pricing_rules' => 'array',
         'cost_price' => 'decimal:2',
         'tax_rate' => 'decimal:2',
         'stock_quantity' => 'integer',
@@ -240,6 +242,30 @@ class Product extends Model
     public function getReviewsCountAttribute(): int
     {
         return $this->reviews()->where('status', 'approved')->count();
+    }
+
+    /**
+     * Retourne le prix unitaire pour une quantité donnée (tarification en gros).
+     * Les règles doivent être triées par min_qty croissant dans le JSON.
+     */
+    public function getBulkUnitPrice(int $quantity): float
+    {
+        $rules = $this->bulk_pricing_rules;
+
+        if (empty($rules) || !is_array($rules)) {
+            return (float) $this->sale_price;
+        }
+
+        // Trier par min_qty décroissant pour trouver le palier le plus élevé applicable
+        $sorted = collect($rules)->sortByDesc('min_qty');
+
+        foreach ($sorted as $rule) {
+            if ($quantity >= ($rule['min_qty'] ?? PHP_INT_MAX)) {
+                return (float) $rule['unit_price'];
+            }
+        }
+
+        return (float) $this->sale_price;
     }
 
     public function getIsInStockAttribute(): bool

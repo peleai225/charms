@@ -38,10 +38,14 @@ class CartController extends Controller
                     }
                 }
 
+                $originalPrice = $item->product->sale_price;
+                $isBulk = $item->unit_price < $originalPrice && !$item->product_variant_id;
+
                 return [
                     'id' => $item->id,
                     'quantity' => $item->quantity,
                     'unit_price' => $item->unit_price,
+                    'original_price' => $isBulk ? $originalPrice : null,
                     'total' => $item->unit_price * $item->quantity,
                     'product' => [
                         'id' => $item->product->id,
@@ -303,6 +307,9 @@ class CartController extends Controller
             $image = $item->product->images->where('is_primary', true)->first()
                 ?? $item->product->images->first();
 
+            $originalPrice = $item->product->sale_price;
+            $isBulk = $item->unit_price < $originalPrice && !$item->product_variant_id;
+
             return [
                 'id'           => $item->id,
                 'product_id'   => $item->product_id,
@@ -311,6 +318,7 @@ class CartController extends Controller
                 'image'        => $image ? asset('storage/' . $image->path) : null,
                 'price'        => $item->unit_price,
                 'price_fmt'    => number_format($item->unit_price, 0, ',', ' ') . ' F CFA',
+                'original_price_fmt' => $isBulk ? number_format($originalPrice, 0, ',', ' ') . ' F CFA' : null,
                 'quantity'     => $item->quantity,
                 'subtotal_fmt' => number_format($item->unit_price * $item->quantity, 0, ',', ' ') . ' F CFA',
                 'variant_id'   => $item->product_variant_id,

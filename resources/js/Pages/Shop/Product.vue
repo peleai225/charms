@@ -116,6 +116,28 @@ const discountPct  = computed(() => {
     return Math.round((1 - currentPrice.value / props.product.compare_price) * 100);
 });
 
+// ─── Tarification en gros ────────────────────────────────────────────────────
+const bulkRules = computed(() => {
+    const rules = props.product.bulk_pricing_rules;
+    if (!rules || !Array.isArray(rules) || rules.length === 0) return null;
+    return [...rules].sort((a, b) => a.min_qty - b.min_qty);
+});
+const bulkUnitPrice = computed(() => {
+    if (!bulkRules.value || selectedVariant.value) return currentPrice.value;
+    let price = currentPrice.value;
+    for (let i = bulkRules.value.length - 1; i >= 0; i--) {
+        if (quantity.value >= bulkRules.value[i].min_qty) {
+            price = bulkRules.value[i].unit_price;
+            break;
+        }
+    }
+    return price;
+});
+const bulkSaving = computed(() => {
+    if (bulkUnitPrice.value >= currentPrice.value) return 0;
+    return (currentPrice.value - bulkUnitPrice.value) * quantity.value;
+});
+
 // ─── Panier ───────────────────────────────────────────────────────────────────
 const quantity = ref(1);
 const form = useForm({ product_id: props.product.id, variant_id: null, quantity: 1 });
@@ -274,9 +296,32 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                     </div>
 
                     <!-- Prix -->
-                    <div class="flex items-baseline gap-3 mb-4">
-                        <span class="text-3xl font-bold text-slate-900">{{ formatPrice(currentPrice) }}</span>
-                        <span v-if="product.compare_price" class="text-xl text-slate-400 line-through">{{ formatPrice(product.compare_price) }}</span>
+                    <div class="flex items-baseline gap-3 mb-1">
+                        <span class="text-3xl font-bold text-slate-900">{{ formatPrice(bulkUnitPrice) }}</span>
+                        <span v-if="bulkUnitPrice < currentPrice" class="text-xl text-slate-400 line-through">{{ formatPrice(currentPrice) }}</span>
+                        <span v-else-if="product.compare_price" class="text-xl text-slate-400 line-through">{{ formatPrice(product.compare_price) }}</span>
+                    </div>
+                    <p v-if="bulkSaving > 0" class="text-sm font-medium text-green-600 mb-4">
+                        Vous économisez {{ formatPrice(bulkSaving) }} sur cette commande
+                    </p>
+
+                    <!-- Paliers de prix en gros -->
+                    <div v-if="bulkRules && !selectedVariant" class="mb-4 border border-primary-600/20 rounded-lg overflow-hidden">
+                        <div class="bg-primary-600/5 px-3 py-2">
+                            <p class="text-xs font-semibold text-primary-600">Achetez plus, payez moins</p>
+                        </div>
+                        <div class="divide-y divide-slate-100">
+                            <div v-for="rule in bulkRules" :key="rule.min_qty"
+                                class="flex items-center justify-between px-3 py-2 text-sm transition"
+                                :class="quantity >= rule.min_qty ? 'bg-primary-600/5 font-medium' : ''">
+                                <span class="text-slate-700">
+                                    Dès {{ rule.min_qty }} pièces
+                                </span>
+                                <span class="font-semibold" :class="quantity >= rule.min_qty ? 'text-primary-600' : 'text-slate-900'">
+                                    {{ formatPrice(rule.unit_price) }} / unité
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Description courte -->

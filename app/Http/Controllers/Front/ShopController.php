@@ -400,6 +400,7 @@ class ShopController extends Controller
             'reviews'            => $reviewsData,
             'review_avg'         => $reviewAvg ? round($reviewAvg, 1) : null,
             'review_count'       => $reviewCount,
+            'bulk_pricing_rules' => $product->bulk_pricing_rules,
         ];
 
         return Inertia::render('Shop/Product', [

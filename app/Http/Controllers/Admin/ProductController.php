@@ -93,7 +93,20 @@ class ProductController extends Controller
             'allow_backorder' => 'boolean',
             'is_dropshipping' => 'boolean',
             'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:5120',
+            'bulk_pricing_rules' => 'nullable|json',
         ]);
+
+        // Traiter les paliers de prix en gros
+        if (isset($validated['bulk_pricing_rules'])) {
+            $rules = json_decode($validated['bulk_pricing_rules'], true);
+            $validated['bulk_pricing_rules'] = is_array($rules) && count($rules) > 0
+                ? collect($rules)
+                    ->filter(fn($r) => !empty($r['min_qty']) && !empty($r['unit_price']))
+                    ->sortBy('min_qty')
+                    ->values()
+                    ->all()
+                : null;
+        }
 
         // Nettoyer les descriptions (supprimer les espaces multiples et les répétitions)
         if (!empty($validated['description'])) {
@@ -102,7 +115,7 @@ class ProductController extends Controller
         if (!empty($validated['short_description'])) {
             $validated['short_description'] = preg_replace('/\s+/', ' ', trim($validated['short_description']));
         }
-        
+
         // Générer un slug unique
         $baseSlug = Str::slug($validated['name']);
         $slug = $baseSlug;
@@ -260,6 +273,7 @@ class ProductController extends Controller
             'is_new'                => $product->is_new,
             'has_variants'          => $product->has_variants,
             'track_stock'           => $product->track_stock,
+            'bulk_pricing_rules'    => $product->bulk_pricing_rules,
             'sales_count'           => $product->orderItems()->sum('quantity'),
             'images'                => $product->images->map(fn($i) => [
                 'id'         => $i->id,
@@ -303,7 +317,20 @@ class ProductController extends Controller
             'allow_backorder' => 'boolean',
             'is_dropshipping' => 'boolean',
             'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:5120',
+            'bulk_pricing_rules' => 'nullable|json',
         ]);
+
+        // Traiter les paliers de prix en gros
+        if (isset($validated['bulk_pricing_rules'])) {
+            $rules = json_decode($validated['bulk_pricing_rules'], true);
+            $validated['bulk_pricing_rules'] = is_array($rules) && count($rules) > 0
+                ? collect($rules)
+                    ->filter(fn($r) => !empty($r['min_qty']) && !empty($r['unit_price']))
+                    ->sortBy('min_qty')
+                    ->values()
+                    ->all()
+                : null;
+        }
 
         // Nettoyer les descriptions (supprimer les espaces multiples et les répétitions)
         if (!empty($validated['description'])) {
@@ -312,14 +339,14 @@ class ProductController extends Controller
         if (!empty($validated['short_description'])) {
             $validated['short_description'] = preg_replace('/\s+/', ' ', trim($validated['short_description']));
         }
-        
+
         $validated['is_featured'] = $request->boolean('is_featured');
         $validated['is_new'] = $request->boolean('is_new');
         $validated['has_variants'] = $request->boolean('has_variants');
         $validated['track_stock'] = $request->boolean('track_stock', true);
         $validated['allow_backorder'] = $request->boolean('allow_backorder');
         $validated['is_dropshipping'] = $request->boolean('is_dropshipping');
-        
+
         // Mettre à jour le slug si le nom a changé
         if ($validated['name'] !== $product->name) {
             $baseSlug = Str::slug($validated['name']);

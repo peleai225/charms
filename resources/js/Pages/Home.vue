@@ -103,9 +103,9 @@ const trustItems = [
 
                     <!-- MOBILE : image complète en haut + texte en dessous -->
                     <div class="md:hidden">
-                        <div v-if="b.image" class="relative w-full aspect-[16/9] bg-slate-800">
+                        <div v-if="b.image" class="w-full bg-slate-800">
                             <img :src="b.image_mobile || b.image" :alt="b.title || siteName"
-                                 class="w-full h-full object-cover" />
+                                 class="w-full h-auto block" />
                         </div>
                         <div class="px-4 py-6 bg-slate-900">
                             <p v-if="b.subtitle" class="text-xs font-semibold text-white/60 mb-2 uppercase tracking-wider">

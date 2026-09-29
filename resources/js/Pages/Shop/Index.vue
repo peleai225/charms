@@ -4,6 +4,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import ProductCard from '@/Components/ProductCard.vue';
 import { useHelpers } from '@/Composables/useHelpers';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { X, ChevronLeft, ChevronRight, SlidersHorizontal, Inbox } from 'lucide-vue-next'
 
 const props = defineProps({
     products:        Object,
@@ -157,7 +158,7 @@ onUnmounted(() => { unsubStart?.(); unsubFinish?.(); });
                 >
                     {{ chip.label }}
                     <button @click="removeFilter(chip.key)" class="text-slate-400 hover:text-slate-700 transition ml-1">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        <X class="w-3 h-3" />
                     </button>
                 </span>
                 <button @click="clearAll" class="text-xs text-red-600 hover:text-red-700 underline underline-offset-2">Tout effacer</button>
@@ -177,7 +178,7 @@ onUnmounted(() => { unsubStart?.(); unsubFinish?.(); });
                     <div class="flex items-center justify-between mb-6 md:hidden">
                         <p class="font-semibold text-slate-900">Filtres</p>
                         <button @click="sidebarOpen = false" class="text-slate-400 hover:text-slate-700">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <X class="w-5 h-5" />
                         </button>
                     </div>
 
@@ -278,7 +279,7 @@ onUnmounted(() => { unsubStart?.(); unsubFinish?.(); });
                             @click="sidebarOpen = true"
                             class="flex items-center gap-2 border border-slate-200 rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
                         >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 110 2H4a1 1 0 01-1-1zm0 6a1 1 0 011-1h10a1 1 0 110 2H4a1 1 0 01-1-1zm0 6a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z"/></svg>
+                            <SlidersHorizontal class="w-4 h-4" />
                             Filtres
                             <span v-if="activeChips.length" class="bg-primary-600 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">{{ activeChips.length }}</span>
                         </button>
@@ -310,7 +311,7 @@ onUnmounted(() => { unsubStart?.(); unsubFinish?.(); });
                     <!-- Empty state -->
                     <div v-else class="flex flex-col items-center justify-center py-20 text-center">
                         <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                            <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+                            <Inbox class="w-8 h-8 text-slate-400" />
                         </div>
                         <h3 class="text-lg font-semibold text-slate-900 mb-2">Aucun produit trouvé</h3>
                         <p class="text-sm text-slate-500 mb-5 max-w-xs">
@@ -319,7 +320,7 @@ onUnmounted(() => { unsubStart?.(); unsubFinish?.(); });
                         </p>
                         <button v-if="activeChips.length" @click="clearAll"
                                 class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 transition">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            <X class="w-4 h-4" />
                             Effacer les filtres
                         </button>
                         <Link v-else href="/" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 transition">
@@ -335,7 +336,7 @@ onUnmounted(() => { unsubStart?.(); unsubFinish?.(); });
                             @click="goToPage(products.current_page - 1)"
                             class="w-11 h-11 flex items-center justify-center border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
                         >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                            <ChevronLeft class="w-4 h-4" />
                         </button>
 
                         <!-- Numéros -->
@@ -359,7 +360,7 @@ onUnmounted(() => { unsubStart?.(); unsubFinish?.(); });
                             @click="goToPage(products.current_page + 1)"
                             class="w-11 h-11 flex items-center justify-center border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
                         >
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            <ChevronRight class="w-4 h-4" />
                         </button>
                     </div>
                 </div>

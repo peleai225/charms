@@ -4,6 +4,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { useHelpers } from '@/Composables/useHelpers';
 import { useCartStore } from '@/Stores/cart';
 import { ref, reactive, computed } from 'vue';
+import { Package, ShieldCheck, RotateCcw, ChevronRight, ChevronLeft, ShoppingCart, Tag, Eye, Trash2, X, Lock, Image } from 'lucide-vue-next'
 
 const props = defineProps({
     cart: Object,
@@ -131,6 +132,13 @@ const removeCoupon = () => {
     });
 };
 
+// ─── Réassurance ─────────────────────────────────────────────────────────────
+const reassuranceItems = [
+    { icon: Package, text: 'Livraison rapide' },
+    { icon: ShieldCheck, text: 'Paiement sécurisé' },
+    { icon: RotateCcw, text: 'Retours faciles' },
+]
+
 // ─── WhatsApp ──────────────────────────────────────────────────────────────────
 const waCartMessage = computed(() => {
     if (!items.length) return '#';
@@ -148,14 +156,10 @@ const waCartMessage = computed(() => {
         <div class="bg-slate-900 text-white">
             <div class="container mx-auto px-4">
                 <div class="grid grid-cols-3 divide-x divide-slate-700 py-3">
-                    <div v-for="item in [
-                        {icon:'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4', text:'Livraison rapide'},
-                        {icon:'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', text:'Paiement sécurisé'},
-                        {icon:'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', text:'Retours faciles'},
-                    ]" :key="item.text"
+                    <div v-for="item in reassuranceItems" :key="item.text"
                         class="flex items-center justify-center gap-2 py-1 text-xs text-slate-300"
                     >
-                        <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" :d="item.icon"/></svg>
+                        <component :is="item.icon" class="w-4 h-4 text-slate-400 shrink-0" />
                         <span class="hidden sm:block">{{ item.text }}</span>
                     </div>
                 </div>
@@ -170,9 +174,9 @@ const waCartMessage = computed(() => {
                     <h1 class="text-2xl font-bold text-slate-900">Mon panier</h1>
                     <div class="hidden sm:flex items-center gap-2 text-xs text-slate-400">
                         <span class="font-semibold text-slate-900">1. Panier</span>
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        <ChevronRight class="w-3 h-3" />
                         <span>2. Livraison</span>
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        <ChevronRight class="w-3 h-3" />
                         <span>3. Confirmation</span>
                     </div>
                 </div>
@@ -180,7 +184,7 @@ const waCartMessage = computed(() => {
                 <!-- Empty state -->
                 <div v-if="isEmpty" class="bg-white rounded-2xl border border-slate-200 py-20 text-center">
                     <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-5">
-                        <svg class="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                        <ShoppingCart class="w-10 h-10 text-slate-300" />
                     </div>
                     <h2 class="text-xl font-bold text-slate-900 mb-2">Votre panier est vide</h2>
                     <p class="text-slate-500 mb-7">Découvrez notre catalogue et ajoutez vos coups de cœur.</p>
@@ -202,9 +206,7 @@ const waCartMessage = computed(() => {
                         <div class="flex items-start gap-3">
                             <!-- Icon -->
                             <div class="shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mt-0.5">
-                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/>
-                                </svg>
+                                <Tag class="w-4 h-4 text-blue-600" />
                             </div>
 
                             <div class="flex-1 min-w-0">
@@ -235,10 +237,7 @@ const waCartMessage = computed(() => {
                                         :href="nudge.shop_url"
                                         class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition min-h-[44px] sm:min-h-0 sm:py-1.5"
                                     >
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                        </svg>
+                                        <Eye class="w-3.5 h-3.5" />
                                         Voir {{ nudge.category_name || 'les produits' }}
                                     </Link>
                                 </div>
@@ -267,7 +266,7 @@ const waCartMessage = computed(() => {
                                         class="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
                                     />
                                     <div v-else class="w-full h-full flex items-center justify-center text-slate-300">
-                                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"/></svg>
+                                        <Image class="w-8 h-8" />
                                     </div>
                                 </Link>
 
@@ -303,7 +302,7 @@ const waCartMessage = computed(() => {
                                             :disabled="removingItem === item.id"
                                             class="text-xs text-red-500 hover:text-red-700 transition flex items-center gap-1 py-2 px-1 disabled:opacity-40"
                                         >
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            <Trash2 class="w-3.5 h-3.5" />
                                             Retirer
                                         </button>
                                     </div>
@@ -318,7 +317,7 @@ const waCartMessage = computed(() => {
 
                         <!-- Continuer achats -->
                         <Link href="/boutique" class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 transition mt-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                            <ChevronLeft class="w-4 h-4" />
                             Continuer mes achats
                         </Link>
                     </div>
@@ -354,7 +353,7 @@ const waCartMessage = computed(() => {
                                 <div v-if="couponCode" class="flex items-center justify-between bg-green-50 border border-green-200 rounded-xl px-3 py-2 text-sm">
                                     <span class="text-green-800 font-medium">Code : {{ couponCode }}</span>
                                     <button @click="removeCoupon" class="text-green-600 hover:text-red-600 transition">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        <X class="w-4 h-4" />
                                     </button>
                                 </div>
                                 <div v-else>
@@ -401,7 +400,7 @@ const waCartMessage = computed(() => {
 
                             <!-- Sécurité -->
                             <p class="text-xs text-center text-slate-400 mt-4 flex items-center justify-center gap-1">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                                <Lock class="w-3.5 h-3.5" />
                                 Paiement 100% sécurisé
                             </p>
                         </div>

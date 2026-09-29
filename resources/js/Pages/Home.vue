@@ -3,6 +3,7 @@ import FrontLayout from '@/Layouts/FrontLayout.vue'
 import ProductCard from '@/Components/ProductCard.vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ArrowRight, ChevronRight, Star, Package, ShieldCheck, MessageCircle, RotateCcw } from 'lucide-vue-next'
 
 const props = defineProps({
     featured_categories: Array,
@@ -74,10 +75,10 @@ const initials = (name) => name?.split(' ').map(w => w[0]).join('').slice(0, 2).
 
 // ─── Trust items ─────────────────────────────────────────────────────────────
 const trustItems = [
-    { path: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4', title: 'Livraison rapide', desc: "Partout en Côte d'Ivoire" },
-    { path: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z', title: 'Paiement sécurisé', desc: 'Transactions cryptées' },
-    { path: 'M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z', title: 'Support 7j/7', desc: 'Réponse rapide via WhatsApp' },
-    { path: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15', title: 'Retours faciles', desc: '7 jours, sans frais' },
+    { icon: Package, title: 'Livraison rapide', desc: "Partout en Côte d'Ivoire" },
+    { icon: ShieldCheck, title: 'Paiement sécurisé', desc: 'Transactions cryptées' },
+    { icon: MessageCircle, title: 'Support 7j/7', desc: 'Réponse rapide via WhatsApp' },
+    { icon: RotateCcw, title: 'Retours faciles', desc: '7 jours, sans frais' },
 ]
 </script>
 
@@ -122,7 +123,7 @@ const trustItems = [
                                    class="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white transition active:scale-95"
                                    :style="{ backgroundColor: primary }">
                                     {{ b.button_text || 'Découvrir' }}
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                                    <ArrowRight class="w-4 h-4" />
                                 </a>
                                 <Link href="/boutique"
                                       class="inline-flex items-center gap-2 rounded-xl bg-white/15 px-5 py-3 text-sm font-bold text-white transition">
@@ -158,7 +159,7 @@ const trustItems = [
                                        class="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition active:scale-95"
                                        :style="{ backgroundColor: primary }">
                                         {{ b.button_text || 'Découvrir' }}
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                                        <ArrowRight class="w-4 h-4" />
                                     </a>
                                     <Link href="/boutique"
                                           class="inline-flex items-center gap-2 rounded-xl bg-white/20 hover:bg-white/30 px-6 py-3 text-sm font-bold text-white transition backdrop-blur-sm">
@@ -198,7 +199,7 @@ const trustItems = [
                                   class="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition"
                                   :style="{ backgroundColor: primary }">
                                 Voir la boutique
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                                <ArrowRight class="w-4 h-4" />
                             </Link>
                             <a v-if="whatsapp_number && waEnabled" :href="waUrl" target="_blank" rel="noopener"
                                class="inline-flex items-center gap-2 rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] px-6 py-3 text-sm font-bold text-white transition">
@@ -239,9 +240,7 @@ const trustItems = [
                          class="flex flex-col sm:flex-row items-center sm:items-start gap-3 px-5 py-5 text-center sm:text-left">
                         <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                              :style="{ backgroundColor: primary + '15' }">
-                            <svg class="w-5 h-5" :style="{ color: primary }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" :d="item.path"/>
-                            </svg>
+                            <component :is="item.icon" class="w-5 h-5" :style="{ color: primary }" />
                         </div>
                         <div>
                             <p class="text-[13px] font-semibold text-slate-900">{{ item.title }}</p>
@@ -263,7 +262,7 @@ const trustItems = [
                           class="text-sm font-semibold flex items-center gap-1 hover:opacity-70 transition"
                           :style="{ color: primary }">
                         Tout voir
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        <ChevronRight class="w-4 h-4" />
                     </Link>
                 </div>
                 <div class="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 sm:overflow-visible sm:pb-0 scrollbar-none">
@@ -312,7 +311,7 @@ const trustItems = [
                 <div class="text-center mt-8">
                     <Link href="/boutique" class="inline-flex items-center gap-2 rounded-xl border-2 px-6 py-3 text-sm font-bold transition cta-outline">
                         Voir tous les produits
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                        <ArrowRight class="w-4 h-4" />
                     </Link>
                 </div>
             </div>
@@ -337,7 +336,7 @@ const trustItems = [
                            class="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold transition hover:opacity-90"
                            :style="{ color: promoBanner.background_color || primary }">
                             {{ promoBanner.button_text || 'Découvrir' }}
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                            <ArrowRight class="w-4 h-4" />
                         </a>
                     </div>
                 </div>
@@ -357,22 +356,18 @@ const trustItems = [
                         </p>
                     </div>
                     <div v-if="review_stats" class="flex items-center gap-1">
-                        <svg v-for="i in 5" :key="i" class="w-4 h-4"
+                        <Star v-for="i in 5" :key="i" class="w-4 h-4"
                              :class="i <= Math.round(review_stats.avg) ? 'text-amber-400' : 'text-slate-200'"
-                             fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                        </svg>
+                             fill="currentColor" />
                     </div>
                 </div>
                 <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div v-for="r in reviews.slice(0, 6)" :key="r.id"
                          class="bg-slate-50 rounded-2xl p-5 border border-slate-100 flex flex-col gap-3">
                         <div class="flex gap-0.5">
-                            <svg v-for="(filled, i) in stars(r.rating)" :key="i" class="w-4 h-4"
+                            <Star v-for="(filled, i) in stars(r.rating)" :key="i" class="w-4 h-4"
                                  :class="filled ? 'text-amber-400' : 'text-slate-200'"
-                                 fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                            </svg>
+                                 fill="currentColor" />
                         </div>
                         <p class="text-sm text-slate-700 leading-relaxed line-clamp-4 flex-1">"{{ r.body }}"</p>
                         <div class="flex items-center gap-3 pt-3 border-t border-slate-100">

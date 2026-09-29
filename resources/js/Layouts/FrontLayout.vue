@@ -13,6 +13,7 @@ import LayoutFooter     from '@/Components/Layout/LayoutFooter.vue';
 import MobileBottomNav  from '@/Components/Layout/MobileBottomNav.vue';
 import WhatsAppButton   from '@/Components/Layout/WhatsAppButton.vue';
 import CartDrawer       from '@/Components/Layout/CartDrawer.vue';
+import CategoryNavBar   from '@/Components/Layout/CategoryNavBar.vue';
 
 const props = defineProps({ title: String });
 
@@ -370,6 +371,8 @@ const cartDrawerOpen = ref(false);
                 </div>
             </div>
         </header>
+
+        <CategoryNavBar />
 
         <SearchOverlay
             v-model:open="searchOpen"

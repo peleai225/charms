@@ -5,6 +5,12 @@ import { Head, Link, usePage } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ArrowRight, ChevronRight, Star, Package, ShieldCheck, MessageCircle, RotateCcw } from 'lucide-vue-next'
 
+// ─── Image load tracking ──────────────────────────────────────────────────────
+const loadedImages = ref(new Set())
+const markImageLoaded = (i) => {
+    loadedImages.value = new Set([...loadedImages.value, i])
+}
+
 const props = defineProps({
     featured_categories: Array,
     featured_products:   Array,
@@ -87,6 +93,9 @@ const trustItems = [
         <Head>
             <title>{{ siteName }} — Boutique en ligne</title>
             <meta name="description" :content="`Découvrez ${siteName}. Livraison rapide partout en Côte d'Ivoire.`" />
+            <!-- Préchargement prioritaire de la première image hero (LCP) -->
+            <link v-if="heroBanners[0]?.image" rel="preload" as="image"
+                  :href="heroBanners[0].image_mobile || heroBanners[0].image" />
         </Head>
 
         <!-- ═══════════════════════════════════════════════════════ -->
@@ -104,9 +113,17 @@ const trustItems = [
 
                     <!-- MOBILE : image complète en haut + texte en dessous -->
                     <div class="md:hidden">
-                        <div v-if="b.image" class="w-full bg-slate-800">
+                        <div v-if="b.image" class="w-full bg-slate-800 relative">
+                            <!-- Skeleton shimmer tant que l'image n'est pas chargée -->
+                            <div v-if="!loadedImages.has(i)"
+                                 class="absolute inset-0 animate-pulse bg-slate-700"
+                                 style="aspect-ratio: 16/9" />
                             <img :src="b.image_mobile || b.image" :alt="b.title || siteName"
-                                 class="w-full h-auto block" />
+                                 class="w-full h-auto block transition-opacity duration-300"
+                                 :class="loadedImages.has(i) ? 'opacity-100' : 'opacity-0'"
+                                 :loading="i === 0 ? 'eager' : 'lazy'"
+                                 :fetchpriority="i === 0 ? 'high' : 'auto'"
+                                 @load="markImageLoaded(i)" />
                         </div>
                         <div class="px-4 py-6 bg-slate-900">
                             <p v-if="b.subtitle" class="text-xs font-semibold text-white/60 mb-2 uppercase tracking-wider">
@@ -136,7 +153,11 @@ const trustItems = [
                     <!-- DESKTOP : image fond + overlay + texte à gauche -->
                     <div class="hidden md:block relative hero-desktop">
                         <img v-if="b.image" :src="b.image" :alt="b.title || siteName"
-                             class="absolute inset-0 w-full h-full object-cover" />
+                             class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
+                             :class="loadedImages.has(i) ? 'opacity-100' : 'opacity-0'"
+                             :loading="i === 0 ? 'eager' : 'lazy'"
+                             :fetchpriority="i === 0 ? 'high' : 'auto'"
+                             @load="markImageLoaded(i)" />
                         <div class="absolute inset-0"
                              :style="b.image
                                 ? 'background: linear-gradient(to right, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.3) 55%, transparent 100%)'

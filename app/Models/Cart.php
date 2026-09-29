@@ -112,8 +112,8 @@ class Cart extends Model
             return $existingItem->fresh();
         }
 
-        $totalProductQty = $this->getTotalProductQuantity($product->id) + $quantity;
-        $price = $product->getBulkUnitPrice($totalProductQty);
+        // Prix initial : sera recalculé juste après par recalcBulkPrices
+        $price = (float) $product->sale_price;
 
         $item = $this->items()->create([
             'product_id' => $product->id,
@@ -156,13 +156,74 @@ class Cart extends Model
             return;
         }
 
-        $totalQty = $items->sum('quantity');
         $product = $items->first()->product;
-        $bulkPrice = $product->getBulkUnitPrice($totalQty);
 
-        foreach ($items as $item) {
-            if ($item->unit_price != $bulkPrice) {
-                $item->update(['unit_price' => $bulkPrice]);
+        // Si le produit a ses propres règles → agrégation par produit (logique existante)
+        if ($product->hasOwnBulkPricingRules()) {
+            $totalQty = $items->sum('quantity');
+            $bulkPrice = $product->getBulkUnitPrice($totalQty);
+
+            foreach ($items as $item) {
+                if ($item->unit_price != $bulkPrice) {
+                    $item->update(['unit_price' => $bulkPrice]);
+                }
+            }
+        } else {
+            // Pas de règles propres → déléguer à l'agrégation catégorie
+            $this->recalcCategoryBulkPrices();
+        }
+    }
+
+    /**
+     * Recalcule les prix bulk par catégorie pour les produits sans règles propres.
+     *
+     * Logique :
+     *   1. Sélectionner les items dont le produit n'a PAS de bulk_pricing_rules propres
+     *   2. Regrouper par (category_id + sale_price arrondi à l'entier)
+     *   3. Pour chaque groupe, calculer la quantité totale et appliquer le prix catégorie
+     */
+    protected function recalcCategoryBulkPrices(): void
+    {
+        $items = $this->items()->with('product.category')->get();
+
+        // Ne garder que les items dont le produit n'a PAS ses propres règles
+        $categoryItems = $items->filter(function ($item) {
+            return !$item->product->hasOwnBulkPricingRules();
+        });
+
+        if ($categoryItems->isEmpty()) {
+            return;
+        }
+
+        // Grouper par (category_id + sale_price arrondi)
+        $groups = $categoryItems->groupBy(function ($item) {
+            $categoryId = $item->product->category_id ?? 0;
+            $roundedPrice = round((float) $item->product->sale_price);
+            return $categoryId . '_' . $roundedPrice;
+        });
+
+        foreach ($groups as $group) {
+            $firstItem = $group->first();
+            $category = $firstItem->product->category;
+            $basePrice = (float) $firstItem->product->sale_price;
+
+            if (!$category || empty($category->bulk_pricing_rules)) {
+                // Pas de catégorie ou pas de règles catégorie → prix standard
+                foreach ($group as $item) {
+                    if ($item->unit_price != $basePrice) {
+                        $item->update(['unit_price' => $basePrice]);
+                    }
+                }
+                continue;
+            }
+
+            $totalQty = $group->sum('quantity');
+            $bulkPrice = $category->getBulkUnitPrice($totalQty, $basePrice);
+
+            foreach ($group as $item) {
+                if ($item->unit_price != $bulkPrice) {
+                    $item->update(['unit_price' => $bulkPrice]);
+                }
             }
         }
     }

@@ -7,6 +7,10 @@ import { ref, reactive, computed } from 'vue';
 
 const props = defineProps({
     cart: Object,
+    nudges: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const { formatPrice } = useHelpers();
@@ -186,7 +190,64 @@ const waCartMessage = computed(() => {
                 </div>
 
                 <!-- Panier non vide -->
-                <div v-else class="grid lg:grid-cols-3 gap-6">
+                <template v-else>
+
+                <!-- Nudges bulk pricing -->
+                <div v-if="nudges.length" class="space-y-2 mb-4">
+                    <div
+                        v-for="nudge in nudges"
+                        :key="nudge.product_id"
+                        class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 sm:px-5 sm:py-4"
+                    >
+                        <div class="flex items-start gap-3">
+                            <!-- Icon -->
+                            <div class="shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mt-0.5">
+                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z"/>
+                                </svg>
+                            </div>
+
+                            <div class="flex-1 min-w-0">
+                                <!-- Text -->
+                                <p class="text-sm text-blue-900">
+                                    Ajoutez
+                                    <span class="font-bold">{{ nudge.items_needed }} {{ nudge.product_name }}</span>
+                                    de plus pour économiser
+                                    <span class="font-bold">{{ formatPrice(nudge.total_saving) }}</span> !
+                                </p>
+
+                                <!-- Progress bar -->
+                                <div class="mt-2 flex items-center gap-2.5">
+                                    <div class="flex-1 h-2 bg-blue-100 rounded-full overflow-hidden">
+                                        <div
+                                            class="h-full bg-blue-500 rounded-full transition-all duration-300"
+                                            :style="{ width: Math.round((nudge.current_qty / nudge.next_tier_qty) * 100) + '%' }"
+                                        ></div>
+                                    </div>
+                                    <span class="text-xs font-semibold text-blue-700 tabular-nums shrink-0">
+                                        {{ nudge.current_qty }}/{{ nudge.next_tier_qty }}
+                                    </span>
+                                </div>
+
+                                <!-- CTA -->
+                                <div class="mt-2.5">
+                                    <Link
+                                        :href="nudge.shop_url"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition min-h-[44px] sm:min-h-0 sm:py-1.5"
+                                    >
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                        </svg>
+                                        Voir {{ nudge.category_name || 'les produits' }}
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid lg:grid-cols-3 gap-6">
 
                     <!-- ─── Articles ─────────────────────────────── -->
                     <div class="lg:col-span-2 space-y-3">
@@ -346,6 +407,8 @@ const waCartMessage = computed(() => {
                         </div>
                     </div>
                 </div>
+
+                </template>
             </div>
         </div>
     </FrontLayout>

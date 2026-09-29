@@ -246,26 +246,43 @@ class Product extends Model
 
     /**
      * Retourne le prix unitaire pour une quantité donnée (tarification en gros).
-     * Les règles doivent être triées par min_qty croissant dans le JSON.
+     *
+     * Priorité :
+     *   1. Règles propres au produit (bulk_pricing_rules sur products)
+     *   2. Règles de la catégorie (bulk_pricing_rules sur categories)
+     *   3. Prix de vente standard
      */
     public function getBulkUnitPrice(int $quantity): float
     {
         $rules = $this->bulk_pricing_rules;
 
-        if (empty($rules) || !is_array($rules)) {
+        // 1. Règles propres au produit
+        if (!empty($rules) && is_array($rules)) {
+            $sorted = collect($rules)->sortByDesc('min_qty');
+
+            foreach ($sorted as $rule) {
+                if ($quantity >= ($rule['min_qty'] ?? PHP_INT_MAX)) {
+                    return (float) $rule['unit_price'];
+                }
+            }
+
             return (float) $this->sale_price;
         }
 
-        // Trier par min_qty décroissant pour trouver le palier le plus élevé applicable
-        $sorted = collect($rules)->sortByDesc('min_qty');
-
-        foreach ($sorted as $rule) {
-            if ($quantity >= ($rule['min_qty'] ?? PHP_INT_MAX)) {
-                return (float) $rule['unit_price'];
-            }
+        // 2. Fallback vers les règles de la catégorie
+        if ($this->category_id && $this->category) {
+            return $this->category->getBulkUnitPrice($quantity, (float) $this->sale_price);
         }
 
         return (float) $this->sale_price;
+    }
+
+    /**
+     * Indique si ce produit a ses propres règles de tarification en gros.
+     */
+    public function hasOwnBulkPricingRules(): bool
+    {
+        return !empty($this->bulk_pricing_rules) && is_array($this->bulk_pricing_rules);
     }
 
     public function getIsInStockAttribute(): bool

@@ -19,7 +19,7 @@ class CartController extends Controller
     public function index()
     {
         $cart = $this->getCart();
-        $cart->load(['items.product.images', 'items.variant.attributeValues.attribute', 'coupon']);
+        $cart->load(['items.product.images', 'items.product.category', 'items.variant.attributeValues.attribute', 'coupon']);
 
         // Format cart data for Inertia
         $cartData = [
@@ -68,8 +68,12 @@ class CartController extends Controller
             'coupon_code' => $cart->coupon_code,
         ];
 
+        // Calculer les nudges bulk pricing pour chaque produit du panier
+        $nudges = $this->computeBulkNudges($cart);
+
         return Inertia::render('Cart/Index', [
             'cart' => $cartData,
+            'nudges' => $nudges,
         ]);
     }
 
@@ -282,6 +286,80 @@ class CartController extends Controller
         }
 
         return back()->with('success', 'Code promo retiré.');
+    }
+
+    /**
+     * Calcule les nudges de tarification en gros pour les produits du panier.
+     * Pour chaque produit ayant des bulk_pricing_rules, on détermine le prochain
+     * palier non atteint et l'économie potentielle.
+     */
+    protected function computeBulkNudges(Cart $cart): array
+    {
+        $nudges = [];
+
+        // Grouper les items par product_id pour agréger les quantités (variantes incluses)
+        $grouped = $cart->items->groupBy('product_id');
+
+        foreach ($grouped as $productId => $productItems) {
+            $product = $productItems->first()->product;
+            $rules = $product->bulk_pricing_rules;
+
+            // Fallback vers les règles de la catégorie
+            if (empty($rules) || !is_array($rules)) {
+                $rules = $product->category?->bulk_pricing_rules;
+            }
+
+            if (empty($rules) || !is_array($rules)) {
+                continue;
+            }
+
+            $currentQty = $productItems->sum('quantity');
+            $currentUnitPrice = $product->getBulkUnitPrice($currentQty);
+
+            // Trouver le prochain palier non encore atteint
+            $sortedRules = collect($rules)->sortBy('min_qty')->values();
+            $nextTier = null;
+
+            foreach ($sortedRules as $rule) {
+                if ($rule['min_qty'] > $currentQty) {
+                    $nextTier = $rule;
+                    break;
+                }
+            }
+
+            if (!$nextTier) {
+                continue; // Déjà au palier max
+            }
+
+            $itemsNeeded = $nextTier['min_qty'] - $currentQty;
+            $nextUnitPrice = (float) $nextTier['unit_price'];
+
+            // Économie = différence de prix sur le total au prochain palier
+            $totalAtCurrentPrice = $nextTier['min_qty'] * $currentUnitPrice;
+            $totalAtNextPrice = $nextTier['min_qty'] * $nextUnitPrice;
+            $totalSaving = $totalAtCurrentPrice - $totalAtNextPrice;
+
+            // Construire l'URL de la catégorie ou de la boutique
+            $categorySlug = $product->category?->slug;
+            $shopUrl = $categorySlug
+                ? '/boutique?category=' . $categorySlug
+                : '/boutique';
+
+            $nudges[] = [
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'category_name' => $product->category?->name,
+                'items_needed' => $itemsNeeded,
+                'current_qty' => $currentQty,
+                'next_tier_qty' => $nextTier['min_qty'],
+                'current_unit_price' => $currentUnitPrice,
+                'next_unit_price' => $nextUnitPrice,
+                'total_saving' => $totalSaving,
+                'shop_url' => $shopUrl,
+            ];
+        }
+
+        return $nudges;
     }
 
     /**

@@ -96,6 +96,7 @@ class ShopController extends Controller
                     'stock'         => $product->has_variants ? $product->variants->sum('stock_quantity') : $product->stock_quantity,
                     'allow_backorder'=> (bool) $product->allow_backorder,
                     'has_variants'  => $product->variants->isNotEmpty(),
+                    'has_bulk_pricing' => !empty($product->bulk_pricing_rules) || !empty($product->category?->bulk_pricing_rules),
                     'primary_image' => $product->images->where('is_primary', true)->first()?->path ?? $product->images->first()?->path,
                 ];
             }),
@@ -188,6 +189,7 @@ class ShopController extends Controller
             'stock'          => $p->has_variants ? $p->variants->sum('stock_quantity') : $p->stock_quantity,
             'allow_backorder'=> (bool) $p->allow_backorder,
             'has_variants'   => $p->variants->isNotEmpty(),
+            'has_bulk_pricing' => !empty($p->bulk_pricing_rules) || !empty($p->category?->bulk_pricing_rules),
             'category_name'  => $p->category?->name,
             'primary_image' => $p->images->where('is_primary', true)->first()?->path ?? $p->images->first()?->path,
         ];

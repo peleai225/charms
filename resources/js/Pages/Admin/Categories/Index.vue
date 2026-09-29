@@ -17,16 +17,18 @@ const confirm = useConfirm()
 // ── Formulaire création ───────────────────────────────────────────────────────
 const showCreate      = ref(false)
 const createImagePrev = ref(null)
+const createBulkRules = ref([])
 const createForm = useForm({
-    name:             '',
-    description:      '',
-    parent_id:        '',
-    is_active:        true,
-    is_featured:      false,
-    order:            0,
-    image:            null,
-    meta_title:       '',
-    meta_description: '',
+    name:                '',
+    description:         '',
+    parent_id:           '',
+    is_active:           true,
+    is_featured:         false,
+    order:               0,
+    image:               null,
+    meta_title:          '',
+    meta_description:    '',
+    bulk_pricing_rules:  null,
 })
 
 function onCreateImage(e) {
@@ -36,12 +38,19 @@ function onCreateImage(e) {
     createImagePrev.value = URL.createObjectURL(file)
 }
 
+function syncCreateBulkRules() {
+    const valid = createBulkRules.value.filter(r => r.min_qty && r.unit_price !== '' && r.unit_price !== null)
+    createForm.bulk_pricing_rules = valid.length ? JSON.stringify(valid) : null
+}
+
 function submitCreate() {
+    syncCreateBulkRules()
     createForm.post(route('admin.categories.store'), {
         forceFormData: true,
         onSuccess: () => {
-            showCreate.value    = false
+            showCreate.value      = false
             createImagePrev.value = null
+            createBulkRules.value = []
             createForm.reset()
             toast.success('Catégorie créée.')
         },
@@ -54,17 +63,19 @@ const editingCat      = ref(null)
 const editImagePrev   = ref(null)
 const showSeoCreate   = ref(false)
 const showSeoEdit     = ref(false)
+const editBulkRules   = ref([])
 
 const editForm = useForm({
-    name:             '',
-    description:      '',
-    parent_id:        '',
-    is_active:        true,
-    is_featured:      false,
-    order:            0,
-    image:            null,
-    meta_title:       '',
-    meta_description: '',
+    name:                '',
+    description:         '',
+    parent_id:           '',
+    is_active:           true,
+    is_featured:         false,
+    order:               0,
+    image:               null,
+    meta_title:          '',
+    meta_description:    '',
+    bulk_pricing_rules:  null,
 })
 
 function openEdit(cat) {
@@ -81,6 +92,14 @@ function openEdit(cat) {
     editForm.meta_title       = cat.meta_title ?? ''
     editForm.meta_description = cat.meta_description ?? ''
     showSeoEdit.value = !!(cat.meta_title || cat.meta_description)
+
+    // Pré-remplir les paliers de tarification en gros
+    editBulkRules.value = cat.bulk_pricing_rules?.length
+        ? cat.bulk_pricing_rules.map(r => ({ ...r }))
+        : []
+    editForm.bulk_pricing_rules = cat.bulk_pricing_rules?.length
+        ? JSON.stringify(cat.bulk_pricing_rules)
+        : null
 }
 
 function onEditImage(e) {
@@ -90,14 +109,21 @@ function onEditImage(e) {
     editImagePrev.value = URL.createObjectURL(file)
 }
 
+function syncEditBulkRules() {
+    const valid = editBulkRules.value.filter(r => r.min_qty && r.unit_price !== '' && r.unit_price !== null)
+    editForm.bulk_pricing_rules = valid.length ? JSON.stringify(valid) : null
+}
+
 function submitEdit(catId) {
+    syncEditBulkRules()
     editForm.transform(data => ({ ...data, _method: 'PUT' }))
         .post(route('admin.categories.update', catId), {
             forceFormData: true,
             onSuccess: () => {
-                editingId.value   = null
-                editingCat.value  = null
+                editingId.value     = null
+                editingCat.value    = null
                 editImagePrev.value = null
+                editBulkRules.value = []
                 toast.success('Catégorie mise à jour.')
             },
         })
@@ -384,6 +410,34 @@ function getDescendantIds(id, set = new Set()) {
                         </label>
                     </div>
 
+                    <!-- Tarification en gros -->
+                    <div class="border border-gray-100 rounded-lg p-3 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Tarification en gros</label>
+                            <button type="button" @click="createBulkRules.push({ min_qty: '', unit_price: '' })"
+                                class="text-[12px] text-blue-600 hover:text-blue-800 font-medium">+ Ajouter un palier</button>
+                        </div>
+                        <p v-if="!createBulkRules.length" class="text-[12px] text-gray-400">Aucun palier. Le prix standard des produits s'applique.</p>
+                        <div v-else class="space-y-2">
+                            <div v-for="(rule, idx) in createBulkRules" :key="idx" class="flex items-end gap-2">
+                                <div class="flex-1">
+                                    <label v-if="idx === 0" class="block text-[11px] text-gray-500 mb-1">Qte min.</label>
+                                    <input v-model.number="rule.min_qty" type="number" min="2" step="1" placeholder="ex: 3" @change="syncCreateBulkRules"
+                                        class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="flex-1">
+                                    <label v-if="idx === 0" class="block text-[11px] text-gray-500 mb-1">Prix unitaire (F CFA)</label>
+                                    <input v-model.number="rule.unit_price" type="number" min="0" step="1" placeholder="ex: 3000" @change="syncCreateBulkRules"
+                                        class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <button type="button" @click="createBulkRules.splice(idx, 1); syncCreateBulkRules()" class="h-9 px-2 text-gray-400 hover:text-red-500" title="Supprimer">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-gray-400">Ces paliers s'appliquent a tous les produits de cette categorie qui n'ont pas leurs propres paliers.</p>
+                    </div>
+
                     <!-- SEO (accordéon) -->
                     <div class="border border-gray-100 rounded-lg overflow-hidden">
                         <button type="button" @click="showSeoCreate = !showSeoCreate"
@@ -516,6 +570,34 @@ function getDescendantIds(id, set = new Set()) {
                                 class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                             <span class="text-[13px] text-gray-700">Mise en avant</span>
                         </label>
+                    </div>
+
+                    <!-- Tarification en gros -->
+                    <div class="border border-gray-100 rounded-lg p-3 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Tarification en gros</label>
+                            <button type="button" @click="editBulkRules.push({ min_qty: '', unit_price: '' })"
+                                class="text-[12px] text-blue-600 hover:text-blue-800 font-medium">+ Ajouter un palier</button>
+                        </div>
+                        <p v-if="!editBulkRules.length" class="text-[12px] text-gray-400">Aucun palier. Le prix standard des produits s'applique.</p>
+                        <div v-else class="space-y-2">
+                            <div v-for="(rule, idx) in editBulkRules" :key="idx" class="flex items-end gap-2">
+                                <div class="flex-1">
+                                    <label v-if="idx === 0" class="block text-[11px] text-gray-500 mb-1">Qte min.</label>
+                                    <input v-model.number="rule.min_qty" type="number" min="2" step="1" placeholder="ex: 3" @change="syncEditBulkRules"
+                                        class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="flex-1">
+                                    <label v-if="idx === 0" class="block text-[11px] text-gray-500 mb-1">Prix unitaire (F CFA)</label>
+                                    <input v-model.number="rule.unit_price" type="number" min="0" step="1" placeholder="ex: 3000" @change="syncEditBulkRules"
+                                        class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <button type="button" @click="editBulkRules.splice(idx, 1); syncEditBulkRules()" class="h-9 px-2 text-gray-400 hover:text-red-500" title="Supprimer">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-gray-400">Ces paliers s'appliquent a tous les produits de cette categorie qui n'ont pas leurs propres paliers.</p>
                     </div>
 
                     <!-- SEO (accordéon) -->

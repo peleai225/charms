@@ -21,6 +21,7 @@ class Category extends Model
         'order',
         'is_active',
         'is_featured',
+        'bulk_pricing_rules',
         'meta_title',
         'meta_description',
     ];
@@ -29,6 +30,7 @@ class Category extends Model
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
         'order' => 'integer',
+        'bulk_pricing_rules' => 'array',
     ];
 
     protected static function boot()
@@ -79,6 +81,32 @@ class Category extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('order');
+    }
+
+    // ========== BULK PRICING ==========
+
+    /**
+     * Retourne le prix unitaire en gros pour une quantité et un prix de base donnés.
+     * Si aucun palier ne correspond, retourne le prix de base inchangé.
+     */
+    public function getBulkUnitPrice(int $quantity, float $basePrice): float
+    {
+        $rules = $this->bulk_pricing_rules;
+
+        if (empty($rules) || !is_array($rules)) {
+            return $basePrice;
+        }
+
+        // Trier par min_qty décroissant pour trouver le palier le plus élevé applicable
+        $sorted = collect($rules)->sortByDesc('min_qty');
+
+        foreach ($sorted as $rule) {
+            if ($quantity >= ($rule['min_qty'] ?? PHP_INT_MAX)) {
+                return (float) $rule['unit_price'];
+            }
+        }
+
+        return $basePrice;
     }
 
     // ========== HELPERS ==========

@@ -91,59 +91,98 @@ const trustItems = [
         <!-- ═══════════════════════════════════════════════════════ -->
         <!-- [1] HERO — bannières DB ou fallback propre              -->
         <!-- ═══════════════════════════════════════════════════════ -->
-        <section class="relative overflow-hidden bg-slate-900 hero-section">
+        <section class="relative overflow-hidden bg-slate-900">
 
             <!-- Bannières depuis DB (position home_hero) -->
             <template v-if="heroBanners.length">
                 <div v-for="(b, i) in heroBanners" :key="b.id"
-                     class="absolute inset-0 transition-opacity duration-700"
-                     :class="heroIndex === i ? 'opacity-100' : 'opacity-0 pointer-events-none'">
-                    <img v-if="b.image" :src="b.image" :alt="b.title || siteName"
-                         class="absolute inset-0 w-full h-full object-cover" />
-                    <div class="absolute inset-0"
-                         :style="b.image
-                            ? 'background: linear-gradient(to right, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.3) 55%, transparent 100%)'
-                            : ''"
-                         :class="!b.image ? 'bg-slate-900' : ''"
-                    />
-                    <div class="relative container mx-auto px-4 hero-section flex items-center">
-                        <div class="py-16 max-w-xl">
-                            <p v-if="b.subtitle" class="text-sm font-semibold text-white/70 mb-3 uppercase tracking-wider">
+                     class="transition-opacity duration-700"
+                     :class="[
+                         heroIndex === i ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0',
+                     ]">
+
+                    <!-- MOBILE : image complète en haut + texte en dessous -->
+                    <div class="md:hidden">
+                        <div v-if="b.image" class="relative w-full aspect-[16/9] bg-slate-800">
+                            <img :src="b.image_mobile || b.image" :alt="b.title || siteName"
+                                 class="w-full h-full object-cover" />
+                        </div>
+                        <div class="px-4 py-6 bg-slate-900">
+                            <p v-if="b.subtitle" class="text-xs font-semibold text-white/60 mb-2 uppercase tracking-wider">
                                 {{ b.subtitle }}
                             </p>
-                            <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight mb-4">
+                            <h1 class="text-2xl font-black text-white leading-tight mb-3">
                                 {{ b.title }}
                             </h1>
-                            <p v-if="b.description" class="text-white/70 text-base mb-8 max-w-md leading-relaxed">
+                            <p v-if="b.description" class="text-white/60 text-sm mb-5 leading-relaxed">
                                 {{ b.description }}
                             </p>
-                            <div class="flex flex-wrap gap-3">
+                            <div class="flex flex-wrap gap-2">
                                 <a v-if="b.link" :href="b.link"
-                                   class="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition active:scale-95"
+                                   class="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white transition active:scale-95"
                                    :style="{ backgroundColor: primary }">
                                     {{ b.button_text || 'Découvrir' }}
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                                 </a>
                                 <Link href="/boutique"
-                                      class="inline-flex items-center gap-2 rounded-xl bg-white/20 hover:bg-white/30 px-6 py-3 text-sm font-bold text-white transition backdrop-blur-sm">
+                                      class="inline-flex items-center gap-2 rounded-xl bg-white/15 px-5 py-3 text-sm font-bold text-white transition">
                                     Voir la boutique
                                 </Link>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DESKTOP : image fond + overlay + texte à gauche -->
+                    <div class="hidden md:block relative hero-desktop">
+                        <img v-if="b.image" :src="b.image" :alt="b.title || siteName"
+                             class="absolute inset-0 w-full h-full object-cover" />
+                        <div class="absolute inset-0"
+                             :style="b.image
+                                ? 'background: linear-gradient(to right, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.3) 55%, transparent 100%)'
+                                : ''"
+                             :class="!b.image ? 'bg-slate-900' : ''"
+                        />
+                        <div class="relative container mx-auto px-4 h-full flex items-center">
+                            <div class="py-16 max-w-xl">
+                                <p v-if="b.subtitle" class="text-sm font-semibold text-white/70 mb-3 uppercase tracking-wider">
+                                    {{ b.subtitle }}
+                                </p>
+                                <h1 class="text-4xl lg:text-5xl font-black text-white leading-tight mb-4">
+                                    {{ b.title }}
+                                </h1>
+                                <p v-if="b.description" class="text-white/70 text-base mb-8 max-w-md leading-relaxed">
+                                    {{ b.description }}
+                                </p>
+                                <div class="flex flex-wrap gap-3">
+                                    <a v-if="b.link" :href="b.link"
+                                       class="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition active:scale-95"
+                                       :style="{ backgroundColor: primary }">
+                                        {{ b.button_text || 'Découvrir' }}
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                                    </a>
+                                    <Link href="/boutique"
+                                          class="inline-flex items-center gap-2 rounded-xl bg-white/20 hover:bg-white/30 px-6 py-3 text-sm font-bold text-white transition backdrop-blur-sm">
+                                        Voir la boutique
+                                    </Link>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Navigation dots (plusieurs bannières) -->
-                <div v-if="heroBanners.length > 1" class="absolute bottom-5 left-0 right-0 flex justify-center gap-2 z-10">
+                <div v-if="heroBanners.length > 1" class="absolute bottom-3 md:bottom-5 left-0 right-0 flex justify-center gap-1 z-10">
                     <button v-for="(_, i) in heroBanners" :key="i"
                             @click="setSlide(i)"
-                            class="h-2 rounded-full transition-all duration-300 bg-white"
-                            :class="heroIndex === i ? 'w-6 opacity-100' : 'w-2 opacity-50'" />
+                            class="p-3 md:p-1 flex items-center justify-center">
+                        <span class="block h-2 rounded-full transition-all duration-300 bg-white"
+                              :class="heroIndex === i ? 'w-6 opacity-100' : 'w-2 opacity-50'" />
+                    </button>
                 </div>
             </template>
 
             <!-- Fallback : texte gauche + mosaïque produits droite -->
-            <div v-else class="relative container mx-auto px-4 hero-section flex items-center">
+            <div v-else class="relative container mx-auto px-4 min-h-[320px] md:min-h-[420px] flex items-center">
                 <div class="py-14 w-full flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
 
                     <!-- Texte + CTA -->
@@ -384,7 +423,7 @@ const trustItems = [
 </template>
 
 <style scoped>
-.hero-section {
+.hero-desktop {
     min-height: 420px;
 }
 

@@ -21,9 +21,9 @@ const classes = computed(() => {
         default: 'bg-slate-100 text-slate-700',
         primary: 'bg-primary-100 text-primary-700',
         success: 'bg-success-100 text-success-700',
-        danger: 'bg-red-100 text-red-700',
+        danger: 'bg-danger-100 text-danger-700',
         warning: 'bg-warning-100 text-warning-700',
-        info: 'bg-blue-100 text-blue-700',
+        info: 'bg-primary-100 text-primary-700',
     };
 
     const sizes = {

@@ -10,10 +10,10 @@ const props = defineProps({
 const store = useToastStore()
 
 const config = computed(() => ({
-    success: { icon: CheckCircle,   bg: 'bg-white border-green-200',  iconClass: 'text-green-500'  },
-    error:   { icon: AlertCircle,   bg: 'bg-white border-red-200',    iconClass: 'text-red-500'    },
-    warning: { icon: AlertTriangle, bg: 'bg-white border-yellow-200', iconClass: 'text-yellow-500' },
-    info:    { icon: Info,          bg: 'bg-white border-blue-200',   iconClass: 'text-blue-500'   },
+    success: { icon: CheckCircle,   bg: 'bg-white border-success-200',  iconClass: 'text-success-500'  },
+    error:   { icon: AlertCircle,   bg: 'bg-white border-danger-200',   iconClass: 'text-danger-500'   },
+    warning: { icon: AlertTriangle, bg: 'bg-white border-warning-200',  iconClass: 'text-warning-500'  },
+    info:    { icon: Info,          bg: 'bg-white border-primary-200',  iconClass: 'text-primary-500'  },
 }[props.toast.type]))
 </script>
 
@@ -27,7 +27,7 @@ const config = computed(() => ({
             <p class="text-sm font-medium text-gray-900">{{ toast.message }}</p>
             <button
                 v-if="toast.action"
-                class="mt-1 text-xs font-medium text-blue-600 hover:text-blue-700"
+                class="mt-1 text-xs font-medium text-primary-600 hover:text-primary-700"
                 @click="toast.action.onClick"
             >
                 {{ toast.action.label }}

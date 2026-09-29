@@ -17,10 +17,10 @@ const classes = computed(() => {
     const base = 'border-l-4 p-4 rounded-lg';
 
     const types = {
-        info: 'bg-blue-50 border-blue-500 text-blue-900',
+        info: 'bg-primary-50 border-primary-500 text-primary-900',
         success: 'bg-success-50 border-success-500 text-success-900',
         warning: 'bg-warning-50 border-warning-500 text-warning-900',
-        danger: 'bg-red-50 border-red-500 text-red-900',
+        danger: 'bg-danger-50 border-danger-500 text-danger-900',
     };
 
     return `${base} ${types[props.type]}`;

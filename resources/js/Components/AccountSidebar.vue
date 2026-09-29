@@ -36,7 +36,7 @@ const initials = computed(() => {
                 :href="item.href"
                 class="flex-none px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors"
                 :class="isActive(item.href)
-                    ? 'border-blue-600 text-blue-600'
+                    ? 'border-primary-600 text-primary-600'
                     : 'border-transparent text-slate-500 hover:text-slate-700'"
             >
                 {{ item.label }}
@@ -50,7 +50,7 @@ const initials = computed(() => {
             <!-- User header -->
             <div class="bg-slate-900 px-5 py-5">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-sm font-bold text-white shrink-0">
+                    <div class="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-sm font-bold text-white shrink-0">
                         {{ initials }}
                     </div>
                     <div class="min-w-0">
@@ -68,7 +68,7 @@ const initials = computed(() => {
                     :href="item.href"
                     class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
                     :class="isActive(item.href)
-                        ? 'bg-blue-50 text-blue-700 font-medium'
+                        ? 'bg-primary-50 text-primary-700 font-medium'
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'"
                 >
                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -13,6 +13,7 @@ const props = defineProps({
 });
 
 const { formatPrice } = useHelpers();
+const summaryOpen = ref(false);
 
 // ─── Adresse sauvegardée ou saisie manuelle ───────────────────────────────────
 const selectedAddressId = ref(props.addresses?.[0]?.id ?? null);
@@ -133,7 +134,7 @@ const paymentMethods = computed(() => {
                 <div class="grid lg:grid-cols-3 gap-6">
 
                     <!-- ─── Formulaire ─────────────────────────────── -->
-                    <div class="lg:col-span-2 space-y-5">
+                    <div class="lg:col-span-2 space-y-5 order-last lg:order-first">
 
                         <!-- Adresses sauvegardées -->
                         <div v-if="addresses?.length" class="bg-white rounded-xl border border-slate-200 p-5">
@@ -284,11 +285,18 @@ const paymentMethods = computed(() => {
                     </div>
 
                     <!-- ─── Récapitulatif commande ──────────────────── -->
-                    <div class="lg:col-span-1">
+                    <div class="lg:col-span-1 order-first lg:order-last">
                         <div class="bg-white rounded-xl border border-slate-200 p-5 sticky top-20">
-                            <h2 class="text-sm font-bold text-slate-900 mb-4">Votre commande</h2>
+                            <h2 class="text-sm font-bold text-slate-900 mb-4 hidden md:block">Votre commande</h2>
+
+                            <!-- Toggle mobile -->
+                            <button class="md:hidden w-full flex justify-between items-center py-2 text-sm" @click="summaryOpen = !summaryOpen">
+                                <span class="font-semibold">Voir ma commande ({{ cart?.items?.length }} articles)</span>
+                                <span>{{ formatPrice(cart.total) }}</span>
+                            </button>
 
                             <!-- Articles -->
+                            <div :class="summaryOpen || 'hidden md:block'">
                             <div class="space-y-3 pb-4 border-b border-slate-100">
                                 <div v-for="item in cart?.items" :key="item.id" class="flex gap-3">
                                     <div class="w-14 h-14 bg-slate-100 rounded-lg overflow-hidden shrink-0 relative">
@@ -303,6 +311,7 @@ const paymentMethods = computed(() => {
                                     </div>
                                     <p class="text-xs font-bold text-slate-900 shrink-0">{{ formatPrice(item.total) }}</p>
                                 </div>
+                            </div>
                             </div>
 
                             <!-- Totaux -->
@@ -347,6 +356,19 @@ const paymentMethods = computed(() => {
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Barre sticky mobile -->
+        <div class="fixed bottom-16 left-0 right-0 md:hidden z-50 bg-white border-t border-slate-200 px-4 py-3 flex items-center gap-4 shadow-lg">
+            <span class="text-sm font-bold text-slate-900 tabular-nums shrink-0">{{ formatPrice(cart.total) }}</span>
+            <button
+                @click="submit"
+                :disabled="form.processing"
+                class="flex-1 py-3 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 disabled:opacity-60 transition flex items-center justify-center gap-2"
+            >
+                <svg v-if="form.processing" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                {{ form.processing ? 'Traitement...' : 'Valider ma commande →' }}
+            </button>
         </div>
     </FrontLayout>
 </template>

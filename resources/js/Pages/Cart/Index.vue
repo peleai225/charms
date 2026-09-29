@@ -38,6 +38,7 @@ const jsonHeaders = () => ({
 
 // ─── Mise à jour quantité — 0 rechargement ────────────────────────────────────
 const updatingItem = ref(null);
+const stockError = ref(null);
 
 const updateQuantity = async (item, newQty) => {
     if (newQty < 1) return removeItem(item);
@@ -57,6 +58,12 @@ const updateQuantity = async (item, newQty) => {
             subtotal.value = data.subtotal;
             total.value    = data.total;
             cartStore.setCount(data.cart_count);
+            stockError.value = null;
+        } else if (res.status === 422) {
+            const data = await res.json();
+            stockError.value = data.message || 'Stock insuffisant';
+            item.quantity = prev;
+            item.total = item.unit_price * prev;
         } else {
             // Rollback
             item.quantity = prev;
@@ -74,6 +81,7 @@ const updateQuantity = async (item, newQty) => {
 const removingItem = ref(null);
 
 const removeItem = async (item) => {
+    stockError.value = null;
     removingItem.value = item.id;
     try {
         const res = await fetch(`/panier/${item.id}`, {
@@ -306,6 +314,7 @@ const waCartMessage = computed(() => {
                                             Retirer
                                         </button>
                                     </div>
+                                    <p v-if="stockError" class="text-xs text-red-600 mt-1">{{ stockError }}</p>
                                 </div>
 
                                 <!-- Prix total ligne -->
@@ -405,6 +414,17 @@ const waCartMessage = computed(() => {
                             </p>
                         </div>
                     </div>
+                </div>
+
+                <!-- Barre sticky mobile -->
+                <div class="fixed bottom-16 left-0 right-0 md:hidden z-50 bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-between gap-4 shadow-lg">
+                    <span class="text-sm font-bold text-slate-900 tabular-nums">{{ formatPrice(total) }}</span>
+                    <Link
+                        href="/commander"
+                        class="flex-1 py-3 text-center bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition"
+                    >
+                        Commander →
+                    </Link>
                 </div>
 
                 </template>

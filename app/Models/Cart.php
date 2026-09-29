@@ -107,39 +107,74 @@ class Cart extends Model
 
         if ($existingItem) {
             $newQty = $existingItem->quantity + $quantity;
-            $unitPrice = $variant ? ($variant->effective_price ?? $product->sale_price) : $product->getBulkUnitPrice($newQty);
-            $existingItem->update(['quantity' => $newQty, 'unit_price' => $unitPrice]);
+            $existingItem->update(['quantity' => $newQty]);
+            $this->recalcBulkPrices($product->id);
             return $existingItem->fresh();
         }
 
-        $price = $variant ? ($variant->effective_price ?? $product->sale_price) : $product->getBulkUnitPrice($quantity);
+        $totalProductQty = $this->getTotalProductQuantity($product->id) + $quantity;
+        $price = $product->getBulkUnitPrice($totalProductQty);
 
-        return $this->items()->create([
+        $item = $this->items()->create([
             'product_id' => $product->id,
             'product_variant_id' => $variant?->id,
             'quantity' => $quantity,
             'unit_price' => $price,
         ]);
+
+        $this->recalcBulkPrices($product->id);
+        return $item->fresh();
     }
 
     public function updateItemQuantity(int $itemId, int $quantity): void
     {
         if ($quantity <= 0) {
+            $item = $this->items()->find($itemId);
+            $productId = $item?->product_id;
             $this->items()->where('id', $itemId)->delete();
+            if ($productId) {
+                $this->recalcBulkPrices($productId);
+            }
         } else {
             $item = $this->items()->with('product')->find($itemId);
             if ($item) {
-                $unitPrice = $item->product_variant_id
-                    ? $item->unit_price
-                    : $item->product->getBulkUnitPrice($quantity);
-                $item->update(['quantity' => $quantity, 'unit_price' => $unitPrice]);
+                $item->update(['quantity' => $quantity]);
+                $this->recalcBulkPrices($item->product_id);
+            }
+        }
+    }
+
+    protected function getTotalProductQuantity(int $productId): int
+    {
+        return (int) $this->items()->where('product_id', $productId)->sum('quantity');
+    }
+
+    protected function recalcBulkPrices(int $productId): void
+    {
+        $items = $this->items()->where('product_id', $productId)->with('product')->get();
+        if ($items->isEmpty()) {
+            return;
+        }
+
+        $totalQty = $items->sum('quantity');
+        $product = $items->first()->product;
+        $bulkPrice = $product->getBulkUnitPrice($totalQty);
+
+        foreach ($items as $item) {
+            if ($item->unit_price != $bulkPrice) {
+                $item->update(['unit_price' => $bulkPrice]);
             }
         }
     }
 
     public function removeItem(int $itemId): void
     {
+        $item = $this->items()->find($itemId);
+        $productId = $item?->product_id;
         $this->items()->where('id', $itemId)->delete();
+        if ($productId) {
+            $this->recalcBulkPrices($productId);
+        }
     }
 
     public function clear(): void

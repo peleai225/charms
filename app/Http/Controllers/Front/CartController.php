@@ -38,8 +38,10 @@ class CartController extends Controller
                     }
                 }
 
-                $originalPrice = $item->product->sale_price;
-                $isBulk = $item->unit_price < $originalPrice && !$item->product_variant_id;
+                $originalPrice = $item->product_variant_id
+                    ? ($item->variant?->effective_price ?? $item->product->sale_price)
+                    : $item->product->sale_price;
+                $isBulk = $item->unit_price < $originalPrice;
 
                 return [
                     'id' => $item->id,
@@ -307,8 +309,10 @@ class CartController extends Controller
             $image = $item->product->images->where('is_primary', true)->first()
                 ?? $item->product->images->first();
 
-            $originalPrice = $item->product->sale_price;
-            $isBulk = $item->unit_price < $originalPrice && !$item->product_variant_id;
+            $originalPrice = $item->product_variant_id
+                ? ($item->variant?->effective_price ?? $item->product->sale_price)
+                : $item->product->sale_price;
+            $isBulk = $item->unit_price < $originalPrice;
 
             return [
                 'id'           => $item->id,

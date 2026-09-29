@@ -336,9 +336,19 @@ class CheckoutController extends Controller
 
             DB::commit();
 
-            // COD : décrémentation du stock après commit (paiement à la livraison = commande ferme)
+            // COD : créer un Payment fictif et déclencher OrderPaid pour tracer le paiement à la livraison
             if ($validated['payment_method'] === 'cod') {
-                event(new OrderPaid($order));
+                $payment = \App\Models\Payment::create([
+                    'order_id' => $order->id,
+                    'transaction_id' => 'COD-' . $order->order_number,
+                    'method' => \App\Models\Payment::METHOD_CASH,
+                    'gateway' => 'manual',
+                    'amount' => $order->total,
+                    'currency' => 'XOF',
+                    'status' => \App\Models\Payment::STATUS_PENDING,
+                    'notes' => 'Paiement à la livraison (COD)',
+                ]);
+                event(new OrderPaid($order, $payment));
             }
 
             // Vider le panier uniquement après le commit réussi

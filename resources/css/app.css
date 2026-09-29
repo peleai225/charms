@@ -169,17 +169,6 @@ h4, h5, h6 {
     animation: shimmer 1.8s infinite;
 }
 
-.glass {
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-}
-
-.glass-dark {
-    background: rgba(15, 23, 42, 0.92);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-}
 
 .scrollbar-thin::-webkit-scrollbar       { width: 5px; height: 5px; }
 .scrollbar-thin::-webkit-scrollbar-track { background: #f8fafc; border-radius: 3px; }

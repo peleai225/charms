@@ -62,12 +62,8 @@ const progressPct = computed(() => {
         </div>
 
         <!-- Carte solde -->
-        <div class="bg-slate-900 rounded-2xl p-6 mb-5 text-white relative overflow-hidden">
-            <!-- Décor cercles (no gradient) -->
-            <div class="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/5"></div>
-            <div class="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-white/5"></div>
-
-            <div class="relative z-10 flex items-start justify-between">
+        <div class="bg-slate-900 rounded-2xl p-6 mb-5 text-white">
+            <div class="flex items-start justify-between">
                 <div>
                     <p class="text-xs text-slate-400 uppercase tracking-widest mb-2">Solde actuel</p>
                     <p class="text-5xl font-black tabular-nums">{{ (customer?.points_balance || 0).toLocaleString('fr-FR') }}</p>
@@ -79,7 +75,7 @@ const progressPct = computed(() => {
             </div>
 
             <!-- Barre progression vers prochain niveau -->
-            <div v-if="nextLevel" class="relative z-10 mt-5">
+            <div v-if="nextLevel" class="mt-5">
                 <div class="flex justify-between text-xs text-slate-400 mb-1.5">
                     <span>{{ currentLevel.label }}</span>
                     <span>{{ nextLevel.label }} — {{ nextLevel.min.toLocaleString('fr-FR') }} pts</span>
@@ -91,7 +87,7 @@ const progressPct = computed(() => {
                     {{ (nextLevel.min - (customer?.points_balance || 0)).toLocaleString('fr-FR') }} pts pour passer {{ nextLevel.label }}
                 </p>
             </div>
-            <div v-else class="relative z-10 mt-4">
+            <div v-else class="mt-4">
                 <p class="text-xs text-slate-300">🏆 Vous êtes au niveau maximum !</p>
             </div>
         </div>

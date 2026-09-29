@@ -254,11 +254,11 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                         <!-- Prev / Next -->
                         <template v-if="product.images.length > 1">
                             <button @click="activeImage = (activeImage - 1 + product.images.length) % product.images.length"
-                                class="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white rounded-full shadow flex items-center justify-center transition">
+                                class="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 hover:bg-white rounded-full shadow flex items-center justify-center transition">
                                 <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
                             </button>
                             <button @click="activeImage = (activeImage + 1) % product.images.length"
-                                class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white rounded-full shadow flex items-center justify-center transition">
+                                class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/80 hover:bg-white rounded-full shadow flex items-center justify-center transition">
                                 <svg class="w-4 h-4 text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                             </button>
                         </template>
@@ -339,7 +339,7 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                                 v-for="color in product.colors"
                                 :key="color.id"
                                 @click="selectColor(color.id)"
-                                class="w-9 h-9 rounded-full border-2 transition-all relative shadow-sm overflow-hidden"
+                                class="w-11 h-11 rounded-full border-2 transition-all relative shadow-sm overflow-hidden"
                                 :style="!color.image ? { backgroundColor: color.hex || '#94a3b8' } : {}"
                                 :class="selectedColorId === color.id ? 'border-primary-600 ring-2 ring-offset-1 ring-primary-600' : 'border-white hover:scale-110'"
                                 :title="color.name"
@@ -359,7 +359,7 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                                 v-for="val in availableSecondaryValues"
                                 :key="val.id"
                                 @click="selectedSecondaryId = val.id"
-                                class="px-4 py-1.5 border rounded-lg text-sm font-medium transition"
+                                class="px-5 py-2.5 border rounded-lg text-sm font-medium transition"
                                 :class="selectedSecondaryId === val.id
                                     ? 'bg-primary-600 border-primary-600 text-white'
                                     : 'border-slate-300 text-slate-700 hover:border-primary-600'"

@@ -158,19 +158,19 @@ const progressPct = computed(() => {
         <!-- Pagination -->
         <div v-if="transactions.last_page > 1" class="mt-5 flex items-center justify-center gap-1.5">
             <button :disabled="transactions.current_page === 1" @click="goToPage(transactions.current_page - 1)"
-                class="w-8 h-8 flex items-center justify-center border border-slate-200 rounded-lg text-sm hover:bg-slate-50 disabled:opacity-40 transition">
+                class="w-11 h-11 flex items-center justify-center border border-slate-200 rounded-lg text-sm hover:bg-slate-50 disabled:opacity-40 transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </button>
             <template v-for="(p, i) in pageNumbers" :key="i">
-                <span v-if="p === '...'" class="w-8 h-8 flex items-center justify-center text-slate-400 text-sm">…</span>
+                <span v-if="p === '...'" class="w-11 h-11 flex items-center justify-center text-slate-400 text-sm">…</span>
                 <button v-else @click="goToPage(p)"
-                    class="w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition"
+                    class="w-11 h-11 flex items-center justify-center rounded-lg text-sm font-medium transition"
                     :class="p === transactions.current_page ? 'bg-slate-900 text-white' : 'border border-slate-200 text-slate-700 hover:bg-slate-50'">
                     {{ p }}
                 </button>
             </template>
             <button :disabled="transactions.current_page === transactions.last_page" @click="goToPage(transactions.current_page + 1)"
-                class="w-8 h-8 flex items-center justify-center border border-slate-200 rounded-lg text-sm hover:bg-slate-50 disabled:opacity-40 transition">
+                class="w-11 h-11 flex items-center justify-center border border-slate-200 rounded-lg text-sm hover:bg-slate-50 disabled:opacity-40 transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </button>
         </div>

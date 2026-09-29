@@ -220,19 +220,19 @@ const goToPage = (p) => {
         <!-- Pagination -->
         <div v-if="wishlist?.last_page > 1" class="mt-6 flex items-center justify-center gap-1.5">
             <button :disabled="wishlist.current_page === 1" @click="goToPage(wishlist.current_page - 1)"
-                class="w-8 h-8 flex items-center justify-center border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 transition">
+                class="w-11 h-11 flex items-center justify-center border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             </button>
             <template v-for="(p, i) in pageNumbers" :key="i">
                 <span v-if="p === '...'" class="text-slate-400 text-sm px-1">…</span>
                 <button v-else @click="goToPage(p)"
-                    class="w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition"
+                    class="w-11 h-11 flex items-center justify-center rounded-lg text-sm font-medium transition"
                     :class="p === wishlist.current_page ? 'bg-slate-900 text-white' : 'border border-slate-200 text-slate-700 hover:bg-slate-50'">
                     {{ p }}
                 </button>
             </template>
             <button :disabled="wishlist.current_page === wishlist.last_page" @click="goToPage(wishlist.current_page + 1)"
-                class="w-8 h-8 flex items-center justify-center border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 transition">
+                class="w-11 h-11 flex items-center justify-center border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-40 transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </button>
         </div>

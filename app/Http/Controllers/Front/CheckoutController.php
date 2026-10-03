@@ -77,6 +77,8 @@ class CheckoutController extends Controller
                 ];
             })->toArray(),
             'subtotal' => $cart->subtotal,
+            'bundle_discount' => $cart->bundle_discount,
+            'payable_subtotal' => $cart->payable_subtotal,
             'discount' => $cart->discount_amount ?? 0,
             'total' => $cart->total,
         ];

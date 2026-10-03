@@ -4,15 +4,18 @@ namespace App\Livewire\Cart;
 
 use App\Models\Cart;
 use App\Models\Setting;
-use Livewire\Component;
 use Livewire\Attributes\On;
+use Livewire\Component;
 
 class Drawer extends Component
 {
     public bool $open = false;
+
     public string $locationAddress = '';
-    public float  $locationLat     = 0.0;
-    public float  $locationLng     = 0.0;
+
+    public float $locationLat = 0.0;
+
+    public float $locationLng = 0.0;
 
     #[On('open-cart-drawer')]
     public function openDrawer(): void
@@ -23,8 +26,8 @@ class Drawer extends Component
     public function setLocation(string $address, float $lat = 0.0, float $lng = 0.0): void
     {
         $this->locationAddress = $address;
-        $this->locationLat     = $lat;
-        $this->locationLng     = $lng;
+        $this->locationLat = $lat;
+        $this->locationLng = $lng;
     }
 
     public function close(): void
@@ -43,6 +46,7 @@ class Drawer extends Component
     {
         if ($qty < 1) {
             $this->removeItem($itemId);
+
             return;
         }
         $cart = $this->getCart();
@@ -64,22 +68,31 @@ class Drawer extends Component
 
         foreach ($cart->items as $item) {
             $name = $item->product->name;
-            if ($item->variant) $name .= " ({$item->variant->label})";
+            if ($item->variant) {
+                $name .= " ({$item->variant->label})";
+            }
             $lines[] = "▸ {$name}";
-            $lines[] = "  Qté: {$item->quantity} × " . format_price($item->unit_price);
+            $lines[] = "  Qté: {$item->quantity} × ".format_price($item->unit_price);
         }
 
         $lines[] = '';
-        if ($cart->discount_amount > 0 && $cart->coupon) {
-            $lines[] = "Sous-total : " . format_price($cart->subtotal);
-            $lines[] = "Réduction ({$cart->coupon->code}) : -" . format_price($cart->discount_amount);
+        // Le sous-total est le total catalogue : dès qu'une remise s'applique, il
+        // faut la détailler, sinon le message annonce un total qui ne s'explique pas.
+        if ($cart->bundle_discount > 0 || ($cart->discount_amount > 0 && $cart->coupon)) {
+            $lines[] = 'Sous-total : '.format_price($cart->subtotal);
         }
-        $lines[] = "*Total : " . format_price($cart->total) . "*";
+        if ($cart->bundle_discount > 0) {
+            $lines[] = 'Remise offres : -'.format_price($cart->bundle_discount);
+        }
+        if ($cart->discount_amount > 0 && $cart->coupon) {
+            $lines[] = "Réduction ({$cart->coupon->code}) : -".format_price($cart->discount_amount);
+        }
+        $lines[] = '*Total : '.format_price($cart->total).'*';
         $lines[] = '';
-        if (!empty($this->locationAddress)) {
-            $lines[] = '📍 Adresse de livraison : ' . $this->locationAddress;
+        if (! empty($this->locationAddress)) {
+            $lines[] = '📍 Adresse de livraison : '.$this->locationAddress;
             if ($this->locationLat && $this->locationLng) {
-                $lines[] = '🗺 Carte : https://www.google.com/maps?q=' . $this->locationLat . ',' . $this->locationLng;
+                $lines[] = '🗺 Carte : https://www.google.com/maps?q='.$this->locationLat.','.$this->locationLng;
             }
         } else {
             $lines[] = '📍 Adresse de livraison : (à préciser)';
@@ -87,7 +100,8 @@ class Drawer extends Component
         $lines[] = '📞 Mon numéro : (à préciser)';
 
         $message = implode("\n", $lines);
-        return 'https://wa.me/' . $phone . '?text=' . rawurlencode($message);
+
+        return 'https://wa.me/'.$phone.'?text='.rawurlencode($message);
     }
 
     public function render()
@@ -99,7 +113,7 @@ class Drawer extends Component
         ]);
 
         $whatsappUrl = $this->buildWhatsappUrl($cart);
-        $hasWhatsapp = !empty(Setting::get('social_whatsapp', Setting::get('contact_phone', '')));
+        $hasWhatsapp = ! empty(Setting::get('social_whatsapp', Setting::get('contact_phone', '')));
 
         return view('livewire.cart.drawer', compact('cart', 'whatsappUrl', 'hasWhatsapp'));
     }

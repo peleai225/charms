@@ -323,6 +323,10 @@ const paymentMethods = computed(() => {
                                     <span class="text-slate-500">Sous-total</span>
                                     <span class="font-medium">{{ formatPrice(cart.subtotal) }}</span>
                                 </div>
+                                <div v-if="cart.bundle_discount > 0" class="flex justify-between">
+                                    <span class="text-green-700">Remise offres</span>
+                                    <span class="font-semibold text-green-700">−{{ formatPrice(cart.bundle_discount) }}</span>
+                                </div>
                                 <div v-if="cart.discount > 0" class="flex justify-between">
                                     <span class="text-green-700">Réduction</span>
                                     <span class="font-semibold text-green-700">−{{ formatPrice(cart.discount) }}</span>

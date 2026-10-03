@@ -231,7 +231,9 @@ class CartController extends Controller
         }
 
         $customer = $cart->customer;
-        $validation = $coupon->canBeUsedBy($customer, $cart->subtotal);
+        // Le minimum de commande se mesure sur ce que le client paie, remises de
+        // lot déduites, et non sur le total catalogue.
+        $validation = $coupon->canBeUsedBy($customer, $cart->payable_subtotal);
 
         if (! $validation['valid']) {
             if ($request->ajax() || $request->wantsJson()) {
@@ -363,14 +365,21 @@ class CartController extends Controller
             ];
         });
 
+        $pricing = $cart->pricing();
+
         return response()->json([
             'items' => $items,
             'count' => $cart->items_count,
-            'subtotal_fmt' => number_format($cart->subtotal, 0, ',', ' ').' F CFA',
-            'discount_fmt' => $cart->discount_amount > 0
-                ? number_format($cart->discount_amount, 0, ',', ' ').' F CFA'
+            'subtotal_fmt' => number_format($pricing->subtotal(), 0, ',', ' ').' F CFA',
+            // Sans cette ligne, le drawer afficherait 12 000 de sous-total et
+            // 10 000 de total sans rien pour expliquer l'écart.
+            'bundle_discount_fmt' => $pricing->bundleDiscount() > 0
+                ? number_format($pricing->bundleDiscount(), 0, ',', ' ').' F CFA'
                 : null,
-            'total_fmt' => number_format($cart->total, 0, ',', ' ').' F CFA',
+            'discount_fmt' => $pricing->couponDiscount > 0
+                ? number_format($pricing->couponDiscount, 0, ',', ' ').' F CFA'
+                : null,
+            'total_fmt' => number_format($pricing->total(), 0, ',', ' ').' F CFA',
             'coupon_code' => $cart->coupon_code,
             'checkout_url' => route('checkout.index'),
         ]);

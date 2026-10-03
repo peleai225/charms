@@ -130,6 +130,12 @@
                     <span class="text-slate-500">Sous-total</span>
                     <span class="font-medium text-slate-900">{{ format_price($cart->subtotal) }}</span>
                 </div>
+                @if($cart->bundle_discount > 0)
+                <div class="flex justify-between text-sm text-green-600">
+                    <span>Remise offres</span>
+                    <span class="font-medium">&minus; {{ format_price($cart->bundle_discount) }}</span>
+                </div>
+                @endif
                 @if($cart->coupon && $cart->discount_amount > 0)
                 <div class="flex justify-between text-sm text-green-600">
                     <span>Code {{ $cart->coupon->code }}</span>

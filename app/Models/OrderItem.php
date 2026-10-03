@@ -14,9 +14,11 @@ class OrderItem extends Model
         'order_id',
         'product_id',
         'product_variant_id',
+        'promotion_id',
         'name',
         'sku',
         'variant_name',
+        'promotion_name',
         'options',
         'quantity',
         'quantity_shipped',
@@ -67,13 +69,19 @@ class OrderItem extends Model
         return $this->productVariant();
     }
 
+    public function promotion(): BelongsTo
+    {
+        return $this->belongsTo(Promotion::class);
+    }
+
     // ========== ACCESSORS ==========
 
     public function getFullNameAttribute(): string
     {
         if ($this->variant_name) {
-            return $this->name . ' - ' . $this->variant_name;
+            return $this->name.' - '.$this->variant_name;
         }
+
         return $this->name;
     }
 
@@ -89,9 +97,10 @@ class OrderItem extends Model
 
     public function getMarginPercentageAttribute(): ?float
     {
-        if (!$this->cost_price || $this->cost_price <= 0) {
+        if (! $this->cost_price || $this->cost_price <= 0) {
             return null;
         }
+
         return round((($this->unit_price - $this->cost_price) / $this->unit_price) * 100, 2);
     }
 
@@ -131,4 +140,3 @@ class OrderItem extends Model
         ]);
     }
 }
-

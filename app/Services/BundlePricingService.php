@@ -70,4 +70,93 @@ class BundlePricingService
         return $item->product->category_id !== null
             && in_array($item->product->category_id, $categoryIds, true);
     }
+
+    /**
+     * Applique une promotion à un vivier et rend les remises par ligne de panier.
+     *
+     * @param  array<int, array{cart_item_id:int, price:float}>  $units  trié par prix décroissant
+     * @return array{discounts: array<int,float>, consumed: array<int,int>}
+     */
+    protected function applyPromotion(Promotion $promotion, array $units): array
+    {
+        $lotQty = (int) $promotion->lot_qty;
+
+        if ($lotQty < 1) {
+            return ['discounts' => [], 'consumed' => []];
+        }
+
+        $lots = intdiv(count($units), $lotQty);
+
+        if ($promotion->max_lots_per_order !== null) {
+            $lots = min($lots, (int) $promotion->max_lots_per_order);
+        }
+
+        $discounts = [];
+        $consumed = [];
+
+        for ($lot = 0; $lot < $lots; $lot++) {
+            $lotUnits = array_slice($units, $lot * $lotQty, $lotQty);
+            $prices = array_column($lotUnits, 'price');
+
+            // max(0, …) : une offre mal saisie ne renchérit jamais le panier.
+            $discount = max(0, array_sum($prices) - (float) $promotion->lot_price);
+
+            foreach ($this->distribute($discount, $prices) as $index => $share) {
+                $id = $lotUnits[$index]['cart_item_id'];
+
+                // 0.0 et non 0 : les remises sont des flottants, y compris quand
+                // la répartition rend des parts nulles.
+                $discounts[$id] = ($discounts[$id] ?? 0.0) + $share;
+                $consumed[$id] = ($consumed[$id] ?? 0) + 1;
+            }
+        }
+
+        return ['discounts' => $discounts, 'consumed' => $consumed];
+    }
+
+    /**
+     * Répartit un montant au prorata de poids, en entiers, par la méthode du plus
+     * grand reste. La somme des parts vaut exactement le montant : en F CFA, qui
+     * n'a pas de sous-unité, un arrondi ligne par ligne ferait dériver le total
+     * du lot de son prix annoncé.
+     *
+     * @param  float[]  $weights
+     * @return int[] mêmes clés que $weights
+     */
+    protected function distribute(float $total, array $weights): array
+    {
+        $target = (int) round($total);
+        $sum = array_sum($weights);
+
+        if ($target <= 0 || $sum <= 0) {
+            return array_map(fn () => 0, $weights);
+        }
+
+        $shares = [];
+        $remainders = [];
+        $assigned = 0;
+
+        foreach ($weights as $index => $weight) {
+            $exact = $target * $weight / $sum;
+            $shares[$index] = (int) floor($exact);
+            $remainders[$index] = $exact - $shares[$index];
+            $assigned += $shares[$index];
+        }
+
+        // Les unités restantes vont aux plus grands restes.
+        arsort($remainders);
+
+        foreach (array_keys($remainders) as $index) {
+            if ($assigned >= $target) {
+                break;
+            }
+
+            $shares[$index]++;
+            $assigned++;
+        }
+
+        ksort($shares);
+
+        return $shares;
+    }
 }

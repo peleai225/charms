@@ -21,6 +21,16 @@ class ProbedBundlePricingService extends BundlePricingService
     {
         return $this->pool($promotion, $items, $consumed);
     }
+
+    public function probeDistribute(float $total, array $weights): array
+    {
+        return $this->distribute($total, $weights);
+    }
+
+    public function probeApplyPromotion(Promotion $promotion, array $units): array
+    {
+        return $this->applyPromotion($promotion, $units);
+    }
 }
 
 class BundlePricingServiceTest extends TestCase
@@ -225,5 +235,191 @@ class BundlePricingServiceTest extends TestCase
         $units = $this->service()->probePool($this->promotion(), $this->items($this->cart()));
 
         $this->assertSame([], $units);
+    }
+
+    // ================================================================
+    // distribute() — méthode du plus grand reste
+    // ================================================================
+
+    public function test_distribute_sums_exactly_to_total(): void
+    {
+        $shares = $this->service()->probeDistribute(2699, [4499, 4200, 4000]);
+
+        $this->assertSame(2699, array_sum($shares));
+    }
+
+    /** Le cas normatif de la spec §4. */
+    public function test_distribute_matches_spec_example(): void
+    {
+        $shares = $this->service()->probeDistribute(2699, [4499, 4200, 4000]);
+
+        $this->assertSame([956, 893, 850], array_values($shares));
+    }
+
+    public function test_distribute_returns_only_integers(): void
+    {
+        $shares = $this->service()->probeDistribute(2000, [4000, 4000, 4000]);
+
+        foreach ($shares as $share) {
+            $this->assertIsInt($share);
+        }
+    }
+
+    public function test_distribute_handles_equal_weights(): void
+    {
+        $shares = $this->service()->probeDistribute(2000, [4000, 4000, 4000]);
+
+        $this->assertSame(2000, array_sum($shares));
+        $this->assertSame([667, 667, 666], array_values($shares));
+    }
+
+    public function test_distribute_returns_zeros_for_zero_total(): void
+    {
+        $shares = $this->service()->probeDistribute(0, [4000, 4000, 4000]);
+
+        $this->assertSame([0, 0, 0], array_values($shares));
+    }
+
+    public function test_distribute_returns_zeros_for_zero_weights(): void
+    {
+        $shares = $this->service()->probeDistribute(500, [0, 0]);
+
+        $this->assertSame([0, 0], array_values($shares));
+    }
+
+    // ================================================================
+    // applyPromotion() — quantités
+    // ================================================================
+
+    private function unitsOf(float $price, int $count): array
+    {
+        return array_fill(0, $count, ['cart_item_id' => 1, 'price' => $price]);
+    }
+
+    public function test_two_units_get_no_discount(): void
+    {
+        $result = $this->service()->probeApplyPromotion($this->promotion(), $this->unitsOf(4000, 2));
+
+        $this->assertSame([], $result['discounts']);
+        $this->assertSame([], $result['consumed']);
+    }
+
+    public function test_three_units_discount_down_to_lot_price(): void
+    {
+        $result = $this->service()->probeApplyPromotion($this->promotion(), $this->unitsOf(4000, 3));
+
+        $this->assertSame(2000.0, array_sum($result['discounts']));
+        $this->assertSame(3, array_sum($result['consumed']));
+    }
+
+    public function test_five_units_discount_one_lot_only(): void
+    {
+        $result = $this->service()->probeApplyPromotion($this->promotion(), $this->unitsOf(4000, 5));
+
+        $this->assertSame(2000.0, array_sum($result['discounts']));
+        $this->assertSame(3, array_sum($result['consumed']));
+    }
+
+    public function test_six_units_discount_two_lots(): void
+    {
+        $result = $this->service()->probeApplyPromotion($this->promotion(), $this->unitsOf(4000, 6));
+
+        $this->assertSame(4000.0, array_sum($result['discounts']));
+        $this->assertSame(6, array_sum($result['consumed']));
+    }
+
+    public function test_seven_units_discount_two_lots(): void
+    {
+        $result = $this->service()->probeApplyPromotion($this->promotion(), $this->unitsOf(4000, 7));
+
+        $this->assertSame(4000.0, array_sum($result['discounts']));
+        $this->assertSame(6, array_sum($result['consumed']));
+    }
+
+    public function test_max_lots_per_order_caps_the_discount(): void
+    {
+        $promotion = $this->promotion(['max_lots_per_order' => 2]);
+        $result = $this->service()->probeApplyPromotion($promotion, $this->unitsOf(4000, 9));
+
+        $this->assertSame(4000.0, array_sum($result['discounts']));
+        $this->assertSame(6, array_sum($result['consumed']));
+    }
+
+    /** Review Focus nº5 — lot_qty supérieur au panier. */
+    public function test_lot_larger_than_cart_yields_nothing(): void
+    {
+        $promotion = $this->promotion(['lot_qty' => 5]);
+        $result = $this->service()->probeApplyPromotion($promotion, $this->unitsOf(4000, 3));
+
+        $this->assertSame([], $result['discounts']);
+    }
+
+    // ================================================================
+    // applyPromotion() — arithmétique
+    // ================================================================
+
+    public function test_lot_price_above_catalog_sum_yields_no_discount(): void
+    {
+        $promotion = $this->promotion(['price_min' => null, 'price_max' => null, 'lot_price' => 10000]);
+        $result = $this->service()->probeApplyPromotion($promotion, $this->unitsOf(3000, 3));
+
+        $this->assertSame(0.0, array_sum($result['discounts']));
+    }
+
+    /** Review Focus nº3 — « 3 pour 0 ». */
+    public function test_zero_lot_price_discounts_the_whole_lot(): void
+    {
+        $promotion = $this->promotion(['lot_price' => 0]);
+        $result = $this->service()->probeApplyPromotion($promotion, $this->unitsOf(4000, 3));
+
+        $this->assertSame(12000.0, array_sum($result['discounts']));
+    }
+
+    public function test_discount_aggregates_per_cart_item(): void
+    {
+        $units = [
+            ['cart_item_id' => 7, 'price' => 4000],
+            ['cart_item_id' => 7, 'price' => 4000],
+            ['cart_item_id' => 9, 'price' => 4000],
+        ];
+
+        $result = $this->service()->probeApplyPromotion($this->promotion(), $units);
+
+        $this->assertArrayHasKey(7, $result['discounts']);
+        $this->assertArrayHasKey(9, $result['discounts']);
+        $this->assertSame(2, $result['consumed'][7]);
+        $this->assertSame(1, $result['consumed'][9]);
+        $this->assertSame(2000.0, array_sum($result['discounts']));
+    }
+
+    /** Review Focus nº4 — même produit, deux variantes, deux lignes de panier. */
+    public function test_same_product_in_two_variants_shares_one_pool(): void
+    {
+        $product = $this->product(4000);
+
+        $medium = ProductVariant::create([
+            'product_id' => $product->id,
+            'sku' => 'SKU-VAR-M',
+            'name' => 'M',
+            'sale_price' => 4000,
+        ]);
+
+        $large = ProductVariant::create([
+            'product_id' => $product->id,
+            'sku' => 'SKU-VAR-L2',
+            'name' => 'L',
+            'sale_price' => 4000,
+        ]);
+
+        $cart = $this->cart();
+        $this->addItem($cart, $product, 1, 4000, $medium);
+        $this->addItem($cart, $product, 2, 4000, $large);
+
+        $units = $this->service()->probePool($this->promotion(), $this->items($cart));
+        $result = $this->service()->probeApplyPromotion($this->promotion(), $units);
+
+        $this->assertCount(3, $units);
+        $this->assertSame(2000.0, array_sum($result['discounts']));
+        $this->assertSame(3, array_sum($result['consumed']));
     }
 }

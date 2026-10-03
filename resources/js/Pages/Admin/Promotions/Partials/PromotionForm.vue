@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
 import { ArrowLeft, Search } from 'lucide-vue-next'
 import CategoryPicker from './CategoryPicker.vue'
+import MarginPanel from './MarginPanel.vue'
 
 const props = defineProps({
     categories: { type: Array, required: true },
@@ -219,6 +220,17 @@ function submit() {
                     <p v-if="form.errors.product_ids" class="mt-1 text-[12px] text-red-600">{{ form.errors.product_ids }}</p>
                 </div>
             </div>
+
+            <!-- Marge -->
+            <MarginPanel
+                :category-ids="form.category_ids"
+                :product-ids="form.product_ids"
+                :include-descendants="form.include_descendants"
+                :price-min="form.price_min"
+                :price-max="form.price_max"
+                :lot-qty="form.lot_qty"
+                :lot-price="form.lot_price"
+            />
 
             <!-- Règles -->
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">

@@ -109,6 +109,83 @@ class AdminPromotionTest extends TestCase
         $this->get(route('admin.promotions.index'))->assertRedirect();
     }
 
+    // ================================================================
+    // marginPreview()
+    // ================================================================
+
+    private function productAt(float $sale, ?float $purchase, ?Category $category = null): \App\Models\Product
+    {
+        return \App\Models\Product::create([
+            'name' => 'T-shirt '.fake()->unique()->numerify('###'),
+            'sku' => 'SKU-'.fake()->unique()->numerify('######'),
+            'sale_price' => $sale,
+            'purchase_price' => $purchase ?? 0,
+            'status' => 'active',
+            'category_id' => ($category ?? $this->tshirts)->id,
+        ]);
+    }
+
+    public function test_margin_preview_counts_eligible_products(): void
+    {
+        $this->productAt(4000, 2500);
+        $this->productAt(4200, 2600);
+        $this->productAt(5000, 3000);   // hors fourchette
+
+        $response = $this->actingAs($this->admin)->postJson(route('admin.promotions.margin-preview'), [
+            'category_ids' => [$this->tshirts->id],
+            'price_min' => 4000,
+            'price_max' => 4499,
+            'lot_qty' => 3,
+            'lot_price' => 10000,
+        ]);
+
+        $response->assertOk()->assertJsonPath('eligible_count', 2);
+    }
+
+    public function test_margin_preview_flags_a_lot_price_below_cost(): void
+    {
+        $this->productAt(4000, 3800);
+
+        $response = $this->actingAs($this->admin)->postJson(route('admin.promotions.margin-preview'), [
+            'category_ids' => [$this->tshirts->id],
+            'price_min' => 4000,
+            'price_max' => 4499,
+            'lot_qty' => 3,
+            'lot_price' => 10000,   // 3 333 / unité contre 3 800 de coût
+        ]);
+
+        $response->assertOk()->assertJsonPath('below_cost', true);
+    }
+
+    public function test_margin_preview_separates_products_without_purchase_price(): void
+    {
+        $this->productAt(4000, 2500);
+        $this->productAt(4100, null);
+
+        $response = $this->actingAs($this->admin)->postJson(route('admin.promotions.margin-preview'), [
+            'category_ids' => [$this->tshirts->id],
+            'price_min' => 4000,
+            'price_max' => 4499,
+            'lot_qty' => 3,
+            'lot_price' => 10000,
+        ]);
+
+        $response->assertOk()->assertJsonPath('without_purchase_price', 1);
+    }
+
+    public function test_margin_preview_returns_zero_when_nothing_matches(): void
+    {
+        $response = $this->actingAs($this->admin)->postJson(route('admin.promotions.margin-preview'), [
+            'category_ids' => [$this->tshirts->id],
+            'price_min' => 4000,
+            'price_max' => 4499,
+            'lot_qty' => 3,
+            'lot_price' => 10000,
+        ]);
+
+        $response->assertOk()->assertJsonPath('eligible_count', 0);
+    }
+
     private function payloadForModel(): array
     {
         return [

@@ -141,7 +141,100 @@ class PromotionController extends Controller
             ->with('success', 'Offre supprimée.');
     }
 
+    /**
+     * Impact d'une offre en cours de saisie sur la marge, calculé depuis la base.
+     * Les produits dont purchase_price n'est pas renseigné sont comptés à part :
+     * leur marge est inconnue, pas estimée.
+     */
+    public function marginPreview(Request $request)
+    {
+        $validated = $request->validate([
+            'category_ids' => 'array',
+            'category_ids.*' => 'integer',
+            'product_ids' => 'array',
+            'product_ids.*' => 'integer',
+            'include_descendants' => 'boolean',
+            'price_min' => 'nullable|numeric|min:0',
+            'price_max' => 'nullable|numeric|min:0',
+            'lot_qty' => 'required|integer|min:2',
+            'lot_price' => 'required|numeric|min:0',
+        ]);
+
+        $categoryIds = $this->expandCategories(
+            $validated['category_ids'] ?? [],
+            $validated['include_descendants'] ?? true
+        );
+
+        $products = Product::where('status', 'active')
+            ->where(function ($query) use ($categoryIds, $validated) {
+                $query->whereIn('category_id', $categoryIds ?: [0]);
+
+                if (! empty($validated['product_ids'])) {
+                    $query->orWhereIn('id', $validated['product_ids']);
+                }
+            })
+            ->when($validated['price_min'] ?? null, fn ($q, $min) => $q->where('sale_price', '>=', $min))
+            ->when($validated['price_max'] ?? null, fn ($q, $max) => $q->where('sale_price', '<=', $max))
+            ->get(['id', 'name', 'sale_price', 'purchase_price']);
+
+        $unitPriceInLot = (float) $validated['lot_price'] / (int) $validated['lot_qty'];
+
+        $costed = $products->filter(fn (Product $p) => (float) $p->purchase_price > 0);
+        $unknown = $products->count() - $costed->count();
+
+        $catalogMargin = $costed->isEmpty() ? null : round($costed->avg(
+            fn (Product $p) => (float) $p->sale_price - (float) $p->purchase_price
+        ));
+
+        $lotMargin = $costed->isEmpty() ? null : round($costed->avg(
+            fn (Product $p) => $unitPriceInLot - (float) $p->purchase_price
+        ));
+
+        return response()->json([
+            'eligible_count' => $products->count(),
+            'without_purchase_price' => $unknown,
+            'unit_price_in_lot' => round($unitPriceInLot),
+            'catalog_margin' => $catalogMargin,
+            'lot_margin' => $lotMargin,
+            'below_cost' => $costed->contains(
+                fn (Product $p) => $unitPriceInLot < (float) $p->purchase_price
+            ),
+            'products' => $products->map(fn (Product $p) => [
+                'id' => $p->id,
+                'name' => $p->name,
+                'sale_price' => (float) $p->sale_price,
+                'purchase_price' => (float) $p->purchase_price > 0 ? (float) $p->purchase_price : null,
+                'lot_margin' => (float) $p->purchase_price > 0
+                    ? round($unitPriceInLot - (float) $p->purchase_price)
+                    : null,
+            ])->values(),
+        ]);
+    }
+
     // ========== INTERNE ==========
+
+    /**
+     * @param  int[]  $ids
+     * @return int[]
+     */
+    private function expandCategories(array $ids, bool $includeDescendants): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        if (! $includeDescendants) {
+            return $ids;
+        }
+
+        $expanded = [];
+
+        foreach (Category::whereIn('id', $ids)->get() as $category) {
+            $expanded = array_merge($expanded, $category->getAllChildrenIds());
+        }
+
+        return array_values(array_unique($expanded));
+    }
 
     private function rules(): array
     {

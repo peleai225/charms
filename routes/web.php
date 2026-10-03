@@ -390,6 +390,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::resource('coupons', \App\Http\Controllers\Admin\CouponController::class)->names('coupons');
             Route::get('/coupons-generate-code', [\App\Http\Controllers\Admin\CouponController::class, 'generateCode'])->name('coupons.generate-code');
 
+            // Offres par lot
+            Route::resource('promotions', \App\Http\Controllers\Admin\PromotionController::class)->names('promotions');
+            Route::post('/promotions-margin-preview', [\App\Http\Controllers\Admin\PromotionController::class, 'marginPreview'])->name('promotions.margin-preview');
+
             // Bannières
             Route::get('banners', \App\Livewire\Admin\Banners\Index::class)->name('banners.index');
             Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class)->only(['create','store','edit','update','destroy'])->names('banners');

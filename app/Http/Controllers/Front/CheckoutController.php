@@ -6,29 +6,30 @@ use App\Events\OrderCreated;
 use App\Events\OrderPaid;
 use App\Http\Controllers\Controller;
 use App\Mail\OrderConfirmation;
-use Illuminate\Support\Facades\Mail;
 use App\Models\Cart;
 use App\Models\Customer;
 use App\Models\CustomerAddress;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Setting;
-use App\Services\MoneyFusionService;
 use App\Services\JekoAfricaService;
+use App\Services\MoneyFusionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class CheckoutController extends Controller
 {
     protected MoneyFusionService $moneyFusion;
+
     protected JekoAfricaService $jeko;
 
     public function __construct(MoneyFusionService $moneyFusion, JekoAfricaService $jeko)
     {
         $this->moneyFusion = $moneyFusion;
-        $this->jeko        = $jeko;
+        $this->jeko = $jeko;
     }
 
     /**
@@ -83,18 +84,18 @@ class CheckoutController extends Controller
         // Récupérer les paramètres de paiement
         $settings = [
             'payment_moneyfusion_enabled' => Setting::get('payment_moneyfusion_enabled', '0'),
-            'payment_cod_enabled'         => Setting::get('payment_cod_enabled', '1'),
-            'payment_jeko_enabled'        => Setting::get('payment_jeko_enabled', '0'),
-            'social_whatsapp'             => Setting::get('social_whatsapp'),
-            'whatsapp_order_enabled'      => Setting::get('whatsapp_order_enabled', '1'),
+            'payment_cod_enabled' => Setting::get('payment_cod_enabled', '1'),
+            'payment_jeko_enabled' => Setting::get('payment_jeko_enabled', '0'),
+            'social_whatsapp' => Setting::get('social_whatsapp'),
+            'whatsapp_order_enabled' => Setting::get('whatsapp_order_enabled', '1'),
         ];
 
         // Zones de livraison pour le sélecteur
         $rawZones = json_decode(Setting::get('shipping_zones', '[]'), true) ?: [];
-        $shippingZonesData = array_values(array_map(fn($z) => [
-            'name'   => $z['name']   ?? '',
+        $shippingZonesData = array_values(array_map(fn ($z) => [
+            'name' => $z['name'] ?? '',
             'cities' => $z['cities'] ?? '',
-            'price'  => (float) ($z['price'] ?? 0),
+            'price' => (float) ($z['price'] ?? 0),
         ], $rawZones));
 
         $customerData = $customer ? [
@@ -120,10 +121,10 @@ class CheckoutController extends Controller
         })->toArray();
 
         return Inertia::render('Checkout/Index', [
-            'cart'           => $cartData,
-            'customer'       => $customerData,
-            'addresses'      => $addressesData,
-            'settings'       => $settings,
+            'cart' => $cartData,
+            'customer' => $customerData,
+            'addresses' => $addressesData,
+            'settings' => $settings,
             'shipping_zones' => $shippingZonesData,
         ]);
     }
@@ -167,6 +168,7 @@ class CheckoutController extends Controller
 
             // Options
             'notes' => 'nullable|string|max:500',
+            'expected_total' => 'nullable|numeric',
             'save_address' => 'boolean',
             'newsletter' => 'boolean',
             'payment_method' => [
@@ -187,7 +189,7 @@ class CheckoutController extends Controller
                         $fail('Aucune méthode de paiement n\'est configurée.');
                     }
 
-                    if (!in_array($value, $allowedMethods)) {
+                    if (! in_array($value, $allowedMethods)) {
                         $fail('La méthode de paiement sélectionnée n\'est pas disponible.');
                     }
                 },
@@ -208,8 +210,9 @@ class CheckoutController extends Controller
                     $locked = \App\Models\Product::where('id', $item->product->id)->lockForUpdate()->first();
                     $stockAvailable = $locked->stock_quantity;
                 }
-                if ($stockAvailable < $item->quantity && !$item->product->allow_backorder) {
+                if ($stockAvailable < $item->quantity && ! $item->product->allow_backorder) {
                     DB::rollBack();
+
                     return back()->with('error', "Stock insuffisant pour {$item->product->name}");
                 }
             }
@@ -219,23 +222,45 @@ class CheckoutController extends Controller
 
             // Adresse de facturation
             $sameBilling = $request->boolean('same_billing', true);
-            
-            // Calculer les totaux
-            $subtotal = $cart->subtotal;
-            $discount = $cart->discount_amount;
+
+            // Calculer les totaux — une seule lecture de la tarification, pour que
+            // les lignes de commande et le total encaissé viennent du même calcul.
+            $pricing = $cart->pricing();
+            $subtotal = $pricing->payableSubtotal();   // net de lot
+            $discount = $pricing->couponDiscount;      // coupon seul
             $shippingCost = $this->calculateShipping($cart, $validated);
             $taxAmount = $this->calculateTax($subtotal - $discount);
             $total = $subtotal - $discount + $shippingCost + $taxAmount;
-            
+
             // Log pour déboguer
             \Log::info('Checkout: Calcul du total', [
                 'subtotal' => $subtotal,
+                'bundle_discount' => $pricing->bundleDiscount(),
                 'discount' => $discount,
                 'shipping' => $shippingCost,
                 'tax' => $taxAmount,
                 'total' => $total,
                 'cart_items_count' => $cart->items->count(),
             ]);
+
+            // Le front renvoie le total du panier qu'il a affiché. Un écart signifie
+            // qu'une offre a changé entre-temps : on renvoie au panier plutôt que
+            // d'encaisser un montant que le client n'a pas validé. Une valeur
+            // falsifiée ne provoque qu'une redirection, jamais un débit.
+            //
+            // La comparaison porte sur le montant du panier (net de lot et de
+            // coupon), et non sur le total général : la livraison et la taxe sont
+            // calculées ici à partir de l'adresse, que le panier ne connaît pas.
+            $expectedTotal = $request->input('expected_total');
+            $cartTotal = $subtotal - $discount;
+
+            if ($expectedTotal !== null && abs((float) $expectedTotal - $cartTotal) >= 1) {
+                DB::rollBack();
+
+                return redirect()
+                    ->route('cart.index')
+                    ->with('warning', 'Le montant de votre panier a changé. Vérifiez votre commande avant de valider.');
+            }
 
             // Créer la commande
             $order = Order::create([
@@ -252,7 +277,7 @@ class CheckoutController extends Controller
                 'shipping_city' => $validated['shipping_city'],
                 'shipping_postal_code' => $validated['shipping_postal_code'] ?? '',
                 'shipping_country' => $validated['shipping_country'],
-                
+
                 // Adresse de facturation
                 'billing_first_name' => $sameBilling ? $validated['shipping_first_name'] : $validated['billing_first_name'],
                 'billing_last_name' => $sameBilling ? $validated['shipping_last_name'] : $validated['billing_last_name'],
@@ -263,14 +288,14 @@ class CheckoutController extends Controller
                 'billing_city' => $sameBilling ? $validated['shipping_city'] : $validated['billing_city'],
                 'billing_postal_code' => $sameBilling ? ($validated['shipping_postal_code'] ?? '') : ($validated['billing_postal_code'] ?? ''),
                 'billing_country' => $sameBilling ? $validated['shipping_country'] : $validated['billing_country'],
-                
+
                 // Montants
                 'subtotal' => $subtotal,
                 'discount_amount' => $discount,
                 'shipping_amount' => $shippingCost,
                 'tax_amount' => $taxAmount,
                 'total' => $total,
-                
+
                 // Infos
                 'coupon_code' => $cart->coupon_code,
                 'affiliate_code' => $request->cookie('affiliate_ref'),
@@ -283,6 +308,8 @@ class CheckoutController extends Controller
 
             // Créer les lignes de commande
             foreach ($cart->items as $item) {
+                $line = $pricing->lineFor($item);
+
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $item->product_id,
@@ -292,17 +319,19 @@ class CheckoutController extends Controller
                     'sku' => $item->variant?->sku ?? $item->product->sku,
                     'quantity' => $item->quantity,
                     'unit_price' => $item->unit_price,
-                    'total' => $item->total,
+                    'total' => $line->lineTotal(),
                     'tax_rate' => $item->product->tax_rate ?? 0,
                     'tax_amount' => 0,
-                    'discount_amount' => 0,
+                    'discount_amount' => $line->discount,
+                    'promotion_id' => $line->promotion?->id,
+                    'promotion_name' => $line->promotion?->name,
                 ]);
             }
 
             // Sauvegarder l'adresse si demandé
             if ($request->boolean('save_address') && $customer) {
                 $this->saveAddress($customer, $validated, 'shipping');
-                if (!$sameBilling) {
+                if (! $sameBilling) {
                     $this->saveAddress($customer, $validated, 'billing');
                 }
             }
@@ -316,7 +345,7 @@ class CheckoutController extends Controller
                     \App\Services\MailConfigService::configureFromSettings();
                     Mail::to($order->billing_email)->send(new OrderConfirmation($order));
                 } catch (\Exception $e) {
-                    \Log::error('Failed to send order confirmation email: ' . $e->getMessage());
+                    \Log::error('Failed to send order confirmation email: '.$e->getMessage());
                 }
             }
 
@@ -324,14 +353,14 @@ class CheckoutController extends Controller
             try {
                 \App\Services\WhatsAppService::sendOrderConfirmation($order);
             } catch (\Exception $e) {
-                \Log::error('Failed to send WhatsApp order confirmation: ' . $e->getMessage());
+                \Log::error('Failed to send WhatsApp order confirmation: '.$e->getMessage());
             }
 
             // Pour COD, confirmer la commande
             if ($validated['payment_method'] === 'cod') {
                 $order->update([
                     'payment_status' => 'pending',
-                    'status'         => 'confirmed',
+                    'status' => 'confirmed',
                 ]);
             }
 
@@ -341,7 +370,7 @@ class CheckoutController extends Controller
             if ($validated['payment_method'] === 'cod') {
                 $payment = \App\Models\Payment::create([
                     'order_id' => $order->id,
-                    'transaction_id' => 'COD-' . $order->order_number,
+                    'transaction_id' => 'COD-'.$order->order_number,
                     'method' => \App\Models\Payment::METHOD_CASH,
                     'gateway' => 'manual',
                     'amount' => $order->total,
@@ -377,8 +406,9 @@ class CheckoutController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Checkout error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-            return back()->withInput()->with('error', 'Erreur lors de la création de la commande : ' . $e->getMessage());
+            \Log::error('Checkout error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
+            return back()->withInput()->with('error', 'Erreur lors de la création de la commande : '.$e->getMessage());
         }
     }
 
@@ -402,7 +432,7 @@ class CheckoutController extends Controller
      */
     protected function redirectToPayment(Order $order)
     {
-        if (!$this->moneyFusion->isConfigured()) {
+        if (! $this->moneyFusion->isConfigured()) {
             return redirect()->route('checkout.payment', ['order' => $order->id])
                 ->with('error', 'MoneyFusion n\'est pas configuré.');
         }
@@ -505,7 +535,7 @@ class CheckoutController extends Controller
         $this->authorizeOrderAccess($order);
 
         // Retirer la commande de la session
-        $orderIds = array_filter(session('checkout_order_ids', []), fn($id) => $id !== $order->id);
+        $orderIds = array_filter(session('checkout_order_ids', []), fn ($id) => $id !== $order->id);
         session(['checkout_order_ids' => array_values($orderIds)]);
 
         $orderData = [
@@ -523,6 +553,7 @@ class CheckoutController extends Controller
             'items' => $order->items->map(function ($item) {
                 $primaryImage = $item->product->images->where('is_primary', true)->first()
                     ?? $item->product->images->first();
+
                 return [
                     'id' => $item->id,
                     'name' => $item->name,
@@ -549,13 +580,15 @@ class CheckoutController extends Controller
             if ($customer) {
                 return $customer;
             }
-            if (!empty($data['email'])) {
+            if (! empty($data['email'])) {
                 $customer = Customer::where('email', $data['email'])->first();
                 if ($customer) {
                     $customer->update(['user_id' => auth()->id()]);
+
                     return $customer;
                 }
             }
+
             return Customer::create([
                 'user_id' => auth()->id(),
                 'first_name' => $data['shipping_first_name'],
@@ -568,7 +601,7 @@ class CheckoutController extends Controller
         }
 
         // Client invité : chercher par email ou téléphone
-        if (!empty($data['email'])) {
+        if (! empty($data['email'])) {
             return Customer::firstOrCreate(
                 ['email' => $data['email']],
                 [
@@ -608,13 +641,13 @@ class CheckoutController extends Controller
                 'is_default' => true,
             ],
             [
-                'first_name' => $data[$prefix . 'first_name'],
-                'last_name' => $data[$prefix . 'last_name'],
-                'address_line1' => $data[$prefix . 'address'],
-                'address_line2' => $data[$prefix . 'address_2'] ?? null,
-                'city' => $data[$prefix . 'city'],
-                'postal_code' => $data[$prefix . 'postal_code'],
-                'country' => $data[$prefix . 'country'],
+                'first_name' => $data[$prefix.'first_name'],
+                'last_name' => $data[$prefix.'last_name'],
+                'address_line1' => $data[$prefix.'address'],
+                'address_line2' => $data[$prefix.'address_2'] ?? null,
+                'city' => $data[$prefix.'city'],
+                'postal_code' => $data[$prefix.'postal_code'],
+                'country' => $data[$prefix.'country'],
                 'phone' => $data['phone'] ?? null,
             ]
         );
@@ -627,15 +660,15 @@ class CheckoutController extends Controller
     {
         // Vérifier si la livraison est activée
         $shippingEnabled = Setting::get('shipping_enabled', '1') === '1';
-        if (!$shippingEnabled) {
+        if (! $shippingEnabled) {
             return 0;
         }
 
         // Récupérer le seuil de livraison gratuite
         $freeShippingThreshold = (float) Setting::get('free_shipping_threshold', 50000);
-        
+
         // Livraison gratuite au-dessus du seuil configuré
-        if ($freeShippingThreshold > 0 && $cart->subtotal >= $freeShippingThreshold) {
+        if ($freeShippingThreshold > 0 && $cart->payable_subtotal >= $freeShippingThreshold) {
             return 0;
         }
 
@@ -674,7 +707,7 @@ class CheckoutController extends Controller
         ];
 
         $country = $data['shipping_country'] ?? 'CI';
-        
+
         // Utiliser le tarif forfaitaire si configuré, sinon utiliser les tarifs par pays
         $flatRate = Setting::get('flat_rate_shipping');
         if ($flatRate && $flatRate > 0) {
@@ -700,7 +733,7 @@ class CheckoutController extends Controller
     protected function generateOrderNumber(): string
     {
         do {
-            $number = 'CMD-' . date('Ymd') . '-' . strtoupper(Str::random(6));
+            $number = 'CMD-'.date('Ymd').'-'.strtoupper(Str::random(6));
         } while (Order::where('order_number', $number)->exists());
 
         return $number;
@@ -758,10 +791,11 @@ class CheckoutController extends Controller
         if (is_string($tokens)) {
             $tokens = [$tokens];
         }
-        if (!empty($tokens)) {
+        if (! empty($tokens)) {
             foreach ((array) $tokens as $token) {
                 if ($token && $order->payments()->where('transaction_id', $token)->exists()) {
                     session()->push('checkout_order_ids', $order->id);
+
                     return;
                 }
             }
@@ -770,6 +804,7 @@ class CheckoutController extends Controller
         // Fallback : si la commande a un paiement et qu'on vient de la page MoneyFusion (referer)
         if (request()->has('token') && $order->payments()->exists()) {
             session()->push('checkout_order_ids', $order->id);
+
             return;
         }
 
@@ -789,4 +824,3 @@ class CheckoutController extends Controller
         return Cart::getOrCreate(session()->getId(), $customer);
     }
 }
-

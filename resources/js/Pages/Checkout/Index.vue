@@ -46,6 +46,9 @@ const form = useForm({
                         : props.settings?.payment_jeko_enabled === '1' ? 'jeko'
                         : 'moneyfusion',
     notes:                '',
+    // Total du panier tel qu'affiché au client. Le serveur refuse la commande si
+    // une offre a changé entre l'affichage et la validation.
+    expected_total:       props.cart?.total ?? null,
 });
 
 // ─── Zones de livraison ────────────────────────────────────────────────────────

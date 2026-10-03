@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\BundlePricingService;
+use App\Support\CartPricing;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +19,8 @@ class Cart extends Model
         'customer_id',
         'coupon_code',
     ];
+
+    protected ?CartPricing $pricingCache = null;
 
     // ========== RELATIONS ==========
 
@@ -35,32 +39,58 @@ class Cart extends Model
         return $this->belongsTo(Coupon::class, 'coupon_code', 'code');
     }
 
+    // ========== TARIFICATION ==========
+
+    /**
+     * Tarification du panier, mémoïsée par instance. Toute mutation du panier
+     * appelle forgetPricing().
+     */
+    public function pricing(): CartPricing
+    {
+        return $this->pricingCache ??= app(BundlePricingService::class)->price($this);
+    }
+
+    protected function forgetPricing(): void
+    {
+        $this->pricingCache = null;
+    }
+
     // ========== ACCESSORS ==========
 
+    /**
+     * Total catalogue, avant toute remise. Attention : avant l'introduction des
+     * offres par lot, cet accesseur rendait un montant déjà remisé. Les
+     * consommateurs qui raisonnent sur ce que le client paie doivent lire
+     * payable_subtotal.
+     */
     public function getSubtotalAttribute(): float
     {
-        return $this->items->sum(function ($item) {
-            return $item->unit_price * $item->quantity;
-        });
+        return $this->pricing()->subtotal();
+    }
+
+    public function getBundleDiscountAttribute(): float
+    {
+        return $this->pricing()->bundleDiscount();
+    }
+
+    public function getPayableSubtotalAttribute(): float
+    {
+        return $this->pricing()->payableSubtotal();
+    }
+
+    public function getDiscountAmountAttribute(): float
+    {
+        return $this->pricing()->couponDiscount;
+    }
+
+    public function getTotalAttribute(): float
+    {
+        return $this->pricing()->total();
     }
 
     public function getItemsCountAttribute(): int
     {
         return $this->items->sum('quantity');
-    }
-
-    public function getDiscountAmountAttribute(): float
-    {
-        if (!$this->coupon_code || !$this->coupon) {
-            return 0;
-        }
-
-        return $this->coupon->calculateDiscount($this->subtotal);
-    }
-
-    public function getTotalAttribute(): float
-    {
-        return max(0, $this->subtotal - $this->discount_amount);
     }
 
     public function getIsEmptyAttribute(): bool
@@ -85,9 +115,10 @@ class Cart extends Model
 
         if ($cart) {
             // Fusionner si nécessaire
-            if ($customer && !$cart->customer_id) {
+            if ($customer && ! $cart->customer_id) {
                 $cart->update(['customer_id' => $customer->id]);
             }
+
             return $cart;
         }
 
@@ -106,166 +137,75 @@ class Cart extends Model
             ->first();
 
         if ($existingItem) {
-            $newQty = $existingItem->quantity + $quantity;
-            $existingItem->update(['quantity' => $newQty]);
-            $this->recalcBulkPrices($product->id);
+            $existingItem->update(['quantity' => $existingItem->quantity + $quantity]);
+            $this->forgetPricing();
+
             return $existingItem->fresh();
         }
 
-        // Prix initial : sera recalculé juste après par recalcBulkPrices
-        $price = (float) $product->sale_price;
-
+        // Prix catalogue figé à l'ajout. Le prix de la variante prime sur celui
+        // du produit, sans quoi une taille au tarif différent sortirait des
+        // fourchettes d'offres sans raison visible.
         $item = $this->items()->create([
             'product_id' => $product->id,
             'product_variant_id' => $variant?->id,
             'quantity' => $quantity,
-            'unit_price' => $price,
+            'unit_price' => (float) ($variant?->sale_price ?? $product->sale_price),
         ]);
 
-        $this->recalcBulkPrices($product->id);
+        $this->forgetPricing();
+
         return $item->fresh();
     }
 
     public function updateItemQuantity(int $itemId, int $quantity): void
     {
         if ($quantity <= 0) {
-            $item = $this->items()->find($itemId);
-            $productId = $item?->product_id;
             $this->items()->where('id', $itemId)->delete();
-            if ($productId) {
-                $this->recalcBulkPrices($productId);
-            }
         } else {
-            $item = $this->items()->with('product')->find($itemId);
-            if ($item) {
-                $item->update(['quantity' => $quantity]);
-                $this->recalcBulkPrices($item->product_id);
-            }
-        }
-    }
-
-    protected function getTotalProductQuantity(int $productId): int
-    {
-        return (int) $this->items()->where('product_id', $productId)->sum('quantity');
-    }
-
-    protected function recalcBulkPrices(int $productId): void
-    {
-        $items = $this->items()->where('product_id', $productId)->with('product')->get();
-        if ($items->isEmpty()) {
-            return;
+            $this->items()->where('id', $itemId)->update(['quantity' => $quantity]);
         }
 
-        $product = $items->first()->product;
-
-        // Si le produit a ses propres règles → agrégation par produit (logique existante)
-        if ($product->hasOwnBulkPricingRules()) {
-            $totalQty = $items->sum('quantity');
-            $bulkPrice = $product->getBulkUnitPrice($totalQty);
-
-            foreach ($items as $item) {
-                if ($item->unit_price != $bulkPrice) {
-                    $item->update(['unit_price' => $bulkPrice]);
-                }
-            }
-        } else {
-            // Pas de règles propres → déléguer à l'agrégation catégorie
-            $this->recalcCategoryBulkPrices();
-        }
-    }
-
-    /**
-     * Recalcule les prix bulk par catégorie pour les produits sans règles propres.
-     *
-     * Logique :
-     *   1. Sélectionner les items dont le produit n'a PAS de bulk_pricing_rules propres
-     *   2. Regrouper par (category_id + sale_price arrondi à l'entier)
-     *   3. Pour chaque groupe, calculer la quantité totale et appliquer le prix catégorie
-     */
-    protected function recalcCategoryBulkPrices(): void
-    {
-        $items = $this->items()->with('product.category')->get();
-
-        // Ne garder que les items dont le produit n'a PAS ses propres règles
-        $categoryItems = $items->filter(function ($item) {
-            return !$item->product->hasOwnBulkPricingRules();
-        });
-
-        if ($categoryItems->isEmpty()) {
-            return;
-        }
-
-        // Grouper par (category_id + sale_price arrondi)
-        $groups = $categoryItems->groupBy(function ($item) {
-            $categoryId = $item->product->category_id ?? 0;
-            $roundedPrice = round((float) $item->product->sale_price);
-            return $categoryId . '_' . $roundedPrice;
-        });
-
-        foreach ($groups as $group) {
-            $firstItem = $group->first();
-            $category = $firstItem->product->category;
-            $basePrice = (float) $firstItem->product->sale_price;
-
-            if (!$category || empty($category->bulk_pricing_rules)) {
-                // Pas de catégorie ou pas de règles catégorie → prix standard
-                foreach ($group as $item) {
-                    if ($item->unit_price != $basePrice) {
-                        $item->update(['unit_price' => $basePrice]);
-                    }
-                }
-                continue;
-            }
-
-            $totalQty = $group->sum('quantity');
-            $bulkPrice = $category->getBulkUnitPrice($totalQty, $basePrice);
-
-            foreach ($group as $item) {
-                if ($item->unit_price != $bulkPrice) {
-                    $item->update(['unit_price' => $bulkPrice]);
-                }
-            }
-        }
+        $this->forgetPricing();
     }
 
     public function removeItem(int $itemId): void
     {
-        $item = $this->items()->find($itemId);
-        $productId = $item?->product_id;
         $this->items()->where('id', $itemId)->delete();
-        if ($productId) {
-            $this->recalcBulkPrices($productId);
-        }
+        $this->forgetPricing();
     }
 
     public function clear(): void
     {
         $this->items()->delete();
         $this->update(['coupon_code' => null]);
+        $this->forgetPricing();
     }
 
     public function applyCoupon(string $code): bool
     {
         $coupon = Coupon::where('code', Str::upper($code))->valid()->first();
 
-        if (!$coupon) {
+        if (! $coupon) {
             return false;
         }
 
         $customer = $this->customer;
-        $validation = $coupon->canBeUsedBy($customer, $this->subtotal);
-        
-        if (!$validation['valid']) {
+        $validation = $coupon->canBeUsedBy($customer, $this->payable_subtotal);
+
+        if (! $validation['valid']) {
             return false;
         }
 
         $this->update(['coupon_code' => $coupon->code]);
+        $this->forgetPricing();
+
         return true;
     }
 
     public function removeCoupon(): void
     {
         $this->update(['coupon_code' => null]);
+        $this->forgetPricing();
     }
 }
-

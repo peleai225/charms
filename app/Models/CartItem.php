@@ -42,6 +42,10 @@ class CartItem extends Model
 
     // ========== ACCESSORS ==========
 
+    /**
+     * Total catalogue de la ligne. La remise de lot n'est pas portée ici : elle
+     * vit dans CartPricing, qui a besoin du panier entier pour la calculer.
+     */
     public function getTotalAttribute(): float
     {
         return $this->unit_price * $this->quantity;
@@ -51,8 +55,9 @@ class CartItem extends Model
     {
         $name = $this->product->name;
         if ($this->variant) {
-            $name .= ' - ' . $this->variant->name;
+            $name .= ' - '.$this->variant->name;
         }
+
         return $name;
     }
 
@@ -66,6 +71,7 @@ class CartItem extends Model
         if ($this->variant) {
             return $this->variant->stock_quantity >= $this->quantity || $this->product->allow_backorder;
         }
+
         return $this->product->stock_quantity >= $this->quantity || $this->product->allow_backorder;
     }
 
@@ -74,7 +80,7 @@ class CartItem extends Model
         if ($this->variant) {
             return $this->variant->stock_quantity;
         }
+
         return $this->product->stock_quantity;
     }
 }
-

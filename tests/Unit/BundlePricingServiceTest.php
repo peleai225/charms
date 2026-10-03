@@ -732,4 +732,89 @@ class BundlePricingServiceTest extends TestCase
         $this->assertSame('T-shirts', $nudges[0]['category_name']);
         $this->assertSame('/boutique?category=t-shirts', $nudges[0]['shop_url']);
     }
+
+    // ================================================================
+    // forProduct()
+    // ================================================================
+
+    public function test_for_product_returns_the_matching_offer(): void
+    {
+        $this->promotion();
+        $product = $this->product(4000);
+
+        $offers = $this->service()->forProduct($product);
+
+        $this->assertCount(1, $offers);
+        $this->assertSame(3, $offers[0]['lot_qty']);
+        $this->assertSame(10000.0, $offers[0]['lot_price']);
+    }
+
+    public function test_for_product_computes_the_unit_price_in_lot(): void
+    {
+        $this->promotion();
+
+        $offers = $this->service()->forProduct($this->product(4000));
+
+        $this->assertSame(3333.0, $offers[0]['unit_price_in_lot']);
+    }
+
+    public function test_for_product_computes_the_saving(): void
+    {
+        $this->promotion();
+
+        $offers = $this->service()->forProduct($this->product(4000));
+
+        $this->assertSame(2000.0, $offers[0]['saving']);
+    }
+
+    public function test_for_product_skips_offer_outside_the_band(): void
+    {
+        $this->promotion();
+
+        $this->assertSame([], $this->service()->forProduct($this->product(5000, null, 'Premium')));
+    }
+
+    public function test_for_product_honours_an_explicit_variant_price(): void
+    {
+        $this->promotion();
+        $product = $this->product(4000);
+
+        // Une variante à 5 000 sort de la fourchette : plus d'offre affichable.
+        $this->assertSame([], $this->service()->forProduct($product, 5000.0));
+
+        // Une variante à 4 200 reste dedans.
+        $this->assertCount(1, $this->service()->forProduct($product, 4200.0));
+    }
+
+    public function test_for_product_skips_inactive_offer(): void
+    {
+        $this->promotion(['is_active' => false]);
+
+        $this->assertSame([], $this->service()->forProduct($this->product(4000)));
+    }
+
+    /** La fiche doit pouvoir dire qu'une variante sort de la fourchette. */
+    public function test_for_product_exposes_the_price_band(): void
+    {
+        $this->promotion();
+
+        $offers = $this->service()->forProduct($this->product(4000));
+
+        $this->assertSame(4000.0, $offers[0]['price_min']);
+        $this->assertSame(4499.0, $offers[0]['price_max']);
+    }
+
+    public function test_label_for_product_is_short(): void
+    {
+        $this->promotion();
+
+        $this->assertSame('3 pour 10 000', $this->service()->labelForProduct($this->product(4000)));
+    }
+
+    public function test_label_for_product_is_null_without_offer(): void
+    {
+        $this->promotion();
+
+        $this->assertNull($this->service()->labelForProduct($this->product(5000, null, 'Premium')));
+    }
 }

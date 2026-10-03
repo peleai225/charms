@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\BundlePricingService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -84,19 +85,23 @@ class ShopController extends Controller
         // Données pour les filtres — 3 niveaux de catégories pour la sidebar
         $categories = Category::active()->roots()->with('children.children')->ordered()->get();
 
+        // Une seule instance pour toute la page : labelForProduct relit les
+        // promotions à chaque appel, inutile de le faire 12 fois.
+        $pricing = app(BundlePricingService::class);
+
         // Format data for Inertia
         $productsData = [
-            'data' => $products->map(function ($product) {
+            'data' => $products->map(function ($product) use ($pricing) {
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
                     'slug' => $product->slug,
                     'price' => $product->sale_price,
                     'compare_price' => $product->compare_price,
-                    'stock'         => $product->has_variants ? $product->variants->sum('stock_quantity') : $product->stock_quantity,
-                    'allow_backorder'=> (bool) $product->allow_backorder,
-                    'has_variants'  => $product->variants->isNotEmpty(),
-                    'has_bulk_pricing' => !empty($product->bulk_pricing_rules) || !empty($product->category?->bulk_pricing_rules),
+                    'stock' => $product->has_variants ? $product->variants->sum('stock_quantity') : $product->stock_quantity,
+                    'allow_backorder' => (bool) $product->allow_backorder,
+                    'has_variants' => $product->variants->isNotEmpty(),
+                    'promotion_label' => $pricing->labelForProduct($product),
                     'primary_image' => $product->images->where('is_primary', true)->first()?->path ?? $product->images->first()?->path,
                 ];
             }),
@@ -110,15 +115,15 @@ class ShopController extends Controller
 
         $categoriesData = $categories->map(function ($cat) {
             return [
-                'id'       => $cat->id,
-                'name'     => $cat->name,
-                'slug'     => $cat->slug,
-                'children' => $cat->children->map(fn($child) => [
-                    'id'       => $child->id,
-                    'name'     => $child->name,
-                    'slug'     => $child->slug,
-                    'children' => $child->children->map(fn($gc) => [
-                        'id'   => $gc->id,
+                'id' => $cat->id,
+                'name' => $cat->name,
+                'slug' => $cat->slug,
+                'children' => $cat->children->map(fn ($child) => [
+                    'id' => $child->id,
+                    'name' => $child->name,
+                    'slug' => $child->slug,
+                    'children' => $child->children->map(fn ($gc) => [
+                        'id' => $gc->id,
                         'name' => $gc->name,
                         'slug' => $gc->slug,
                     ])->values()->toArray(),
@@ -153,7 +158,7 @@ class ShopController extends Controller
             array_unshift($ancestors, ['id' => $p->id, 'name' => $p->name, 'slug' => $p->slug]);
             $p = $p->parent ?? null;
         }
-        
+
         $query = Product::active()
             ->whereIn('category_id', $categoryIds)
             ->with(['images', 'category', 'variants.attributeValues.attribute']);
@@ -180,40 +185,42 @@ class ShopController extends Controller
 
         $subcategories = $category->children()->active()->ordered()->get();
 
-        $formatProduct = fn($p) => [
-            'id'            => $p->id,
-            'name'          => $p->name,
-            'slug'          => $p->slug,
-            'price'         => $p->sale_price,
+        $pricing = app(BundlePricingService::class);
+
+        $formatProduct = fn ($p) => [
+            'id' => $p->id,
+            'name' => $p->name,
+            'slug' => $p->slug,
+            'price' => $p->sale_price,
             'compare_price' => $p->compare_price,
-            'stock'          => $p->has_variants ? $p->variants->sum('stock_quantity') : $p->stock_quantity,
-            'allow_backorder'=> (bool) $p->allow_backorder,
-            'has_variants'   => $p->variants->isNotEmpty(),
-            'has_bulk_pricing' => !empty($p->bulk_pricing_rules) || !empty($p->category?->bulk_pricing_rules),
-            'category_name'  => $p->category?->name,
+            'stock' => $p->has_variants ? $p->variants->sum('stock_quantity') : $p->stock_quantity,
+            'allow_backorder' => (bool) $p->allow_backorder,
+            'has_variants' => $p->variants->isNotEmpty(),
+            'promotion_label' => $pricing->labelForProduct($p),
+            'category_name' => $p->category?->name,
             'primary_image' => $p->images->where('is_primary', true)->first()?->path ?? $p->images->first()?->path,
         ];
 
         return Inertia::render('Shop/Category', [
             'category' => [
-                'id'          => $category->id,
-                'name'        => $category->name,
-                'slug'        => $category->slug,
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => $category->slug,
                 'description' => $category->description,
-                'image'       => $category->image,
-                'ancestors'   => $ancestors,
+                'image' => $category->image,
+                'ancestors' => $ancestors,
             ],
-            'subcategories' => $subcategories->map(fn($s) => [
-                'id'    => $s->id,
-                'name'  => $s->name,
-                'slug'  => $s->slug,
+            'subcategories' => $subcategories->map(fn ($s) => [
+                'id' => $s->id,
+                'name' => $s->name,
+                'slug' => $s->slug,
                 'image' => $s->image,
             ])->toArray(),
             'products' => [
-                'data'          => $products->map($formatProduct)->toArray(),
-                'current_page'  => $products->currentPage(),
-                'last_page'     => $products->lastPage(),
-                'total'         => $products->total(),
+                'data' => $products->map($formatProduct)->toArray(),
+                'current_page' => $products->currentPage(),
+                'last_page' => $products->lastPage(),
+                'total' => $products->total(),
                 'prev_page_url' => $products->previousPageUrl(),
                 'next_page_url' => $products->nextPageUrl(),
             ],
@@ -229,10 +236,10 @@ class ShopController extends Controller
         $product = Product::where('slug', $slug)
             ->active()
             ->with([
-                'images' => fn($q) => $q->orderBy('position'),
+                'images' => fn ($q) => $q->orderBy('position'),
                 'category.parent.parent',
-                'variants' => fn($q) => $q->active()->with('attributeValues.attribute'),
-                'reviews' => fn($q) => $q->approved()->latest()->take(5),
+                'variants' => fn ($q) => $q->active()->with('attributeValues.attribute'),
+                'reviews' => fn ($q) => $q->approved()->latest()->take(5),
             ])
             ->firstOrFail();
 
@@ -242,6 +249,7 @@ class ShopController extends Controller
         // Organiser les variantes par couleur
         $variantsByColor = $product->variants->groupBy(function ($variant) {
             $colorAttr = $variant->attributeValues->firstWhere('attribute.slug', 'couleur');
+
             return $colorAttr?->id ?? 'default';
         });
 
@@ -249,7 +257,7 @@ class ShopController extends Controller
         $availableColors = $product->variants
             ->pluck('attributeValues')
             ->flatten()
-            ->filter(fn($av) => $av->attribute && $av->attribute->slug === 'couleur')
+            ->filter(fn ($av) => $av->attribute && $av->attribute->slug === 'couleur')
             ->unique('id');
 
         // Détecter l'attribut secondaire : parmi les attributs non-couleur,
@@ -258,10 +266,10 @@ class ShopController extends Controller
         $secondaryAttribute = $product->variants
             ->pluck('attributeValues')
             ->flatten()
-            ->filter(fn($av) => $av->attribute && $av->attribute->slug !== 'couleur')
+            ->filter(fn ($av) => $av->attribute && $av->attribute->slug !== 'couleur')
             ->groupBy('attribute_id')
-            ->sortByDesc(fn($avs) => $avs->unique('id')->count())
-            ->map(fn($avs) => $avs->first()->attribute)
+            ->sortByDesc(fn ($avs) => $avs->unique('id')->count())
+            ->map(fn ($avs) => $avs->first()->attribute)
             ->first();
         $secondaryAttributeSlug = $secondaryAttribute?->slug;
         $secondaryAttributeName = $secondaryAttribute?->name ?? 'Taille';
@@ -293,9 +301,9 @@ class ShopController extends Controller
         // Format colors
         $colorsData = $availableColors->map(function ($attrValue) {
             return [
-                'id'    => $attrValue->id,
-                'name'  => $attrValue->value,
-                'hex'   => $attrValue->color_code ?? null,
+                'id' => $attrValue->id,
+                'name' => $attrValue->value,
+                'hex' => $attrValue->color_code ?? null,
                 'image' => $attrValue->image_url,
             ];
         })->values()->toArray();
@@ -305,10 +313,10 @@ class ShopController extends Controller
             ? $product->variants
                 ->pluck('attributeValues')
                 ->flatten()
-                ->filter(fn($av) => $av->attribute && $av->attribute->id === $secondaryAttribute->id)
+                ->filter(fn ($av) => $av->attribute && $av->attribute->id === $secondaryAttribute->id)
                 ->unique('id')
-                ->map(fn($attrValue) => [
-                    'id'    => $attrValue->id,
+                ->map(fn ($attrValue) => [
+                    'id' => $attrValue->id,
                     'value' => $attrValue->value,
                 ])
                 ->values()
@@ -317,47 +325,47 @@ class ShopController extends Controller
 
         // Format variants
         $variantsData = $product->variants->map(function ($variant) use ($secondaryAttribute) {
-            $colorAttr     = $variant->attributeValues->firstWhere('attribute.slug', 'couleur');
+            $colorAttr = $variant->attributeValues->firstWhere('attribute.slug', 'couleur');
             $secondaryAttr = $secondaryAttribute
-                ? $variant->attributeValues->firstWhere(fn($av) => $av->attribute?->id === $secondaryAttribute->id)
+                ? $variant->attributeValues->firstWhere(fn ($av) => $av->attribute?->id === $secondaryAttribute->id)
                 : null;
 
             return [
-                'id'           => $variant->id,
-                'sku'          => $variant->sku,
-                'price'        => $variant->sale_price ?? $variant->product->sale_price,
-                'stock'        => $variant->stock_quantity,
-                'color_id'     => $colorAttr?->id,
+                'id' => $variant->id,
+                'sku' => $variant->sku,
+                'price' => $variant->sale_price ?? $variant->product->sale_price,
+                'stock' => $variant->stock_quantity,
+                'color_id' => $colorAttr?->id,
                 'secondary_id' => $secondaryAttr?->id,
-                'image'        => $variant->image ? asset('storage/' . $variant->image) : null,
+                'image' => $variant->image ? asset('storage/'.$variant->image) : null,
             ];
         })->toArray();
 
-        $formatSmallProduct = fn($p) => [
-            'id'            => $p->id,
-            'name'          => $p->name,
-            'slug'          => $p->slug,
-            'price'         => $p->sale_price,
+        $formatSmallProduct = fn ($p) => [
+            'id' => $p->id,
+            'name' => $p->name,
+            'slug' => $p->slug,
+            'price' => $p->sale_price,
             'compare_price' => $p->compare_price,
-            'stock'          => $p->has_variants ? $p->variants->sum('stock_quantity') : $p->stock_quantity,
-            'allow_backorder'=> (bool) $p->allow_backorder,
-            'has_variants'   => $p->variants->isNotEmpty(),
-            'primary_image'  => $p->images->where('is_primary', true)->first()?->path ?? $p->images->first()?->path,
+            'stock' => $p->has_variants ? $p->variants->sum('stock_quantity') : $p->stock_quantity,
+            'allow_backorder' => (bool) $p->allow_backorder,
+            'has_variants' => $p->variants->isNotEmpty(),
+            'primary_image' => $p->images->where('is_primary', true)->first()?->path ?? $p->images->first()?->path,
         ];
 
         $reviewsData = $product->reviews->map(function ($r) {
             return [
-                'id'         => $r->id,
-                'rating'     => $r->rating,
-                'body'       => $r->body,
-                'author'     => $r->customer
-                    ? $r->customer->first_name . ' ' . mb_substr($r->customer->last_name ?? '', 0, 1) . '.'
+                'id' => $r->id,
+                'rating' => $r->rating,
+                'body' => $r->body,
+                'author' => $r->customer
+                    ? $r->customer->first_name.' '.mb_substr($r->customer->last_name ?? '', 0, 1).'.'
                     : 'Client',
                 'created_at' => $r->created_at->format('d/m/Y'),
             ];
         })->toArray();
 
-        $reviewAvg   = $product->reviews->avg('rating');
+        $reviewAvg = $product->reviews->avg('rating');
         $reviewCount = $product->reviews->count();
 
         $whatsapp = \App\Models\Setting::get('social_whatsapp');
@@ -365,51 +373,52 @@ class ShopController extends Controller
 
         // Format data for Inertia
         $productData = [
-            'id'                 => $product->id,
-            'name'               => $product->name,
-            'slug'               => $product->slug,
-            'sku'                => $product->sku,
-            'price'              => $product->sale_price,
-            'compare_price'      => $product->compare_price,
-            'stock'              => $product->has_variants ? $product->variants->sum('stock_quantity') : $product->stock_quantity,
-            'allow_backorder'    => (bool) $product->allow_backorder,
-            'short_description'  => $product->short_description,
-            'description'        => $product->description,
-            'weight'             => $product->weight,
-            'images'             => $product->images->pluck('path')->toArray(),
-            'category'           => $product->category ? (function () use ($product) {
+            'id' => $product->id,
+            'name' => $product->name,
+            'slug' => $product->slug,
+            'sku' => $product->sku,
+            'price' => $product->sale_price,
+            'compare_price' => $product->compare_price,
+            'stock' => $product->has_variants ? $product->variants->sum('stock_quantity') : $product->stock_quantity,
+            'allow_backorder' => (bool) $product->allow_backorder,
+            'short_description' => $product->short_description,
+            'description' => $product->description,
+            'weight' => $product->weight,
+            'images' => $product->images->pluck('path')->toArray(),
+            'category' => $product->category ? (function () use ($product) {
                 $ancestors = [];
                 $p = $product->category->parent;
                 while ($p) {
                     array_unshift($ancestors, ['id' => $p->id, 'name' => $p->name, 'slug' => $p->slug]);
                     $p = $p->parent ?? null;
                 }
+
                 return [
-                    'id'        => $product->category->id,
-                    'name'      => $product->category->name,
-                    'slug'      => $product->category->slug,
+                    'id' => $product->category->id,
+                    'name' => $product->category->name,
+                    'slug' => $product->category->slug,
                     'ancestors' => $ancestors,
                 ];
             })() : null,
-            'has_variants'       => $product->variants->isNotEmpty(),
-            'variants'           => $variantsData,
-            'colors'             => $colorsData,
-            'secondary_attribute'=> $secondaryAttribute ? [
-                'slug'   => $secondaryAttribute->slug,
-                'name'   => $secondaryAttribute->name,
+            'has_variants' => $product->variants->isNotEmpty(),
+            'variants' => $variantsData,
+            'colors' => $colorsData,
+            'secondary_attribute' => $secondaryAttribute ? [
+                'slug' => $secondaryAttribute->slug,
+                'name' => $secondaryAttribute->name,
                 'values' => $secondaryValues,
             ] : null,
-            'reviews'            => $reviewsData,
-            'review_avg'         => $reviewAvg ? round($reviewAvg, 1) : null,
-            'review_count'       => $reviewCount,
-            'bulk_pricing_rules' => $product->bulk_pricing_rules,
+            'reviews' => $reviewsData,
+            'review_avg' => $reviewAvg ? round($reviewAvg, 1) : null,
+            'review_count' => $reviewCount,
+            'promotions' => app(BundlePricingService::class)->forProduct($product),
         ];
 
         return Inertia::render('Shop/Product', [
-            'product'          => $productData,
+            'product' => $productData,
             'related_products' => $relatedProducts->map($formatSmallProduct),
-            'upsell_products'  => $upsellProducts->map($formatSmallProduct),
-            'whatsapp_number'  => $whatsappNumber,
+            'upsell_products' => $upsellProducts->map($formatSmallProduct),
+            'whatsapp_number' => $whatsappNumber,
         ]);
     }
 
@@ -433,7 +442,7 @@ class ShopController extends Controller
             ->with('attributeValues')
             ->first();
 
-        if (!$variant) {
+        if (! $variant) {
             return response()->json(['error' => 'Variante non trouvée'], 404);
         }
 
@@ -441,11 +450,10 @@ class ShopController extends Controller
             'id' => $variant->id,
             'sku' => $variant->sku,
             'price' => $variant->sale_price ?? $product->sale_price,
-            'price_formatted' => number_format($variant->sale_price ?? $product->sale_price, 2, ',', ' ') . ' €',
+            'price_formatted' => number_format($variant->sale_price ?? $product->sale_price, 2, ',', ' ').' €',
             'stock' => $variant->stock_quantity,
             'in_stock' => $variant->stock_quantity > 0 || $product->allow_backorder,
-            'image' => $variant->image ? asset('storage/' . $variant->image) : null,
+            'image' => $variant->image ? asset('storage/'.$variant->image) : null,
         ]);
     }
 }
-

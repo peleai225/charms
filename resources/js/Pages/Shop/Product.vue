@@ -12,6 +12,7 @@ const props = defineProps({
     related_products: Array,
     upsell_products:  Array,
     whatsapp_number:  String,
+    promotions:       { type: Array, default: () => [] },
 });
 
 const { formatPrice } = useHelpers();
@@ -116,27 +117,26 @@ const discountPct  = computed(() => {
     return Math.round((1 - currentPrice.value / props.product.compare_price) * 100);
 });
 
-// ─── Tarification en gros ────────────────────────────────────────────────────
-const bulkRules = computed(() => {
-    const rules = props.product.bulk_pricing_rules;
-    if (!rules || !Array.isArray(rules) || rules.length === 0) return null;
-    return [...rules].sort((a, b) => a.min_qty - b.min_qty);
-});
-const bulkUnitPrice = computed(() => {
-    if (!bulkRules.value || selectedVariant.value) return currentPrice.value;
-    let price = currentPrice.value;
-    for (let i = bulkRules.value.length - 1; i >= 0; i--) {
-        if (quantity.value >= bulkRules.value[i].min_qty) {
-            price = bulkRules.value[i].unit_price;
-            break;
-        }
-    }
-    return price;
-});
-const bulkSaving = computed(() => {
-    if (bulkUnitPrice.value >= currentPrice.value) return 0;
-    return (currentPrice.value - bulkUnitPrice.value) * quantity.value;
-});
+// ─── Offres par lot ──────────────────────────────────────────────────────────
+// Les offres viennent du serveur. Une variante peut avoir son propre prix et
+// sortir de la fourchette de l'offre : on le dit, au lieu de masquer en silence.
+const inBand = (offer, price) =>
+    (offer.price_min == null || price >= offer.price_min)
+    && (offer.price_max == null || price <= offer.price_max);
+
+const activePromotions = computed(() =>
+    props.promotions
+        .filter(offer => inBand(offer, currentPrice.value))
+        // L'économie est recalculée au prix de la variante choisie, pas au prix de base.
+        .map(offer => ({
+            ...offer,
+            saving: Math.max(0, currentPrice.value * offer.lot_qty - offer.lot_price),
+        })),
+);
+
+const variantLeavesOffer = computed(
+    () => props.promotions.length > 0 && activePromotions.value.length === 0,
+);
 
 // ─── Panier ───────────────────────────────────────────────────────────────────
 const quantity = ref(1);
@@ -296,33 +296,37 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                     </div>
 
                     <!-- Prix -->
-                    <div class="flex items-baseline gap-3 mb-1">
-                        <span class="text-3xl font-bold text-slate-900">{{ formatPrice(bulkUnitPrice) }}</span>
-                        <span v-if="bulkUnitPrice < currentPrice" class="text-xl text-slate-400 line-through">{{ formatPrice(currentPrice) }}</span>
-                        <span v-else-if="product.compare_price" class="text-xl text-slate-400 line-through">{{ formatPrice(product.compare_price) }}</span>
+                    <div class="flex items-baseline gap-3 mb-2">
+                        <span class="text-3xl font-bold text-slate-900">{{ formatPrice(currentPrice) }}</span>
+                        <span v-if="product.compare_price" class="text-xl text-slate-400 line-through">{{ formatPrice(product.compare_price) }}</span>
                     </div>
-                    <p v-if="bulkSaving > 0" class="text-sm font-medium text-green-600 mb-4">
-                        Vous économisez {{ formatPrice(bulkSaving) }} sur cette commande
-                    </p>
 
-                    <!-- Paliers de prix en gros -->
-                    <div v-if="bulkRules && !selectedVariant" class="mb-4 border border-primary-600/20 rounded-lg overflow-hidden">
+                    <!-- Offres par lot -->
+                    <div v-if="activePromotions.length" class="mb-4 border border-primary-600/20 rounded-lg overflow-hidden">
                         <div class="bg-primary-600/5 px-3 py-2">
-                            <p class="text-xs font-semibold text-primary-600">Achetez plus, payez moins</p>
+                            <p class="text-xs font-semibold text-primary-600">Offres en cours</p>
                         </div>
                         <div class="divide-y divide-slate-100">
-                            <div v-for="rule in bulkRules" :key="rule.min_qty"
-                                class="flex items-center justify-between px-3 py-2 text-sm transition"
-                                :class="quantity >= rule.min_qty ? 'bg-primary-600/5 font-medium' : ''">
-                                <span class="text-slate-700">
-                                    Dès {{ rule.min_qty }} pièces
-                                </span>
-                                <span class="font-semibold" :class="quantity >= rule.min_qty ? 'text-primary-600' : 'text-slate-900'">
-                                    {{ formatPrice(rule.unit_price) }} / unité
-                                </span>
+                            <div v-for="offer in activePromotions" :key="offer.name" class="px-3 py-2 text-sm">
+                                <div class="flex items-center justify-between gap-3">
+                                    <span class="font-medium text-slate-900">{{ offer.name }}</span>
+                                    <span class="font-semibold text-primary-600 whitespace-nowrap">
+                                        {{ formatPrice(offer.unit_price_in_lot) }} / unité
+                                    </span>
+                                </div>
+                                <p v-if="offer.saving > 0" class="text-xs text-green-600 mt-0.5">
+                                    Économisez {{ formatPrice(offer.saving) }} sur {{ offer.lot_qty }} articles
+                                </p>
+                                <p v-if="offer.description" class="text-xs text-slate-500 mt-0.5">
+                                    {{ offer.description }}
+                                </p>
                             </div>
                         </div>
                     </div>
+
+                    <p v-else-if="variantLeavesOffer" class="mb-4 text-sm text-slate-500">
+                        Cette option n'entre pas dans les offres par lot en cours.
+                    </p>
 
                     <!-- Description courte -->
                     <p v-if="product.short_description" class="text-sm text-slate-600 leading-relaxed mb-5 border-t border-slate-100 pt-4">

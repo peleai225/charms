@@ -136,11 +136,11 @@ const stars = computed(() => {
                 </span>
             </div>
 
-            <!-- Badge prix en gros bottom-left -->
-            <div v-if="product.has_bulk_pricing" class="absolute bottom-2 left-2 z-10">
+            <!-- Badge offre par lot bottom-left -->
+            <div v-if="product.promotion_label" class="absolute bottom-2 left-2 z-10">
                 <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-semibold rounded-full border border-blue-200 shadow-sm">
                     <Tag class="w-3 h-3" />
-                    Prix en gros
+                    {{ product.promotion_label }}
                 </span>
             </div>
 

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\Models\Product;
 use App\Models\Promotion;
 use App\Support\CartPricing;
 use App\Support\PricedLine;
@@ -138,6 +139,63 @@ class BundlePricingService
         }
 
         return $nudges;
+    }
+
+    /**
+     * Offres affichables sur une fiche produit, pour un prix effectif donné.
+     *
+     * `unit_price_in_lot` est le prix unitaire obtenu si les `lot_qty` unités étaient
+     * toutes ce produit — la seule formulation honnête sur une fiche, le lot réel
+     * pouvant mélanger plusieurs références.
+     *
+     * La fourchette est exposée pour que la fiche puisse dire qu'une variante au
+     * tarif différent en sort, au lieu de masquer l'offre en silence.
+     *
+     * @return array<int, array{name:string, description:?string, lot_qty:int,
+     *                          lot_price:float, unit_price_in_lot:float, saving:float,
+     *                          price_min:?float, price_max:?float}>
+     */
+    public function forProduct(Product $product, ?float $effectivePrice = null): array
+    {
+        $price = $effectivePrice ?? (float) $product->sale_price;
+
+        return Promotion::valid()
+            ->resolutionOrder()
+            ->with(['categories', 'products'])
+            ->get()
+            ->filter(function (Promotion $promotion) use ($product, $price) {
+                $eligible = $promotion->products->contains('id', $product->id)
+                    || ($product->category_id !== null
+                        && in_array($product->category_id, $promotion->eligibleCategoryIds(), true));
+
+                return $eligible && $promotion->matchesPrice($price);
+            })
+            ->map(fn (Promotion $promotion) => [
+                'name' => $promotion->name,
+                'description' => $promotion->description,
+                'lot_qty' => (int) $promotion->lot_qty,
+                'lot_price' => (float) $promotion->lot_price,
+                'unit_price_in_lot' => (float) round((float) $promotion->lot_price / (int) $promotion->lot_qty),
+                'saving' => max(0, $price * (int) $promotion->lot_qty - (float) $promotion->lot_price),
+                'price_min' => $promotion->price_min === null ? null : (float) $promotion->price_min,
+                'price_max' => $promotion->price_max === null ? null : (float) $promotion->price_max,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Libellé court pour une vignette de catalogue, ou null s'il n'y a pas d'offre.
+     */
+    public function labelForProduct(Product $product): ?string
+    {
+        $offers = $this->forProduct($product);
+
+        if ($offers === []) {
+            return null;
+        }
+
+        return $offers[0]['lot_qty'].' pour '.number_format($offers[0]['lot_price'], 0, ',', ' ');
     }
 
     /**

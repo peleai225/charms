@@ -16,10 +16,13 @@ return new class extends Migration
             $table->dropUnique(['slug']);
         });
 
-        // Ajouter une colonne virtuelle qui vaut le slug pour les produits actifs
-        // et l'ID pour les produits supprimés, puis indexer dessus.
+        // Ajouter une colonne générée qui vaut le slug pour les produits actifs et
+        // le slug suffixé de la date de suppression pour les produits supprimés,
+        // puis indexer dessus.
+        // Le suffixe utilise `deleted_at` et non `id` : MySQL 8.x refuse qu'une
+        // colonne générée référence une colonne auto-increment (erreur 3109).
         // Compatible MariaDB 10.2+ et MySQL 5.7+
-        \DB::statement('ALTER TABLE products ADD COLUMN slug_active VARCHAR(255) AS (IF(deleted_at IS NULL, slug, CONCAT(slug, \'-deleted-\', id))) STORED');
+        \DB::statement('ALTER TABLE products ADD COLUMN slug_active VARCHAR(255) AS (IF(deleted_at IS NULL, slug, CONCAT(slug, \'-deleted-\', deleted_at))) STORED');
         \DB::statement('CREATE UNIQUE INDEX products_slug_unique ON products (slug_active)');
     }
 

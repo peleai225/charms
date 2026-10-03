@@ -69,6 +69,78 @@ class BundlePricingService
     }
 
     /**
+     * Offres à portée de main : pour chaque promotion dont le vivier n'est pas un
+     * multiple de lot_qty, combien d'unités manquent et ce que le prochain lot
+     * complet ferait gagner.
+     *
+     * @return array<int, array{promotion_id:int, promotion_name:string,
+     *                          category_name:?string, items_needed:int,
+     *                          current_qty:int, next_tier_qty:int,
+     *                          total_saving:float, shop_url:string}>
+     */
+    public function nudges(Cart $cart): array
+    {
+        $items = $cart->items()->with(['product.category', 'variant'])->get();
+
+        if ($items->isEmpty()) {
+            return [];
+        }
+
+        $candidates = Promotion::valid()
+            ->resolutionOrder()
+            ->with(['categories', 'products'])
+            ->get();
+
+        $nudges = [];
+
+        foreach ($candidates as $promotion) {
+            $units = $this->pool($promotion, $items, []);
+            $count = count($units);
+
+            if ($count === 0) {
+                continue;
+            }
+
+            $lotQty = (int) $promotion->lot_qty;
+            $lots = intdiv($count, $lotQty);
+            $remainder = $count % $lotQty;
+
+            // Lot complet : rien à suggérer.
+            if ($remainder === 0) {
+                continue;
+            }
+
+            // Plafond atteint : un nudge serait mensonger.
+            if ($promotion->max_lots_per_order !== null && $lots >= (int) $promotion->max_lots_per_order) {
+                continue;
+            }
+
+            $needed = $lotQty - $remainder;
+
+            // Les unités manquantes sont projetées au prix de la moins chère déjà
+            // présente : hypothèse prudente, l'économie annoncée n'est jamais survendue.
+            $cheapest = min(array_column($units, 'price'));
+            $tail = array_slice($units, $lots * $lotQty);
+            $projected = array_sum(array_column($tail, 'price')) + $needed * $cheapest;
+
+            $category = $promotion->categories->first();
+
+            $nudges[] = [
+                'promotion_id' => $promotion->id,
+                'promotion_name' => $promotion->name,
+                'category_name' => $category?->name,
+                'items_needed' => $needed,
+                'current_qty' => $remainder,
+                'next_tier_qty' => $lotQty,
+                'total_saving' => max(0, $projected - (float) $promotion->lot_price),
+                'shop_url' => $category ? '/boutique?category='.$category->slug : '/boutique',
+            ];
+        }
+
+        return $nudges;
+    }
+
+    /**
      * Remise coupon, calculée sur la seule base éligible : les lignes en offre en
      * sont exclues sauf offre cumulable.
      */

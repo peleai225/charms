@@ -8,6 +8,7 @@ use App\Models\Coupon;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Services\BundlePricingService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -21,10 +22,12 @@ class CartController extends Controller
         $cart = $this->getCart();
         $cart->load(['items.product.images', 'items.product.category', 'items.variant.attributeValues.attribute', 'coupon']);
 
+        $pricing = $cart->pricing();
+
         // Format cart data for Inertia
         $cartData = [
             'id' => $cart->id,
-            'items' => $cart->items->map(function ($item) {
+            'items' => $cart->items->map(function ($item) use ($pricing) {
                 $primaryImage = $item->product->images->where('is_primary', true)->first()
                     ?? $item->product->images->first();
 
@@ -38,17 +41,16 @@ class CartController extends Controller
                     }
                 }
 
-                $originalPrice = $item->product_variant_id
-                    ? ($item->variant?->effective_price ?? $item->product->sale_price)
-                    : $item->product->sale_price;
-                $isBulk = $item->unit_price < $originalPrice;
+                $line = $pricing->lineFor($item);
 
                 return [
                     'id' => $item->id,
                     'quantity' => $item->quantity,
                     'unit_price' => $item->unit_price,
-                    'original_price' => $isBulk ? $originalPrice : null,
                     'total' => $item->unit_price * $item->quantity,
+                    'discount' => $line->discount,
+                    'line_total' => $line->lineTotal(),
+                    'promotion' => $line->promotion?->name,
                     'product' => [
                         'id' => $item->product->id,
                         'name' => $item->product->name,
@@ -61,15 +63,17 @@ class CartController extends Controller
                     ] : null,
                 ];
             })->toArray(),
-            'subtotal' => $cart->subtotal,
-            'discount' => $cart->discount_amount ?? 0,
+            'subtotal' => $pricing->subtotal(),
+            'bundle_discount' => $pricing->bundleDiscount(),
+            'discount' => $pricing->couponDiscount,
+            'coupon_base' => $pricing->couponEligibleBase(),
             'shipping_cost' => $cart->shipping_cost ?? 0,
-            'total' => $cart->total,
+            'total' => $pricing->total(),
             'coupon_code' => $cart->coupon_code,
         ];
 
-        // Calculer les nudges bulk pricing pour chaque produit du panier
-        $nudges = $this->computeBulkNudges($cart);
+        // Offres à portée de main, une entrée par promotion incomplète
+        $nudges = app(BundlePricingService::class)->nudges($cart);
 
         return Inertia::render('Cart/Index', [
             'cart' => $cartData,
@@ -98,7 +102,7 @@ class CartController extends Controller
 
         // Vérifier le stock
         $stockAvailable = $variant ? $variant->stock_quantity : $product->stock_quantity;
-        if ($stockAvailable < $request->quantity && !$product->allow_backorder) {
+        if ($stockAvailable < $request->quantity && ! $product->allow_backorder) {
             return back()->with('error', 'Stock insuffisant.');
         }
 
@@ -140,11 +144,12 @@ class CartController extends Controller
                 ? $item->variant->stock_quantity
                 : $item->product->stock_quantity;
             $allowBackorder = $item->product->allow_backorder ?? false;
-            if (!$allowBackorder && $request->quantity > $stock) {
+            if (! $allowBackorder && $request->quantity > $stock) {
                 $msg = "Stock insuffisant (max {$stock}).";
                 if ($request->wantsJson() || $request->ajax()) {
                     return response()->json(['success' => false, 'message' => $msg], 422);
                 }
+
                 return back()->withErrors(['quantity' => $msg]);
             }
         }
@@ -152,14 +157,10 @@ class CartController extends Controller
         $cart->updateItemQuantity($itemId, $request->quantity);
 
         // Fetch pur (pas Inertia) → JSON pour mise à jour réactive sans rechargement
-        if (!$request->header('X-Inertia') && ($request->wantsJson() || $request->ajax())) {
+        if (! $request->header('X-Inertia') && ($request->wantsJson() || $request->ajax())) {
             $cart->refresh();
-            return response()->json([
-                'success'    => true,
-                'subtotal'   => $cart->subtotal,
-                'total'      => $cart->total,
-                'cart_count' => $cart->items_count,
-            ]);
+
+            return response()->json($this->summaryPayload($cart));
         }
 
         return back()->with('success', 'Panier mis à jour.');
@@ -173,14 +174,10 @@ class CartController extends Controller
         $cart = $this->getCart();
         $cart->removeItem($itemId);
 
-        if (!request()->header('X-Inertia') && (request()->wantsJson() || request()->ajax())) {
+        if (! request()->header('X-Inertia') && (request()->wantsJson() || request()->ajax())) {
             $cart->refresh();
-            return response()->json([
-                'success'    => true,
-                'subtotal'   => $cart->subtotal,
-                'total'      => $cart->total,
-                'cart_count' => $cart->items_count,
-            ]);
+
+            return response()->json($this->summaryPayload($cart));
         }
 
         return back()->with('success', 'Article supprimé du panier.');
@@ -222,44 +219,43 @@ class CartController extends Controller
         // Vérifier le coupon manuellement pour avoir un message d'erreur détaillé
         $coupon = \App\Models\Coupon::where('code', \Illuminate\Support\Str::upper($request->coupon_code))->first();
 
-        if (!$coupon) {
+        if (! $coupon) {
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
                     'error' => 'Code promo introuvable.',
                 ], 400);
             }
+
             return back()->with('error', 'Code promo introuvable.');
         }
 
         $customer = $cart->customer;
         $validation = $coupon->canBeUsedBy($customer, $cart->subtotal);
 
-        if (!$validation['valid']) {
+        if (! $validation['valid']) {
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'success' => false,
                     'error' => $validation['message'],
                 ], 400);
             }
+
             return back()->with('error', $validation['message']);
         }
 
         if ($cart->applyCoupon($request->coupon_code)) {
             $cart->refresh();
-            
+
             if ($request->ajax() || $request->wantsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Code promo appliqué ! Réduction de ' . format_price($cart->discount_amount),
+                return response()->json(array_merge($this->summaryPayload($cart), [
+                    'message' => 'Code promo appliqué ! Réduction de '.format_price($cart->discount_amount),
                     'discount_amount' => $cart->discount_amount,
-                    'subtotal' => $cart->subtotal,
-                    'total' => $cart->total,
                     'coupon_code' => $cart->coupon_code,
-                ]);
+                ]));
             }
-            
-            return back()->with('success', 'Code promo appliqué ! Réduction de ' . format_price($cart->discount_amount));
+
+            return back()->with('success', 'Code promo appliqué ! Réduction de '.format_price($cart->discount_amount));
         }
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -282,84 +278,39 @@ class CartController extends Controller
 
         if (request()->wantsJson() || request()->ajax()) {
             $cart->refresh();
-            return response()->json(['success' => true, 'cart_count' => $cart->items_count]);
+
+            return response()->json($this->summaryPayload($cart));
         }
 
         return back()->with('success', 'Code promo retiré.');
     }
 
     /**
-     * Calcule les nudges de tarification en gros pour les produits du panier.
-     * Pour chaque produit ayant des bulk_pricing_rules, on détermine le prochain
-     * palier non atteint et l'économie potentielle.
+     * Récapitulatif renvoyé aux mises à jour AJAX du panier.
+     *
+     * La remise de lot dépend du panier entier : changer la quantité d'une ligne
+     * peut compléter ou défaire un lot sur une autre. Le front ne peut donc pas
+     * la recalculer seul — il reçoit ici les remises de toutes les lignes.
      */
-    protected function computeBulkNudges(Cart $cart): array
+    protected function summaryPayload(Cart $cart): array
     {
-        $nudges = [];
+        $pricing = $cart->pricing();
 
-        // Grouper les items par product_id pour agréger les quantités (variantes incluses)
-        $grouped = $cart->items->groupBy('product_id');
-
-        foreach ($grouped as $productId => $productItems) {
-            $product = $productItems->first()->product;
-            $rules = $product->bulk_pricing_rules;
-
-            // Fallback vers les règles de la catégorie
-            if (empty($rules) || !is_array($rules)) {
-                $rules = $product->category?->bulk_pricing_rules;
-            }
-
-            if (empty($rules) || !is_array($rules)) {
-                continue;
-            }
-
-            $currentQty = $productItems->sum('quantity');
-            $currentUnitPrice = $product->getBulkUnitPrice($currentQty);
-
-            // Trouver le prochain palier non encore atteint
-            $sortedRules = collect($rules)->sortBy('min_qty')->values();
-            $nextTier = null;
-
-            foreach ($sortedRules as $rule) {
-                if ($rule['min_qty'] > $currentQty) {
-                    $nextTier = $rule;
-                    break;
-                }
-            }
-
-            if (!$nextTier) {
-                continue; // Déjà au palier max
-            }
-
-            $itemsNeeded = $nextTier['min_qty'] - $currentQty;
-            $nextUnitPrice = (float) $nextTier['unit_price'];
-
-            // Économie = différence de prix sur le total au prochain palier
-            $totalAtCurrentPrice = $nextTier['min_qty'] * $currentUnitPrice;
-            $totalAtNextPrice = $nextTier['min_qty'] * $nextUnitPrice;
-            $totalSaving = $totalAtCurrentPrice - $totalAtNextPrice;
-
-            // Construire l'URL de la catégorie ou de la boutique
-            $categorySlug = $product->category?->slug;
-            $shopUrl = $categorySlug
-                ? '/boutique?category=' . $categorySlug
-                : '/boutique';
-
-            $nudges[] = [
-                'product_id' => $product->id,
-                'product_name' => $product->name,
-                'category_name' => $product->category?->name,
-                'items_needed' => $itemsNeeded,
-                'current_qty' => $currentQty,
-                'next_tier_qty' => $nextTier['min_qty'],
-                'current_unit_price' => $currentUnitPrice,
-                'next_unit_price' => $nextUnitPrice,
-                'total_saving' => $totalSaving,
-                'shop_url' => $shopUrl,
-            ];
-        }
-
-        return $nudges;
+        return [
+            'success' => true,
+            'subtotal' => $pricing->subtotal(),
+            'bundle_discount' => $pricing->bundleDiscount(),
+            'discount' => $pricing->couponDiscount,
+            'coupon_base' => $pricing->couponEligibleBase(),
+            'total' => $pricing->total(),
+            'cart_count' => $cart->items_count,
+            'lines' => collect($pricing->lines)->map(fn ($line) => [
+                'id' => $line->cartItemId,
+                'discount' => $line->discount,
+                'line_total' => $line->lineTotal(),
+                'promotion' => $line->promotion?->name,
+            ])->values()->all(),
+        ];
     }
 
     /**
@@ -393,35 +344,35 @@ class CartController extends Controller
             $isBulk = $item->unit_price < $originalPrice;
 
             return [
-                'id'           => $item->id,
-                'product_id'   => $item->product_id,
-                'name'         => $item->product->name,
-                'slug'         => $item->product->slug,
-                'image'        => $image ? asset('storage/' . $image->path) : null,
-                'price'        => $item->unit_price,
-                'price_fmt'    => number_format($item->unit_price, 0, ',', ' ') . ' F CFA',
-                'original_price_fmt' => $isBulk ? number_format($originalPrice, 0, ',', ' ') . ' F CFA' : null,
-                'quantity'     => $item->quantity,
-                'subtotal_fmt' => number_format($item->unit_price * $item->quantity, 0, ',', ' ') . ' F CFA',
-                'variant_id'   => $item->product_variant_id,
-                'variant'      => $item->variant
+                'id' => $item->id,
+                'product_id' => $item->product_id,
+                'name' => $item->product->name,
+                'slug' => $item->product->slug,
+                'image' => $image ? asset('storage/'.$image->path) : null,
+                'price' => $item->unit_price,
+                'price_fmt' => number_format($item->unit_price, 0, ',', ' ').' F CFA',
+                'original_price_fmt' => $isBulk ? number_format($originalPrice, 0, ',', ' ').' F CFA' : null,
+                'quantity' => $item->quantity,
+                'subtotal_fmt' => number_format($item->unit_price * $item->quantity, 0, ',', ' ').' F CFA',
+                'variant_id' => $item->product_variant_id,
+                'variant' => $item->variant
                     ? $item->variant->attributeValues->pluck('value')->implode(' / ')
                     : null,
-                'update_url'   => route('cart.update', $item->id),
-                'remove_url'   => route('cart.remove', $item->id),
+                'update_url' => route('cart.update', $item->id),
+                'remove_url' => route('cart.remove', $item->id),
             ];
         });
 
         return response()->json([
-            'items'         => $items,
-            'count'         => $cart->items_count,
-            'subtotal_fmt'  => number_format($cart->subtotal, 0, ',', ' ') . ' F CFA',
-            'discount_fmt'  => $cart->discount_amount > 0
-                ? number_format($cart->discount_amount, 0, ',', ' ') . ' F CFA'
+            'items' => $items,
+            'count' => $cart->items_count,
+            'subtotal_fmt' => number_format($cart->subtotal, 0, ',', ' ').' F CFA',
+            'discount_fmt' => $cart->discount_amount > 0
+                ? number_format($cart->discount_amount, 0, ',', ' ').' F CFA'
                 : null,
-            'total_fmt'     => number_format($cart->total, 0, ',', ' ') . ' F CFA',
-            'coupon_code'   => $cart->coupon_code,
-            'checkout_url'  => route('checkout.index'),
+            'total_fmt' => number_format($cart->total, 0, ',', ' ').' F CFA',
+            'coupon_code' => $cart->coupon_code,
+            'checkout_url' => route('checkout.index'),
         ]);
     }
 
@@ -431,10 +382,9 @@ class CartController extends Controller
     public function count()
     {
         $cart = $this->getCart();
-        
+
         return response()->json([
             'count' => $cart->items_count,
         ]);
     }
 }
-

@@ -21,12 +21,32 @@ const cartStore = useCartStore();
 // On copie les items dans un state local pour mise à jour instantanée
 const items = reactive(props.cart?.items?.map(i => ({ ...i })) ?? []);
 const subtotal = ref(props.cart?.subtotal ?? 0);
+const bundleDiscount = ref(props.cart?.bundle_discount ?? 0);
 const discount = ref(props.cart?.discount ?? 0);
+const couponBase = ref(props.cart?.coupon_base ?? 0);
 const shippingCost = ref(props.cart?.shipping_cost ?? 0);
 const total = ref(props.cart?.total ?? 0);
 const couponCode = ref(props.cart?.coupon_code ?? '');
 
 const isEmpty = computed(() => items.length === 0);
+
+// La remise de lot dépend du panier entier : seul le serveur peut la recalculer.
+// On applique son récapitulatif tel quel, lignes comprises.
+const applySummary = (data) => {
+    subtotal.value       = data.subtotal;
+    bundleDiscount.value = data.bundle_discount ?? 0;
+    discount.value       = data.discount ?? 0;
+    couponBase.value     = data.coupon_base ?? 0;
+    total.value          = data.total;
+
+    for (const line of data.lines ?? []) {
+        const item = items.find(i => i.id === line.id);
+        if (!item) continue;
+        item.discount   = line.discount;
+        item.line_total = line.line_total;
+        item.promotion  = line.promotion;
+    }
+};
 
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content;
 
@@ -55,8 +75,7 @@ const updateQuantity = async (item, newQty) => {
         });
         if (res.ok) {
             const data = await res.json();
-            subtotal.value = data.subtotal;
-            total.value    = data.total;
+            applySummary(data);
             cartStore.setCount(data.cart_count);
             stockError.value = null;
         } else if (res.status === 422) {
@@ -92,8 +111,7 @@ const removeItem = async (item) => {
             const data = await res.json();
             const idx = items.findIndex(i => i.id === item.id);
             if (idx !== -1) items.splice(idx, 1);
-            subtotal.value = data.subtotal;
-            total.value    = data.total;
+            applySummary(data);
             cartStore.setCount(data.cart_count);
         }
     } finally {
@@ -121,9 +139,7 @@ const applyCoupon = async () => {
             couponError.value = data.error || data.message || 'Code invalide.';
         } else {
             couponCode.value = data.coupon_code;
-            discount.value   = data.discount_amount;
-            subtotal.value   = data.subtotal;
-            total.value      = data.total;
+            applySummary(data);
             couponInput.value = '';
         }
     } catch {
@@ -208,7 +224,7 @@ const waCartMessage = computed(() => {
                 <div v-if="nudges.length" class="space-y-2 mb-4">
                     <div
                         v-for="nudge in nudges"
-                        :key="nudge.product_id"
+                        :key="nudge.promotion_id"
                         class="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 sm:px-5 sm:py-4"
                     >
                         <div class="flex items-start gap-3">
@@ -221,10 +237,11 @@ const waCartMessage = computed(() => {
                                 <!-- Text -->
                                 <p class="text-sm text-blue-900">
                                     Ajoutez
-                                    <span class="font-bold">{{ nudge.items_needed }} {{ nudge.product_name }}</span>
+                                    <span class="font-bold">{{ nudge.items_needed }} article{{ nudge.items_needed > 1 ? 's' : '' }}</span>
                                     de plus pour économiser
                                     <span class="font-bold">{{ formatPrice(nudge.total_saving) }}</span> !
                                 </p>
+                                <p class="text-xs text-blue-700 mt-0.5">{{ nudge.promotion_name }}</p>
 
                                 <!-- Progress bar -->
                                 <div class="mt-2 flex items-center gap-2.5">
@@ -319,7 +336,9 @@ const waCartMessage = computed(() => {
 
                                 <!-- Prix total ligne -->
                                 <div class="shrink-0 text-right">
-                                    <p class="text-base font-bold text-slate-900 tabular-nums transition-all duration-200">{{ formatPrice(item.total) }}</p>
+                                    <p v-if="item.discount > 0" class="text-xs text-slate-400 line-through tabular-nums">{{ formatPrice(item.total) }}</p>
+                                    <p class="text-base font-bold text-slate-900 tabular-nums transition-all duration-200">{{ formatPrice(item.discount > 0 ? item.line_total : item.total) }}</p>
+                                    <p v-if="item.promotion" class="text-xs font-medium text-green-700 mt-0.5">{{ item.promotion }}</p>
                                 </div>
                             </div>
                         </TransitionGroup>
@@ -342,10 +361,17 @@ const waCartMessage = computed(() => {
                                     <span class="text-slate-500">Sous-total</span>
                                     <span class="font-medium text-slate-900 tabular-nums transition-all duration-200">{{ formatPrice(subtotal) }}</span>
                                 </div>
+                                <div v-if="bundleDiscount > 0" class="flex justify-between text-sm">
+                                    <span class="text-green-700">Remise offres</span>
+                                    <span class="font-semibold text-green-700 tabular-nums">−{{ formatPrice(bundleDiscount) }}</span>
+                                </div>
                                 <div v-if="discount > 0" class="flex justify-between text-sm">
                                     <span class="text-green-700">Réduction</span>
                                     <span class="font-semibold text-green-700 tabular-nums">−{{ formatPrice(discount) }}</span>
                                 </div>
+                                <p v-if="couponCode && bundleDiscount > 0" class="text-xs text-slate-500">
+                                    Code promo appliqué sur {{ formatPrice(couponBase) }} — les articles en offre en sont exclus.
+                                </p>
                                 <div class="flex justify-between text-sm">
                                     <span class="text-slate-500">Livraison</span>
                                     <span class="font-medium text-slate-500 italic">{{ shippingCost > 0 ? formatPrice(shippingCost) : 'Calculée au paiement' }}</span>

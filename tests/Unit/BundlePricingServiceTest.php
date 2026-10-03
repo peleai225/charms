@@ -646,4 +646,90 @@ class BundlePricingServiceTest extends TestCase
 
         $this->assertSame(0.0, $this->service()->price($cart)->couponDiscount);
     }
+
+    // ================================================================
+    // nudges()
+    // ================================================================
+
+    public function test_no_nudge_when_the_lot_is_complete(): void
+    {
+        $this->promotion();
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 3);
+
+        $this->assertSame([], $this->service()->nudges($cart));
+    }
+
+    public function test_no_nudge_without_any_eligible_item(): void
+    {
+        $this->promotion();
+
+        $this->assertSame([], $this->service()->nudges($this->cart()));
+    }
+
+    public function test_nudge_announces_the_missing_units(): void
+    {
+        $this->promotion();
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 2);
+
+        $nudges = $this->service()->nudges($cart);
+
+        $this->assertCount(1, $nudges);
+        $this->assertSame(1, $nudges[0]['items_needed']);
+        $this->assertSame(2, $nudges[0]['current_qty']);
+        $this->assertSame(3, $nudges[0]['next_tier_qty']);
+        $this->assertSame('3 t-shirts pour 10 000 F', $nudges[0]['promotion_name']);
+    }
+
+    public function test_nudge_states_the_saving_of_the_next_lot(): void
+    {
+        $this->promotion();
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 2);
+
+        $nudges = $this->service()->nudges($cart);
+
+        // 3 × 4 000 = 12 000 contre un lot à 10 000
+        $this->assertSame(2000.0, $nudges[0]['total_saving']);
+    }
+
+    public function test_nudge_counts_only_the_incomplete_remainder(): void
+    {
+        $this->promotion();
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 5);
+
+        $nudges = $this->service()->nudges($cart);
+
+        $this->assertSame(1, $nudges[0]['items_needed']);
+        $this->assertSame(2, $nudges[0]['current_qty']);
+    }
+
+    public function test_no_nudge_once_the_lot_cap_is_reached(): void
+    {
+        $this->promotion(['max_lots_per_order' => 1]);
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 5);
+
+        $this->assertSame([], $this->service()->nudges($cart));
+    }
+
+    public function test_nudge_links_to_the_promotion_category(): void
+    {
+        $this->promotion();
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 2);
+
+        $nudges = $this->service()->nudges($cart);
+
+        $this->assertSame('T-shirts', $nudges[0]['category_name']);
+        $this->assertSame('/boutique?category=t-shirts', $nudges[0]['shop_url']);
+    }
 }

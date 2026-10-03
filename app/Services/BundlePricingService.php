@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Promotion;
+use App\Support\CartPricing;
+use App\Support\PricedLine;
 
 /**
  * Moteur unique des offres par lot. Prend un panier, rend des remises par ligne.
@@ -14,6 +17,70 @@ use App\Models\Promotion;
  */
 class BundlePricingService
 {
+    /**
+     * Tarifie un panier : une passe par offre, dans l'ordre de résolution, chaque
+     * unité ne pouvant être remisée qu'une fois.
+     */
+    public function price(Cart $cart): CartPricing
+    {
+        $items = $cart->items()->with(['product.category', 'variant'])->get();
+
+        if ($items->isEmpty()) {
+            return new CartPricing([]);
+        }
+
+        $discounts = [];   // cart_item_id => remise cumulée
+        $promotions = [];  // cart_item_id => première offre appliquée
+        $consumed = [];    // cart_item_id => unités déjà prises
+
+        $candidates = Promotion::valid()
+            ->resolutionOrder()
+            ->with(['categories', 'products'])
+            ->get();
+
+        foreach ($candidates as $promotion) {
+            $result = $this->applyPromotion($promotion, $this->pool($promotion, $items, $consumed));
+
+            foreach ($result['discounts'] as $id => $share) {
+                $discounts[$id] = ($discounts[$id] ?? 0) + $share;
+                $promotions[$id] ??= $promotion;
+            }
+
+            foreach ($result['consumed'] as $id => $count) {
+                $consumed[$id] = ($consumed[$id] ?? 0) + $count;
+            }
+        }
+
+        $lines = [];
+
+        foreach ($items as $item) {
+            $lines[$item->id] = new PricedLine(
+                cartItemId: $item->id,
+                quantity: (int) $item->quantity,
+                unitPrice: (float) $item->unit_price,
+                discount: (float) ($discounts[$item->id] ?? 0),
+                promotion: $promotions[$item->id] ?? null,
+            );
+        }
+
+        $pricing = new CartPricing($lines);
+
+        return $pricing->withCouponDiscount($this->couponDiscount($cart, $pricing));
+    }
+
+    /**
+     * Remise coupon, calculée sur la seule base éligible : les lignes en offre en
+     * sont exclues sauf offre cumulable.
+     */
+    protected function couponDiscount(Cart $cart, CartPricing $pricing): float
+    {
+        if (! $cart->coupon_code || ! $cart->coupon) {
+            return 0.0;
+        }
+
+        return (float) $cart->coupon->calculateDiscount($pricing->couponEligibleBase());
+    }
+
     /**
      * Unités éligibles à une promotion, triées par prix décroissant.
      *

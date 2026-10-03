@@ -422,4 +422,228 @@ class BundlePricingServiceTest extends TestCase
         $this->assertSame(2000.0, array_sum($result['discounts']));
         $this->assertSame(3, array_sum($result['consumed']));
     }
+
+    // ================================================================
+    // price() — bout en bout
+    // ================================================================
+
+    /** Review Focus nº1 — panier vide. */
+    public function test_price_of_empty_cart_is_all_zero(): void
+    {
+        $pricing = $this->service()->price($this->cart());
+
+        $this->assertSame([], $pricing->lines);
+        $this->assertSame(0.0, $pricing->subtotal());
+        $this->assertSame(0.0, $pricing->bundleDiscount());
+        $this->assertSame(0.0, $pricing->total());
+    }
+
+    public function test_price_without_any_promotion_leaves_catalog_total(): void
+    {
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 3);
+
+        $pricing = $this->service()->price($cart);
+
+        $this->assertSame(12000.0, $pricing->subtotal());
+        $this->assertSame(0.0, $pricing->bundleDiscount());
+        $this->assertSame(12000.0, $pricing->total());
+    }
+
+    public function test_price_applies_lot_to_three_units(): void
+    {
+        $this->promotion();
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 3);
+
+        $pricing = $this->service()->price($cart);
+
+        $this->assertSame(12000.0, $pricing->subtotal());
+        $this->assertSame(2000.0, $pricing->bundleDiscount());
+        $this->assertSame(10000.0, $pricing->total());
+    }
+
+    public function test_price_leaves_remainder_at_catalog(): void
+    {
+        $this->promotion();
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 5);
+
+        $pricing = $this->service()->price($cart);
+
+        $this->assertSame(18000.0, $pricing->total());
+    }
+
+    public function test_price_repeats_lots(): void
+    {
+        $this->promotion();
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 6);
+
+        $pricing = $this->service()->price($cart);
+
+        $this->assertSame(20000.0, $pricing->total());
+    }
+
+    /** Cas normatif de la spec §4 : lot sur les trois unités les plus chères. */
+    public function test_price_puts_most_expensive_units_in_the_lot(): void
+    {
+        $this->promotion();
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4499, null, 'Graphic'), 1);
+        $this->addItem($cart, $this->product(4200, null, 'Bleu'), 1);
+        $this->addItem($cart, $this->product(4000, null, 'Rouge'), 2);
+
+        $pricing = $this->service()->price($cart);
+
+        $this->assertSame(16699.0, $pricing->subtotal());
+        $this->assertSame(2699.0, $pricing->bundleDiscount());
+        $this->assertSame(14000.0, $pricing->total());
+    }
+
+    public function test_price_ignores_items_outside_the_band(): void
+    {
+        $this->promotion();
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 3);
+        $this->addItem($cart, $this->product(5000, null, 'Premium'), 1);
+
+        $pricing = $this->service()->price($cart);
+
+        $this->assertSame(15000.0, $pricing->total());
+    }
+
+    public function test_price_handles_two_bands_independently(): void
+    {
+        $this->promotion(['name' => 'Palier 4000']);
+        $this->promotion([
+            'name' => 'Palier 5000',
+            'price_min' => 5000,
+            'price_max' => 5499,
+            'lot_price' => 12000,
+        ]);
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 3);
+        $this->addItem($cart, $this->product(5000, null, 'Premium'), 3);
+
+        $pricing = $this->service()->price($cart);
+
+        $this->assertSame(27000.0, $pricing->subtotal());
+        $this->assertSame(5000.0, $pricing->bundleDiscount());
+        $this->assertSame(22000.0, $pricing->total());
+    }
+
+    public function test_price_ignores_expired_promotion(): void
+    {
+        $this->promotion(['expires_at' => now()->subDay()]);
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 3);
+
+        $this->assertSame(12000.0, $this->service()->price($cart)->total());
+    }
+
+    public function test_price_ignores_inactive_promotion(): void
+    {
+        $this->promotion(['is_active' => false]);
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 3);
+
+        $this->assertSame(12000.0, $this->service()->price($cart)->total());
+    }
+
+    public function test_price_never_consumes_a_unit_twice(): void
+    {
+        $this->promotion(['name' => 'Offre A', 'priority' => 10]);
+        $this->promotion(['name' => 'Offre B', 'priority' => 0]);
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 3);
+
+        $pricing = $this->service()->price($cart);
+
+        // Une seule offre peut remiser ces trois unités.
+        $this->assertSame(2000.0, $pricing->bundleDiscount());
+    }
+
+    public function test_price_tags_the_line_with_its_promotion(): void
+    {
+        $promotion = $this->promotion();
+
+        $cart = $this->cart();
+        $item = $this->addItem($cart, $this->product(4000), 3);
+
+        $line = $this->service()->price($cart)->lineFor($item);
+
+        $this->assertNotNull($line->promotion);
+        $this->assertSame($promotion->id, $line->promotion->id);
+    }
+
+    // ================================================================
+    // price() — interaction coupon
+    // ================================================================
+
+    private function coupon(array $attributes = []): \App\Models\Coupon
+    {
+        return \App\Models\Coupon::create(array_merge([
+            'code' => 'PROMO20',
+            'name' => 'Vingt pour cent',
+            'type' => 'percentage',
+            'value' => 20,
+            'is_active' => true,
+            'usage_count' => 0,
+        ], $attributes));
+    }
+
+    public function test_coupon_skips_promoted_lines(): void
+    {
+        $this->promotion();
+        $this->coupon();
+
+        $accessories = Category::create(['name' => 'Accessoires', 'slug' => 'accessoires']);
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 3);
+        $this->addItem($cart, $this->product(3000, $accessories, 'Casquette'), 1);
+        $cart->update(['coupon_code' => 'PROMO20']);
+
+        $pricing = $this->service()->price($cart->fresh());
+
+        $this->assertSame(2000.0, $pricing->bundleDiscount());
+        $this->assertSame(600.0, $pricing->couponDiscount);
+        $this->assertSame(12400.0, $pricing->total());
+    }
+
+    public function test_stackable_promotion_lets_the_coupon_through(): void
+    {
+        $this->promotion(['stackable_with_coupons' => true]);
+        $this->coupon();
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 3);
+        $cart->update(['coupon_code' => 'PROMO20']);
+
+        $pricing = $this->service()->price($cart->fresh());
+
+        $this->assertSame(2000.0, $pricing->bundleDiscount());
+        $this->assertSame(2000.0, $pricing->couponDiscount);
+        $this->assertSame(8000.0, $pricing->total());
+    }
+
+    public function test_no_coupon_means_no_coupon_discount(): void
+    {
+        $this->promotion();
+
+        $cart = $this->cart();
+        $this->addItem($cart, $this->product(4000), 3);
+
+        $this->assertSame(0.0, $this->service()->price($cart)->couponDiscount);
+    }
 }

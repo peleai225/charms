@@ -2354,16 +2354,22 @@ class PromotionCheckoutTest extends TestCase
         ]);
     }
 
+    /**
+     * Champs exigés par CheckoutController::store(). `cod` est la seule méthode
+     * de paiement active par défaut (payment_cod_enabled vaut '1' sans réglage).
+     */
     private function checkoutPayload(): array
     {
         return [
-            'first_name'       => 'Awa',
-            'last_name'        => 'Koné',
-            'phone'            => '0700000000',
-            'email'            => 'awa@example.test',
-            'shipping_address' => 'Cocody, Abidjan',
-            'shipping_city'    => 'Abidjan',
-            'payment_method'   => 'cash_on_delivery',
+            'phone'               => '0700000000',
+            'email'               => 'awa@example.test',
+            'shipping_first_name' => 'Awa',
+            'shipping_last_name'  => 'Koné',
+            'shipping_address'    => 'Cocody, Abidjan',
+            'shipping_city'       => 'Abidjan',
+            'shipping_country'    => 'CI',
+            'same_billing'        => true,
+            'payment_method'      => 'cod',
         ];
     }
 
@@ -2380,7 +2386,7 @@ class PromotionCheckoutTest extends TestCase
             'quantity'   => 3,
         ]);
 
-        $this->post('/commande', $this->checkoutPayload());
+        $this->post(route('checkout.store'), $this->checkoutPayload());
 
         $order = Order::latest()->firstOrFail();
         $item  = $order->items()->firstOrFail();
@@ -2395,7 +2401,7 @@ class PromotionCheckoutTest extends TestCase
         $product = $this->product();
 
         $this->post('/panier/ajouter', ['product_id' => $product->id, 'quantity' => 3]);
-        $this->post('/commande', $this->checkoutPayload());
+        $this->post(route('checkout.store'), $this->checkoutPayload());
 
         $item = Order::latest()->firstOrFail()->items()->firstOrFail();
 
@@ -2408,7 +2414,7 @@ class PromotionCheckoutTest extends TestCase
         $product = $this->product();
 
         $this->post('/panier/ajouter', ['product_id' => $product->id, 'quantity' => 3]);
-        $this->post('/commande', $this->checkoutPayload());
+        $this->post(route('checkout.store'), $this->checkoutPayload());
 
         $order = Order::latest()->firstOrFail();
 
@@ -2421,7 +2427,7 @@ class PromotionCheckoutTest extends TestCase
         $product = $this->product();
 
         $this->post('/panier/ajouter', ['product_id' => $product->id, 'quantity' => 3]);
-        $this->post('/commande', $this->checkoutPayload());
+        $this->post(route('checkout.store'), $this->checkoutPayload());
 
         $order = Order::latest()->firstOrFail();
 
@@ -2436,7 +2442,7 @@ class PromotionCheckoutTest extends TestCase
         $product = $this->product();
 
         $this->post('/panier/ajouter', ['product_id' => $product->id, 'quantity' => 5]);
-        $this->post('/commande', $this->checkoutPayload());
+        $this->post(route('checkout.store'), $this->checkoutPayload());
 
         $order = Order::latest()->firstOrFail();
 
@@ -2449,7 +2455,7 @@ class PromotionCheckoutTest extends TestCase
         $product = $this->product();
 
         $this->post('/panier/ajouter', ['product_id' => $product->id, 'quantity' => 3]);
-        $this->post('/commande', $this->checkoutPayload());
+        $this->post(route('checkout.store'), $this->checkoutPayload());
 
         $order = Order::latest()->withSum('items', 'discount_amount')->firstOrFail();
 
@@ -2474,7 +2480,7 @@ class PromotionCheckoutTest extends TestCase
         ]);
 
         $this->post('/panier/ajouter', ['product_id' => $product->id, 'quantity' => 2]);
-        $this->post('/commande', $this->checkoutPayload());
+        $this->post(route('checkout.store'), $this->checkoutPayload());
 
         $item = Order::latest()->firstOrFail()->items()->firstOrFail();
 
@@ -2496,7 +2502,7 @@ class PromotionCheckoutTest extends TestCase
         // Le client a vu 10 000 F, puis l'offre est désactivée avant qu'il valide.
         $this->promotion->update(['is_active' => false]);
 
-        $this->post('/commande', array_merge($this->checkoutPayload(), [
+        $this->post(route('checkout.store'), array_merge($this->checkoutPayload(), [
             'expected_total' => 10000,
         ]))->assertRedirect(route('cart.index'));
 
@@ -2512,7 +2518,7 @@ class PromotionCheckoutTest extends TestCase
         $cart  = \App\Models\Cart::firstOrFail();
         $total = $cart->total;
 
-        $this->post('/commande', array_merge($this->checkoutPayload(), [
+        $this->post(route('checkout.store'), array_merge($this->checkoutPayload(), [
             'expected_total' => $total,
         ]));
 
@@ -2524,7 +2530,7 @@ class PromotionCheckoutTest extends TestCase
         $product = $this->product();
 
         $this->post('/panier/ajouter', ['product_id' => $product->id, 'quantity' => 3]);
-        $this->post('/commande', $this->checkoutPayload());
+        $this->post(route('checkout.store'), $this->checkoutPayload());
 
         $this->assertDatabaseCount('orders', 1);
     }

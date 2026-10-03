@@ -14,8 +14,8 @@ class PromotionModelTest extends TestCase
     private function promotion(array $attributes = []): Promotion
     {
         return Promotion::create(array_merge([
-            'name'      => '3 t-shirts pour 10 000 F',
-            'lot_qty'   => 3,
+            'name' => '3 t-shirts pour 10 000 F',
+            'lot_qty' => 3,
             'lot_price' => 10000,
             'price_min' => 4000,
             'price_max' => 4499,
@@ -63,7 +63,7 @@ class PromotionModelTest extends TestCase
     public function test_eligible_category_ids_include_descendants_by_default(): void
     {
         $parent = Category::create(['name' => 'Vêtements', 'slug' => 'vetements']);
-        $child  = Category::create(['name' => 'T-shirts', 'slug' => 't-shirts', 'parent_id' => $parent->id]);
+        $child = Category::create(['name' => 'T-shirts', 'slug' => 't-shirts', 'parent_id' => $parent->id]);
 
         $promotion = $this->promotion();
         $promotion->categories()->attach($parent->id);
@@ -77,7 +77,7 @@ class PromotionModelTest extends TestCase
     public function test_eligible_category_ids_exclude_descendants_when_disabled(): void
     {
         $parent = Category::create(['name' => 'Vêtements', 'slug' => 'vetements']);
-        $child  = Category::create(['name' => 'T-shirts', 'slug' => 't-shirts', 'parent_id' => $parent->id]);
+        $child = Category::create(['name' => 'T-shirts', 'slug' => 't-shirts', 'parent_id' => $parent->id]);
 
         $promotion = $this->promotion(['include_descendants' => false]);
         $promotion->categories()->attach($parent->id);
@@ -122,9 +122,9 @@ class PromotionModelTest extends TestCase
 
     public function test_status_reflects_lifecycle(): void
     {
-        $this->assertSame('active',    $this->promotion()->status);
-        $this->assertSame('inactive',  $this->promotion(['is_active' => false])->status);
-        $this->assertSame('expired',   $this->promotion(['expires_at' => now()->subDay()])->status);
+        $this->assertSame('active', $this->promotion()->status);
+        $this->assertSame('inactive', $this->promotion(['is_active' => false])->status);
+        $this->assertSame('expired', $this->promotion(['expires_at' => now()->subDay()])->status);
         $this->assertSame('scheduled', $this->promotion(['starts_at' => now()->addDay()])->status);
     }
 
@@ -134,8 +134,8 @@ class PromotionModelTest extends TestCase
 
     public function test_resolution_order_sorts_by_priority_then_lot_price(): void
     {
-        $low      = $this->promotion(['name' => 'basse',    'priority' => 0, 'lot_price' => 9000]);
-        $high     = $this->promotion(['name' => 'haute',    'priority' => 5, 'lot_price' => 11000]);
+        $low = $this->promotion(['name' => 'basse',    'priority' => 0, 'lot_price' => 9000]);
+        $high = $this->promotion(['name' => 'haute',    'priority' => 5, 'lot_price' => 11000]);
         $cheapest = $this->promotion(['name' => 'pas cher', 'priority' => 0, 'lot_price' => 8000]);
 
         $names = Promotion::resolutionOrder()->pluck('name')->all();

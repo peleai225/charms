@@ -44,7 +44,6 @@ class Product extends Model
         'status',
         'is_featured',
         'is_new',
-        'bulk_pricing_rules',
     ];
 
     protected $appends = ['primary_image_url'];
@@ -53,7 +52,6 @@ class Product extends Model
         'purchase_price' => 'decimal:2',
         'sale_price' => 'decimal:2',
         'compare_price' => 'decimal:2',
-        'bulk_pricing_rules' => 'array',
         'cost_price' => 'decimal:2',
         'tax_rate' => 'decimal:2',
         'stock_quantity' => 'integer',
@@ -81,7 +79,7 @@ class Product extends Model
                 $counter = 1;
                 // Générer un slug unique (l'index ne contraint que les produits actifs)
                 while (static::where('slug', $slug)->exists()) {
-                    $slug = $baseSlug . '-' . $counter;
+                    $slug = $baseSlug.'-'.$counter;
                     $counter++;
                 }
                 $product->slug = $slug;
@@ -194,7 +192,8 @@ class Product extends Model
     public function getPrimaryImageUrlAttribute(): ?string
     {
         $image = $this->images->where('is_primary', true)->first();
-        return $image ? asset('storage/' . $image->path) : null;
+
+        return $image ? asset('storage/'.$image->path) : null;
     }
 
     public function getIsOnSaleAttribute(): bool
@@ -204,9 +203,10 @@ class Product extends Model
 
     public function getDiscountPercentageAttribute(): ?int
     {
-        if (!$this->is_on_sale) {
+        if (! $this->is_on_sale) {
             return null;
         }
+
         return round((($this->compare_price - $this->sale_price) / $this->compare_price) * 100);
     }
 
@@ -228,9 +228,10 @@ class Product extends Model
     public function getMarginPercentageAttribute(): ?float
     {
         $cost = $this->cost_price ?? $this->purchase_price;
-        if (!$cost || $cost <= 0) {
+        if (! $cost || $cost <= 0) {
             return null;
         }
+
         return round((($this->sale_price - $cost) / $this->sale_price) * 100, 2);
     }
 
@@ -244,52 +245,12 @@ class Product extends Model
         return $this->reviews()->where('status', 'approved')->count();
     }
 
-    /**
-     * Retourne le prix unitaire pour une quantité donnée (tarification en gros).
-     *
-     * Priorité :
-     *   1. Règles propres au produit (bulk_pricing_rules sur products)
-     *   2. Règles de la catégorie (bulk_pricing_rules sur categories)
-     *   3. Prix de vente standard
-     */
-    public function getBulkUnitPrice(int $quantity): float
-    {
-        $rules = $this->bulk_pricing_rules;
-
-        // 1. Règles propres au produit
-        if (!empty($rules) && is_array($rules)) {
-            $sorted = collect($rules)->sortByDesc('min_qty');
-
-            foreach ($sorted as $rule) {
-                if ($quantity >= ($rule['min_qty'] ?? PHP_INT_MAX)) {
-                    return (float) $rule['unit_price'];
-                }
-            }
-
-            return (float) $this->sale_price;
-        }
-
-        // 2. Fallback vers les règles de la catégorie
-        if ($this->category_id && $this->category) {
-            return $this->category->getBulkUnitPrice($quantity, (float) $this->sale_price);
-        }
-
-        return (float) $this->sale_price;
-    }
-
-    /**
-     * Indique si ce produit a ses propres règles de tarification en gros.
-     */
-    public function hasOwnBulkPricingRules(): bool
-    {
-        return !empty($this->bulk_pricing_rules) && is_array($this->bulk_pricing_rules);
-    }
-
     public function getIsInStockAttribute(): bool
     {
         if ($this->has_variants) {
             return $this->variants()->where('stock_quantity', '>', 0)->exists();
         }
+
         return $this->stock_quantity > 0 || $this->allow_backorder;
     }
 
@@ -298,6 +259,7 @@ class Product extends Model
         if ($this->has_variants) {
             return $this->variants()->sum('stock_quantity');
         }
+
         return $this->stock_quantity;
     }
 
@@ -328,9 +290,9 @@ class Product extends Model
 
     public function generateBarcode(): string
     {
-        $barcode = '200' . str_pad($this->id, 9, '0', STR_PAD_LEFT);
+        $barcode = '200'.str_pad($this->id, 9, '0', STR_PAD_LEFT);
         $this->update(['barcode' => $barcode]);
+
         return $barcode;
     }
 }
-

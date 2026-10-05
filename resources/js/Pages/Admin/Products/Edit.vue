@@ -27,25 +27,8 @@ const form = useForm({
     is_new:                 !!props.product.is_new,
     has_variants:           !!props.product.has_variants,
     track_stock:            props.product.track_stock !== false,
-    bulk_pricing_rules:     JSON.stringify(props.product.bulk_pricing_rules || []),
     images:                 [],
 })
-
-const bulkRules = ref(props.product.bulk_pricing_rules?.length ? [...props.product.bulk_pricing_rules] : [])
-
-function addBulkRule() {
-    bulkRules.value.push({ min_qty: '', unit_price: '' })
-}
-
-function removeBulkRule(index) {
-    bulkRules.value.splice(index, 1)
-    syncBulkRules()
-}
-
-function syncBulkRules() {
-    const valid = bulkRules.value.filter(r => r.min_qty && r.unit_price)
-    form.bulk_pricing_rules = valid.length ? JSON.stringify(valid) : null
-}
 
 const newFiles = ref([])
 const newFilePreviews = ref([])
@@ -413,34 +396,6 @@ function deleteProduct() {
                                 <option value="0">0% — Exonéré</option>
                             </select>
                         </div>
-                    </div>
-
-                    <!-- Tarification en gros -->
-                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 class="text-sm font-semibold text-gray-900">Tarification en gros</h2>
-                            <button type="button" @click="addBulkRule"
-                                class="text-xs text-blue-600 hover:text-blue-800 font-medium">+ Ajouter un palier</button>
-                        </div>
-                        <p v-if="!bulkRules.length" class="text-xs text-gray-400">Aucun palier configuré. Le prix de vente standard s'applique.</p>
-                        <div v-else class="space-y-2">
-                            <div v-for="(rule, idx) in bulkRules" :key="idx" class="flex items-end gap-2">
-                                <div class="flex-1">
-                                    <label v-if="idx === 0" class="block text-[11px] text-gray-500 mb-1">Qté min.</label>
-                                    <input v-model.number="rule.min_qty" type="number" min="2" step="1" placeholder="ex: 3" @change="syncBulkRules"
-                                        class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                </div>
-                                <div class="flex-1">
-                                    <label v-if="idx === 0" class="block text-[11px] text-gray-500 mb-1">Prix unitaire (F CFA)</label>
-                                    <input v-model.number="rule.unit_price" type="number" min="0" step="1" placeholder="ex: 3000" @change="syncBulkRules"
-                                        class="w-full h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                </div>
-                                <button type="button" @click="removeBulkRule(idx)" class="h-9 px-2 text-gray-400 hover:text-red-500" title="Supprimer">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                </button>
-                            </div>
-                        </div>
-                        <p v-if="bulkRules.length" class="text-[11px] text-gray-400 mt-2">Le prix de base ({{ Number(form.sale_price).toLocaleString('fr-FR') }} F) s'applique en dessous du premier palier.</p>
                     </div>
 
                     <!-- Stock & Identifiants -->

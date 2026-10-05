@@ -57,47 +57,6 @@
             </div>
         </div>
 
-        <!-- Tarification en gros -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
-             x-data="{
-                rules: {{ json_encode(old('bulk_pricing_rules') ? json_decode(old('bulk_pricing_rules'), true) : []) }},
-                addRule() { this.rules.push({ min_qty: '', unit_price: '' }) },
-                removeRule(idx) { this.rules.splice(idx, 1) },
-                get rulesJson() {
-                    const valid = this.rules.filter(r => r.min_qty && r.unit_price !== '' && r.unit_price !== null)
-                    return valid.length ? JSON.stringify(valid) : ''
-                }
-             }">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-sm font-semibold text-slate-900">Tarification en gros</h3>
-                <button type="button" @click="addRule()" class="text-xs text-blue-600 hover:text-blue-800 font-medium">+ Ajouter un palier</button>
-            </div>
-            <template x-if="rules.length === 0">
-                <p class="text-sm text-slate-400">Aucun palier. Le prix standard des produits s'applique.</p>
-            </template>
-            <div class="space-y-2">
-                <template x-for="(rule, idx) in rules" :key="idx">
-                    <div class="flex items-end gap-2">
-                        <div class="flex-1">
-                            <label x-show="idx === 0" class="block text-xs text-slate-500 mb-1">Qte min.</label>
-                            <input x-model.number="rule.min_qty" type="number" min="2" step="1" placeholder="ex: 3"
-                                class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-                        </div>
-                        <div class="flex-1">
-                            <label x-show="idx === 0" class="block text-xs text-slate-500 mb-1">Prix unitaire (F CFA)</label>
-                            <input x-model.number="rule.unit_price" type="number" min="0" step="1" placeholder="ex: 3000"
-                                class="w-full px-4 py-2 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
-                        </div>
-                        <button type="button" @click="removeRule(idx)" class="px-2 py-2 text-slate-400 hover:text-red-500" title="Supprimer">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        </button>
-                    </div>
-                </template>
-            </div>
-            <p class="text-xs text-slate-400 mt-3">Ces paliers s'appliquent a tous les produits de cette categorie qui n'ont pas leurs propres paliers.</p>
-            <input type="hidden" name="bulk_pricing_rules" :value="rulesJson">
-        </div>
-
         <div class="flex gap-3">
             <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors">
                 Créer la catégorie

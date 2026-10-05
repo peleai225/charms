@@ -1,0 +1,32 @@
+.driver-popover.chamse-tour {
+    font-family: "Inter", system-ui, sans-serif;
+    border-radius: 12px;
+    padding: 16px;
+    max-width: 320px;
+}
+.driver-popover.chamse-tour .driver-popover-title {
+    font-size: 15px;
+    font-weight: 700;
+}
+.driver-popover.chamse-tour .driver-popover-description {
+    font-size: 13.5px;
+    line-height: 1.5;
+}
+.driver-popover.chamse-tour .driver-popover-progress-text {
+    font-size: 12px;
+    color: #6b7280;
+}
+.driver-popover.chamse-tour button {
+    font-family: "Inter", system-ui, sans-serif;
+    font-size: 13px;
+    border-radius: 8px;
+}
+.driver-popover.chamse-tour .driver-popover-next-btn {
+    background-color: #2563eb;
+    color: #fff;
+    text-shadow: none;
+    border: none;
+}
+.driver-popover.chamse-tour .driver-popover-next-btn:hover {
+    background-color: #1d4ed8;
+}

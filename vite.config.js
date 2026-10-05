@@ -6,7 +6,7 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/admin-alpine.js', 'resources/js/admin-notifications.js', 'resources/js/admin-charts.js'],
+            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/admin-alpine.js', 'resources/js/admin-notifications.js', 'resources/js/admin-charts.js', 'resources/js/onboarding/index.js'],
             refresh: true,
         }),
         vue({

@@ -394,6 +394,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::resource('promotions', \App\Http\Controllers\Admin\PromotionController::class)->names('promotions');
             Route::post('/promotions-margin-preview', [\App\Http\Controllers\Admin\PromotionController::class, 'marginPreview'])->name('promotions.margin-preview');
 
+            // Visites guidées (onboarding)
+            Route::post('/onboarding/seen', [\App\Http\Controllers\Admin\OnboardingController::class, 'markSeen'])->name('onboarding.seen');
+
             // Bannières
             Route::get('banners', \App\Livewire\Admin\Banners\Index::class)->name('banners.index');
             Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class)->only(['create','store','edit','update','destroy'])->names('banners');

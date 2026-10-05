@@ -171,7 +171,7 @@ const breadcrumbs = [
 </script>
 
 <template>
-    <div class="p-6 space-y-5">
+    <div class="p-6 space-y-5" data-tour-page="products.index">
 
         <!-- Breadcrumb -->
         <Breadcrumb :items="breadcrumbs" />
@@ -196,6 +196,7 @@ const breadcrumbs = [
                 </a>
                 <a
                     :href="route('admin.products.create')"
+                    data-tour="product-new"
                     class="h-9 px-4 flex items-center gap-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                 >
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -207,7 +208,7 @@ const breadcrumbs = [
         </div>
 
         <!-- Filters -->
-        <FilterBar :active-count="activeFilterCount" @reset="resetFilters">
+        <FilterBar :active-count="activeFilterCount" @reset="resetFilters" data-tour="product-filters">
             <SearchInput
                 :model-value="search"
                 placeholder="Rechercher par nom, SKU…"

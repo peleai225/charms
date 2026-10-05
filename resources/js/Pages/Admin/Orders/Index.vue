@@ -139,7 +139,7 @@ function flowIndex(s) { return FLOW.indexOf(s) }
 </script>
 
 <template>
-    <div class="p-6 space-y-5">
+    <div class="p-6 space-y-5" data-tour-page="orders.index">
 
         <!-- Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
@@ -189,7 +189,7 @@ function flowIndex(s) { return FLOW.indexOf(s) }
                     </div>
 
                     <!-- Statut -->
-                    <select v-model="status" class="h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                    <select v-model="status" data-tour="order-filters" class="h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
                         <option value="">Tous les statuts</option>
                         <option value="pending">En attente</option>
                         <option value="confirmed">Confirmée</option>

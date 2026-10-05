@@ -6,6 +6,7 @@
 
 <div class="relative group mx-2">
     <a href="{{ $href }}"
+       @isset($tour) data-tour="{{ $tour }}" @endisset
        class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors relative
               {{ $isActive
                   ? 'nav-active bg-orange-50/70 text-gray-900'

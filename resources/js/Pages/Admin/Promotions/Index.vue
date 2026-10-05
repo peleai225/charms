@@ -82,7 +82,7 @@ function statusClass(s) {
 </script>
 
 <template>
-    <div class="p-6 space-y-5">
+    <div class="p-6 space-y-5" data-tour-page="promotions.index">
 
         <!-- Header -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -90,7 +90,7 @@ function statusClass(s) {
                 <h1 class="text-xl font-bold text-gray-900">Offres par lot</h1>
                 <p class="text-[13px] text-gray-500 mt-0.5">{{ promotions.total }} offre(s)</p>
             </div>
-            <a :href="route('admin.promotions.create')"
+            <a :href="route('admin.promotions.create')" data-tour="promo-new"
                 class="h-11 sm:h-9 px-4 inline-flex items-center justify-center gap-2 text-[13px] font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 <Plus class="w-4 h-4" />
                 Nouvelle offre
@@ -98,7 +98,7 @@ function statusClass(s) {
         </div>
 
         <!-- Filtres -->
-        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4" data-tour="promo-filters">
             <div class="flex flex-wrap items-center gap-3">
                 <div class="relative">
                     <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

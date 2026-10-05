@@ -200,8 +200,8 @@
                 <div x-show="!sidebarCollapsed" x-transition.opacity.duration.100ms
                      class="px-4 pt-1 pb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Main Menu</div>
 
-                @include('layouts.admin-nav-item', ['href' => route('admin.dashboard'),   'label' => 'Dashboard',  'match' => 'admin.dashboard',   'icon' => 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', 'badge' => null])
-                @include('layouts.admin-nav-item', ['href' => route('admin.orders.index'),    'label' => 'Commandes', 'match' => 'admin.orders.*',    'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', 'badge' => $pendingOrders ?: null])
+                @include('layouts.admin-nav-item', ['href' => route('admin.dashboard'),   'label' => 'Dashboard',  'match' => 'admin.dashboard', 'tour' => 'nav-dashboard',   'icon' => 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', 'badge' => null])
+                @include('layouts.admin-nav-item', ['href' => route('admin.orders.index'),    'label' => 'Commandes', 'match' => 'admin.orders.*', 'tour' => 'nav-orders',    'icon' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2', 'badge' => $pendingOrders ?: null])
                 @include('layouts.admin-nav-item', ['href' => route('admin.customers.index'), 'label' => 'Clients',   'match' => 'admin.customers.*', 'icon' => 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z', 'badge' => null])
 
                 @if(in_array(auth()->user()->role, ['admin', 'manager']))
@@ -210,11 +210,11 @@
                          class="px-4 pt-5 pb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Catalogue</div>
                     <div x-show="sidebarCollapsed" class="border-t border-gray-100 my-3 mx-3"></div>
 
-                    @include('layouts.admin-nav-item', ['href' => route('admin.products.index'),   'label' => 'Produits',    'match' => 'admin.products.*',    'icon' => 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', 'badge' => null])
+                    @include('layouts.admin-nav-item', ['href' => route('admin.products.index'),   'label' => 'Produits',    'match' => 'admin.products.*', 'tour' => 'nav-products',    'icon' => 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', 'badge' => null])
                     @include('layouts.admin-nav-item', ['href' => route('admin.categories.index'), 'label' => 'Catégories',  'match' => 'admin.categories.*',  'icon' => 'M4 6h16M4 10h16M4 14h16M4 18h16', 'badge' => null])
                     @include('layouts.admin-nav-item', ['href' => route('admin.attributes.index'), 'label' => 'Attributs',   'match' => 'admin.attributes.*',  'icon' => 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z', 'badge' => null])
                     @include('layouts.admin-nav-item', ['href' => route('admin.coupons.index'),    'label' => 'Codes promo', 'match' => 'admin.coupons.*',     'icon' => 'M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z', 'badge' => null])
-                    @include('layouts.admin-nav-item', ['href' => route('admin.promotions.index'), 'label' => 'Offres par lot', 'match' => 'admin.promotions.*', 'icon' => 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z', 'badge' => null])
+                    @include('layouts.admin-nav-item', ['href' => route('admin.promotions.index'), 'label' => 'Offres par lot', 'match' => 'admin.promotions.*', 'tour' => 'nav-promotions', 'icon' => 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z', 'badge' => null])
                 @endif
 
                 {{-- TOOLS --}}

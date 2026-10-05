@@ -153,7 +153,7 @@ function fmtGrowth(g) {
 </script>
 
 <template>
-    <div class="p-6 space-y-5">
+    <div class="p-6 space-y-5" data-tour-page="menus">
 
         <!-- Header + filtre période -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

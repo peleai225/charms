@@ -13,6 +13,8 @@ class AffiliateController extends Controller
 {
     public function index(Request $request)
     {
+        Inertia::setRootView('layouts.admin-inertia');
+
         $status = $request->query('status');
         $tab = $request->query('tab', 'affiliates');
 
@@ -121,7 +123,9 @@ class AffiliateController extends Controller
             ->get();
 
         foreach ($commissions as $commission) {
-            if ($remaining <= 0) break;
+            if ($remaining <= 0) {
+                break;
+            }
 
             $commission->update([
                 'withdrawal_id' => $withdrawal->id,

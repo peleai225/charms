@@ -246,9 +246,20 @@ class ShopController extends Controller
         // Incrémenter les vues
         $product->increment('views_count');
 
+        // Attribut visuel (vignettes) : "couleur" ou tout attribut de type color (ex: "Design")
+        $visualAttribute = $product->variants
+            ->pluck('attributeValues')
+            ->flatten()
+            ->filter(fn ($av) => $av->attribute && ($av->attribute->slug === 'couleur' || $av->attribute->type === 'color'))
+            ->groupBy('attribute_id')
+            ->sortByDesc(fn ($avs) => $avs->unique('id')->count())
+            ->map(fn ($avs) => $avs->first()->attribute)
+            ->first();
+        $visualAttributeId = $visualAttribute?->id;
+
         // Organiser les variantes par couleur
-        $variantsByColor = $product->variants->groupBy(function ($variant) {
-            $colorAttr = $variant->attributeValues->firstWhere('attribute.slug', 'couleur');
+        $variantsByColor = $product->variants->groupBy(function ($variant) use ($visualAttributeId) {
+            $colorAttr = $visualAttributeId ? $variant->attributeValues->first(fn ($av) => (int) $av->attribute_id === (int) $visualAttributeId) : null;
 
             return $colorAttr?->id ?? 'default';
         });
@@ -257,16 +268,16 @@ class ShopController extends Controller
         $availableColors = $product->variants
             ->pluck('attributeValues')
             ->flatten()
-            ->filter(fn ($av) => $av->attribute && $av->attribute->slug === 'couleur')
+            ->filter(fn ($av) => $visualAttributeId && (int) $av->attribute_id === (int) $visualAttributeId)
             ->unique('id');
 
-        // Détecter l'attribut secondaire : parmi les attributs non-couleur,
+        // Détecter l'attribut secondaire : parmi les attributs non visuels,
         // prendre celui qui a le plus de valeurs distinctes sur ce produit.
         // Ex: coloring book → design(17 valeurs) > âge(1 valeur) → design est retenu.
         $secondaryAttribute = $product->variants
             ->pluck('attributeValues')
             ->flatten()
-            ->filter(fn ($av) => $av->attribute && $av->attribute->slug !== 'couleur')
+            ->filter(fn ($av) => $av->attribute && (int) $av->attribute_id !== (int) $visualAttributeId)
             ->groupBy('attribute_id')
             ->sortByDesc(fn ($avs) => $avs->unique('id')->count())
             ->map(fn ($avs) => $avs->first()->attribute)
@@ -324,8 +335,8 @@ class ShopController extends Controller
             : [];
 
         // Format variants
-        $variantsData = $product->variants->map(function ($variant) use ($secondaryAttribute) {
-            $colorAttr = $variant->attributeValues->firstWhere('attribute.slug', 'couleur');
+        $variantsData = $product->variants->map(function ($variant) use ($secondaryAttribute, $visualAttributeId) {
+            $colorAttr = $visualAttributeId ? $variant->attributeValues->first(fn ($av) => (int) $av->attribute_id === (int) $visualAttributeId) : null;
             $secondaryAttr = $secondaryAttribute
                 ? $variant->attributeValues->firstWhere(fn ($av) => $av->attribute?->id === $secondaryAttribute->id)
                 : null;
@@ -403,6 +414,7 @@ class ShopController extends Controller
             'has_variants' => $product->variants->isNotEmpty(),
             'variants' => $variantsData,
             'colors' => $colorsData,
+            'visual_attribute_name' => $visualAttribute?->name ?? 'Couleur',
             'secondary_attribute' => $secondaryAttribute ? [
                 'slug' => $secondaryAttribute->slug,
                 'name' => $secondaryAttribute->name,

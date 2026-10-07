@@ -718,9 +718,10 @@ function deleteProduct() {
                                 @click="toggleValue(attrId, val.id)"
                                 :class="isValueSelected(attrId, val.id) ? 'ring-2 ring-orange-500 ring-offset-1' : 'ring-1 ring-gray-200 hover:ring-orange-300'"
                                 class="relative transition-all rounded-lg overflow-hidden">
-                                <span v-if="attrById(attrId)?.type === 'color' && val.color_code"
+                                <span v-if="attrById(attrId)?.type === 'color' && (val.image_url || val.color_code)"
                                     class="flex items-center gap-2 pl-1.5 pr-3 py-1.5 text-[12px] font-medium text-gray-700">
-                                    <span class="w-5 h-5 rounded flex-shrink-0 border border-black/10" :style="'background:' + val.color_code"></span>
+                                    <img v-if="val.image_url" :src="val.image_url" :alt="val.value" class="w-8 h-8 rounded object-cover flex-shrink-0 border border-black/10">
+                                    <span v-else class="w-5 h-5 rounded flex-shrink-0 border border-black/10" :style="'background:' + val.color_code"></span>
                                     {{ val.value }}
                                     <svg v-if="isValueSelected(attrId, val.id)" class="w-3.5 h-3.5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                                 </span>

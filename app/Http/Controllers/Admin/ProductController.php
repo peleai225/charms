@@ -1093,6 +1093,7 @@ class ProductController extends Controller
                 'value' => $v->value,
                 'color_code' => $v->color_code,
                 'image' => $v->image,
+                'image_url' => $v->image_url,
             ]),
         ]);
     }

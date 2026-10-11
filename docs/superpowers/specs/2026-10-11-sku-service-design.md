@@ -47,7 +47,7 @@ Chaque sous-projet aura son propre cycle design → spec → plan → implément
 - `categories` : ajout de `code` (`string`, nullable, longueur courte ex. 10) — préfixe choisi par l'admin. Validation stricte à la saisie : `^[A-Z0-9]{2,10}$` (normalisé en majuscules avant enregistrement, pas d'espace/accent/caractère spécial). Pas de contrainte `UNIQUE` en base — une collision de `code` entre deux catégories reste possible (cf. limite documentée plus bas) mais le formulaire admin affiche un avertissement non bloquant si un autre `code` identique existe déjà.
 - Nouvelle table **`sku_counters`** — un compteur atomique générique, plutôt que des colonnes de compteur éclatées sur `categories` et `products`. Cette table unifie trois besoins avec le même mécanisme de verrou (`lockForUpdate`) : le compteur par catégorie, le compteur de suffixe de variante par produit, et le compteur du préfixe `DIV` (produits sans catégorie) qui n'a pas de ligne naturelle où vivre.
   - `id`
-  - `scope_key` (`string`, unique) — ex. `category:5`, `product_variant:42`, `no_category`.
+  - `scope_key` (`string`, unique) — ex. `prefix:ELEC`, `prefix:DIV` (produits sans catégorie), `product_variant:42`.
   - `next_value` (entier non signé, défaut 1)
   - `timestamps`
 - Aucune modification des contraintes `UNIQUE` existantes sur `products.sku` / `product_variants.sku` (déjà en place, déjà valides avec les données actuelles).
@@ -58,26 +58,27 @@ Chaque sous-projet aura son propre cycle design → spec → plan → implément
 Responsabilités :
 
 - `generateForProduct(?Category $category): string`
-  Détermine la clé de portée (`category:{id}` si une catégorie est fournie, sinon `no_category`), verrouille (`lockForUpdate`) la ligne correspondante de `sku_counters` (créée à la volée via `firstOrCreate` si elle n'existe pas encore) dans une transaction courte et dédiée, lit ou dérive le préfixe (`DIV` si pas de catégorie), incrémente `next_value`, formate `LGB-{PREFIXE}-{sequence sur 6 chiffres}`. Cette transaction se limite à la réservation du numéro — elle ne couvre pas l'insertion du produit, qui reste gérée par l'appelant (ex. `ProductController::store`, déjà dans sa propre transaction).
+  Résout le préfixe (`code` de la catégorie, sinon dérivé du slug, sinon `DIV` si pas de catégorie), puis verrouille (`lockForUpdate`) la ligne de `sku_counters` dont la clé est **le préfixe lui-même** (`prefix:{PREFIXE}`, créée à la volée si elle n'existe pas encore) dans une transaction courte et dédiée, incrémente `next_value`, formate `LGB-{PREFIXE}-{sequence sur 6 chiffres}`.
+  **Important** : la clé de portée est le préfixe, pas l'identifiant de catégorie. Si deux catégories partagent le même `code` (le cas non bloquant documenté plus haut), elles partagent alors le même compteur — leurs numéros s'entrelacent dans une seule séquence au lieu de repartir chacune à 1, mais **aucune collision de SKU n'est possible**, contrairement à un compteur scindé par catégorie qui produirait deux fois `LGB-ELEC-000001`. C'est une correction par rapport à une première version de ce document qui proposait une clé par catégorie — repérée lors de l'auto-relecture avant le plan d'implémentation.
+  Cette transaction se limite à la réservation du numéro — elle ne couvre pas l'insertion du produit, qui reste gérée par l'appelant (ex. `ProductController::store`, déjà dans sa propre transaction).
 
 - `generateForVariant(Product $product): string`
   Même mécanique avec la clé `product_variant:{product->id}`, formate `{sku_parent}-{suffixe sur 2 chiffres}`.
 
 - `resolveCategoryPrefix(Category $category): string`
   Retourne `code` si renseigné ; sinon dérive un préfixe depuis le `slug` (ex. 4 premières lettres significatives, majuscules, repli sur `GEN` si le slug est trop court/vide).
-  **Limite connue, documentée et acceptée** : deux catégories sans `code` explicite peuvent dériver vers le même préfixe apparent (ex. « Électronique » et « Électroménager » → `ELEC`). Les SKU resteraient uniques (la séquence est par catégorie, pas par préfixe), mais visuellement les deux familles partageraient le même préfixe. On ne bloque pas la création pour ça — on recommande simplement aux admins de renseigner un `code` propre par catégorie.
+  **Limite connue, documentée et acceptée** : deux catégories sans `code` explicite peuvent dériver vers le même préfixe apparent (ex. « Électronique » et « Électroménager » → `ELEC`). Comme le compteur est scopé par préfixe (voir ci-dessus), les SKU restent garantis uniques — les deux catégories partagent simplement le même compteur et leurs numéros s'entrelacent, sans repartir chacune à 1. On ne bloque pas la création pour ça — on recommande simplement aux admins de renseigner un `code` propre par catégorie pour une numérotation plus lisible.
 
-- `validateManualSku(string $sku, Model $owner): void`
-  Trim, longueur raisonnable, non vide, unicité sur la bonne table (`products` ou `product_variants`) en excluant l'enregistrement courant en cas de modification. Lève `SkuValidationException` avec message explicite si invalide.
+- **Validation des SKU saisis manuellement** : finalement assurée par la règle Laravel native `unique:products` / `unique:product_variants` directement dans la validation des contrôleurs (`store`, `storeVariant`), plutôt que par une méthode dédiée du service. C'est suffisant pour tous les points d'intégration retenus dans ce sous-projet (voir « Points d'intégration ») et évite d'ajouter une classe (`SkuValidationException`) et une méthode (`validateManualSku`) qu'aucun appelant n'utiliserait réellement — simplification décidée lors de l'écriture du plan d'implémentation, sans changement de comportement observable.
 
-- Boucle de nouvelles tentatives, max 5, en cas de violation de contrainte unique détectée spécifiquement sur la colonne `sku` (vérification du nom de contrainte / code d'erreur MySQL 1062, pas juste « une `QueryException` a été levée »). Toute autre exception base de données remonte sans interception. Après épuisement des tentatives : `SkuGenerationException` avec message explicite en français (« Impossible de générer un SKU unique après plusieurs tentatives. Veuillez réessayer ou saisir un SKU manuellement. »).
+- **Mécanisme de nouvelle tentative** : plutôt que de tenter l'insertion et intercepter une violation de contrainte unique (ce que le service ne peut pas faire directement puisqu'il ne réalise pas lui-même l'insertion finale — celle-ci a lieu juste après, dans l'événement `creating` du modèle appelant), chaque tentative réserve un numéro de séquence puis vérifie son existence par une requête (`exists()`) avant de le retourner. Si le candidat existe déjà (cas résiduel : un SKU manuel est entré entre deux réservations et correspond par coïncidence à un numéro pas encore atteint), on réserve le numéro suivant et on réessaie, jusqu'à 5 tentatives. Toute autre exception base de données (hors de ce mécanisme de vérification) remonte sans interception. Après épuisement des 5 tentatives : `SkuGenerationException` avec message explicite en français (« Impossible de générer un SKU unique après plusieurs tentatives. Veuillez réessayer ou saisir un SKU manuellement. »).
 
 **Compromis accepté** : comme la réservation du numéro de séquence se fait dans une transaction séparée de l'insertion finale, un échec de création après réservation (ex. validation métier qui échoue plus loin) laisse un « trou » dans la séquence (le numéro réservé n'est jamais réutilisé). C'est un compromis standard (similaire à la numérotation de factures) — pas un bug, juste un choix explicite à documenter.
 
 ### Points d'intégration
 
 - **`Product::boot()`** : le hook `creating` actuel (génération aléatoire non vérifiée) est remplacé par un appel à `SkuGeneratorService::generateForProduct($product->category)` quand `sku` est vide (`$product->category` vaut `null` si `category_id` est vide — le service gère ce cas via le préfixe `DIV`, voir ci-dessus). Garde ce filet de sécurité actif sur tous les chemins de création (formulaire admin, import, tinker, future API), pas seulement un contrôleur.
-- **`ProductController::store` / `update`** : règle de validation `sku` passe de `required|unique:products` à `nullable|string`, avec appel à `validateManualSku()` quand une valeur est fournie.
+- **`ProductController::store`** : règle de validation `sku` passe de `required|string|unique:products` à `nullable|string|max:100|unique:products` (un SKU manuel reste validé nativement par Laravel ; un champ vide ou absent déclenche la génération automatique via le hook du modèle). **`update`** n'est pas modifié : un produit existant garde l'obligation d'avoir un SKU (`required|unique:products,sku,{id}`, inchangé) — il n'y a pas de cas d'usage pour « régénérer » le SKU d'un produit déjà créé dans ce sous-projet.
 - **`ProductController::storeVariant` / `bulkStoreVariants`** : le SKU devient optionnel (génération automatique si vide), avec validation manuelle sinon. Petit ajustement front-end nécessaire : les formulaires Vue de création de variante ne doivent plus marquer le champ SKU comme obligatoire, et afficher un placeholder du type « Laisser vide pour génération automatique ».
   Précision sur `bulkStoreVariants` : seul le cas « SKU vide » change de comportement (auto-génération au lieu d'échouer). Le cas « SKU explicite qui entre en conflit avec un SKU existant » garde exactement le comportement actuel — la ligne est ignorée et comptée dans `$skipped`, sans faire échouer le reste du lot. On ne transforme pas ce contrôle ad hoc en erreur bloquante dans ce sous-projet, pour ne pas changer l'UX de l'outil de grille au-delà de ce qui est demandé ici.
 - **`ImportExportController::processProductRow`** : les lignes CSV sans SKU appellent le service au lieu du fallback actuel du modèle (qui sera supprimé/remplacé).
@@ -85,27 +86,27 @@ Responsabilités :
 
 ### Gestion des erreurs
 
-- `SkuGenerationException` : échec de génération automatique après épuisement des tentatives. Remonté comme une erreur 422/message explicite côté contrôleur, jamais une 500 silencieuse.
-- `SkuValidationException` : échec de validation d'un SKU saisi manuellement (doublon, vide, trop court). Converti en erreur de validation Laravel standard (422) par les contrôleurs.
+- `SkuGenerationException` : échec de génération automatique après épuisement des tentatives. Remonté comme une erreur explicite côté contrôleur (message flash), jamais une 500 silencieuse.
+- Un SKU saisi manuellement invalide (doublon, vide, trop long) est rejeté par la validation Laravel native (`unique`, `max:100`) et produit une erreur de validation standard (422 / erreurs de formulaire Inertia) — aucune classe d'exception dédiée n'est nécessaire pour ce cas.
 - Toute autre exception base de données (contrainte étrangère, colonne manquante, etc.) n'est jamais interprétée comme un conflit de SKU — elle remonte telle quelle.
 
 ## Tests prévus (couvre les points 1 à 5 de la demande initiale)
 
 - **Unitaires** (`SkuGeneratorService`) :
   - Format correct généré pour un produit et pour une variante.
-  - Compteurs indépendants par catégorie et par produit (deux catégories n'interfèrent pas, deux produits n'interfèrent pas).
+  - Compteurs indépendants par préfixe et par produit (deux préfixes différents n'interfèrent pas, deux produits n'interfèrent pas) ; deux catégories partageant le même préfixe partagent correctement le même compteur sans jamais produire de collision.
   - Dérivation du préfixe de repli quand `categories.code` est vide.
   - Nouvelle tentative puis exception explicite après 5 collisions simulées.
   - Toute exception non liée à une collision SKU n'est pas interceptée par la boucle de retry.
 
 - **Fonctionnels** :
-  - Création d'un produit sans SKU → SKU auto-généré au bon format, incrémente le compteur de la catégorie.
+  - Création d'un produit sans SKU → SKU auto-généré au bon format, incrémente le compteur du préfixe résolu.
   - Création avec SKU manuel valide → conservé tel quel.
   - SKU manuel dupliqué → rejeté en 422, pas en 500.
   - Modification du nom/prix/description d'un produit existant → le SKU reste inchangé.
   - `bulkStoreVariants` avec un mélange de lignes SKU vide / SKU explicite → les vides reçoivent un suffixe généré, les explicites sont conservés et validés individuellement.
 
-- **Limite assumée** : la concurrence réelle multi-process (deux requêtes HTTP simultanées) n'est pas testable directement dans PHPUnit (process unique). On teste la logique de retry-sur-collision comme indicateur de robustesse, et on documente que c'est le `lockForUpdate()` sur la ligne catégorie/produit qui garantit réellement la sécurité en concurrence — pas une assertion de test automatisée.
+- **Limite assumée** : la concurrence réelle multi-process (deux requêtes HTTP simultanées) n'est pas testable directement dans PHPUnit (process unique). On teste la logique de retry-sur-collision comme indicateur de robustesse, et on documente que c'est le `lockForUpdate()` sur la ligne de `sku_counters` qui garantit réellement la sécurité en concurrence — pas une assertion de test automatisée.
 
 ## Notes d'implémentation complémentaires
 

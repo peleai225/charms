@@ -84,8 +84,8 @@ class Product extends Model
                 }
                 $product->slug = $slug;
             }
-            if (empty($product->sku)) {
-                $product->sku = strtoupper(Str::random(10));
+            if (empty(trim((string) $product->sku))) {
+                $product->sku = app(\App\Services\Sku\SkuGeneratorService::class)->generateForProduct($product->category);
             }
         });
     }

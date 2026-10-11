@@ -75,7 +75,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'short_description' => 'nullable|string|max:500',
             'description' => 'nullable|string',
-            'sku' => 'required|string|unique:products',
+            'sku' => 'nullable|string|max:100|unique:products',
             'barcode' => 'nullable|string|unique:products',
             'purchase_price' => 'required|numeric|min:0',
             'sale_price' => 'required|numeric|min:0',

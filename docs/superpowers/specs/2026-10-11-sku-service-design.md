@@ -44,7 +44,7 @@ Chaque sous-projet aura son propre cycle design → spec → plan → implément
 ### Changements de schéma
 
 - `categories` : ajout de
-  - `code` (`string`, nullable, longueur courte ex. 10) — préfixe choisi par l'admin.
+  - `code` (`string`, nullable, longueur courte ex. 10) — préfixe choisi par l'admin. Validation stricte à la saisie : `^[A-Z0-9]{2,10}$` (normalisé en majuscules avant enregistrement, pas d'espace/accent/caractère spécial). Pas de contrainte `UNIQUE` en base — une collision de `code` entre deux catégories reste possible (cf. limite documentée plus bas) mais le formulaire admin affiche un avertissement non bloquant si un autre `code` identique existe déjà.
   - `sku_sequence_next` (entier non signé, défaut 1) — compteur du prochain numéro de séquence pour cette catégorie.
 - `products` : ajout de
   - `variant_sku_sequence_next` (entier non signé, défaut 1) — compteur du prochain suffixe de variante pour ce produit.
@@ -76,7 +76,8 @@ Responsabilités :
 
 - **`Product::boot()`** : le hook `creating` actuel (génération aléatoire non vérifiée) est remplacé par un appel à `SkuGeneratorService::generateForProduct($product->category)` quand `sku` est vide. Garde ce filet de sécurité actif sur tous les chemins de création (formulaire admin, import, tinker, future API), pas seulement un contrôleur.
 - **`ProductController::store` / `update`** : règle de validation `sku` passe de `required|unique:products` à `nullable|string`, avec appel à `validateManualSku()` quand une valeur est fournie.
-- **`ProductController::storeVariant` / `bulkStoreVariants`** : même changement — le SKU devient optionnel (génération automatique si vide), avec validation manuelle sinon. Petit ajustement front-end nécessaire : les formulaires Vue de création de variante ne doivent plus marquer le champ SKU comme obligatoire, et afficher un placeholder du type « Laisser vide pour génération automatique ».
+- **`ProductController::storeVariant` / `bulkStoreVariants`** : le SKU devient optionnel (génération automatique si vide), avec validation manuelle sinon. Petit ajustement front-end nécessaire : les formulaires Vue de création de variante ne doivent plus marquer le champ SKU comme obligatoire, et afficher un placeholder du type « Laisser vide pour génération automatique ».
+  Précision sur `bulkStoreVariants` : seul le cas « SKU vide » change de comportement (auto-génération au lieu d'échouer). Le cas « SKU explicite qui entre en conflit avec un SKU existant » garde exactement le comportement actuel — la ligne est ignorée et comptée dans `$skipped`, sans faire échouer le reste du lot. On ne transforme pas ce contrôle ad hoc en erreur bloquante dans ce sous-projet, pour ne pas changer l'UX de l'outil de grille au-delà de ce qui est demandé ici.
 - **`ImportExportController::processProductRow`** : les lignes CSV sans SKU appellent le service au lieu du fallback actuel du modèle (qui sera supprimé/remplacé).
 - **`Admin\CategoryController`** (création/édition de catégorie) : ajout du champ `code` optionnel dans la validation et le formulaire, pour permettre à l'admin de le renseigner.
 
@@ -103,6 +104,11 @@ Responsabilités :
   - `bulkStoreVariants` avec un mélange de lignes SKU vide / SKU explicite → les vides reçoivent un suffixe généré, les explicites sont conservés et validés individuellement.
 
 - **Limite assumée** : la concurrence réelle multi-process (deux requêtes HTTP simultanées) n'est pas testable directement dans PHPUnit (process unique). On teste la logique de retry-sur-collision comme indicateur de robustesse, et on documente que c'est le `lockForUpdate()` sur la ligne catégorie/produit qui garantit réellement la sécurité en concurrence — pas une assertion de test automatisée.
+
+## Notes d'implémentation complémentaires
+
+- **Factories/seeders** : `ProductFactory` et `ProductVariantFactory` assignent aujourd'hui un SKU Faker explicite (d'où les valeurs "Glow", "SP", etc. observées dans l'audit). Elles seront revues pour laisser `sku` vide par défaut, afin que les tests exercent réellement le service de génération plutôt que de le contourner systématiquement. Un état explicite (`->withSku('XYZ')`) restera possible pour les tests qui ont besoin d'une valeur fixe.
+- **Autorisation** : aucune règle d'autorisation nouvelle n'est nécessaire — la génération de SKU est interne aux contrôleurs admin existants (`ProductController`, `ImportExportController`, `CategoryController`), qui sont déjà protégés par les middlewares/policies admin en place. Le test du point 14 (« autorisations administratives ») vérifie donc que ce comportement existant n'est pas régressé par les changements de validation, pas qu'une nouvelle règle est ajoutée.
 
 ## Hors périmètre (sous-projets suivants)
 

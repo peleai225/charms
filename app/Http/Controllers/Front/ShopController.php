@@ -154,7 +154,9 @@ class ShopController extends Controller
         // Construire la chaîne d'ancêtres pour le fil d'ariane
         $ancestors = [];
         $p = $category->parent;
-        while ($p) {
+        $visited = [$category->id];
+        while ($p && ! in_array($p->id, $visited)) {
+            $visited[] = $p->id;
             array_unshift($ancestors, ['id' => $p->id, 'name' => $p->name, 'slug' => $p->slug]);
             $p = $p->parent ?? null;
         }
@@ -399,7 +401,9 @@ class ShopController extends Controller
             'category' => $product->category ? (function () use ($product) {
                 $ancestors = [];
                 $p = $product->category->parent;
-                while ($p) {
+                $visited = [$product->category->id];
+                while ($p && ! in_array($p->id, $visited)) {
+                    $visited[] = $p->id;
                     array_unshift($ancestors, ['id' => $p->id, 'name' => $p->name, 'slug' => $p->slug]);
                     $p = $p->parent ?? null;
                 }

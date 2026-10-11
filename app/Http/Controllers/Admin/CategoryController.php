@@ -143,6 +143,14 @@ class CategoryController extends Controller
                 ->withInput();
         }
 
+        // Empêcher de choisir une de ses sous-catégories comme parent (boucle infinie)
+        if ($validated['parent_id'] && in_array((int) $validated['parent_id'], $category->getAllChildrenIds())) {
+            return redirect()
+                ->route('admin.categories.index', ['open_modal' => 'edit', 'category_id' => $category->id])
+                ->with('error', 'Une catégorie ne peut pas avoir une de ses sous-catégories comme parent.')
+                ->withInput();
+        }
+
         if ($request->hasFile('image')) {
             // Supprimer l'ancienne image
             if ($category->image) {

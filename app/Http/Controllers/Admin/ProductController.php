@@ -526,7 +526,7 @@ class ProductController extends Controller
             'attributes.*' => 'nullable|integer|exists:attribute_values,id',
             'color_id' => 'nullable|exists:attribute_values,id',
             'size_id' => 'nullable|exists:attribute_values,id',
-            'sku' => 'required|string|unique:product_variants',
+            'sku' => 'nullable|string|max:100|unique:product_variants',
             'stock_quantity' => 'required|integer|min:0',
             'sale_price' => 'nullable|numeric|min:0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
@@ -544,7 +544,7 @@ class ProductController extends Controller
         try {
             $variant = ProductVariant::create([
                 'product_id' => $product->id,
-                'sku' => $validated['sku'],
+                'sku' => $validated['sku'] ?? null,
                 'stock_quantity' => $validated['stock_quantity'],
                 'sale_price' => $validated['sale_price'] ?? null,
                 'is_active' => true,
@@ -619,7 +619,7 @@ class ProductController extends Controller
     {
         $request->validate([
             'rows' => 'required|array|min:1',
-            'rows.*.sku' => 'required|string|max:100',
+            'rows.*.sku' => 'nullable|string|max:100',
             'rows.*.stock_quantity' => 'required|integer|min:0',
             'rows.*.sale_price' => 'nullable|numeric|min:0',
             'rows.*.purchase_price' => 'nullable|numeric|min:0',
@@ -643,11 +643,8 @@ class ProductController extends Controller
         try {
             foreach ($request->rows as $row) {
                 $sku = trim($row['sku'] ?? '');
-                if ($sku === '') {
-                    continue;
-                }
 
-                if (ProductVariant::where('sku', $sku)->exists()) {
+                if ($sku !== '' && ProductVariant::where('sku', $sku)->exists()) {
                     $skipped++;
 
                     continue;
@@ -665,7 +662,7 @@ class ProductController extends Controller
 
                 $variant = ProductVariant::create([
                     'product_id' => $product->id,
-                    'sku' => $sku,
+                    'sku' => $sku !== '' ? $sku : null,
                     'stock_quantity' => (int) ($row['stock_quantity'] ?? 0),
                     'sale_price' => ! empty($row['sale_price']) ? $row['sale_price'] : null,
                     'purchase_price' => ! empty($row['purchase_price']) ? $row['purchase_price'] : null,

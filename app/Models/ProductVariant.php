@@ -40,6 +40,17 @@ class ProductVariant extends Model
         'position' => 'integer',
     ];
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($variant) {
+            if (empty(trim((string) $variant->sku)) && $variant->product_id) {
+                $variant->sku = app(\App\Services\Sku\SkuGeneratorService::class)->generateForVariant($variant->product);
+            }
+        });
+    }
+
     // ========== RELATIONS ==========
 
     public function product(): BelongsTo

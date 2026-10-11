@@ -22,7 +22,7 @@ class SkuGeneratorService
             $sequence = $this->reserveSequence($scopeKey);
             $candidate = sprintf('LGB-%s-%06d', $prefix, $sequence);
 
-            if (! Product::where('sku', $candidate)->exists()) {
+            if (! Product::withTrashed()->where('sku', $candidate)->exists()) {
                 return $candidate;
             }
         }

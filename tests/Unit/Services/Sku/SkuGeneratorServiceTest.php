@@ -134,24 +134,70 @@ class SkuGeneratorServiceTest extends TestCase
         $this->service()->generateForProduct($category);
     }
 
+    public function test_generation_skips_soft_deleted_products_holding_the_candidate_sku(): void
+    {
+        $category = Category::create(['name' => 'Électronique', 'slug' => 'electronique', 'code' => 'ELEC']);
+        $trashed = Product::create(['name' => 'Ancien', 'sale_price' => 1000, 'sku' => 'LGB-ELEC-000001']);
+        $trashed->delete();
+
+        $sku = $this->service()->generateForProduct($category);
+
+        $this->assertSame('LGB-ELEC-000002', $sku);
+    }
+
     public function test_other_database_exceptions_are_not_swallowed(): void
     {
         $category = Category::create(['name' => 'Test', 'slug' => 'test', 'code' => 'TST']);
 
-        // Simule une vraie panne DB (ex. connexion perdue) sans toucher au schéma partagé :
-        // casser la table via Schema::drop() provoquerait un COMMIT implicite MySQL qui
-        // désynchronise le suivi des savepoints de RefreshDatabase.
-        \Illuminate\Support\Facades\DB::shouldReceive('transaction')
-            ->once()
-            ->andThrow(new \Illuminate\Database\QueryException(
-                'mysql',
-                'select * from sku_counters',
-                [],
-                new \PDOException('SQLSTATE[HY000]: General error: simulated failure')
-            ));
+        // Force une vraie QueryException à l'intérieur de SkuCounter::create(), exactement
+        // où se trouve le catch ciblé dans reserveSequence(), avec un code d'erreur qui n'est
+        // PAS 1062 — pour prouver que le catch laisse bien passer tout ce qui n'est pas une
+        // collision de compteur concurrente, sans dépendre d'une vraie panne de connexion.
+        SkuCounter::creating(function () {
+            $previous = new \PDOException("SQLSTATE[42S02]: Base table or view not found: 1146 Table 'sku_counters' doesn't exist");
+            $previous->errorInfo = ['42S02', 1146, "Table 'sku_counters' doesn't exist"];
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+            throw new \Illuminate\Database\QueryException('mysql', 'insert into `sku_counters` ...', [], $previous);
+        });
 
-        $this->service()->generateForProduct($category);
+        try {
+            $this->expectException(\Illuminate\Database\QueryException::class);
+            $this->service()->generateForProduct($category);
+        } finally {
+            SkuCounter::flushEventListeners();
+        }
+    }
+
+    public function test_counter_creation_race_recovers_via_the_row_a_concurrent_request_inserted(): void
+    {
+        $category = Category::create(['name' => 'Test', 'slug' => 'test', 'code' => 'TST']);
+
+        // Simule le cas réel que le catch ciblé est censé gérer : au moment où notre
+        // SkuCounter::create() est sur le point de s'exécuter (notre SELECT initial n'avait
+        // rien trouvé), une requête concurrente insère la ligne juste avant nous — on
+        // reproduit ça en insérant la ligne depuis le hook lui-même (via une requête brute,
+        // pour ne pas redéclencher l'événement), puis en levant l'erreur 1062 que notre
+        // propre INSERT aurait reçue dans ce scénario.
+        SkuCounter::creating(function () {
+            \Illuminate\Support\Facades\DB::table('sku_counters')->insert([
+                'scope_key' => 'prefix:TST',
+                'next_value' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $previous = new \PDOException("SQLSTATE[23000]: Integrity constraint violation: 1062 Duplicate entry 'prefix:TST' for key 'sku_counters_scope_key_unique'");
+            $previous->errorInfo = ['23000', 1062, "Duplicate entry 'prefix:TST' for key 'sku_counters_scope_key_unique'"];
+
+            throw new \Illuminate\Database\QueryException('mysql', 'insert into `sku_counters` ...', [], $previous);
+        });
+
+        try {
+            $sku = $this->service()->generateForProduct($category);
+        } finally {
+            SkuCounter::flushEventListeners();
+        }
+
+        $this->assertSame('LGB-TST-000001', $sku);
     }
 }

@@ -27,6 +27,7 @@ class CategoryController extends Controller
             'id' => $c->id,
             'name' => $c->name,
             'slug' => $c->slug,
+            'code' => $c->code,
             'image' => $c->image,
             'is_active' => $c->is_active,
             'is_featured' => $c->is_featured,
@@ -66,8 +67,13 @@ class CategoryController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'code' => $request->filled('code') ? strtoupper(trim($request->input('code'))) : null,
+        ]);
+
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'code' => 'nullable|string|regex:/^[A-Z0-9]{2,10}$/',
             'description' => 'nullable|string',
             'parent_id' => 'nullable|exists:categories,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -112,8 +118,13 @@ class CategoryController extends Controller
 
     public function update(Request $request, Category $category)
     {
+        $request->merge([
+            'code' => $request->filled('code') ? strtoupper(trim($request->input('code'))) : null,
+        ]);
+
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
             'name' => 'required|string|max:255',
+            'code' => 'nullable|string|regex:/^[A-Z0-9]{2,10}$/',
             'description' => 'nullable|string',
             'parent_id' => 'nullable|exists:categories,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',

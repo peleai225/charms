@@ -38,28 +38,30 @@ Chaque sous-projet aura son propre cycle design → spec → plan → implément
 - **Convention variante** : SKU du produit parent + suffixe séquentiel à 2 chiffres (`LGB-ELEC-000123-01`, `-02`, ...), pas de code d'attribut dans le SKU.
 - **Saisie manuelle** : libre — unique et non vide suffisent, pas d'obligation de respecter le format `LGB-XXXX-000000` (utile pour les références héritées ou imposées par un fournisseur).
 - **Champ `brand`** : son ajout est validé en principe, mais reporté au sous-projet B (détection de similarité), qui est le seul à le consommer. Non traité ici.
+- **Produit sans catégorie** (`products.category_id` est nullable, un produit non catégorisé est un état métier valide existant) : préfixe fixe `DIV` avec son propre compteur (`LGB-DIV-000001`, `LGB-DIV-000002`, ...), partagé par tous les produits sans catégorie.
 
 ## Architecture
 
 ### Changements de schéma
 
-- `categories` : ajout de
-  - `code` (`string`, nullable, longueur courte ex. 10) — préfixe choisi par l'admin. Validation stricte à la saisie : `^[A-Z0-9]{2,10}$` (normalisé en majuscules avant enregistrement, pas d'espace/accent/caractère spécial). Pas de contrainte `UNIQUE` en base — une collision de `code` entre deux catégories reste possible (cf. limite documentée plus bas) mais le formulaire admin affiche un avertissement non bloquant si un autre `code` identique existe déjà.
-  - `sku_sequence_next` (entier non signé, défaut 1) — compteur du prochain numéro de séquence pour cette catégorie.
-- `products` : ajout de
-  - `variant_sku_sequence_next` (entier non signé, défaut 1) — compteur du prochain suffixe de variante pour ce produit.
+- `categories` : ajout de `code` (`string`, nullable, longueur courte ex. 10) — préfixe choisi par l'admin. Validation stricte à la saisie : `^[A-Z0-9]{2,10}$` (normalisé en majuscules avant enregistrement, pas d'espace/accent/caractère spécial). Pas de contrainte `UNIQUE` en base — une collision de `code` entre deux catégories reste possible (cf. limite documentée plus bas) mais le formulaire admin affiche un avertissement non bloquant si un autre `code` identique existe déjà.
+- Nouvelle table **`sku_counters`** — un compteur atomique générique, plutôt que des colonnes de compteur éclatées sur `categories` et `products`. Cette table unifie trois besoins avec le même mécanisme de verrou (`lockForUpdate`) : le compteur par catégorie, le compteur de suffixe de variante par produit, et le compteur du préfixe `DIV` (produits sans catégorie) qui n'a pas de ligne naturelle où vivre.
+  - `id`
+  - `scope_key` (`string`, unique) — ex. `category:5`, `product_variant:42`, `no_category`.
+  - `next_value` (entier non signé, défaut 1)
+  - `timestamps`
 - Aucune modification des contraintes `UNIQUE` existantes sur `products.sku` / `product_variants.sku` (déjà en place, déjà valides avec les données actuelles).
-- Migrations additives uniquement (colonnes nullable ou avec valeur par défaut) — pas de risque de perte de données, pas de verrouillage de table nécessaire sur MySQL pour ce type d'ajout.
+- Migrations additives uniquement (nouvelle table + colonne nullable sur `categories`) — pas de risque de perte de données, pas de verrouillage de table nécessaire sur MySQL pour ce type d'ajout.
 
 ### Service : `App\Services\Sku\SkuGeneratorService`
 
 Responsabilités :
 
-- `generateForProduct(Category $category): string`
-  Verrouille la ligne de la catégorie (`lockForUpdate`) dans une transaction courte et dédiée, lit ou dérive le préfixe, incrémente `sku_sequence_next`, formate `LGB-{PREFIXE}-{sequence sur 6 chiffres}`. Cette transaction se limite à la réservation du numéro — elle ne couvre pas l'insertion du produit, qui reste gérée par l'appelant (ex. `ProductController::store`, déjà dans sa propre transaction).
+- `generateForProduct(?Category $category): string`
+  Détermine la clé de portée (`category:{id}` si une catégorie est fournie, sinon `no_category`), verrouille (`lockForUpdate`) la ligne correspondante de `sku_counters` (créée à la volée via `firstOrCreate` si elle n'existe pas encore) dans une transaction courte et dédiée, lit ou dérive le préfixe (`DIV` si pas de catégorie), incrémente `next_value`, formate `LGB-{PREFIXE}-{sequence sur 6 chiffres}`. Cette transaction se limite à la réservation du numéro — elle ne couvre pas l'insertion du produit, qui reste gérée par l'appelant (ex. `ProductController::store`, déjà dans sa propre transaction).
 
 - `generateForVariant(Product $product): string`
-  Même mécanique sur la ligne du produit parent (`variant_sku_sequence_next`), formate `{sku_parent}-{suffixe sur 2 chiffres}`.
+  Même mécanique avec la clé `product_variant:{product->id}`, formate `{sku_parent}-{suffixe sur 2 chiffres}`.
 
 - `resolveCategoryPrefix(Category $category): string`
   Retourne `code` si renseigné ; sinon dérive un préfixe depuis le `slug` (ex. 4 premières lettres significatives, majuscules, repli sur `GEN` si le slug est trop court/vide).
@@ -74,7 +76,7 @@ Responsabilités :
 
 ### Points d'intégration
 
-- **`Product::boot()`** : le hook `creating` actuel (génération aléatoire non vérifiée) est remplacé par un appel à `SkuGeneratorService::generateForProduct($product->category)` quand `sku` est vide. Garde ce filet de sécurité actif sur tous les chemins de création (formulaire admin, import, tinker, future API), pas seulement un contrôleur.
+- **`Product::boot()`** : le hook `creating` actuel (génération aléatoire non vérifiée) est remplacé par un appel à `SkuGeneratorService::generateForProduct($product->category)` quand `sku` est vide (`$product->category` vaut `null` si `category_id` est vide — le service gère ce cas via le préfixe `DIV`, voir ci-dessus). Garde ce filet de sécurité actif sur tous les chemins de création (formulaire admin, import, tinker, future API), pas seulement un contrôleur.
 - **`ProductController::store` / `update`** : règle de validation `sku` passe de `required|unique:products` à `nullable|string`, avec appel à `validateManualSku()` quand une valeur est fournie.
 - **`ProductController::storeVariant` / `bulkStoreVariants`** : le SKU devient optionnel (génération automatique si vide), avec validation manuelle sinon. Petit ajustement front-end nécessaire : les formulaires Vue de création de variante ne doivent plus marquer le champ SKU comme obligatoire, et afficher un placeholder du type « Laisser vide pour génération automatique ».
   Précision sur `bulkStoreVariants` : seul le cas « SKU vide » change de comportement (auto-génération au lieu d'échouer). Le cas « SKU explicite qui entre en conflit avec un SKU existant » garde exactement le comportement actuel — la ligne est ignorée et comptée dans `$skipped`, sans faire échouer le reste du lot. On ne transforme pas ce contrôle ad hoc en erreur bloquante dans ce sous-projet, pour ne pas changer l'UX de l'outil de grille au-delà de ce qui est demandé ici.
@@ -107,8 +109,9 @@ Responsabilités :
 
 ## Notes d'implémentation complémentaires
 
-- **Factories/seeders** : `ProductFactory` et `ProductVariantFactory` assignent aujourd'hui un SKU Faker explicite (d'où les valeurs "Glow", "SP", etc. observées dans l'audit). Elles seront revues pour laisser `sku` vide par défaut, afin que les tests exercent réellement le service de génération plutôt que de le contourner systématiquement. Un état explicite (`->withSku('XYZ')`) restera possible pour les tests qui ont besoin d'une valeur fixe.
+- **Factories/seeders** : il n'existe aujourd'hui aucune `ProductFactory` ni `ProductVariantFactory` dans `database/factories/` (seul `UserFactory` existe). Les valeurs de SKU type "Glow"/"SP" observées dans l'audit viennent de données insérées manuellement (tinker ou script ponctuel), pas d'une factory. Aucune action nécessaire sur ce point — les tests du sous-projet A créeront leurs propres données de test directement via les modèles.
 - **Autorisation** : aucune règle d'autorisation nouvelle n'est nécessaire — la génération de SKU est interne aux contrôleurs admin existants (`ProductController`, `ImportExportController`, `CategoryController`), qui sont déjà protégés par les middlewares/policies admin en place. Le test du point 14 (« autorisations administratives ») vérifie donc que ce comportement existant n'est pas régressé par les changements de validation, pas qu'une nouvelle règle est ajoutée.
+- **Suggestion client existante pour la grille de variantes en masse** (`resources/js/Pages/Admin/Products/Edit.vue`, fonction `generate()`) : le front-end pré-remplit déjà chaque ligne avec un SKU suggéré de la forme `{sku_parent}-{LABEL_ATTRIBUT}` (ex. `-ROUGE-M`), différent de la convention à suffixe séquentiel retenue ici. On ne touche pas à cette suggestion (c'est une pré-remplissage éditable, pas une génération serveur) — elle reste une convenance visuelle. Le changement nécessaire est ailleurs : `submitBulk()` filtre actuellement les lignes à SKU vide avant envoi (`r.sku.trim()`) et le contrôle de doublon côté client traite plusieurs champs vides comme des doublons ; ces deux points doivent être ajustés pour laisser passer les lignes volontairement vidées par l'admin et laisser le serveur leur générer un SKU.
 
 ## Hors périmètre (sous-projets suivants)
 

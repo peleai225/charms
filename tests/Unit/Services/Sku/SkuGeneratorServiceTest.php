@@ -3,6 +3,7 @@
 namespace Tests\Unit\Services\Sku;
 
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\SkuCounter;
 use App\Services\Sku\SkuGeneratorService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -84,5 +85,73 @@ class SkuGeneratorServiceTest extends TestCase
 
         $this->assertSame(1, SkuCounter::count());
         $this->assertSame(2, SkuCounter::where('scope_key', 'prefix:MOD')->first()->next_value);
+    }
+
+    public function test_generates_variant_sku_from_parent_sku(): void
+    {
+        $product = Product::create(['name' => 'T-shirt', 'sale_price' => 5000, 'sku' => 'LGB-MODE-000001']);
+
+        $sku = $this->service()->generateForVariant($product);
+
+        $this->assertSame('LGB-MODE-000001-01', $sku);
+    }
+
+    public function test_variant_sku_sequence_increments_per_product(): void
+    {
+        $product = Product::create(['name' => 'T-shirt', 'sale_price' => 5000, 'sku' => 'LGB-MODE-000001']);
+
+        $first = $this->service()->generateForVariant($product);
+        $second = $this->service()->generateForVariant($product);
+
+        $this->assertSame('LGB-MODE-000001-01', $first);
+        $this->assertSame('LGB-MODE-000001-02', $second);
+    }
+
+    public function test_variant_counters_are_independent_per_product(): void
+    {
+        $productA = Product::create(['name' => 'T-shirt', 'sale_price' => 5000, 'sku' => 'LGB-MODE-000001']);
+        $productB = Product::create(['name' => 'Pantalon', 'sale_price' => 8000, 'sku' => 'LGB-MODE-000002']);
+
+        $this->assertSame('LGB-MODE-000001-01', $this->service()->generateForVariant($productA));
+        $this->assertSame('LGB-MODE-000002-01', $this->service()->generateForVariant($productB));
+    }
+
+    public function test_throws_after_exhausting_retries_on_persistent_collision(): void
+    {
+        $category = Category::create(['name' => 'Mode', 'slug' => 'mode', 'code' => 'MOD']);
+
+        // Pré-remplir manuellement les 5 premiers SKU possibles pour forcer l'épuisement des tentatives.
+        for ($i = 1; $i <= 5; $i++) {
+            Product::create([
+                'name' => "Produit {$i}",
+                'sale_price' => 1000,
+                'sku' => sprintf('LGB-MOD-%06d', $i),
+            ]);
+        }
+
+        $this->expectException(\App\Services\Sku\Exceptions\SkuGenerationException::class);
+
+        $this->service()->generateForProduct($category);
+    }
+
+    public function test_other_database_exceptions_are_not_swallowed(): void
+    {
+        $category = Category::create(['name' => 'Test', 'slug' => 'test', 'code' => 'TST']);
+
+        // Simule une vraie panne DB (ex. connexion perdue) sans toucher au schéma partagé :
+        // casser la table via Schema::drop() provoquerait un COMMIT implicite MySQL qui
+        // désynchronise le suivi des savepoints de RefreshDatabase.
+        \Illuminate\Support\Facades\DB::shouldReceive('transaction')
+            ->once()
+            ->andThrow(new \Illuminate\Database\QueryException(
+                'mysql',
+                'select * from sku_counters',
+                [],
+                new \PDOException('SQLSTATE[HY000]: General error: simulated failure')
+            ));
+
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        $this->service()->generateForProduct($category);
     }
 }

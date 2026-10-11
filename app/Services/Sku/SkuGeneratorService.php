@@ -4,6 +4,7 @@ namespace App\Services\Sku;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\SkuCounter;
 use App\Services\Sku\Exceptions\SkuGenerationException;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +29,24 @@ class SkuGeneratorService
 
         throw new SkuGenerationException(
             'Impossible de générer un SKU unique après plusieurs tentatives. Veuillez réessayer ou saisir un SKU manuellement.'
+        );
+    }
+
+    public function generateForVariant(Product $product): string
+    {
+        $scopeKey = "product_variant:{$product->id}";
+
+        for ($attempt = 0; $attempt < self::MAX_ATTEMPTS; $attempt++) {
+            $sequence = $this->reserveSequence($scopeKey);
+            $candidate = sprintf('%s-%02d', $product->sku, $sequence);
+
+            if (! ProductVariant::where('sku', $candidate)->exists()) {
+                return $candidate;
+            }
+        }
+
+        throw new SkuGenerationException(
+            'Impossible de générer un SKU de variante unique après plusieurs tentatives. Veuillez réessayer ou saisir un SKU manuellement.'
         );
     }
 

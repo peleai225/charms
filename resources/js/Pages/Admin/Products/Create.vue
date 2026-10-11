@@ -143,8 +143,8 @@ function removeFile(i) {
                         <h2 class="text-sm font-semibold text-gray-900 mb-4">Stock & Identifiants</h2>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div>
-                                <label class="block text-xs font-medium text-gray-700 mb-1">SKU <span class="text-red-500">*</span></label>
-                                <input v-model="form.sku" type="text" required
+                                <label class="block text-xs font-medium text-gray-700 mb-1">SKU</label>
+                                <input v-model="form.sku" type="text" placeholder="Laisser vide pour génération automatique"
                                     class="w-full h-9 px-3 text-[13px] font-mono border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     :class="form.errors.sku ? 'border-red-300' : 'border-gray-200'">
                                 <p v-if="form.errors.sku" class="mt-1 text-[11px] text-red-500">{{ form.errors.sku }}</p>

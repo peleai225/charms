@@ -19,6 +19,7 @@ const showCreate      = ref(false)
 const createImagePrev = ref(null)
 const createForm = useForm({
     name:                '',
+    code:                '',
     description:         '',
     parent_id:           '',
     is_active:           true,
@@ -28,6 +29,12 @@ const createForm = useForm({
     meta_title:          '',
     meta_description:    '',
 })
+
+function duplicateCodeWarning(code, excludeId = null) {
+    const normalized = (code || '').trim().toUpperCase()
+    if (!normalized) return false
+    return (props.categories ?? []).some(c => c.id !== excludeId && (c.code || '').toUpperCase() === normalized)
+}
 
 function onCreateImage(e) {
     const file = e.target.files[0]
@@ -57,6 +64,7 @@ const showSeoEdit     = ref(false)
 
 const editForm = useForm({
     name:                '',
+    code:                '',
     description:         '',
     parent_id:           '',
     is_active:           true,
@@ -72,6 +80,7 @@ function openEdit(cat) {
     editingCat.value          = cat
     editImagePrev.value       = null
     editForm.name             = cat.name
+    editForm.code             = cat.code ?? ''
     editForm.description      = cat.description ?? ''
     editForm.parent_id        = cat.parent_id ?? ''
     editForm.is_active        = !!cat.is_active
@@ -370,6 +379,16 @@ function getDescendantIds(id, set = new Set()) {
                             class="w-full text-[13px] border border-gray-200 rounded-lg px-3 py-2 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-[12px] file:font-medium file:bg-gray-100 file:text-gray-600 cursor-pointer">
                     </div>
 
+                    <!-- Code (prefixe SKU) -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Code (préfixe SKU)</label>
+                        <input v-model="createForm.code" type="text" maxlength="10" placeholder="Ex. ELEC"
+                            class="w-full h-9 px-3 text-[13px] font-mono uppercase border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            :class="createForm.errors.code ? 'border-red-300' : 'border-gray-200'">
+                        <p v-if="createForm.errors.code" class="mt-1 text-[11px] text-red-500">{{ createForm.errors.code }}</p>
+                        <p v-if="duplicateCodeWarning(createForm.code)" class="mt-1 text-[11px] text-amber-600">Ce code est déjà utilisé par une autre catégorie — les deux partageront la même numérotation de SKU.</p>
+                    </div>
+
                     <!-- Statuts -->
                     <div class="flex gap-5">
                         <label class="flex items-center gap-2 cursor-pointer">
@@ -502,6 +521,16 @@ function getDescendantIds(id, set = new Set()) {
 
                         <input type="file" accept="image/*" @change="onEditImage"
                             class="w-full text-[13px] border border-gray-200 rounded-lg px-3 py-2 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-[12px] file:font-medium file:bg-gray-100 file:text-gray-600 cursor-pointer">
+                    </div>
+
+                    <!-- Code (prefixe SKU) -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Code (préfixe SKU)</label>
+                        <input v-model="editForm.code" type="text" maxlength="10" placeholder="Ex. ELEC"
+                            class="w-full h-9 px-3 text-[13px] font-mono uppercase border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            :class="editForm.errors.code ? 'border-red-300' : 'border-gray-200'">
+                        <p v-if="editForm.errors.code" class="mt-1 text-[11px] text-red-500">{{ editForm.errors.code }}</p>
+                        <p v-if="duplicateCodeWarning(editForm.code, editingId)" class="mt-1 text-[11px] text-amber-600">Ce code est déjà utilisé par une autre catégorie — les deux partageront la même numérotation de SKU.</p>
                     </div>
 
                     <!-- Statuts -->

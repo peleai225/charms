@@ -103,8 +103,6 @@ function notify(msg, type = 'success') {
 }
 
 async function submitVariant() {
-    if (!variantForm.value.sku.trim()) { notify('Le SKU est obligatoire.', 'error'); return }
-
     const body = new FormData()
     body.append('sku', variantForm.value.sku)
     body.append('stock_quantity', variantForm.value.stock_quantity)
@@ -218,11 +216,11 @@ function generate() {
 }
 
 async function submitBulk() {
-    const rows = generatedRows.value.filter(r => !r.remove && r.sku.trim())
+    const rows = generatedRows.value.filter(r => !r.remove)
     if (!rows.length) return
 
-    const skus = rows.map(r => r.sku.trim().toUpperCase())
-    if (skus.length !== new Set(skus).size) {
+    const nonEmptySkus = rows.map(r => r.sku.trim().toUpperCase()).filter(s => s !== '')
+    if (nonEmptySkus.length !== new Set(nonEmptySkus).size) {
         bulkError.value = 'Certaines lignes ont des SKU identiques.'
         setTimeout(() => { bulkError.value = null }, 6000)
         return
@@ -240,7 +238,7 @@ async function submitBulk() {
             },
             body: JSON.stringify({
                 rows: rows.map(r => ({
-                    sku: r.sku,
+                    sku: r.sku.trim(),
                     stock_quantity: parseInt(r.stock) || 0,
                     sale_price: r.price !== '' ? parseFloat(r.price) : null,
                     purchase_price: r.purchase_price !== '' ? parseFloat(r.purchase_price) : null,
@@ -844,8 +842,8 @@ function deleteProduct() {
                 <div v-if="addVariantOpen" class="p-5 space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
-                            <label class="block text-[11px] font-medium text-gray-600 mb-1">SKU <span class="text-red-500">*</span></label>
-                            <input v-model="variantForm.sku" type="text" required
+                            <label class="block text-[11px] font-medium text-gray-600 mb-1">SKU</label>
+                            <input v-model="variantForm.sku" type="text" placeholder="Auto si vide"
                                 class="w-full h-9 px-3 text-[13px] font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>

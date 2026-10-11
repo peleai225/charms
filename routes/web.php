@@ -352,6 +352,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             // Produits (CRUD complet)
             Route::get('products', [\App\Http\Controllers\Admin\ProductController::class, 'index'])->name('products.index');
             Route::post('products/bulk-destroy', [\App\Http\Controllers\Admin\ProductController::class, 'bulkDestroy'])->name('products.bulk-destroy');
+            Route::post('products/bulk-category', [\App\Http\Controllers\Admin\ProductController::class, 'bulkUpdateCategory'])->name('products.bulk-category');
             Route::resource('products', \App\Http\Controllers\Admin\ProductController::class)->only(['create','store','show','edit','update','destroy'])->names('products');
             Route::post('products/{product}/variants', [\App\Http\Controllers\Admin\ProductController::class, 'storeVariant'])->name('products.variants.store');
             Route::post('products/{product}/variants/bulk', [\App\Http\Controllers\Admin\ProductController::class, 'bulkStoreVariants'])->name('products.variants.bulk');

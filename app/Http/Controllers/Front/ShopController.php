@@ -165,6 +165,18 @@ class ShopController extends Controller
             ->whereIn('category_id', $categoryIds)
             ->with(['images', 'category', 'variants.attributeValues.attribute']);
 
+        if ($request->filled('min_price')) {
+            $query->where('sale_price', '>=', $request->min_price);
+        }
+
+        if ($request->filled('max_price')) {
+            $query->where('sale_price', '<=', $request->max_price);
+        }
+
+        if ($request->filled('on_sale')) {
+            $query->onSale();
+        }
+
         // Tri
         switch ($request->get('sort', 'newest')) {
             case 'price_asc':
@@ -226,7 +238,7 @@ class ShopController extends Controller
                 'prev_page_url' => $products->previousPageUrl(),
                 'next_page_url' => $products->nextPageUrl(),
             ],
-            'filters' => $request->only(['sort']),
+            'filters' => $request->only(['sort', 'min_price', 'max_price', 'on_sale']),
         ]);
     }
 

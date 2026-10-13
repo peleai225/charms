@@ -87,7 +87,7 @@ class CategoryController extends Controller
 
         $validated = $validator->validated();
 
-        $validated['slug'] = Str::slug($validated['name']);
+        $validated['slug'] = $this->uniqueSlug($validated['name'], $validated['parent_id'] ?? null);
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_featured'] = $request->boolean('is_featured');
 
@@ -102,6 +102,31 @@ class CategoryController extends Controller
         return redirect()
             ->route('admin.categories.index')
             ->with('success', 'Catégorie créée avec succès.');
+    }
+
+    /**
+     * Slug unique : "chaussettes" déjà pris → "mode-enfant-chaussettes" (préfixe parent) → "-2", "-3"…
+     */
+    private function uniqueSlug(string $name, $parentId = null): string
+    {
+        $base = Str::slug($name) ?: 'categorie';
+
+        if (! Category::where('slug', $base)->exists()) {
+            return $base;
+        }
+
+        $parent = $parentId ? Category::find($parentId) : null;
+        if ($parent) {
+            $base = $parent->slug.'-'.$base;
+        }
+
+        $slug = $base;
+        $i = 2;
+        while (Category::where('slug', $slug)->exists()) {
+            $slug = $base.'-'.$i++;
+        }
+
+        return $slug;
     }
 
     public function edit(Category $category)

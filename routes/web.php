@@ -353,6 +353,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('products', [\App\Http\Controllers\Admin\ProductController::class, 'index'])->name('products.index');
             Route::post('products/bulk-destroy', [\App\Http\Controllers\Admin\ProductController::class, 'bulkDestroy'])->name('products.bulk-destroy');
             Route::post('products/bulk-category', [\App\Http\Controllers\Admin\ProductController::class, 'bulkUpdateCategory'])->name('products.bulk-category');
+            Route::get('products/import-images', [\App\Http\Controllers\Admin\AiProductController::class, 'importImages'])->name('products.import-images');
+            Route::post('ai/analyze-image', [\App\Http\Controllers\Admin\AiProductController::class, 'analyzeImage'])->name('ai.analyze-image');
+            Route::post('ai/products/{product}/suggest', [\App\Http\Controllers\Admin\AiProductController::class, 'suggestForProduct'])->name('ai.products.suggest');
+            Route::post('ai/apply-categories', [\App\Http\Controllers\Admin\AiProductController::class, 'applyCategories'])->name('ai.apply-categories');
+            Route::post('ai/store-from-image', [\App\Http\Controllers\Admin\AiProductController::class, 'storeFromImage'])->name('ai.store-from-image');
             Route::resource('products', \App\Http\Controllers\Admin\ProductController::class)->only(['create','store','show','edit','update','destroy'])->names('products');
             Route::post('products/{product}/variants', [\App\Http\Controllers\Admin\ProductController::class, 'storeVariant'])->name('products.variants.store');
             Route::post('products/{product}/variants/bulk', [\App\Http\Controllers\Admin\ProductController::class, 'bulkStoreVariants'])->name('products.variants.bulk');
@@ -435,6 +440,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/settings/pos/test-printer', [\App\Http\Controllers\Admin\SettingsController::class, 'testPrinter'])->name('settings.pos.test-printer');
             Route::get('/settings/notifications', [\App\Http\Controllers\Admin\SettingsController::class, 'notifications'])->name('settings.notifications');
             Route::post('/settings/notifications', [\App\Http\Controllers\Admin\SettingsController::class, 'updateNotifications'])->name('settings.notifications.update');
+            Route::get('/settings/ai', [\App\Http\Controllers\Admin\SettingsController::class, 'ai'])->name('settings.ai');
+            Route::post('/settings/ai', [\App\Http\Controllers\Admin\SettingsController::class, 'updateAi'])->name('settings.ai.update');
+            Route::post('/settings/ai/test', [\App\Http\Controllers\Admin\SettingsController::class, 'testAi'])->name('settings.ai.test');
 
             // Système / Déploiement (admin uniquement)
             Route::get('/system', [\App\Http\Controllers\Admin\SystemController::class, 'index'])->name('system.index');

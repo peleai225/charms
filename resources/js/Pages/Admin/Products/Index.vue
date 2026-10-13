@@ -13,6 +13,7 @@ import FilterSelect from '@/Components/UI/FilterSelect.vue'
 import Breadcrumb from '@/Components/UI/Breadcrumb.vue'
 import ConfirmModal from '@/Components/UI/ConfirmModal.vue'
 import ToastContainer from '@/Components/UI/ToastContainer.vue'
+import AiCategorySuggest from '@/Components/Admin/AiCategorySuggest.vue'
 
 const props = defineProps({
     products: Object,
@@ -153,6 +154,19 @@ async function deleteSelected() {
 
 // ── Changer de catégorie en masse ─────────────────────────────────────────────
 
+const showAiSuggest = ref(false)
+const aiProducts = ref([])
+
+function openAiSuggest() {
+    aiProducts.value = [...selected.value]
+    showAiSuggest.value = true
+}
+
+function onAiDone() {
+    showAiSuggest.value = false
+    selected.value = []
+}
+
 const bulkCategoryId = ref('')
 const bulkCategoryProcessing = ref(false)
 
@@ -219,7 +233,13 @@ const breadcrumbs = [
                     {{ products.meta?.total ?? products.total ?? 0 }} produit(s) au total
                 </p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <a
+                    :href="route('admin.products.import-images')"
+                    class="h-9 px-4 flex items-center gap-2 border border-gray-200 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                    Créer par photos
+                </a>
                 <a
                     :href="route('admin.import-export.index')"
                     class="h-9 px-4 flex items-center gap-2 border border-gray-200 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
@@ -327,6 +347,12 @@ const breadcrumbs = [
                     >
                         {{ bulkCategoryProcessing ? 'Déplacement…' : `Déplacer (${sel.length})` }}
                     </button>
+                    <button
+                        class="h-8 px-3 text-sm font-medium text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                        @click="openAiSuggest"
+                    >
+                        Ranger avec l'IA ({{ sel.length }})
+                    </button>
                 </div>
                 <button
                     class="h-8 px-3 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
@@ -357,6 +383,13 @@ const breadcrumbs = [
 
     </div>
 
+    <AiCategorySuggest
+        v-if="showAiSuggest"
+        :products="aiProducts"
+        :categories="categories"
+        @close="showAiSuggest = false"
+        @done="onAiDone"
+    />
     <ConfirmModal />
     <ToastContainer />
 </template>

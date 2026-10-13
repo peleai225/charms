@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useForm } from '@inertiajs/vue3'
+import axios from 'axios'
 
 const props = defineProps({
     categories: Array,
@@ -48,6 +49,32 @@ function removeFile(i) {
     files.splice(i, 1)
     imagePreviews.value.splice(i, 1)
     form.images = files
+}
+
+// ── Remplissage IA à partir de la première photo ─────────────────────────────
+const aiLoading = ref(false)
+const aiMessage = ref(null)
+
+async function fillWithAi() {
+    const file = Array.from(form.images)[0]
+    if (!file) return
+    aiLoading.value = true
+    aiMessage.value = null
+    const data = new FormData()
+    data.append('image', file)
+    if (form.name) data.append('name', form.name)
+    try {
+        const { data: s } = await axios.post(route('admin.ai.analyze-image'), data)
+        if (s.name) form.name = s.name
+        if (s.short_description) form.short_description = s.short_description
+        if (s.description) form.description = s.description
+        if (s.category_id) form.category_id = s.category_id
+        aiMessage.value = { ok: true, text: 'Fiche remplie par l\'IA. Relisez avant d\'enregistrer.' }
+    } catch (e) {
+        aiMessage.value = { ok: false, text: e.response?.data?.message ?? 'L\'IA n\'a pas pu analyser la photo.' }
+    } finally {
+        aiLoading.value = false
+    }
 }
 </script>
 
@@ -183,7 +210,15 @@ function removeFile(i) {
 
                     <!-- Images -->
                     <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                        <h2 class="text-sm font-semibold text-gray-900 mb-4">Images du produit</h2>
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                            <h2 class="text-sm font-semibold text-gray-900">Images du produit</h2>
+                            <button type="button" :disabled="!imagePreviews.length || aiLoading" @click="fillWithAi"
+                                class="h-9 px-3 text-[13px] font-medium text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed">
+                                {{ aiLoading ? 'Analyse de la photo…' : '✨ Remplir avec l\'IA' }}
+                            </button>
+                        </div>
+                        <p v-if="aiMessage" class="mb-3 text-[12px] rounded-lg px-3 py-2"
+                            :class="aiMessage.ok ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-700'">{{ aiMessage.text }}</p>
                         <div class="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-blue-300 hover:bg-blue-50/40 transition-colors"
                              @click="$refs.fileInput.click()">
                             <svg class="w-7 h-7 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

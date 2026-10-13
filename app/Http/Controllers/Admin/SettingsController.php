@@ -429,10 +429,12 @@ class SettingsController extends Controller
             'ai_model' => 'nullable|string|max:150',
             'ai_api_key' => 'nullable|string|max:255',
             'ai_remove_key' => 'boolean',
+            'ai_image_search_enabled' => 'boolean',
         ]);
 
         $this->setSetting('ai_provider', $request->input('ai_provider'));
         $this->setSetting('ai_model', trim((string) $request->input('ai_model', '')));
+        $this->setSetting('ai_image_search_enabled', $request->boolean('ai_image_search_enabled') ? '1' : '0');
 
         // La clé n'est jamais renvoyée au navigateur : champ vide = conserver l'actuelle
         if ($request->boolean('ai_remove_key')) {
@@ -442,6 +444,7 @@ class SettingsController extends Controller
         }
 
         Setting::clearCache();
+        cache()->forget('site_settings');
 
         return back()->with('success', 'Paramètres IA mis à jour.');
     }

@@ -85,6 +85,7 @@ Route::post('/favoris/{product}/toggle', [App\Http\Controllers\Front\WishlistCon
 
 // Catalogue
 Route::get('/boutique', [App\Http\Controllers\Front\ShopController::class, 'index'])->name('shop.index');
+Route::post('/recherche-photo', [App\Http\Controllers\Front\ImageSearchController::class, 'search'])->middleware('throttle:6,60')->name('shop.image-search');
 Route::get('/categorie/{slug}', [App\Http\Controllers\Front\ShopController::class, 'category'])->name('shop.category');
 Route::get('/produit/{slug}', [App\Http\Controllers\Front\ShopController::class, 'product'])->name('shop.product');
 Route::post('/produit/avis', [App\Http\Controllers\Front\ReviewController::class, 'store'])->name('review.store')->middleware('throttle:3,1');

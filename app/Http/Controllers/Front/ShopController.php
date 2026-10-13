@@ -52,6 +52,42 @@ class ShopController extends Controller
             });
         }
 
+        // Recherche par photo : mots-clés (au moins un doit correspondre), triés par pertinence
+        $terms = collect(explode(',', (string) $request->input('terms', '')))
+            ->map(fn ($t) => trim($t))
+            ->filter(fn ($t) => mb_strlen($t) >= 2)
+            ->take(6)->values();
+        $termsFallback = false;
+
+        if ($terms->isNotEmpty()) {
+            $withoutTerms = clone $query;
+
+            $query->where(function ($q) use ($terms) {
+                foreach ($terms as $t) {
+                    $q->orWhere('name', 'like', "%{$t}%")
+                        ->orWhere('short_description', 'like', "%{$t}%")
+                        ->orWhere('description', 'like', "%{$t}%");
+                }
+            });
+
+            // Aucun résultat avec les mots-clés : on montre la catégorie reconnue
+            if ($request->filled('category') && ! (clone $query)->exists()) {
+                $query = $withoutTerms;
+                $termsFallback = true;
+            } elseif (! $request->filled('sort')) {
+                $score = [];
+                $bindings = [];
+                foreach ($terms as $i => $t) {
+                    $w = count($terms) - $i; // le premier mot-clé (type d'article) compte le plus
+                    $score[] = "(CASE WHEN name LIKE ? THEN ".($w * 3).' ELSE 0 END)';
+                    $score[] = "(CASE WHEN short_description LIKE ? THEN {$w} ELSE 0 END)";
+                    $bindings[] = "%{$t}%";
+                    $bindings[] = "%{$t}%";
+                }
+                $query->orderByRaw('('.implode(' + ', $score).') DESC', $bindings);
+            }
+        }
+
         // Filtre promotions
         if ($request->filled('on_sale')) {
             $query->onSale();
@@ -134,7 +170,8 @@ class ShopController extends Controller
         return Inertia::render('Shop/Index', [
             'products' => $productsData,
             'categories' => $categoriesData,
-            'filters' => $request->only(['category', 'search', 'min_price', 'max_price', 'sort', 'on_sale', 'featured']),
+            'filters' => $request->only(['category', 'search', 'min_price', 'max_price', 'sort', 'on_sale', 'featured', 'terms', 'image_search']),
+            'termsFallback' => $termsFallback,
             'currentCategory' => isset($category) ? ['id' => $category->id, 'name' => $category->name, 'slug' => $category->slug] : null,
         ]);
     }

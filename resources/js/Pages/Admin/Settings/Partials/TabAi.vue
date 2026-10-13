@@ -8,7 +8,7 @@ const props = defineProps({ settings: Object })
 const providers = {
     gemini: {
         label: 'Google Gemini (gratuit avec quotas)',
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.8-flash',
         keyUrl: 'https://aistudio.google.com/app/apikey',
         placeholder: 'AIza...',
     },
@@ -25,6 +25,7 @@ const form = useForm({
     ai_model: props.settings.ai_model ?? '',
     ai_api_key: '',
     ai_remove_key: false,
+    ai_image_search_enabled: (props.settings.ai_image_search_enabled ?? '1') === '1',
 })
 
 const current = computed(() => providers[form.ai_provider] ?? providers.gemini)
@@ -100,6 +101,14 @@ async function test() {
                         class="w-full h-11 px-3 text-[13px] font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <p class="mt-1 text-[12px] text-gray-500">Laissez vide pour utiliser le modèle recommandé : <code>{{ current.model }}</code>. Le modèle doit savoir lire les images.</p>
                 </div>
+
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input v-model="form.ai_image_search_enabled" type="checkbox" class="mt-0.5 w-5 h-5 rounded border-gray-300">
+                    <span>
+                        <span class="block text-[13px] font-medium text-gray-800">Recherche par photo pour les clients</span>
+                        <span class="block text-[12px] text-gray-500">Affiche une icône appareil photo dans la barre de recherche de la boutique. Limité à 6 recherches par heure et par visiteur.</span>
+                    </span>
+                </label>
 
                 <div class="flex flex-wrap items-center gap-2 pt-2">
                     <button type="button" :disabled="form.processing" @click="save"

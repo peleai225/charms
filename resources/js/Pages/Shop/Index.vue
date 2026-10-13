@@ -5,12 +5,14 @@ import ProductCard from '@/Components/ProductCard.vue';
 import { useHelpers } from '@/Composables/useHelpers';
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { X, ChevronLeft, ChevronRight, ChevronDown, SlidersHorizontal, Inbox } from 'lucide-vue-next';
+import ImageSearchBanner from '@/Components/Shop/ImageSearchBanner.vue';
 
 const props = defineProps({
     products:        Object,
     categories:      Array,
     filters:         Object,
     currentCategory: Object,
+    termsFallback:   Boolean,
 });
 
 const { formatPrice } = useHelpers();
@@ -278,6 +280,7 @@ onUnmounted(() => { unsubStart?.(); unsubFinish?.(); });
 
                 <!-- ─── RIGHT: Products area ────────────────────────────────── -->
                 <div class="min-w-0">
+                    <ImageSearchBanner v-if="filters?.image_search" :label="filters.image_search" :fallback="termsFallback" />
 
                     <!-- Mobile: category chips strip -->
                     <div class="lg:hidden -mx-4 px-4 overflow-x-auto pb-3 mb-3">

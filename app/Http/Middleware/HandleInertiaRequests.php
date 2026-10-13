@@ -75,6 +75,8 @@ class HandleInertiaRequests extends Middleware
                     'social_facebook'         => \App\Models\Setting::get('social_facebook'),
                     'social_instagram'        => \App\Models\Setting::get('social_instagram'),
                     'whatsapp_order_enabled'  => \App\Models\Setting::get('whatsapp_order_enabled', '1'),
+                    'image_search_enabled'    => (bool) \App\Models\Setting::get('ai_api_key')
+                        && \App\Models\Setting::get('ai_image_search_enabled', '1') === '1',
                 ];
             }),
 

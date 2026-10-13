@@ -15,7 +15,7 @@ use RuntimeException;
 class AiService
 {
     public const PROVIDERS = [
-        'gemini' => ['label' => 'Google Gemini', 'default_model' => 'gemini-2.5-flash'],
+        'gemini' => ['label' => 'Google Gemini', 'default_model' => 'gemini-3.8-flash'],
         'openrouter' => ['label' => 'OpenRouter (Qwen, DeepSeek…)', 'default_model' => 'qwen/qwen2.5-vl-72b-instruct:free'],
     ];
 
@@ -78,6 +78,45 @@ PROMPT;
             'description' => trim((string) ($data['description'] ?? '')),
             'category_id' => $category ? $category['id'] : null,
             'category_name' => $category ? $category['path'] : null,
+        ];
+    }
+
+    /**
+     * Recherche par photo (client) : décrit l'article en mots-clés + catégorie.
+     *
+     * @return array{label: string, keywords: array<int, string>, category_id: ?int}
+     */
+    public function describeForSearch(string $imageBinary, ?string $mimeType): array
+    {
+        $categories = $this->categoryList();
+        $catalog = collect($categories)->map(fn ($c) => "{$c['id']}: {$c['path']}")->implode("\n");
+
+        $prompt = <<<PROMPT
+Un client d'une boutique en ligne envoie cette photo pour trouver un article similaire.
+Identifie l'article principal visible. Donne :
+- "label" : description courte en français (ex : "T-shirt rouge pour enfant", max 50 caractères)
+- "keywords" : 3 à 6 mots-clés simples en français, au singulier, sans accents superflus, du plus important au moins important (type d'article d'abord, puis synonymes courants, couleur, motif). Ex : ["t-shirt", "tee-shirt", "rouge", "enfant"]
+- "category_id" : la catégorie la plus précise de cette liste (id: chemin), ou null si aucune ne convient :
+{$catalog}
+
+Réponds UNIQUEMENT avec un objet JSON valide :
+{"label": "...", "keywords": ["..."], "category_id": 12}
+PROMPT;
+
+        $data = $this->parseJson($this->generate($prompt, $imageBinary, $mimeType));
+
+        $keywords = collect($data['keywords'] ?? [])
+            ->filter(fn ($k) => is_string($k) && mb_strlen(trim($k)) >= 2)
+            ->map(fn ($k) => mb_strtolower(mb_substr(trim($k), 0, 40)))
+            ->unique()->take(6)->values()->all();
+
+        $categoryId = isset($data['category_id']) && is_numeric($data['category_id']) ? (int) $data['category_id'] : null;
+        $valid = $categoryId && collect($categories)->contains('id', $categoryId);
+
+        return [
+            'label' => mb_substr(trim((string) ($data['label'] ?? '')), 0, 80),
+            'keywords' => $keywords,
+            'category_id' => $valid ? $categoryId : null,
         ];
     }
 

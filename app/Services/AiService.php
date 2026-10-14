@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\Setting;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -149,7 +150,8 @@ PROMPT;
             $parts[] = ['inline_data' => ['mime_type' => $mimeType ?: 'image/jpeg', 'data' => base64_encode($imageBinary)]];
         }
 
-        $response = Http::timeout(25)
+        $response = Http::timeout(13)
+            ->retry(2, 1500, fn ($e) => $e instanceof RequestException && in_array($e->response->status(), [500, 502, 503]), throw: false)
             ->withHeaders(['x-goog-api-key' => $this->apiKey])
             ->post("https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent", [
                 'contents' => [['parts' => $parts]],
@@ -172,7 +174,8 @@ PROMPT;
             ]];
         }
 
-        $response = Http::timeout(25)
+        $response = Http::timeout(13)
+            ->retry(2, 1500, fn ($e) => $e instanceof RequestException && in_array($e->response->status(), [500, 502, 503]), throw: false)
             ->withToken($this->apiKey)
             ->withHeaders(['HTTP-Referer' => config('app.url'), 'X-Title' => config('app.name')])
             ->post('https://openrouter.ai/api/v1/chat/completions', [
@@ -194,6 +197,7 @@ PROMPT;
 
         $hint = match (true) {
             $status === 429 => 'Quota gratuit atteint. Patientez une minute puis réessayez.',
+            in_array($status, [500, 502, 503]) => 'Le service IA est surchargé en ce moment (problème temporaire chez le fournisseur). Réessayez dans quelques minutes.',
             in_array($status, [401, 403]) => 'Clé API invalide ou refusée. Vérifiez-la dans Paramètres → IA.',
             $status === 404 => 'Modèle introuvable. Vérifiez le nom du modèle dans Paramètres → IA.',
             default => 'Le service IA a renvoyé une erreur.',

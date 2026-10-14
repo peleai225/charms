@@ -1,1 +1,0 @@
-import{u as o}from"./ToastContainer-DFaenwEX.js";function a(){const s=o();return{success:(r,e={})=>s.add({type:"success",message:r,...e}),error:(r,e={})=>s.add({type:"error",message:r,...e}),warning:(r,e={})=>s.add({type:"warning",message:r,...e}),info:(r,e={})=>s.add({type:"info",message:r,...e})}}export{a as u};

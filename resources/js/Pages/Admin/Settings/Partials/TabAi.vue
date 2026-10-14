@@ -23,6 +23,7 @@ const providers = {
 const form = useForm({
     ai_provider: props.settings.ai_provider ?? 'gemini',
     ai_model: props.settings.ai_model ?? '',
+    ai_fallback_model: props.settings.ai_fallback_model ?? '',
     ai_api_key: '',
     ai_remove_key: false,
     ai_image_search_enabled: (props.settings.ai_image_search_enabled ?? '1') === '1',
@@ -100,6 +101,13 @@ async function test() {
                     <input v-model="form.ai_model" type="text" :placeholder="current.model"
                         class="w-full h-11 px-3 text-[13px] font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <p class="mt-1 text-[12px] text-gray-500">Laissez vide pour utiliser le modèle recommandé : <code>{{ current.model }}</code>. Le modèle doit savoir lire les images.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Modèle de secours <span class="font-normal text-gray-400">(facultatif)</span></label>
+                    <input v-model="form.ai_fallback_model" type="text" placeholder="ex : un modèle « flash-lite » listé dans votre console"
+                        class="w-full h-11 px-3 text-[13px] font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <p class="mt-1 text-[12px] text-gray-500">Utilisé automatiquement si le modèle principal est surchargé ou a atteint son quota. Doit aussi savoir lire les images.</p>
                 </div>
 
                 <label class="flex items-start gap-3 cursor-pointer">

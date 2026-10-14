@@ -427,6 +427,7 @@ class SettingsController extends Controller
         $request->validate([
             'ai_provider' => 'required|in:'.implode(',', array_keys(\App\Services\AiService::PROVIDERS)),
             'ai_model' => 'nullable|string|max:150',
+            'ai_fallback_model' => 'nullable|string|max:150',
             'ai_api_key' => 'nullable|string|max:255',
             'ai_remove_key' => 'boolean',
             'ai_image_search_enabled' => 'boolean',
@@ -434,6 +435,7 @@ class SettingsController extends Controller
 
         $this->setSetting('ai_provider', $request->input('ai_provider'));
         $this->setSetting('ai_model', trim((string) $request->input('ai_model', '')));
+        $this->setSetting('ai_fallback_model', trim((string) $request->input('ai_fallback_model', '')));
         $this->setSetting('ai_image_search_enabled', $request->boolean('ai_image_search_enabled') ? '1' : '0');
 
         // La clé n'est jamais renvoyée au navigateur : champ vide = conserver l'actuelle

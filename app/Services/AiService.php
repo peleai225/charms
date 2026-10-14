@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Category;
 use App\Models\Setting;
-use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -26,6 +26,8 @@ class AiService
 
     protected string $model;
 
+    protected ?string $fallbackModel;
+
     public function __construct()
     {
         $this->provider = Setting::get('ai_provider', 'gemini');
@@ -34,6 +36,7 @@ class AiService
         }
         $this->apiKey = Setting::get('ai_api_key') ?: null;
         $this->model = Setting::get('ai_model') ?: self::PROVIDERS[$this->provider]['default_model'];
+        $this->fallbackModel = Setting::get('ai_fallback_model') ?: null;
     }
 
     public function isConfigured(): bool
@@ -138,34 +141,52 @@ PROMPT;
             throw new RuntimeException("L'IA n'est pas configurée. Ajoutez une clé API dans Paramètres → IA.");
         }
 
-        return $this->provider === 'openrouter'
-            ? $this->callOpenRouter($prompt, $imageBinary, $mimeType)
-            : $this->callGemini($prompt, $imageBinary, $mimeType);
+        @set_time_limit(60);
+
+        // Modèle principal, puis modèle de secours si le principal est surchargé
+        $models = array_values(array_unique(array_filter([$this->model, $this->fallbackModel])));
+
+        foreach ($models as $i => $model) {
+            $response = $this->provider === 'openrouter'
+                ? $this->callOpenRouter($model, $prompt, $imageBinary, $mimeType)
+                : $this->callGemini($model, $prompt, $imageBinary, $mimeType);
+
+            if ($response->successful()) {
+                return $this->provider === 'openrouter'
+                    ? (string) $response->json('choices.0.message.content', '')
+                    : (string) $response->json('candidates.0.content.parts.0.text', '');
+            }
+
+            $overloaded = in_array($response->status(), [429, 500, 502, 503]);
+            if (! $overloaded || $i === count($models) - 1) {
+                $this->fail($response->status(), $response->json('error.message') ?? $response->body());
+            }
+
+            Log::info('AiService: modèle surchargé, bascule sur le modèle de secours', ['model' => $model]);
+            usleep(800_000);
+        }
+
+        throw new RuntimeException("Le service IA n'a pas répondu.");
     }
 
-    protected function callGemini(string $prompt, ?string $imageBinary, ?string $mimeType): string
+    protected function callGemini(string $model, string $prompt, ?string $imageBinary, ?string $mimeType): Response
     {
         $parts = [['text' => $prompt]];
         if ($imageBinary) {
             $parts[] = ['inline_data' => ['mime_type' => $mimeType ?: 'image/jpeg', 'data' => base64_encode($imageBinary)]];
         }
 
-        $response = Http::timeout(13)
-            ->retry(2, 1500, fn ($e) => $e instanceof RequestException && in_array($e->response->status(), [500, 502, 503]), throw: false)
+        $response = Http::timeout(12)
             ->withHeaders(['x-goog-api-key' => $this->apiKey])
-            ->post("https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent", [
+            ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
                 'contents' => [['parts' => $parts]],
                 'generationConfig' => ['temperature' => 0.4],
             ]);
 
-        if (! $response->successful()) {
-            $this->fail($response->status(), $response->json('error.message') ?? $response->body());
-        }
-
-        return (string) $response->json('candidates.0.content.parts.0.text', '');
+        return $response;
     }
 
-    protected function callOpenRouter(string $prompt, ?string $imageBinary, ?string $mimeType): string
+    protected function callOpenRouter(string $model, string $prompt, ?string $imageBinary, ?string $mimeType): Response
     {
         $content = [['type' => 'text', 'text' => $prompt]];
         if ($imageBinary) {
@@ -174,21 +195,16 @@ PROMPT;
             ]];
         }
 
-        $response = Http::timeout(13)
-            ->retry(2, 1500, fn ($e) => $e instanceof RequestException && in_array($e->response->status(), [500, 502, 503]), throw: false)
+        $response = Http::timeout(12)
             ->withToken($this->apiKey)
             ->withHeaders(['HTTP-Referer' => config('app.url'), 'X-Title' => config('app.name')])
             ->post('https://openrouter.ai/api/v1/chat/completions', [
-                'model' => $this->model,
+                'model' => $model,
                 'messages' => [['role' => 'user', 'content' => $content]],
                 'temperature' => 0.4,
             ]);
 
-        if (! $response->successful()) {
-            $this->fail($response->status(), $response->json('error.message') ?? $response->body());
-        }
-
-        return (string) $response->json('choices.0.message.content', '');
+        return $response;
     }
 
     protected function fail(int $status, string $message): never
@@ -197,7 +213,7 @@ PROMPT;
 
         $hint = match (true) {
             $status === 429 => 'Quota gratuit atteint. Patientez une minute puis réessayez.',
-            in_array($status, [500, 502, 503]) => 'Le service IA est surchargé en ce moment (problème temporaire chez le fournisseur). Réessayez dans quelques minutes.',
+            in_array($status, [500, 502, 503]) => 'Le service IA est surchargé en ce moment (problème temporaire chez le fournisseur). Réessayez dans quelques minutes, ou ajoutez un modèle de secours dans Paramètres → IA.',
             in_array($status, [401, 403]) => 'Clé API invalide ou refusée. Vérifiez-la dans Paramètres → IA.',
             $status === 404 => 'Modèle introuvable. Vérifiez le nom du modèle dans Paramètres → IA.',
             default => 'Le service IA a renvoyé une erreur.',

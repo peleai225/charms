@@ -77,6 +77,55 @@ async function saveStock(variantId) {
     notify('Stock mis à jour.')
 }
 
+const editingPrice = ref({})
+
+function startEditPrice(id, current) {
+    editingPrice.value[id] = current
+}
+
+async function savePrice(variantId) {
+    const price = editingPrice.value[variantId]
+    await fetch(`/admin/products/${props.product.id}/variants/${variantId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, Accept: 'application/json' },
+        body: JSON.stringify({ sale_price: price }),
+    })
+    const v = variants.value.find(v => v.id === variantId)
+    if (v) v.sale_price = price
+    delete editingPrice.value[variantId]
+    notify('Prix mis à jour.')
+}
+
+const bulkPrice = ref('')
+const bulkPriceApplying = ref(false)
+
+async function applyBulkPrice() {
+    if (bulkPrice.value === '' || Number(bulkPrice.value) < 0) {
+        notify('Indique un prix valide.', 'error')
+        return
+    }
+    bulkPriceApplying.value = true
+    try {
+        const res = await fetch(`/admin/products/${props.product.id}/variants/bulk-price`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, Accept: 'application/json' },
+            body: JSON.stringify({ sale_price: bulkPrice.value }),
+        })
+        const data = await res.json()
+        if (data.success) {
+            variants.value.forEach(v => { v.sale_price = data.sale_price })
+            bulkPrice.value = ''
+            notify('Prix appliqué à toutes les variantes.')
+        } else {
+            notify('Erreur lors de la mise à jour.', 'error')
+        }
+    } catch (e) {
+        notify('Erreur réseau.', 'error')
+    } finally {
+        bulkPriceApplying.value = false
+    }
+}
+
 async function deleteVariant(variantId) {
     if (!confirm('Supprimer cette variante ?')) return
     await fetch(`/admin/products/${props.product.id}/variants/${variantId}`, {
@@ -613,6 +662,20 @@ function deleteProduct() {
                 </span>
             </div>
 
+            <div v-if="variants.length" class="flex items-center gap-2 px-5 py-3 border-b border-gray-100 bg-gray-50/60">
+                <label class="text-[12px] font-medium text-gray-600">Appliquer un prix à toutes les variantes :</label>
+                <div class="relative">
+                    <input v-model="bulkPrice" type="number" min="0" step="1" placeholder="Prix"
+                        class="w-32 h-8 pl-3 pr-10 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        @keydown.enter.prevent="applyBulkPrice">
+                    <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] text-gray-400 pointer-events-none">F</span>
+                </div>
+                <button type="button" @click="applyBulkPrice" :disabled="bulkPriceApplying"
+                    class="h-8 px-3 text-[12px] font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                    Appliquer à toutes
+                </button>
+            </div>
+
             <div v-if="variants.length" class="overflow-x-auto">
                 <table class="w-full text-[13px]">
                     <thead>
@@ -655,8 +718,26 @@ function deleteProduct() {
                                     </button>
                                 </div>
                             </td>
-                            <td class="px-4 py-3 text-center tabular-nums text-gray-700">
-                                {{ v.sale_price ? Number(v.sale_price).toLocaleString('fr-FR') + ' F' : '—' }}
+                            <td class="px-4 py-3 text-center">
+                                <div v-if="editingPrice[v.id] === undefined" class="flex items-center justify-center gap-1.5">
+                                    <span class="tabular-nums text-gray-700">
+                                        {{ v.sale_price ? Number(v.sale_price).toLocaleString('fr-FR') + ' F' : '—' }}
+                                    </span>
+                                    <button type="button" @click="startEditPrice(v.id, v.sale_price)"
+                                        class="opacity-0 group-hover:opacity-100 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-blue-500 transition-opacity">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    </button>
+                                </div>
+                                <div v-else class="flex items-center justify-center gap-1">
+                                    <input v-model.number="editingPrice[v.id]" type="number" min="0"
+                                        class="w-20 h-7 px-2 text-[12px] border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-center"
+                                        @keydown.enter.prevent="savePrice(v.id)"
+                                        @keydown.escape="delete editingPrice[v.id]">
+                                    <button type="button" @click="savePrice(v.id)"
+                                        class="w-7 h-7 flex items-center justify-center bg-blue-600 text-white rounded hover:bg-blue-700">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    </button>
+                                </div>
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <button type="button" @click="deleteVariant(v.id)"

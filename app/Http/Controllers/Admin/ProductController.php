@@ -897,6 +897,27 @@ class ProductController extends Controller
     }
 
     /**
+     * Appliquer le même prix de vente à toutes les variantes du produit.
+     */
+    public function bulkUpdateVariantPrice(Request $request, Product $product)
+    {
+        $validated = $request->validate([
+            'sale_price' => 'required|numeric|min:0',
+        ]);
+
+        $product->variants()->update(['sale_price' => $validated['sale_price']]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'sale_price' => $validated['sale_price'],
+            ]);
+        }
+
+        return back()->with('success', 'Prix appliqué à toutes les variantes.');
+    }
+
+    /**
      * Supprimer une variante
      */
     public function destroyVariant(Product $product, ProductVariant $variant)

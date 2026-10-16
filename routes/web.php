@@ -362,6 +362,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::resource('products', \App\Http\Controllers\Admin\ProductController::class)->only(['create','store','show','edit','update','destroy'])->names('products');
             Route::post('products/{product}/variants', [\App\Http\Controllers\Admin\ProductController::class, 'storeVariant'])->name('products.variants.store');
             Route::post('products/{product}/variants/bulk', [\App\Http\Controllers\Admin\ProductController::class, 'bulkStoreVariants'])->name('products.variants.bulk');
+            Route::patch('products/{product}/variants/bulk-price', [\App\Http\Controllers\Admin\ProductController::class, 'bulkUpdateVariantPrice'])->name('products.variants.bulk-price');
             Route::patch('products/{product}/variants/{variant}', [\App\Http\Controllers\Admin\ProductController::class, 'updateVariant'])->name('products.variants.update');
             Route::post('products/{product}/variants/{variant}/image', [\App\Http\Controllers\Admin\ProductController::class, 'updateVariantImage'])->name('products.variants.image.update');
             Route::delete('products/{product}/variants/{variant}/image', [\App\Http\Controllers\Admin\ProductController::class, 'destroyVariantImage'])->name('products.variants.image.destroy');

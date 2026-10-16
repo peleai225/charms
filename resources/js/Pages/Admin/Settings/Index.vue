@@ -6,6 +6,7 @@ import TabPayment       from './Partials/TabPayment.vue'
 import TabEmails        from './Partials/TabEmails.vue'
 import TabPos           from './Partials/TabPos.vue'
 import TabNotifications from './Partials/TabNotifications.vue'
+import TabAi            from './Partials/TabAi.vue'
 
 const props = defineProps({
     settings:  Object,
@@ -21,6 +22,7 @@ const tabs = [
     { key: 'emails',   label: 'Emails' },
     { key: 'pos',           label: 'Caisse / Impression' },
     { key: 'notifications', label: 'Notifications' },
+    { key: 'ai',            label: 'IA' },
 ]
 </script>
 
@@ -52,6 +54,7 @@ const tabs = [
         <TabEmails   v-show="tab === 'emails'"   :settings="settings" />
         <TabPos           v-show="tab === 'pos'"           :settings="settings" />
         <TabNotifications v-show="tab === 'notifications'" :settings="settings" />
+        <TabAi            v-show="tab === 'ai'"            :settings="settings" />
 
     </div>
 </template>

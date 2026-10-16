@@ -14,6 +14,7 @@ import MobileBottomNav  from '@/Components/Layout/MobileBottomNav.vue';
 import WhatsAppButton   from '@/Components/Layout/WhatsAppButton.vue';
 import CartDrawer       from '@/Components/Layout/CartDrawer.vue';
 import CategoryNavBar   from '@/Components/Layout/CategoryNavBar.vue';
+import ImageSearchButton from '@/Components/Shop/ImageSearchButton.vue';
 
 const props = defineProps({ title: String });
 
@@ -135,6 +136,7 @@ const cartDrawerOpen = ref(false);
                             <input v-model="searchQuery" type="search"
                                    placeholder="Rechercher des produits, marques..."
                                    class="flex-1 px-4 text-sm border border-r-0 border-slate-300 rounded-l-lg focus:outline-none focus:ring-1 focus:ring-slate-400"/>
+                            <ImageSearchButton button-class="h-full px-3 flex items-center border-y border-slate-300 text-slate-500 hover:text-slate-900 hover:bg-slate-50 transition" />
                             <button type="submit"
                                     class="px-5 text-white rounded-r-lg flex items-center justify-center transition shrink-0 nav-primary-btn"
                                     :style="{ '--nav-primary': primaryColor }">
@@ -146,6 +148,9 @@ const cartDrawerOpen = ref(false);
 
                         <!-- Actions droite -->
                         <div class="flex items-center gap-1 sm:gap-2 ml-auto md:ml-0">
+
+                            <!-- Recherche par photo (mobile) -->
+                            <ImageSearchButton button-class="md:hidden w-11 h-11 flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition" />
 
                             <!-- Search trigger (mobile) -->
                             <button @click="searchOpen = true"

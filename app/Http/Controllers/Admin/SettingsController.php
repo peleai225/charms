@@ -16,7 +16,7 @@ class SettingsController extends Controller
      */
     public function index()
     {
-        $settings = Setting::pluck('value', 'key')->toArray();
+        $settings = $this->publicSettings();
 
         Inertia::setRootView('layouts.admin-inertia');
         return Inertia::render('Admin/Settings/Index', [
@@ -94,7 +94,7 @@ class SettingsController extends Controller
      */
     public function shipping()
     {
-        $settings = Setting::pluck('value', 'key')->toArray();
+        $settings = $this->publicSettings();
 
         Inertia::setRootView('layouts.admin-inertia');
         return Inertia::render('Admin/Settings/Index', [
@@ -137,7 +137,7 @@ class SettingsController extends Controller
      */
     public function payment()
     {
-        $settings = Setting::pluck('value', 'key')->toArray();
+        $settings = $this->publicSettings();
 
         Inertia::setRootView('layouts.admin-inertia');
         return Inertia::render('Admin/Settings/Index', [
@@ -190,7 +190,7 @@ class SettingsController extends Controller
      */
     public function emails()
     {
-        $settings = Setting::pluck('value', 'key')->toArray();
+        $settings = $this->publicSettings();
 
         Inertia::setRootView('layouts.admin-inertia');
         return Inertia::render('Admin/Settings/Index', [
@@ -309,7 +309,7 @@ class SettingsController extends Controller
      */
     public function pos()
     {
-        $settings = Setting::pluck('value', 'key')->toArray();
+        $settings = $this->publicSettings();
 
         Inertia::setRootView('layouts.admin-inertia');
         return Inertia::render('Admin/Settings/Index', [
@@ -382,7 +382,7 @@ class SettingsController extends Controller
      */
     public function notifications()
     {
-        $settings = Setting::pluck('value', 'key')->toArray();
+        $settings = $this->publicSettings();
 
         Inertia::setRootView('layouts.admin-inertia');
         return Inertia::render('Admin/Settings/Index', [
@@ -407,6 +407,71 @@ class SettingsController extends Controller
         Setting::clearCache();
 
         return back()->with('success', 'Paramètres de notifications mis à jour.');
+    }
+
+    /**
+     * Paramètres IA
+     */
+    public function ai()
+    {
+        Inertia::setRootView('layouts.admin-inertia');
+
+        return Inertia::render('Admin/Settings/Index', [
+            'settings' => $this->publicSettings(),
+            'activeTab' => 'ai',
+        ]);
+    }
+
+    public function updateAi(Request $request)
+    {
+        $request->validate([
+            'ai_provider' => 'required|in:'.implode(',', array_keys(\App\Services\AiService::PROVIDERS)),
+            'ai_model' => 'nullable|string|max:150',
+            'ai_fallback_model' => 'nullable|string|max:150',
+            'ai_api_key' => 'nullable|string|max:255',
+            'ai_remove_key' => 'boolean',
+            'ai_image_search_enabled' => 'boolean',
+        ]);
+
+        $this->setSetting('ai_provider', $request->input('ai_provider'));
+        $this->setSetting('ai_model', trim((string) $request->input('ai_model', '')));
+        $this->setSetting('ai_fallback_model', trim((string) $request->input('ai_fallback_model', '')));
+        $this->setSetting('ai_image_search_enabled', $request->boolean('ai_image_search_enabled') ? '1' : '0');
+
+        // La clé n'est jamais renvoyée au navigateur : champ vide = conserver l'actuelle
+        if ($request->boolean('ai_remove_key')) {
+            $this->setSetting('ai_api_key', '');
+        } elseif (filled($request->input('ai_api_key'))) {
+            $this->setSetting('ai_api_key', trim($request->input('ai_api_key')));
+        }
+
+        Setting::clearCache();
+        cache()->forget('site_settings');
+
+        return back()->with('success', 'Paramètres IA mis à jour.');
+    }
+
+    public function testAi(\App\Services\AiService $ai)
+    {
+        try {
+            $answer = $ai->ping();
+
+            return response()->json(['ok' => true, 'message' => "Connexion réussie. Réponse de l'IA : « ".mb_substr($answer, 0, 50).' »']);
+        } catch (\Throwable $e) {
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
+        }
+    }
+
+    /**
+     * Paramètres envoyés au navigateur (sans les clés secrètes de l'IA)
+     */
+    protected function publicSettings(): array
+    {
+        $settings = Setting::pluck('value', 'key')->toArray();
+        $settings['ai_api_key_set'] = ! empty($settings['ai_api_key']);
+        unset($settings['ai_api_key']);
+
+        return $settings;
     }
 
     /**

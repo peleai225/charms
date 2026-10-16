@@ -52,6 +52,42 @@ class ShopController extends Controller
             });
         }
 
+        // Recherche par photo : mots-clés (au moins un doit correspondre), triés par pertinence
+        $terms = collect(explode(',', (string) $request->input('terms', '')))
+            ->map(fn ($t) => trim($t))
+            ->filter(fn ($t) => mb_strlen($t) >= 2)
+            ->take(6)->values();
+        $termsFallback = false;
+
+        if ($terms->isNotEmpty()) {
+            $withoutTerms = clone $query;
+
+            $query->where(function ($q) use ($terms) {
+                foreach ($terms as $t) {
+                    $q->orWhere('name', 'like', "%{$t}%")
+                        ->orWhere('short_description', 'like', "%{$t}%")
+                        ->orWhere('description', 'like', "%{$t}%");
+                }
+            });
+
+            // Aucun résultat avec les mots-clés : on montre la catégorie reconnue
+            if ($request->filled('category') && ! (clone $query)->exists()) {
+                $query = $withoutTerms;
+                $termsFallback = true;
+            } elseif (! $request->filled('sort')) {
+                $score = [];
+                $bindings = [];
+                foreach ($terms as $i => $t) {
+                    $w = count($terms) - $i; // le premier mot-clé (type d'article) compte le plus
+                    $score[] = "(CASE WHEN name LIKE ? THEN ".($w * 3).' ELSE 0 END)';
+                    $score[] = "(CASE WHEN short_description LIKE ? THEN {$w} ELSE 0 END)";
+                    $bindings[] = "%{$t}%";
+                    $bindings[] = "%{$t}%";
+                }
+                $query->orderByRaw('('.implode(' + ', $score).') DESC', $bindings);
+            }
+        }
+
         // Filtre promotions
         if ($request->filled('on_sale')) {
             $query->onSale();
@@ -134,7 +170,8 @@ class ShopController extends Controller
         return Inertia::render('Shop/Index', [
             'products' => $productsData,
             'categories' => $categoriesData,
-            'filters' => $request->only(['category', 'search', 'min_price', 'max_price', 'sort', 'on_sale', 'featured']),
+            'filters' => $request->only(['category', 'search', 'min_price', 'max_price', 'sort', 'on_sale', 'featured', 'terms', 'image_search']),
+            'termsFallback' => $termsFallback,
             'currentCategory' => isset($category) ? ['id' => $category->id, 'name' => $category->name, 'slug' => $category->slug] : null,
         ]);
     }
@@ -154,7 +191,9 @@ class ShopController extends Controller
         // Construire la chaîne d'ancêtres pour le fil d'ariane
         $ancestors = [];
         $p = $category->parent;
-        while ($p) {
+        $visited = [$category->id];
+        while ($p && ! in_array($p->id, $visited)) {
+            $visited[] = $p->id;
             array_unshift($ancestors, ['id' => $p->id, 'name' => $p->name, 'slug' => $p->slug]);
             $p = $p->parent ?? null;
         }
@@ -246,9 +285,20 @@ class ShopController extends Controller
         // Incrémenter les vues
         $product->increment('views_count');
 
+        // Attribut visuel (vignettes) : "couleur" ou tout attribut de type color (ex: "Design")
+        $visualAttribute = $product->variants
+            ->pluck('attributeValues')
+            ->flatten()
+            ->filter(fn ($av) => $av->attribute && ($av->attribute->slug === 'couleur' || $av->attribute->type === 'color'))
+            ->groupBy('attribute_id')
+            ->sortByDesc(fn ($avs) => $avs->unique('id')->count())
+            ->map(fn ($avs) => $avs->first()->attribute)
+            ->first();
+        $visualAttributeId = $visualAttribute?->id;
+
         // Organiser les variantes par couleur
-        $variantsByColor = $product->variants->groupBy(function ($variant) {
-            $colorAttr = $variant->attributeValues->firstWhere('attribute.slug', 'couleur');
+        $variantsByColor = $product->variants->groupBy(function ($variant) use ($visualAttributeId) {
+            $colorAttr = $visualAttributeId ? $variant->attributeValues->first(fn ($av) => (int) $av->attribute_id === (int) $visualAttributeId) : null;
 
             return $colorAttr?->id ?? 'default';
         });
@@ -257,16 +307,16 @@ class ShopController extends Controller
         $availableColors = $product->variants
             ->pluck('attributeValues')
             ->flatten()
-            ->filter(fn ($av) => $av->attribute && $av->attribute->slug === 'couleur')
+            ->filter(fn ($av) => $visualAttributeId && (int) $av->attribute_id === (int) $visualAttributeId)
             ->unique('id');
 
-        // Détecter l'attribut secondaire : parmi les attributs non-couleur,
+        // Détecter l'attribut secondaire : parmi les attributs non visuels,
         // prendre celui qui a le plus de valeurs distinctes sur ce produit.
         // Ex: coloring book → design(17 valeurs) > âge(1 valeur) → design est retenu.
         $secondaryAttribute = $product->variants
             ->pluck('attributeValues')
             ->flatten()
-            ->filter(fn ($av) => $av->attribute && $av->attribute->slug !== 'couleur')
+            ->filter(fn ($av) => $av->attribute && (int) $av->attribute_id !== (int) $visualAttributeId)
             ->groupBy('attribute_id')
             ->sortByDesc(fn ($avs) => $avs->unique('id')->count())
             ->map(fn ($avs) => $avs->first()->attribute)
@@ -324,8 +374,8 @@ class ShopController extends Controller
             : [];
 
         // Format variants
-        $variantsData = $product->variants->map(function ($variant) use ($secondaryAttribute) {
-            $colorAttr = $variant->attributeValues->firstWhere('attribute.slug', 'couleur');
+        $variantsData = $product->variants->map(function ($variant) use ($secondaryAttribute, $visualAttributeId) {
+            $colorAttr = $visualAttributeId ? $variant->attributeValues->first(fn ($av) => (int) $av->attribute_id === (int) $visualAttributeId) : null;
             $secondaryAttr = $secondaryAttribute
                 ? $variant->attributeValues->firstWhere(fn ($av) => $av->attribute?->id === $secondaryAttribute->id)
                 : null;
@@ -388,7 +438,9 @@ class ShopController extends Controller
             'category' => $product->category ? (function () use ($product) {
                 $ancestors = [];
                 $p = $product->category->parent;
-                while ($p) {
+                $visited = [$product->category->id];
+                while ($p && ! in_array($p->id, $visited)) {
+                    $visited[] = $p->id;
                     array_unshift($ancestors, ['id' => $p->id, 'name' => $p->name, 'slug' => $p->slug]);
                     $p = $p->parent ?? null;
                 }
@@ -403,6 +455,7 @@ class ShopController extends Controller
             'has_variants' => $product->variants->isNotEmpty(),
             'variants' => $variantsData,
             'colors' => $colorsData,
+            'visual_attribute_name' => $visualAttribute?->name ?? 'Couleur',
             'secondary_attribute' => $secondaryAttribute ? [
                 'slug' => $secondaryAttribute->slug,
                 'name' => $secondaryAttribute->name,

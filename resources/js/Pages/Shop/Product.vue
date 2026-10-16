@@ -336,16 +336,19 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                     <!-- Sélecteur couleur -->
                     <div v-if="product.has_variants && product.colors.length" class="mb-5">
                         <p class="text-xs font-semibold text-slate-700 uppercase tracking-wide mb-2">
-                            Couleur — <span class="font-normal normal-case text-slate-500">{{ product.colors.find(c => c.id === selectedColorId)?.name }}</span>
+                            {{ product.visual_attribute_name ?? 'Couleur' }} — <span class="font-normal normal-case text-slate-500">{{ product.colors.find(c => c.id === selectedColorId)?.name }}</span>
                         </p>
                         <div class="flex flex-wrap gap-2">
                             <button
                                 v-for="color in product.colors"
                                 :key="color.id"
                                 @click="selectColor(color.id)"
-                                class="w-11 h-11 rounded-full border-2 transition-all relative shadow-sm overflow-hidden"
+                                class="border-2 transition-all relative shadow-sm overflow-hidden"
                                 :style="!color.image ? { backgroundColor: color.hex || '#94a3b8' } : {}"
-                                :class="selectedColorId === color.id ? 'border-primary-600 ring-2 ring-offset-1 ring-primary-600' : 'border-white hover:scale-110'"
+                                :class="[
+                                    color.image ? 'w-14 h-14 rounded-lg' : 'w-11 h-11 rounded-full',
+                                    selectedColorId === color.id ? 'border-primary-600 ring-2 ring-offset-1 ring-primary-600' : 'border-white hover:scale-110',
+                                ]"
                                 :title="color.name"
                             >
                                 <img v-if="color.image" :src="color.image" :alt="color.name" class="w-full h-full object-cover" />

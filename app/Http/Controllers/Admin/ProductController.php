@@ -28,22 +28,49 @@ class ProductController extends Controller
 
         $products = Product::query()
             ->with(['images', 'category', 'variants'])
-            ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%")
-                ->orWhere('sku', 'like', "%{$request->search}%"))
+            ->when($request->search, fn ($q) => $q->where(fn ($q2) => $q2
+                ->where('name', 'like', "%{$request->search}%")
+                ->orWhere('sku', 'like', "%{$request->search}%")))
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
-            ->when($request->category, fn ($q) => $q->where('category_id', $request->category))
+            ->when($request->category === 'none', fn ($q) => $q->whereNull('category_id'))
+            ->when($request->category && $request->category !== 'none', fn ($q) => $q->where('category_id', $request->category))
             ->when($request->stock === 'out', fn ($q) => $q->where('stock_quantity', '<=', 0))
             ->when($request->stock === 'low', fn ($q) => $q->whereColumn('stock_quantity', '<=', 'stock_alert_threshold')->where('stock_quantity', '>', 0))
             ->orderBy('created_at', 'desc')
-            ->paginate(20)
+            ->paginate(in_array((int) $request->per_page, [20, 50, 100]) ? (int) $request->per_page : 20)
             ->withQueryString();
+
+        // Catégories avec chemin complet (ex: "Mode › Homme › T-shirts Homme")
+        $categories = Category::with('parent.parent')->get()
+            ->map(fn ($c) => ['id' => $c->id, 'name' => str_replace(' > ', ' › ', $c->full_path)])
+            ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
 
         return Inertia::render('Admin/Products/Index', [
             'pageTitle' => 'Produits',
             'products' => $products,
-            'categories' => Category::orderBy('name')->get(['id', 'name']),
-            'filters' => $request->only('search', 'status', 'category', 'stock'),
+            'categories' => $categories,
+            'filters' => $request->only('search', 'status', 'category', 'stock', 'per_page'),
         ]);
+    }
+
+    /**
+     * Changer la catégorie de plusieurs produits d'un coup
+     */
+    public function bulkUpdateCategory(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:products,id',
+            'category_id' => 'required|integer|exists:categories,id',
+        ]);
+
+        $count = Product::whereIn('id', $validated['ids'])
+            ->update(['category_id' => $validated['category_id']]);
+
+        $category = Category::find($validated['category_id']);
+
+        return back()->with('success', "{$count} produit(s) déplacé(s) dans « {$category->name} ».");
     }
 
     /**
@@ -870,6 +897,27 @@ class ProductController extends Controller
     }
 
     /**
+     * Appliquer le même prix de vente à toutes les variantes du produit.
+     */
+    public function bulkUpdateVariantPrice(Request $request, Product $product)
+    {
+        $validated = $request->validate([
+            'sale_price' => 'required|numeric|min:0',
+        ]);
+
+        $product->variants()->update(['sale_price' => $validated['sale_price']]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'sale_price' => $validated['sale_price'],
+            ]);
+        }
+
+        return back()->with('success', 'Prix appliqué à toutes les variantes.');
+    }
+
+    /**
      * Supprimer une variante
      */
     public function destroyVariant(Product $product, ProductVariant $variant)
@@ -1093,6 +1141,7 @@ class ProductController extends Controller
                 'value' => $v->value,
                 'color_code' => $v->color_code,
                 'image' => $v->image,
+                'image_url' => $v->image_url,
             ]),
         ]);
     }

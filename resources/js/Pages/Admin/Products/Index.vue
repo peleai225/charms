@@ -13,6 +13,7 @@ import FilterSelect from '@/Components/UI/FilterSelect.vue'
 import Breadcrumb from '@/Components/UI/Breadcrumb.vue'
 import ConfirmModal from '@/Components/UI/ConfirmModal.vue'
 import ToastContainer from '@/Components/UI/ToastContainer.vue'
+import AiCategorySuggest from '@/Components/Admin/AiCategorySuggest.vue'
 
 const props = defineProps({
     products: Object,
@@ -29,6 +30,7 @@ const search = ref(props.filters?.search ?? '')
 const status = ref(props.filters?.status ?? '')
 const category = ref(props.filters?.category ?? '')
 const stock = ref(props.filters?.stock ?? '')
+const perPage = ref(props.filters?.per_page ?? '')
 
 const activeFilterCount = computed(() => {
     return [status.value, category.value, stock.value].filter(Boolean).length
@@ -40,6 +42,7 @@ function applyFilters() {
         status: status.value || undefined,
         category: category.value || undefined,
         stock: stock.value || undefined,
+        per_page: perPage.value || undefined,
     }, { preserveState: true, replace: true })
 }
 
@@ -48,6 +51,7 @@ function resetFilters() {
     status.value = ''
     category.value = ''
     stock.value = ''
+    perPage.value = ''
     router.get(route('admin.products.index'), {}, { preserveState: false })
 }
 
@@ -58,6 +62,7 @@ function goToPage(page) {
         status: status.value || undefined,
         category: category.value || undefined,
         stock: stock.value || undefined,
+        per_page: perPage.value || undefined,
     }, { preserveState: true, replace: true })
 }
 
@@ -147,6 +152,45 @@ async function deleteSelected() {
     })
 }
 
+// ── Changer de catégorie en masse ─────────────────────────────────────────────
+
+const showAiSuggest = ref(false)
+const aiProducts = ref([])
+
+function openAiSuggest() {
+    aiProducts.value = [...selected.value]
+    showAiSuggest.value = true
+}
+
+function onAiDone() {
+    showAiSuggest.value = false
+    selected.value = []
+}
+
+const bulkCategoryId = ref('')
+const bulkCategoryProcessing = ref(false)
+
+function moveSelectedToCategory() {
+    if (!selected.value.length || !bulkCategoryId.value) return
+    const count = selected.value.length
+    const target = props.categories.find((c) => String(c.id) === String(bulkCategoryId.value))
+
+    bulkCategoryProcessing.value = true
+    router.post(route('admin.products.bulk-category'), {
+        ids: selected.value.map((p) => p.id),
+        category_id: bulkCategoryId.value,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            toast.success(`${count} produit(s) déplacé(s) dans « ${target?.name ?? 'la catégorie'} »`)
+            selected.value = []
+            bulkCategoryId.value = ''
+        },
+        onError: () => toast.error('Erreur lors du changement de catégorie'),
+        onFinish: () => { bulkCategoryProcessing.value = false },
+    })
+}
+
 // ── Options filtres ───────────────────────────────────────────────────────────
 
 const statusOptions = [
@@ -160,8 +204,13 @@ const stockOptions = [
     { label: 'Rupture', value: 'out' },
 ]
 
+const perPageOptions = [
+    { label: '50 par page', value: '50' },
+    { label: '100 par page', value: '100' },
+]
+
 const categoryOptions = computed(() =>
-    (props.categories ?? []).map((c) => ({ label: c.name, value: String(c.id) }))
+    [{ label: 'Sans catégorie', value: 'none' }, ...(props.categories ?? []).map((c) => ({ label: c.name, value: String(c.id) }))]
 )
 
 const breadcrumbs = [
@@ -184,7 +233,13 @@ const breadcrumbs = [
                     {{ products.meta?.total ?? products.total ?? 0 }} produit(s) au total
                 </p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <a
+                    :href="route('admin.products.import-images')"
+                    class="h-9 px-4 flex items-center gap-2 border border-gray-200 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                    Créer par photos
+                </a>
                 <a
                     :href="route('admin.import-export.index')"
                     class="h-9 px-4 flex items-center gap-2 border border-gray-200 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
@@ -233,6 +288,12 @@ const breadcrumbs = [
                 :options="stockOptions"
                 @update:model-value="applyFilters"
             />
+            <FilterSelect
+                v-model="perPage"
+                label="Par page"
+                :options="perPageOptions"
+                @update:model-value="applyFilters"
+            />
         </FilterBar>
 
         <!-- Table -->
@@ -271,6 +332,28 @@ const breadcrumbs = [
 
             <!-- Bulk actions -->
             <template #bulk-actions="{ selected: sel }">
+                <div class="flex flex-wrap items-center gap-2">
+                    <select
+                        v-model="bulkCategoryId"
+                        class="h-8 max-w-[280px] px-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="">Déplacer vers la catégorie…</option>
+                        <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                    </select>
+                    <button
+                        class="h-8 px-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        :disabled="!bulkCategoryId || bulkCategoryProcessing"
+                        @click="moveSelectedToCategory"
+                    >
+                        {{ bulkCategoryProcessing ? 'Déplacement…' : `Déplacer (${sel.length})` }}
+                    </button>
+                    <button
+                        class="h-8 px-3 text-sm font-medium text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                        @click="openAiSuggest"
+                    >
+                        Ranger avec l'IA ({{ sel.length }})
+                    </button>
+                </div>
                 <button
                     class="h-8 px-3 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
                     @click="deleteSelected"
@@ -300,6 +383,13 @@ const breadcrumbs = [
 
     </div>
 
+    <AiCategorySuggest
+        v-if="showAiSuggest"
+        :products="aiProducts"
+        :categories="categories"
+        @close="showAiSuggest = false"
+        @done="onAiDone"
+    />
     <ConfirmModal />
     <ToastContainer />
 </template>

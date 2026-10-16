@@ -98,12 +98,18 @@ class Category extends Model
         return $path->implode(' > ');
     }
 
-    public function getAllChildrenIds(): array
+    public function getAllChildrenIds(array $visited = []): array
     {
         $ids = [$this->id];
+        $visited[] = $this->id;
 
         foreach ($this->children as $child) {
-            $ids = array_merge($ids, $child->getAllChildrenIds());
+            if (in_array($child->id, $visited)) {
+                continue;
+            }
+            $childIds = $child->getAllChildrenIds($visited);
+            $ids = array_merge($ids, $childIds);
+            $visited = array_merge($visited, $childIds);
         }
 
         return $ids;

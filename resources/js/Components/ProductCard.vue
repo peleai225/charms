@@ -83,6 +83,7 @@ const addToCart = async (e) => {
         if (res.ok) {
             cartStore.addProductId(props.product.id, null);
             notifStore.add({ type: 'success', message: `${props.product.name} ajouté au panier` });
+            window.trackPixel?.addToCart({ id: props.product.id, name: props.product.name, price: props.product.price }, 1);
         }
     } finally {
         addingToCart.value = false;

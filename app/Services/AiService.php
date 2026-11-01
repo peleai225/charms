@@ -2,15 +2,19 @@
 
 namespace App\Services;
 
+use Anthropic\Client as AnthropicClient;
+use Anthropic\Core\Exceptions\APIConnectionException;
+use Anthropic\Core\Exceptions\APIStatusException;
 use App\Models\Category;
 use App\Models\Setting;
+use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
- * Service IA multi-fournisseurs (Gemini, OpenRouter).
+ * Service IA multi-fournisseurs (Gemini, OpenRouter, Anthropic Claude).
  * Le fournisseur, la clé et le modèle se règlent dans Admin → Paramètres → IA.
  */
 class AiService
@@ -18,6 +22,7 @@ class AiService
     public const PROVIDERS = [
         'gemini' => ['label' => 'Google Gemini', 'default_model' => 'gemini-3.8-flash'],
         'openrouter' => ['label' => 'OpenRouter (Qwen, DeepSeek…)', 'default_model' => 'qwen/qwen2.5-vl-72b-instruct:free'],
+        'anthropic' => ['label' => 'Anthropic Claude', 'default_model' => 'claude-opus-5-5'],
     ];
 
     protected string $provider;
@@ -55,7 +60,7 @@ class AiService
 
         $catalog = collect($categories)->map(fn ($c) => "{$c['id']}: {$c['path']}")->implode("\n");
 
-        $prompt = <<<PROMPT
+        $prompt = <<<'PROMPT'
 Tu es un expert e-commerce en Côte d'Ivoire. Analyse ce produit et rédige sa fiche en français, de façon simple, vendeuse et honnête (n'invente pas de matière, de marque ou de caractéristique invisible).
 PROMPT;
         if ($currentName) {
@@ -147,19 +152,34 @@ PROMPT;
         $models = array_values(array_unique(array_filter([$this->model, $this->fallbackModel])));
 
         foreach ($models as $i => $model) {
-            $response = $this->provider === 'openrouter'
-                ? $this->callOpenRouter($model, $prompt, $imageBinary, $mimeType)
-                : $this->callGemini($model, $prompt, $imageBinary, $mimeType);
+            if ($this->provider === 'anthropic') {
+                try {
+                    return $this->callAnthropic($model, $prompt, $imageBinary, $mimeType);
+                } catch (APIStatusException $e) {
+                    $status = (int) $e->status;
+                    $message = $e->getMessage();
+                } catch (APIConnectionException $e) {
+                    throw new RuntimeException('Le service IA ne répond pas. Réessayez dans un instant.', 0, $e);
+                }
+            } else {
+                $response = $this->provider === 'openrouter'
+                    ? $this->callOpenRouter($model, $prompt, $imageBinary, $mimeType)
+                    : $this->callGemini($model, $prompt, $imageBinary, $mimeType);
 
-            if ($response->successful()) {
-                return $this->provider === 'openrouter'
-                    ? (string) $response->json('choices.0.message.content', '')
-                    : (string) $response->json('candidates.0.content.parts.0.text', '');
+                if ($response->successful()) {
+                    return $this->provider === 'openrouter'
+                        ? (string) $response->json('choices.0.message.content', '')
+                        : (string) $response->json('candidates.0.content.parts.0.text', '');
+                }
+
+                $status = $response->status();
+                $message = $response->json('error.message') ?? $response->body();
             }
 
-            $overloaded = in_array($response->status(), [429, 500, 502, 503]);
+            // 529 = surcharge chez Anthropic
+            $overloaded = in_array($status, [429, 500, 502, 503, 529]);
             if (! $overloaded || $i === count($models) - 1) {
-                $this->fail($response->status(), $response->json('error.message') ?? $response->body());
+                $this->fail($status, $message);
             }
 
             Log::info('AiService: modèle surchargé, bascule sur le modèle de secours', ['model' => $model]);
@@ -207,13 +227,53 @@ PROMPT;
         return $response;
     }
 
+    protected function callAnthropic(string $model, string $prompt, ?string $imageBinary, ?string $mimeType): string
+    {
+        $content = [];
+        if ($imageBinary) {
+            $content[] = ['type' => 'image', 'source' => [
+                'type' => 'base64',
+                'mediaType' => $mimeType ?: 'image/jpeg',
+                'data' => base64_encode($imageBinary),
+            ]];
+        }
+        $content[] = ['type' => 'text', 'text' => $prompt];
+
+        // Le SDK ne gère pas lui-même le délai d'attente : c'est le client HTTP qui l'impose
+        $client = app()->makeWith(AnthropicClient::class, [
+            'apiKey' => $this->apiKey,
+            'requestOptions' => ['transporter' => new GuzzleClient(['timeout' => 45]), 'maxRetries' => 0],
+        ]);
+
+        $message = $client->beta->messages->create(
+            maxTokens: 16000,
+            messages: [['role' => 'user', 'content' => $content]],
+            model: $model,
+            fallbacks: 'default',
+            outputConfig: ['effort' => 'low'],
+            betas: ['server-side-fallback-2026-07-01'],
+        );
+
+        if ($message->stopReason === 'refusal') {
+            throw new RuntimeException("L'IA a refusé d'analyser ce contenu. Essayez avec une autre photo.");
+        }
+
+        foreach ($message->content as $block) {
+            if ($block->type === 'text') {
+                return (string) $block->text;
+            }
+        }
+
+        return '';
+    }
+
     protected function fail(int $status, string $message): never
     {
         Log::warning('AiService: erreur fournisseur', ['provider' => $this->provider, 'status' => $status, 'message' => $message]);
 
         $hint = match (true) {
             $status === 429 => 'Quota gratuit atteint. Patientez une minute puis réessayez.',
-            in_array($status, [500, 502, 503]) => 'Le service IA est surchargé en ce moment (problème temporaire chez le fournisseur). Réessayez dans quelques minutes, ou ajoutez un modèle de secours dans Paramètres → IA.',
+            in_array($status, [500, 502, 503, 529]) => 'Le service IA est surchargé en ce moment (problème temporaire chez le fournisseur). Réessayez dans quelques minutes, ou ajoutez un modèle de secours dans Paramètres → IA.',
             in_array($status, [401, 403]) => 'Clé API invalide ou refusée. Vérifiez-la dans Paramètres → IA.',
             $status === 404 => 'Modèle introuvable. Vérifiez le nom du modèle dans Paramètres → IA.',
             default => 'Le service IA a renvoyé une erreur.',

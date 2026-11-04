@@ -58,12 +58,20 @@ class Order extends Model
         'customer_notes',
         'admin_notes',
         'affiliate_code',
+        'courier_id',
+        'dispatched_at',
+        'courier_fee',
+        'delivery_attempts',
+        'last_delivery_issue',
         'source',
         'ip_address',
         'user_agent',
     ];
 
     protected $casts = [
+        'dispatched_at' => 'datetime',
+        'courier_fee' => 'decimal:2',
+        'delivery_attempts' => 'integer',
         'subtotal' => 'decimal:2',
         'tax_amount' => 'decimal:2',
         'shipping_amount' => 'decimal:2',
@@ -105,6 +113,11 @@ class Order extends Model
     }
 
     // ========== RELATIONS ==========
+
+    public function courier(): BelongsTo
+    {
+        return $this->belongsTo(Courier::class);
+    }
 
     public function customer(): BelongsTo
     {

@@ -66,6 +66,8 @@ function balanceText(balance) {
                 <p v-if="c.notes" class="text-xs text-gray-500">{{ c.notes }}</p>
                 <p v-if="!c.is_active" class="text-xs text-gray-500">Inactif : ne reçoit plus de commandes.</p>
                 <div class="flex flex-wrap gap-2">
+                    <a :href="route('admin.couriers.show', c.id)"
+                        class="h-11 px-4 inline-flex items-center text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700">Faire le point</a>
                     <button type="button" class="h-11 px-3 text-sm text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50" @click="open(c)">Modifier</button>
                 </div>
             </div>

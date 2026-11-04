@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Courier;
 use App\Models\Order;
 use App\Services\CourierDispatch;
+use App\Services\CourierSettlement;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -69,6 +70,72 @@ class CourierController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    public function show(Courier $courier, CourierSettlement $settlement)
+    {
+        Inertia::setRootView('layouts.admin-inertia');
+
+        $movements = $courier->movements()->with('orders:id,order_number')->latest()->take(30)->get()
+            ->map(fn ($m) => [
+                'id' => $m->id,
+                'type' => $m->type,
+                'date' => $m->created_at->format('d/m/Y H:i'),
+                'amount_collected' => (float) $m->amount_collected,
+                'fees' => (float) $m->fees,
+                'amount_received' => (float) $m->amount_received,
+                'balance_change' => (float) $m->balance_change,
+                'note' => $m->note,
+                'orders' => $m->orders->map(fn ($o) => [
+                    'order_number' => $o->order_number,
+                    'outcome' => $o->pivot->outcome,
+                    'issue' => $o->pivot->issue,
+                ])->values(),
+            ]);
+
+        return Inertia::render('Admin/Couriers/Show', [
+            'pageTitle' => "Point — {$courier->name}",
+            'courier' => $courier->only(['id', 'name', 'phone', 'type', 'is_active']),
+            'orders' => $settlement->preview($courier),
+            'balance' => $courier->balance(),
+            'movements' => $movements,
+            'whatsapp_url' => $settlement->whatsappUrl($courier),
+            'issues' => CourierSettlement::ISSUES,
+        ]);
+    }
+
+    public function settle(Request $request, Courier $courier, CourierSettlement $settlement)
+    {
+        $validated = $request->validate([
+            'outcomes' => 'required|array|min:1',
+            'outcomes.*.outcome' => 'required|in:delivered,failed',
+            'outcomes.*.issue' => 'nullable|required_if:outcomes.*.outcome,failed|in:'.implode(',', CourierSettlement::ISSUES),
+            'outcomes.*.fee' => 'nullable|numeric|min:0',
+            'amount_received' => 'required|numeric|min:0',
+            'note' => 'nullable|string|max:500',
+        ], [
+            'outcomes.*.issue.required_if' => 'Indiquez pourquoi la commande n\'a pas été livrée.',
+        ]);
+
+        $movement = $settlement->settle($courier, $validated['outcomes'], (float) $validated['amount_received'], $validated['note'] ?? null, $request->user()?->id);
+
+        $delivered = collect($validated['outcomes'])->where('outcome', 'delivered')->count();
+        $failed = count($validated['outcomes']) - $delivered;
+
+        return back()->with('success', "Point enregistré : {$delivered} livrée(s), {$failed} à relivrer. Solde du livreur : "
+            .number_format($courier->balance(), 0, ',', ' ').' F CFA.'.($movement->balance_change != 0 ? '' : ' Tout est réglé.'));
+    }
+
+    public function storePayment(Request $request, Courier $courier, CourierSettlement $settlement)
+    {
+        $validated = $request->validate([
+            'amount' => 'required|numeric|gt:0',
+            'note' => 'nullable|string|max:500',
+        ]);
+
+        $settlement->recordPayment($courier, (float) $validated['amount'], $validated['note'] ?? null, $request->user()?->id);
+
+        return back()->with('success', 'Versement enregistré. Nouveau solde : '.number_format($courier->balance(), 0, ',', ' ').' F CFA.');
     }
 
     public function withdraw(Order $order, CourierDispatch $dispatch)

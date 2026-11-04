@@ -144,6 +144,62 @@ PROMPT;
     }
 
     /**
+     * Mode arrivage : regroupe les photos qui montrent le même article (un groupe = un produit,
+     * une couleur par photo). Chaque photo finit dans exactement un groupe, dans l'ordre d'envoi.
+     *
+     * @param  array<int, array{data: string, mime: ?string}>  $images
+     * @return array<int, array<int, int>> index des photos (à partir de 0) par article
+     */
+    public function groupPhotos(array $images): array
+    {
+        $count = count($images);
+        $prompt = <<<PROMPT
+Voici {$count} photos d'un arrivage de marchandises pour une boutique en ligne, numérotées de 1 à {$count} dans l'ordre où elles te sont données.
+Regroupe les photos qui montrent le MÊME article : même modèle, même forme, même coupe, même motif. Le même article dans une autre couleur va dans le même groupe (ce sera un seul produit avec une variante par couleur). Deux photos du même article dans la même couleur vont aussi ensemble.
+Ne mets jamais ensemble deux modèles différents. En cas de doute, sépare-les.
+Chaque photo doit apparaître dans exactement un groupe.
+
+Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour :
+{"groups": [[1, 4], [2], [3, 5, 6]]}
+PROMPT;
+
+        $data = $this->parseJson($this->generateFromImages($prompt, $images, 90));
+        if (! isset($data['groups']) || ! is_array($data['groups'])) {
+            throw new RuntimeException("Réponse de l'IA illisible. Réessayez.");
+        }
+
+        $placed = [];
+        $groups = [];
+        foreach ($data['groups'] as $group) {
+            $indexes = [];
+            foreach ((array) $group as $number) {
+                $index = is_numeric($number) ? (int) $number - 1 : -1;
+                if ($index >= 0 && $index < $count && ! isset($placed[$index])) {
+                    $placed[$index] = true;
+                    $indexes[] = $index;
+                }
+            }
+            if ($indexes) {
+                $groups[] = $indexes;
+            }
+        }
+
+        // Une photo oubliée par l'IA devient un article à part
+        for ($index = 0; $index < $count; $index++) {
+            if (! isset($placed[$index])) {
+                $groups[] = [$index];
+            }
+        }
+
+        return $groups;
+    }
+
+    public function provider(): string
+    {
+        return $this->provider;
+    }
+
+    /**
      * Test simple de la connexion.
      */
     public function ping(): string
@@ -156,13 +212,23 @@ PROMPT;
      */
     public function generate(string $prompt, ?string $imageBinary = null, ?string $mimeType = null): string
     {
+        return $this->generateFromImages($prompt, $imageBinary ? [['data' => $imageBinary, 'mime' => $mimeType]] : []);
+    }
+
+    /**
+     * Appel brut avec plusieurs photos dans la même question.
+     *
+     * @param  array<int, array{data: string, mime: ?string}>  $images
+     */
+    public function generateFromImages(string $prompt, array $images, int $timeout = 12): string
+    {
         if (! $this->isConfigured()) {
             throw new RuntimeException("L'IA n'est pas configurée. Ajoutez une clé API dans Paramètres → IA.");
         }
 
         // Limite pour les requêtes web seulement : en ligne de commande (tests, files d'attente) elle tuerait tout le processus
         if (! app()->runningInConsole()) {
-            @set_time_limit(60);
+            @set_time_limit(max(60, $timeout + 30));
         }
 
         // Modèle principal, puis modèle de secours si le principal est surchargé
@@ -171,7 +237,7 @@ PROMPT;
         foreach ($models as $i => $model) {
             if ($this->provider === 'anthropic') {
                 try {
-                    return $this->callAnthropic($model, $prompt, $imageBinary, $mimeType);
+                    return $this->callAnthropic($model, $prompt, $images, max(45, $timeout));
                 } catch (APIStatusException $e) {
                     $status = (int) $e->status;
                     $message = $e->getMessage();
@@ -180,8 +246,8 @@ PROMPT;
                 }
             } else {
                 $response = $this->provider === 'openrouter'
-                    ? $this->callOpenRouter($model, $prompt, $imageBinary, $mimeType)
-                    : $this->callGemini($model, $prompt, $imageBinary, $mimeType);
+                    ? $this->callOpenRouter($model, $prompt, $images, $timeout)
+                    : $this->callGemini($model, $prompt, $images, $timeout);
 
                 if ($response->successful()) {
                     return $this->provider === 'openrouter'
@@ -206,14 +272,14 @@ PROMPT;
         throw new RuntimeException("Le service IA n'a pas répondu.");
     }
 
-    protected function callGemini(string $model, string $prompt, ?string $imageBinary, ?string $mimeType): Response
+    protected function callGemini(string $model, string $prompt, array $images, int $timeout): Response
     {
         $parts = [['text' => $prompt]];
-        if ($imageBinary) {
-            $parts[] = ['inline_data' => ['mime_type' => $mimeType ?: 'image/jpeg', 'data' => base64_encode($imageBinary)]];
+        foreach ($images as $image) {
+            $parts[] = ['inline_data' => ['mime_type' => $image['mime'] ?: 'image/jpeg', 'data' => base64_encode($image['data'])]];
         }
 
-        $response = Http::timeout(12)
+        $response = Http::timeout($timeout)
             ->withHeaders(['x-goog-api-key' => $this->apiKey])
             ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
                 'contents' => [['parts' => $parts]],
@@ -223,16 +289,16 @@ PROMPT;
         return $response;
     }
 
-    protected function callOpenRouter(string $model, string $prompt, ?string $imageBinary, ?string $mimeType): Response
+    protected function callOpenRouter(string $model, string $prompt, array $images, int $timeout): Response
     {
         $content = [['type' => 'text', 'text' => $prompt]];
-        if ($imageBinary) {
+        foreach ($images as $image) {
             $content[] = ['type' => 'image_url', 'image_url' => [
-                'url' => 'data:'.($mimeType ?: 'image/jpeg').';base64,'.base64_encode($imageBinary),
+                'url' => 'data:'.($image['mime'] ?: 'image/jpeg').';base64,'.base64_encode($image['data']),
             ]];
         }
 
-        $response = Http::timeout(12)
+        $response = Http::timeout($timeout)
             ->withToken($this->apiKey)
             ->withHeaders(['HTTP-Referer' => config('app.url'), 'X-Title' => config('app.name')])
             ->post('https://openrouter.ai/api/v1/chat/completions', [
@@ -244,14 +310,14 @@ PROMPT;
         return $response;
     }
 
-    protected function callAnthropic(string $model, string $prompt, ?string $imageBinary, ?string $mimeType): string
+    protected function callAnthropic(string $model, string $prompt, array $images, int $timeout): string
     {
         $content = [];
-        if ($imageBinary) {
+        foreach ($images as $image) {
             $content[] = ['type' => 'image', 'source' => [
                 'type' => 'base64',
-                'mediaType' => $mimeType ?: 'image/jpeg',
-                'data' => base64_encode($imageBinary),
+                'mediaType' => $image['mime'] ?: 'image/jpeg',
+                'data' => base64_encode($image['data']),
             ]];
         }
         $content[] = ['type' => 'text', 'text' => $prompt];
@@ -259,7 +325,7 @@ PROMPT;
         // Le SDK ne gère pas lui-même le délai d'attente : c'est le client HTTP qui l'impose
         $client = app()->makeWith(AnthropicClient::class, [
             'apiKey' => $this->apiKey,
-            'requestOptions' => ['transporter' => new GuzzleClient(['timeout' => 45]), 'maxRetries' => 0],
+            'requestOptions' => ['transporter' => new GuzzleClient(['timeout' => $timeout]), 'maxRetries' => 0],
         ]);
 
         $message = $client->beta->messages->create(

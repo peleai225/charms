@@ -359,6 +359,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('products/bulk-category', [\App\Http\Controllers\Admin\ProductController::class, 'bulkUpdateCategory'])->name('products.bulk-category');
             Route::get('products/import-images', [\App\Http\Controllers\Admin\AiProductController::class, 'importImages'])->name('products.import-images');
             Route::post('ai/analyze-image', [\App\Http\Controllers\Admin\AiProductController::class, 'analyzeImage'])->name('ai.analyze-image');
+            Route::post('ai/group-photos', [\App\Http\Controllers\Admin\AiProductController::class, 'groupPhotos'])->name('ai.group-photos');
             Route::post('ai/products/{product}/suggest', [\App\Http\Controllers\Admin\AiProductController::class, 'suggestForProduct'])->name('ai.products.suggest');
             Route::post('ai/apply-categories', [\App\Http\Controllers\Admin\AiProductController::class, 'applyCategories'])->name('ai.apply-categories');
             Route::post('ai/apply-descriptions', [\App\Http\Controllers\Admin\AiProductController::class, 'applyDescriptions'])->name('ai.apply-descriptions');

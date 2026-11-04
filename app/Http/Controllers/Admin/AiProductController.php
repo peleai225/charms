@@ -35,6 +35,7 @@ class AiProductController extends Controller
         return Inertia::render('Admin/Products/ImportImages', [
             'pageTitle' => 'Créer des produits par photos',
             'aiConfigured' => $ai->isConfigured(),
+            'aiProvider' => $ai->provider(),
             'categories' => $this->categoryOptions(),
             'colors' => $colorAttribute
                 ? $colorAttribute->values()->get()->map(fn ($v) => ['id' => $v->id, 'value' => $v->value, 'color_code' => $v->color_code])->values()
@@ -136,6 +137,26 @@ class AiProductController extends Controller
             $file->getMimeType(),
             $request->input('name')
         ));
+    }
+
+    /**
+     * Mode arrivage : l'IA regroupe les photos du même article (miniatures envoyées par la page)
+     */
+    public function groupPhotos(Request $request, AiService $ai)
+    {
+        $request->validate([
+            'images' => 'required|array|min:2|max:40',
+            'images.*' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ], [
+            'images.max' => "40 photos maximum à la fois pour le tri automatique.",
+        ]);
+
+        $images = array_map(fn ($file) => [
+            'data' => file_get_contents($file->getRealPath()),
+            'mime' => $file->getMimeType(),
+        ], $request->file('images'));
+
+        return $this->respond(fn () => ['groups' => $ai->groupPhotos($images)]);
     }
 
     /**

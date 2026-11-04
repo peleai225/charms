@@ -90,6 +90,30 @@ class AiProductController extends Controller
     }
 
     /**
+     * Enregistrer les descriptions relues par l'admin sur plusieurs produits
+     */
+    public function applyDescriptions(Request $request)
+    {
+        $validated = $request->validate([
+            'updates' => 'required|array|min:1',
+            'updates.*.id' => 'required|integer|exists:products,id',
+            'updates.*.short_description' => 'nullable|string|max:500',
+            'updates.*.description' => 'nullable|string',
+        ]);
+
+        DB::transaction(function () use ($validated) {
+            foreach ($validated['updates'] as $u) {
+                Product::where('id', $u['id'])->update([
+                    'short_description' => $u['short_description'] ?? null,
+                    'description' => $u['description'] ?? null,
+                ]);
+            }
+        });
+
+        return back()->with('success', count($validated['updates']).' fiche(s) complétée(s).');
+    }
+
+    /**
      * Créer un produit (brouillon par défaut) à partir d'une photo + champs validés
      */
     public function storeFromImage(Request $request)
@@ -161,7 +185,7 @@ class AiProductController extends Controller
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            return response()->json(['message' => "Le service IA ne répond pas. Réessayez dans un instant."], 504);
+            return response()->json(['message' => 'Le service IA ne répond pas. Réessayez dans un instant.'], 504);
         }
     }
 

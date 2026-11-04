@@ -36,6 +36,9 @@ class ProductController extends Controller
             ->when($request->category && $request->category !== 'none', fn ($q) => $q->where('category_id', $request->category))
             ->when($request->stock === 'out', fn ($q) => $q->where('stock_quantity', '<=', 0))
             ->when($request->stock === 'low', fn ($q) => $q->whereColumn('stock_quantity', '<=', 'stock_alert_threshold')->where('stock_quantity', '>', 0))
+            ->when($request->fiche === 'incomplete', fn ($q) => $q->where(fn ($q2) => $q2
+                ->whereNull('short_description')->orWhere('short_description', '')
+                ->orWhereNull('description')->orWhere('description', '')))
             ->orderBy('created_at', 'desc')
             ->paginate(in_array((int) $request->per_page, [20, 50, 100]) ? (int) $request->per_page : 20)
             ->withQueryString();
@@ -50,7 +53,7 @@ class ProductController extends Controller
             'pageTitle' => 'Produits',
             'products' => $products,
             'categories' => $categories,
-            'filters' => $request->only('search', 'status', 'category', 'stock', 'per_page'),
+            'filters' => $request->only('search', 'status', 'category', 'stock', 'fiche', 'per_page'),
         ]);
     }
 

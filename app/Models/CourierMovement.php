@@ -17,6 +17,8 @@ class CourierMovement extends Model
 
     public const TYPE_PAYMENT = 'payment';
 
+    public const TYPE_ADJUSTMENT = 'adjustment';
+
     protected $fillable = [
         'courier_id', 'type', 'amount_collected', 'fees', 'amount_received', 'balance_change', 'note', 'user_id',
     ];

@@ -259,7 +259,7 @@ async function resendEmail() {
                                 <option value="confirmed">Confirmée</option>
                                 <option value="processing">En préparation</option>
                                 <option value="shipped">Expédiée</option>
-                                <option value="delivery_in_progress">Livreur en route</option>
+                                <option value="delivery_in_progress" disabled>Livreur en route (via la page Livreurs)</option>
                                 <option value="delivered">Livrée</option>
                                 <option value="cancelled">Annulée</option>
                             </select>

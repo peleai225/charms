@@ -8,6 +8,12 @@ defineProps({
 
 const { formatPrice } = useHelpers()
 const ISSUE_LABELS = { absent: 'absent', injoignable: 'injoignable', refus: 'refus', reportee: 'reportée', autre: 'autre' }
+
+const typeLabel = (m) => {
+    if (m.type === 'point') return 'Point'
+    if (m.type === 'adjustment') return 'Correction'
+    return m.balance_change > 0 ? 'Payé au livreur' : 'Versement reçu'
+}
 </script>
 
 <template>
@@ -17,7 +23,7 @@ const ISSUE_LABELS = { absent: 'absent', injoignable: 'injoignable', refus: 'ref
         <ul v-else class="divide-y divide-gray-100">
             <li v-for="m in movements" :key="m.id" class="px-4 py-3 space-y-1.5">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                    <p class="text-sm font-medium text-gray-900">{{ m.type === 'payment' ? 'Versement' : 'Point' }} · <span class="font-normal text-gray-500">{{ m.date }}</span></p>
+                    <p class="text-sm font-medium text-gray-900">{{ typeLabel(m) }} · <span class="font-normal text-gray-500">{{ m.date }}</span></p>
                     <p class="text-sm font-semibold" :class="m.balance_change > 0 ? 'text-amber-700' : m.balance_change < 0 ? 'text-blue-700' : 'text-gray-600'">
                         Solde {{ m.balance_change > 0 ? '+' : '' }}{{ formatPrice(m.balance_change) }}
                     </p>
@@ -25,7 +31,7 @@ const ISSUE_LABELS = { absent: 'absent', injoignable: 'injoignable', refus: 'ref
                 <p v-if="m.type === 'point'" class="text-xs text-gray-600">
                     Encaissé {{ formatPrice(m.amount_collected) }} · frais {{ formatPrice(m.fees) }} · reçu {{ formatPrice(m.amount_received) }}
                 </p>
-                <p v-else class="text-xs text-gray-600">Reçu {{ formatPrice(m.amount_received) }}</p>
+                <p v-else-if="m.type === 'payment'" class="text-xs text-gray-600">Montant {{ formatPrice(Math.abs(m.amount_received)) }}</p>
                 <div v-if="m.orders.length" class="flex flex-wrap gap-1">
                     <span v-for="o in m.orders" :key="o.order_number" class="rounded-full px-2 py-0.5 text-[11px]"
                         :class="o.outcome === 'delivered' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'">

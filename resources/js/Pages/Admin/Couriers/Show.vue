@@ -19,7 +19,13 @@ const props = defineProps({
 const { formatPrice } = useHelpers()
 const toast = useToast()
 
-const payment = useForm({ amount: '', note: '' })
+const payment = useForm({ amount: '', note: '', direction: 'from_courier' })
+const DIRECTIONS = [
+    { value: 'from_courier', label: "Le livreur m'a remis de l'argent" },
+    { value: 'to_courier', label: "J'ai payé le livreur" },
+    { value: 'correction_more', label: 'Correction : il doit plus' },
+    { value: 'correction_less', label: 'Correction : il doit moins' },
+]
 function recordPayment() {
     payment.post(route('admin.couriers.payments.store', props.courier.id), {
         preserveScroll: true,
@@ -68,22 +74,30 @@ function recordPayment() {
 
         <!-- Versement -->
         <form class="rounded-xl border border-gray-200 bg-white p-4 space-y-3" @submit.prevent="recordPayment">
-            <h2 class="text-sm font-semibold text-gray-900">Enregistrer un versement reçu plus tard</h2>
-            <p class="text-xs text-gray-500">Pour une société qui reverse en fin de semaine, ou un livreur qui complète ce qu'il devait.</p>
+            <h2 class="text-sm font-semibold text-gray-900">Versement ou correction</h2>
+            <p class="text-xs text-gray-500">Argent reçu plus tard (société qui reverse en fin de semaine), argent payé au livreur, ou correction d'une erreur de point.</p>
             <div class="flex flex-wrap items-end gap-3">
+                <label class="w-full sm:w-64">
+                    <span class="block text-xs font-medium text-gray-700 mb-1">Quoi ?</span>
+                    <select v-model="payment.direction" class="w-full h-11 px-3 text-sm border border-gray-200 rounded-lg bg-white">
+                        <option v-for="d in DIRECTIONS" :key="d.value" :value="d.value">{{ d.label }}</option>
+                    </select>
+                </label>
                 <label class="w-44">
                     <span class="block text-xs font-medium text-gray-700 mb-1">Montant (F CFA) *</span>
                     <input v-model="payment.amount" type="number" min="1" step="1" required class="w-full h-11 px-3 text-sm border border-gray-200 rounded-lg">
                 </label>
                 <label class="flex-1 min-w-[160px]">
-                    <span class="block text-xs font-medium text-gray-700 mb-1">Note</span>
-                    <input v-model="payment.note" type="text" maxlength="500" placeholder="Ex : virement du vendredi" class="w-full h-11 px-3 text-sm border border-gray-200 rounded-lg">
+                    <span class="block text-xs font-medium text-gray-700 mb-1">Note{{ payment.direction.startsWith('correction') ? ' *' : '' }}</span>
+                    <input v-model="payment.note" type="text" maxlength="500" placeholder="Ex : virement du vendredi, oubli au point du 03/11"
+                        :required="payment.direction.startsWith('correction')" class="w-full h-11 px-3 text-sm border border-gray-200 rounded-lg">
                 </label>
                 <button type="submit" :disabled="payment.processing" class="h-11 px-4 text-sm font-semibold text-blue-700 border border-blue-300 rounded-lg hover:bg-blue-50 disabled:opacity-40">
                     Enregistrer
                 </button>
             </div>
             <p v-if="payment.errors.amount" class="text-xs text-red-600">{{ payment.errors.amount }}</p>
+            <p v-if="payment.errors.note" class="text-xs text-red-600">{{ payment.errors.note }}</p>
         </form>
 
         <MovementHistory :movements="movements" />

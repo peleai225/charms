@@ -31,7 +31,9 @@ class CourierDispatch
         $skipped = 0;
 
         foreach (Order::whereIn('id', $orderIds)->get() as $order) {
-            if (! in_array($order->status, self::DISPATCHABLE, true) || $order->courier_id !== null) {
+            // Le statut suffit : une commande chez un livreur est « Livreur en route » ; une commande livrée
+            // puis remise en préparation garde le nom de son ancien livreur mais peut repartir
+            if (! in_array($order->status, self::DISPATCHABLE, true)) {
                 $skipped++;
 
                 continue;

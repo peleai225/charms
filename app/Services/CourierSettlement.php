@@ -92,13 +92,27 @@ class CourierSettlement
         });
     }
 
-    public function recordPayment(Courier $courier, float $amount, ?string $note, ?int $userId): CourierMovement
+    /** Sens d'un versement ou d'une correction (montant toujours positif). */
+    public const DIRECTIONS = ['from_courier', 'to_courier', 'correction_more', 'correction_less'];
+
+    /**
+     * from_courier : le livreur remet de l'argent ; to_courier : la boutique paie le livreur ;
+     * correction_more / correction_less : il doit plus / moins (erreur d'un point, avec une note).
+     */
+    public function recordPayment(Courier $courier, float $amount, string $direction, ?string $note, ?int $userId): CourierMovement
     {
+        [$type, $received, $change] = match ($direction) {
+            'from_courier' => [CourierMovement::TYPE_PAYMENT, $amount, -$amount],
+            'to_courier' => [CourierMovement::TYPE_PAYMENT, -$amount, $amount],
+            'correction_more' => [CourierMovement::TYPE_ADJUSTMENT, 0, $amount],
+            'correction_less' => [CourierMovement::TYPE_ADJUSTMENT, 0, -$amount],
+        };
+
         return CourierMovement::create([
             'courier_id' => $courier->id,
-            'type' => CourierMovement::TYPE_PAYMENT,
-            'amount_received' => $amount,
-            'balance_change' => -$amount,
+            'type' => $type,
+            'amount_received' => $received,
+            'balance_change' => $change,
             'note' => $note,
             'user_id' => $userId,
         ]);

@@ -117,25 +117,41 @@ class CourierController extends Controller
             'outcomes.*.issue.required_if' => 'Indiquez pourquoi la commande n\'a pas été livrée.',
         ]);
 
-        $movement = $settlement->settle($courier, $validated['outcomes'], (float) $validated['amount_received'], $validated['note'] ?? null, $request->user()?->id);
+        $settlement->settle($courier, $validated['outcomes'], (float) $validated['amount_received'], $validated['note'] ?? null, $request->user()?->id);
 
         $delivered = collect($validated['outcomes'])->where('outcome', 'delivered')->count();
         $failed = count($validated['outcomes']) - $delivered;
 
-        return back()->with('success', "Point enregistré : {$delivered} livrée(s), {$failed} à relivrer. Solde du livreur : "
-            .number_format($courier->balance(), 0, ',', ' ').' F CFA.'.($movement->balance_change != 0 ? '' : ' Tout est réglé.'));
+        return back()->with('success', "Point enregistré : {$delivered} livrée(s), {$failed} à relivrer. Solde : ".$this->balanceText($courier->balance()).'.');
+    }
+
+    private function balanceText(float $balance): string
+    {
+        $amount = number_format(abs($balance), 0, ',', ' ').' F CFA';
+
+        return match (true) {
+            $balance > 0 => "le livreur doit {$amount}",
+            $balance < 0 => "la boutique lui doit {$amount}",
+            default => 'tout est réglé',
+        };
     }
 
     public function storePayment(Request $request, Courier $courier, CourierSettlement $settlement)
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|gt:0',
-            'note' => 'nullable|string|max:500',
+            'direction' => 'nullable|in:'.implode(',', CourierSettlement::DIRECTIONS),
+            'note' => 'nullable|required_if:direction,correction_more,correction_less|string|max:500',
+        ], [
+            'note.required_if' => 'Expliquez la correction (ex : oubli au point du 03/11).',
         ]);
 
-        $settlement->recordPayment($courier, (float) $validated['amount'], $validated['note'] ?? null, $request->user()?->id);
+        $direction = $validated['direction'] ?? 'from_courier';
+        $settlement->recordPayment($courier, (float) $validated['amount'], $direction, $validated['note'] ?? null, $request->user()?->id);
 
-        return back()->with('success', 'Versement enregistré. Nouveau solde : '.number_format($courier->balance(), 0, ',', ' ').' F CFA.');
+        $label = str_starts_with($direction, 'correction') ? 'Correction enregistrée' : 'Versement enregistré';
+
+        return back()->with('success', "{$label}. Nouveau solde : ".$this->balanceText($courier->balance()).'.');
     }
 
     public function withdraw(Order $order, CourierDispatch $dispatch)

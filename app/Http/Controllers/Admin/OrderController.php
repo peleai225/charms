@@ -198,9 +198,17 @@ class OrderController extends Controller
         $status = $validated['status'];
         $changed = 0;
         $skipped = 0;
+        $withCourier = 0;
 
         foreach (Order::with('items.product', 'items.productVariant')->whereIn('id', $validated['ids'])->get() as $order) {
             $old = $order->status;
+
+            // Un colis chez un livreur ne sort de chez lui que par le point (ou la reprise) : l'argent doit passer par son solde
+            if ($old === Order::STATUS_DELIVERY_IN_PROGRESS) {
+                $withCourier++;
+
+                continue;
+            }
 
             // Une commande annulée/remboursée ne revit pas, une commande livrée ne s'annule pas ici (c'est un retour)
             $locked = in_array($old, [Order::STATUS_CANCELLED, Order::STATUS_REFUNDED], true)
@@ -241,6 +249,9 @@ class OrderController extends Controller
         if ($skipped) {
             $message .= " {$skipped} ignorée(s) (déjà dans ce statut, annulée, ou livrée).";
         }
+        if ($withCourier) {
+            $message .= " {$withCourier} chez un livreur : faites le point depuis la page Livreurs.";
+        }
 
         return back()->with('success', $message);
     }
@@ -248,11 +259,20 @@ class OrderController extends Controller
     public function updateStatus(Request $request, Order $order)
     {
         $request->validate([
-            'status' => 'required|in:pending,confirmed,processing,shipped,delivery_in_progress,delivered,cancelled',
+            // « Livreur en route » se pose uniquement en confiant la commande à un livreur
+            'status' => 'required|in:pending,confirmed,processing,shipped,delivered,cancelled',
             'tracking_number' => 'nullable|string|max:100',
             'shipping_carrier' => 'nullable|string|max:100',
             'admin_notes' => 'nullable|string|max:500',
+        ], [
+            'status.in' => 'Pour mettre une commande « Livreur en route », confiez-la à un livreur depuis la liste des commandes.',
         ]);
+
+        if ($order->status === Order::STATUS_DELIVERY_IN_PROGRESS) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'status' => 'Cette commande est chez '.($order->courier?->name ?? 'un livreur').' : faites le point ou reprenez-la depuis la page Livreurs.',
+            ]);
+        }
 
         $oldStatus = $order->status;
         $newStatus = $request->status;

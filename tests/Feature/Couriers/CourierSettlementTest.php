@@ -133,6 +133,40 @@ class CourierSettlementTest extends TestCase
         $this->assertSame(0.0, $company->balance());
     }
 
+    public function test_the_shop_can_pay_what_it_owes_the_courier(): void
+    {
+        $order = $this->onRoute(8000, 1000, 'paid');
+        $this->settle([$order->id => ['outcome' => 'delivered']], 0);
+        $this->assertSame(-1000.0, $this->courier->balance());
+
+        $this->actingAs($this->admin)->post(route('admin.couriers.payments.store', $this->courier), ['amount' => 1000, 'direction' => 'to_courier'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(0.0, $this->courier->balance());
+    }
+
+    public function test_a_correction_needs_a_note_and_is_recorded_as_an_adjustment(): void
+    {
+        $this->actingAs($this->admin)->post(route('admin.couriers.payments.store', $this->courier), ['amount' => 500, 'direction' => 'correction_more'])
+            ->assertSessionHasErrors('note');
+        $this->assertSame(0, CourierMovement::count());
+
+        $this->actingAs($this->admin)->post(route('admin.couriers.payments.store', $this->courier), ['amount' => 500, 'direction' => 'correction_more', 'note' => 'Oubli au point du 03/11'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('adjustment', CourierMovement::sole()->type);
+        $this->assertSame(500.0, $this->courier->balance());
+    }
+
+    public function test_the_confirmation_message_tells_the_real_balance(): void
+    {
+        CourierMovement::create(['courier_id' => $this->courier->id, 'type' => 'point', 'balance_change' => 3000]);
+        $order = $this->onRoute(5000);
+
+        $this->settle([$order->id => ['outcome' => 'delivered']], 4000)
+            ->assertSessionHas('success', fn ($m) => ! str_contains($m, 'Tout est réglé') && str_contains($m, '3 000'));
+    }
+
     public function test_the_same_point_cannot_be_submitted_twice(): void
     {
         $order = $this->onRoute(5000);

@@ -107,6 +107,35 @@
     @endif
     <meta name="twitter:title"       content="{{ $ogTitle }}" />
 
+    {{-- JSON-LD schema.org Product (sku = id produit = content_ids du pixel = id du flux Meta) --}}
+    @if(($page['component'] ?? null) === 'Shop/Product' && !empty($page['props']['product']))
+        @php
+            $ldP = $page['props']['product'];
+            $ldDesc = trim(preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags((string) ($ldP['description'] ?? '')), ENT_QUOTES, 'UTF-8')))
+                ?: trim((string) ($ldP['short_description'] ?? ''))
+                ?: $ldP['name'];
+            $ldInStock = ((int) ($ldP['stock'] ?? 0)) > 0 || !empty($ldP['allow_backorder']);
+            $ldJson = [
+                '@context' => 'https://schema.org',
+                '@type' => 'Product',
+                'name' => $ldP['name'],
+                'image' => array_values(array_map(fn ($path) => asset('storage/' . $path), $ldP['images'] ?? [])),
+                'description' => mb_substr($ldDesc, 0, 5000),
+                'sku' => (string) $ldP['id'],
+                'brand' => ['@type' => 'Brand', 'name' => $siteName],
+                'offers' => [
+                    '@type' => 'Offer',
+                    'url' => url('/produit/' . $ldP['slug']),
+                    'price' => (string) round((float) $ldP['price']),
+                    'priceCurrency' => 'XOF',
+                    'availability' => $ldInStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+                    'itemCondition' => 'https://schema.org/NewCondition',
+                ],
+            ];
+        @endphp
+        <script type="application/ld+json">{!! json_encode($ldJson, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) !!}</script>
+    @endif
+
     @routes
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -166,25 +195,40 @@
         fbq('init', '{{ $metaPixelId }}');
         fbq('track', 'PageView');
 
+        // content_ids = id produit en TEXTE, identique à la colonne id du flux /feed/meta.csv
         window.trackPixel = {
             viewContent: function(p) {
                 if (!window.fbq) return;
-                fbq('track', 'ViewContent', { content_ids:[p.id], content_name:p.name, content_type:'product', value:p.price, currency:'XOF' });
+                fbq('track', 'ViewContent', { content_ids:[String(p.id)], content_name:p.name, content_type:'product', value:Number(p.price), currency:'XOF' });
             },
             addToCart: function(p, qty) {
                 if (!window.fbq) return;
-                fbq('track', 'AddToCart', { content_ids:[p.id], content_name:p.name, content_type:'product', value:p.price * (qty||1), currency:'XOF' });
+                qty = qty || 1;
+                fbq('track', 'AddToCart', { content_ids:[String(p.id)], contents:[{ id:String(p.id), quantity:qty, item_price:Number(p.price) }], content_name:p.name, content_type:'product', value:Number(p.price) * qty, currency:'XOF' });
             },
-            initiateCheckout: function(total, count) {
+            initiateCheckout: function(total, count, productIds) {
                 if (!window.fbq) return;
-                fbq('track', 'InitiateCheckout', { value:total, num_items:count, currency:'XOF' });
+                var ids = (productIds || []).map(String).filter(function(v, i, a) { return a.indexOf(v) === i; });
+                fbq('track', 'InitiateCheckout', { content_ids:ids, content_type:'product', value:Number(total), num_items:count, currency:'XOF' });
             },
-            purchase: function(orderId, value) {
+            // items : [{ id, quantity, item_price }] — une seule fois par commande (event_id = numéro de commande)
+            purchase: function(orderNumber, value, items) {
                 if (!window.fbq) return;
-                var key = 'px_purchase_' + orderId;
-                if (sessionStorage.getItem(key)) return;
-                sessionStorage.setItem(key, '1');
-                fbq('track', 'Purchase', { value:value, currency:'XOF', order_id:orderId });
+                var key = 'px_purchase_' + orderNumber;
+                try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch (e) {
+                    try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1'); } catch (e2) {}
+                }
+                items = items || [];
+                var contents = items.map(function(i) { return { id:String(i.id), quantity:Number(i.quantity), item_price:Number(i.item_price) }; });
+                var numItems = contents.reduce(function(n, c) { return n + c.quantity; }, 0);
+                fbq('track', 'Purchase', {
+                    content_ids: contents.map(function(c) { return c.id; }).filter(function(v, i, a) { return a.indexOf(v) === i; }),
+                    content_type: 'product',
+                    contents: contents,
+                    value: Number(value),
+                    currency: 'XOF',
+                    num_items: numItems
+                }, { eventID: String(orderNumber) });
             }
         };
     </script>

@@ -11,7 +11,14 @@ const props = defineProps({
 const { formatPrice } = useHelpers();
 
 onMounted(() => {
-    window.trackPixel?.purchase(props.order.order_number, props.order.total);
+    // value = total des produits (hors livraison)
+    const items = (props.order.items ?? []).map((i) => ({
+        id: i.product_id,
+        quantity: i.quantity,
+        item_price: i.unit_price,
+    }));
+    const productsTotal = items.reduce((sum, i) => sum + Number(i.item_price) * Number(i.quantity), 0);
+    window.trackPixel?.purchase(props.order.order_number, productsTotal, items);
 });
 </script>
 

@@ -88,7 +88,8 @@ const submit = () => {
 onMounted(() => {
     window.trackPixel?.initiateCheckout(
         props.cart?.total ?? 0,
-        props.cart?.items?.length ?? 0
+        props.cart?.items?.length ?? 0,
+        (props.cart?.items ?? []).map((i) => i.product?.id).filter(Boolean)
     );
 });
 

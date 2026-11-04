@@ -558,6 +558,7 @@ class CheckoutController extends Controller
 
                 return [
                     'id' => $item->id,
+                    'product_id' => $item->product_id,
                     'name' => $item->name,
                     'variant_name' => $item->variant_name ?? null,
                     'unit_price' => $item->unit_price,

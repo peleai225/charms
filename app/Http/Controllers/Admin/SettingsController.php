@@ -116,6 +116,7 @@ class SettingsController extends Controller
             'shipping_zones.*.name' => 'required|string',
             'shipping_zones.*.cities' => 'required|string',
             'shipping_zones.*.price' => 'required|numeric|min:0',
+            'shipping_zones.*.courier_fee' => 'nullable|numeric|min:0',
         ]);
 
         $this->setSetting('shipping_enabled', $request->boolean('shipping_enabled') ? '1' : '0');

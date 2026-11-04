@@ -360,6 +360,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('ai/apply-categories', [\App\Http\Controllers\Admin\AiProductController::class, 'applyCategories'])->name('ai.apply-categories');
             Route::post('ai/apply-descriptions', [\App\Http\Controllers\Admin\AiProductController::class, 'applyDescriptions'])->name('ai.apply-descriptions');
             Route::post('ai/store-from-image', [\App\Http\Controllers\Admin\AiProductController::class, 'storeFromImage'])->name('ai.store-from-image');
+            Route::post('ai/store-variant-product', [\App\Http\Controllers\Admin\AiProductController::class, 'storeVariantProduct'])->name('ai.store-variant-product');
             Route::resource('products', \App\Http\Controllers\Admin\ProductController::class)->only(['create','store','show','edit','update','destroy'])->names('products');
             Route::post('products/{product}/variants', [\App\Http\Controllers\Admin\ProductController::class, 'storeVariant'])->name('products.variants.store');
             Route::post('products/{product}/variants/bulk', [\App\Http\Controllers\Admin\ProductController::class, 'bulkStoreVariants'])->name('products.variants.bulk');

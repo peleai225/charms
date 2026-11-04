@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
+use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Services\AiService;
+use App\Services\VariantProductFromPhotos;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -24,11 +26,97 @@ class AiProductController extends Controller
     {
         Inertia::setRootView('layouts.admin-inertia');
 
+        $colorAttribute = Attribute::colorAttribute();
+        $optionAttributes = Attribute::with('values')
+            ->when($colorAttribute, fn ($q) => $q->where('id', '!=', $colorAttribute->id))
+            ->orderBy('order')->orderBy('id')
+            ->get();
+
         return Inertia::render('Admin/Products/ImportImages', [
             'pageTitle' => 'Créer des produits par photos',
             'aiConfigured' => $ai->isConfigured(),
             'categories' => $this->categoryOptions(),
+            'colors' => $colorAttribute
+                ? $colorAttribute->values()->get()->map(fn ($v) => ['id' => $v->id, 'value' => $v->value, 'color_code' => $v->color_code])->values()
+                : [],
+            'optionAttributes' => $optionAttributes->map(fn ($a) => [
+                'id' => $a->id,
+                'name' => $a->name,
+                'values' => $a->values->map(fn ($v) => ['id' => $v->id, 'value' => $v->value])->values(),
+            ])->values(),
+            'categoryOptions' => $this->categoryOptionSuggestions($optionAttributes->pluck('id')->all()),
         ]);
+    }
+
+    /**
+     * Créer un produit à variantes à partir de plusieurs photos (une couleur par photo)
+     */
+    public function storeVariantProduct(Request $request, VariantProductFromPhotos $builder)
+    {
+        $validated = $request->validate([
+            'images' => 'required|array|min:1|max:12',
+            'images.*' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'colors' => 'nullable|array',
+            'colors.*.id' => 'nullable|integer',
+            'colors.*.name' => 'nullable|string|max:50',
+            'colors.*.hex' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'option_attribute_id' => 'nullable|integer|exists:attributes,id',
+            'variants' => 'required|array|min:1|max:200',
+            'variants.*.color_index' => 'nullable|integer|min:0',
+            'variants.*.value_id' => 'nullable|integer',
+            'variants.*.stock' => 'required|integer|min:0',
+            'name' => 'required|string|max:255',
+            'short_description' => 'nullable|string|max:500',
+            'description' => 'nullable|string',
+            'category_id' => 'nullable|exists:categories,id',
+            'sale_price' => 'required|numeric|min:0',
+            'purchase_price' => 'nullable|numeric|min:0',
+            'status' => 'required|in:draft,active',
+        ], [
+            'images.*.max' => 'Une photo dépasse 5 Mo.',
+            'variants.*.stock.required' => 'Indiquez le stock de chaque variante (0 si aucun).',
+        ]);
+
+        $product = $builder->create($validated, $request->file('images'));
+
+        return response()->json([
+            'id' => $product->id,
+            'edit_url' => route('admin.products.edit', $product),
+            'variants' => $product->variants()->count(),
+        ]);
+    }
+
+    /**
+     * Par catégorie : la déclinaison (taille, pointure…) la plus utilisée par les produits existants,
+     * avec les valeurs déjà employées. Sert à pré-cocher les tailles d'un nouveau produit.
+     *
+     * @param  array<int>  $attributeIds
+     * @return array<int, array{attribute_id: int, value_ids: array<int>}>
+     */
+    protected function categoryOptionSuggestions(array $attributeIds): array
+    {
+        if (! $attributeIds) {
+            return [];
+        }
+
+        $rows = DB::table('product_variant_values as pvv')
+            ->join('product_variants as v', 'v.id', '=', 'pvv.product_variant_id')
+            ->join('products as p', 'p.id', '=', 'v.product_id')
+            ->whereNotNull('p.category_id')
+            ->whereNull('p.deleted_at')
+            ->whereIn('pvv.attribute_id', $attributeIds)
+            ->select('p.category_id', 'pvv.attribute_id', 'pvv.attribute_value_id', DB::raw('COUNT(*) as uses'))
+            ->groupBy('p.category_id', 'pvv.attribute_id', 'pvv.attribute_value_id')
+            ->get();
+
+        return $rows->groupBy('category_id')->map(function ($rows) {
+            $attributeId = $rows->groupBy('attribute_id')->sortByDesc(fn ($r) => $r->sum('uses'))->keys()->first();
+
+            return [
+                'attribute_id' => (int) $attributeId,
+                'value_ids' => $rows->where('attribute_id', $attributeId)->pluck('attribute_value_id')->map(fn ($id) => (int) $id)->values()->all(),
+            ];
+        })->all();
     }
 
     /**

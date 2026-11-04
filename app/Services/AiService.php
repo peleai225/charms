@@ -5,6 +5,7 @@ namespace App\Services;
 use Anthropic\Client as AnthropicClient;
 use Anthropic\Core\Exceptions\APIConnectionException;
 use Anthropic\Core\Exceptions\APIStatusException;
+use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Setting;
 use GuzzleHttp\Client as GuzzleClient;
@@ -52,13 +53,15 @@ class AiService
     /**
      * Analyse une image (et/ou un nom) et propose une fiche produit + catégorie.
      *
-     * @return array{name: string, short_description: string, description: string, category_id: ?int, category_name: ?string}
+     * @return array{name: string, short_description: string, description: string, category_id: ?int, category_name: ?string, color_id: ?int, color_name: ?string, color_hex: ?string}
      */
     public function suggestProduct(?string $imageBinary, ?string $mimeType, ?string $currentName = null): array
     {
         $categories = $this->categoryList();
+        $colors = $this->colorList();
 
         $catalog = collect($categories)->map(fn ($c) => "{$c['id']}: {$c['path']}")->implode("\n");
+        $palette = collect($colors)->map(fn ($c) => "{$c['id']}: {$c['value']}")->implode("\n") ?: '(aucune couleur enregistrée)';
 
         $prompt = <<<'PROMPT'
 Tu es un expert e-commerce en Côte d'Ivoire. Analyse ce produit et rédige sa fiche en français, de façon simple, vendeuse et honnête (n'invente pas de matière, de marque ou de caractéristique invisible).
@@ -71,8 +74,11 @@ PROMPT;
 Choisis la catégorie la plus précise possible dans cette liste (id: chemin). Préfère la catégorie la plus profonde qui correspond. Si aucune ne convient, mets null.
 {$catalog}
 
+Couleur principale de l'article lui-même (pas du fond ni de l'emballage). Si elle correspond à une couleur de cette liste (id: nom), mets son id dans color_id. Sinon mets color_id à null. Dans tous les cas, donne son nom simple en français dans color_name (ex : "Bordeaux") et son code hexadécimal dans color_hex.
+{$palette}
+
 Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour :
-{"name": "nom court et clair (max 60 caractères)", "short_description": "1 phrase d'accroche (max 160 caractères)", "description": "2 à 4 phrases descriptives", "category_id": 12}
+{"name": "nom court et clair (max 60 caractères)", "short_description": "1 phrase d'accroche (max 160 caractères)", "description": "2 à 4 phrases descriptives", "category_id": 12, "color_id": 3, "color_name": "Rouge", "color_hex": "#C62828"}
 PROMPT;
 
         $text = $this->generate($prompt, $imageBinary, $mimeType);
@@ -81,12 +87,20 @@ PROMPT;
         $categoryId = isset($data['category_id']) && is_numeric($data['category_id']) ? (int) $data['category_id'] : null;
         $category = $categoryId ? collect($categories)->firstWhere('id', $categoryId) : null;
 
+        $colorId = isset($data['color_id']) && is_numeric($data['color_id']) ? (int) $data['color_id'] : null;
+        $color = $colorId ? collect($colors)->firstWhere('id', $colorId) : null;
+        $colorName = mb_substr(trim((string) ($data['color_name'] ?? '')), 0, 50);
+        $colorHex = trim((string) ($data['color_hex'] ?? ''));
+
         return [
             'name' => mb_substr(trim((string) ($data['name'] ?? '')), 0, 255),
             'short_description' => mb_substr(trim((string) ($data['short_description'] ?? '')), 0, 500),
             'description' => trim((string) ($data['description'] ?? '')),
             'category_id' => $category ? $category['id'] : null,
             'category_name' => $category ? $category['path'] : null,
+            'color_id' => $color ? $color['id'] : null,
+            'color_name' => $color ? $color['value'] : ($colorName !== '' ? $colorName : null),
+            'color_hex' => preg_match('/^#[0-9A-Fa-f]{6}$/', $colorHex) ? strtoupper($colorHex) : null,
         ];
     }
 
@@ -146,7 +160,10 @@ PROMPT;
             throw new RuntimeException("L'IA n'est pas configurée. Ajoutez une clé API dans Paramètres → IA.");
         }
 
-        @set_time_limit(60);
+        // Limite pour les requêtes web seulement : en ligne de commande (tests, files d'attente) elle tuerait tout le processus
+        if (! app()->runningInConsole()) {
+            @set_time_limit(60);
+        }
 
         // Modèle principal, puis modèle de secours si le principal est surchargé
         $models = array_values(array_unique(array_filter([$this->model, $this->fallbackModel])));
@@ -300,6 +317,18 @@ PROMPT;
     /**
      * @return array<int, array{id: int, path: string}>
      */
+    /**
+     * @return array<int, array{id: int, value: string}>
+     */
+    protected function colorList(): array
+    {
+        $attribute = Attribute::colorAttribute();
+
+        return $attribute
+            ? $attribute->values()->get(['id', 'value'])->map(fn ($v) => ['id' => $v->id, 'value' => $v->value])->all()
+            : [];
+    }
+
     protected function categoryList(): array
     {
         return Category::active()->with('parent.parent')->get()

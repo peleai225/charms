@@ -34,7 +34,7 @@ class ReportController extends Controller
             default => '%Y-%m-%d',
         };
 
-        $salesData = Order::where('payment_status', 'paid')
+        $salesData = Order::countsAsSale()
             ->whereBetween('created_at', [$startDate, Carbon::parse($endDate)->endOfDay()])
             ->select(
                 DB::raw("DATE_FORMAT(created_at, '{$dateFormat}') as period"),
@@ -55,7 +55,7 @@ class ReportController extends Controller
         $daysDiff      = Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate));
         $previousStart = Carbon::parse($startDate)->subDays($daysDiff + 1)->format('Y-m-d');
         $previousEnd   = Carbon::parse($startDate)->subDay()->format('Y-m-d');
-        $prev = Order::where('payment_status', 'paid')
+        $prev = Order::countsAsSale()
             ->whereBetween('created_at', [$previousStart, Carbon::parse($previousEnd)->endOfDay()])
             ->selectRaw('COUNT(*) as orders, SUM(total) as revenue')->first();
 
@@ -91,7 +91,7 @@ class ReportController extends Controller
             ->join('orders',    'order_items.order_id',    '=', 'orders.id')
             ->join('products',  'order_items.product_id',  '=', 'products.id')
             ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
-            ->where('orders.payment_status', 'paid')
+            ->where(fn ($q) => Order::whereCountsAsSale($q, 'orders'))
             ->whereBetween('orders.created_at', [$startDate, $endOfDay])
             ->select(
                 'products.id', 'products.name', 'products.sku',
@@ -107,7 +107,7 @@ class ReportController extends Controller
             ->join('orders',     'order_items.order_id',    '=', 'orders.id')
             ->join('products',   'order_items.product_id',  '=', 'products.id')
             ->join('categories', 'products.category_id',    '=', 'categories.id')
-            ->where('orders.payment_status', 'paid')
+            ->where(fn ($q) => Order::whereCountsAsSale($q, 'orders'))
             ->whereBetween('orders.created_at', [$startDate, $endOfDay])
             ->select(
                 'categories.id', 'categories.name',
@@ -118,7 +118,7 @@ class ReportController extends Controller
 
         $noSalesProducts = Product::active()
             ->whereDoesntHave('orderItems', fn($q) => $q->whereHas('order', fn($o) => $o
-                ->where('payment_status', 'paid')
+                ->countsAsSale()
                 ->whereBetween('created_at', [$startDate, $endOfDay])
             ))
             ->select('id', 'name', 'sku', 'stock_quantity', 'sale_price')
@@ -159,7 +159,7 @@ class ReportController extends Controller
         $stockRotation = DB::table('order_items')
             ->join('orders',   'order_items.order_id',   '=', 'orders.id')
             ->join('products', 'order_items.product_id', '=', 'products.id')
-            ->where('orders.payment_status', 'paid')
+            ->where(fn ($q) => Order::whereCountsAsSale($q, 'orders'))
             ->where('orders.created_at', '>=', now()->subDays(30))
             ->select('products.id', 'products.name', 'products.stock_quantity', DB::raw('SUM(order_items.quantity) as sold_30d'))
             ->groupBy('products.id', 'products.name', 'products.stock_quantity')
@@ -190,17 +190,17 @@ class ReportController extends Controller
 
         // Clients avec commandes
         $activeCustomers = Customer::whereHas('orders', function ($query) use ($startDate, $endOfDay) {
-            $query->where('payment_status', 'paid')
+            $query->countsAsSale()
                 ->whereBetween('created_at', [$startDate, $endOfDay]);
         })->count();
 
         // Top clients
         $topCustomers = Customer::withCount(['orders' => function ($query) use ($startDate, $endOfDay) {
-            $query->where('payment_status', 'paid')
+            $query->countsAsSale()
                 ->whereBetween('created_at', [$startDate, $endOfDay]);
         }])
             ->withSum(['orders' => function ($query) use ($startDate, $endOfDay) {
-                $query->where('payment_status', 'paid')
+                $query->countsAsSale()
                     ->whereBetween('created_at', [$startDate, $endOfDay]);
             }], 'total')
             ->having('orders_count', '>', 0)
@@ -216,7 +216,7 @@ class ReportController extends Controller
             ]);
 
         // Répartition géographique
-        $geoStats = Order::where('payment_status', 'paid')
+        $geoStats = Order::countsAsSale()
             ->whereBetween('created_at', [$startDate, $endOfDay])
             ->select(
                 'shipping_city',
@@ -303,7 +303,7 @@ class ReportController extends Controller
             default => '%Y-%m-%d',
         };
 
-        $salesData = Order::where('payment_status', 'paid')
+        $salesData = Order::countsAsSale()
             ->whereBetween('created_at', [$startDate, Carbon::parse($endDate)->endOfDay()])
             ->select(
                 DB::raw("DATE_FORMAT(created_at, '{$dateFormat}') as period"),
@@ -347,7 +347,7 @@ class ReportController extends Controller
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
-            ->where('orders.payment_status', 'paid')
+            ->where(fn ($q) => Order::whereCountsAsSale($q, 'orders'))
             ->whereBetween('orders.created_at', [$startDate, Carbon::parse($endDate)->endOfDay()])
             ->select(
                 'products.name',

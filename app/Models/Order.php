@@ -170,6 +170,25 @@ class Order extends Model
         return $query->where('status', self::STATUS_DELIVERED);
     }
 
+    /**
+     * Une vente = commande payée, ou livrée (paiement à la livraison : l'argent est encaissé à la remise),
+     * et ni annulée ni remboursée. Utilisable aussi sur une requête jointe, avec le nom de la table.
+     */
+    public static function whereCountsAsSale($query, string $table = '')
+    {
+        $column = fn (string $name) => $table !== '' ? "{$table}.{$name}" : $name;
+
+        return $query
+            ->where(fn ($q) => $q->where($column('payment_status'), self::PAYMENT_PAID)
+                ->orWhere($column('status'), self::STATUS_DELIVERED))
+            ->whereNotIn($column('status'), [self::STATUS_CANCELLED, self::STATUS_REFUNDED]);
+    }
+
+    public function scopeCountsAsSale($query)
+    {
+        return self::whereCountsAsSale($query);
+    }
+
     public function scopePaid($query)
     {
         return $query->where('payment_status', self::PAYMENT_PAID);

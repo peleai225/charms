@@ -260,6 +260,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Commandes — tous les rôles (consultation + mise à jour statut)
         Route::get('orders', [\App\Http\Controllers\Admin\OrderController::class, 'index'])->name('orders.index');
+        Route::post('orders/bulk-status', [\App\Http\Controllers\Admin\OrderController::class, 'bulkUpdateStatus'])->name('orders.bulk-status');
         Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->only(['show','store','update','destroy'])->names('orders');
         Route::patch('orders/{order}/status', [\App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('orders.status');
         Route::get('orders/{order}/invoice', [\App\Http\Controllers\Admin\OrderController::class, 'invoice'])->name('orders.invoice');

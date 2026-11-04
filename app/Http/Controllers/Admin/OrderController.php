@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Events\OrderCancelled;
 use App\Events\OrderStatusUpdated;
 use App\Http\Controllers\Controller;
+use App\Listeners\RestoreStockOnCancel;
 use App\Mail\OrderShipped;
 use App\Mail\OrderStatusChanged;
 use App\Models\ActivityLog;
 use App\Models\Order;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
@@ -48,7 +50,19 @@ class OrderController extends Controller
             $query->whereDate('created_at', '<=', $to);
         }
 
-        $orders = $query->paginate(20)->withQueryString();
+        // Période choisie dans la liste (« Aujourd'hui », « Cette semaine », « Ce mois »)
+        $periodStart = match ($request->date_range) {
+            'today' => now()->startOfDay(),
+            'week' => now()->startOfWeek(),
+            'month' => now()->startOfMonth(),
+            default => null,
+        };
+        if ($periodStart) {
+            $query->where('created_at', '>=', $periodStart);
+        }
+
+        $perPage = in_array((int) $request->per_page, [20, 50, 100], true) ? (int) $request->per_page : 20;
+        $orders = $query->paginate($perPage)->withQueryString();
 
         $stats = [
             'pending'     => Order::where('status', 'pending')->count(),
@@ -72,7 +86,7 @@ class OrderController extends Controller
                 'created_at_fmt' => $o->created_at->format('d/m/Y H:i'),
             ]),
             'stats'   => $stats,
-            'filters' => $request->only(['search', 'status', 'payment_status', 'date_from', 'date_to']),
+            'filters' => $request->only(['search', 'status', 'payment_status', 'date_from', 'date_to', 'date_range', 'per_page']),
         ]);
     }
 
@@ -165,6 +179,70 @@ class OrderController extends Controller
     /**
      * Modifier le statut
      */
+    /**
+     * Faire avancer plusieurs commandes d'un coup (rattrapage du suivi, journée de livraison).
+     * Aucun message n'est envoyé aux clients : on régularise un statut, on ne les prévient pas en masse.
+     */
+    public function bulkUpdateStatus(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1|max:500',
+            'ids.*' => 'integer|exists:orders,id',
+            'status' => 'required|in:processing,shipped,delivered,cancelled',
+        ], [
+            'status.in' => 'Ce statut ne peut pas être appliqué en masse.',
+        ]);
+
+        $status = $validated['status'];
+        $changed = 0;
+        $skipped = 0;
+
+        foreach (Order::with('items.product', 'items.productVariant')->whereIn('id', $validated['ids'])->get() as $order) {
+            $old = $order->status;
+
+            // Une commande annulée/remboursée ne revit pas, une commande livrée ne s'annule pas ici (c'est un retour)
+            $locked = in_array($old, [Order::STATUS_CANCELLED, Order::STATUS_REFUNDED], true)
+                || ($old === Order::STATUS_DELIVERED && $status === Order::STATUS_CANCELLED);
+            if ($old === $status || $locked) {
+                $skipped++;
+
+                continue;
+            }
+
+            $updates = ['status' => $status];
+            if ($status === Order::STATUS_SHIPPED && ! $order->shipped_at) {
+                $updates['shipped_at'] = now();
+            }
+            if ($status === Order::STATUS_DELIVERED) {
+                $updates['delivered_at'] = $order->delivered_at ?? now();
+                // Paiement à la livraison : l'argent est encaissé à la remise du colis
+                if ($order->payment_method === 'cod' && $order->payment_status !== Order::PAYMENT_PAID) {
+                    $updates['payment_status'] = Order::PAYMENT_PAID;
+                    $updates['paid_at'] = now();
+                }
+            }
+
+            $order->update($updates);
+
+            if ($status === Order::STATUS_CANCELLED) {
+                // Remise en stock sans l'événement d'annulation, qui notifierait le client
+                app(RestoreStockOnCancel::class)->handle(new OrderCancelled($order, 'Annulation groupée'));
+            }
+
+            ActivityLog::log('order_status_changed', "Statut modifié en masse : {$old} → {$status}", $order);
+            $changed++;
+        }
+
+        Cache::forget('admin_pending_orders_count');
+
+        $message = "{$changed} commande(s) mise(s) à jour. Aucun message n'a été envoyé aux clients.";
+        if ($skipped) {
+            $message .= " {$skipped} ignorée(s) (déjà dans ce statut, annulée, ou livrée).";
+        }
+
+        return back()->with('success', $message);
+    }
+
     public function updateStatus(Request $request, Order $order)
     {
         $request->validate([

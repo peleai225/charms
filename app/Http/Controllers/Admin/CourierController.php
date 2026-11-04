@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Courier;
 use App\Models\Order;
+use App\Services\CourierDispatch;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -51,6 +52,30 @@ class CourierController extends Controller
         $courier->update($this->validated($request) + ['is_active' => $request->boolean('is_active', true)]);
 
         return back()->with('success', 'Livreur mis à jour.');
+    }
+
+    public function dispatch(Request $request, Courier $courier, CourierDispatch $dispatch)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1|max:500',
+            'ids.*' => 'integer|exists:orders,id',
+        ]);
+
+        $result = $dispatch->dispatch($courier, $validated['ids']);
+
+        $message = "{$result['dispatched']} commande(s) confiée(s) à {$courier->name}.";
+        if ($result['skipped']) {
+            $message .= " {$result['skipped']} ignorée(s) (pas encore confirmée, déjà chez un livreur, livrée ou annulée).";
+        }
+
+        return back()->with('success', $message);
+    }
+
+    public function withdraw(Order $order, CourierDispatch $dispatch)
+    {
+        $dispatch->withdraw($order);
+
+        return back()->with('success', "Commande {$order->order_number} reprise au livreur.");
     }
 
     private function validated(Request $request): array

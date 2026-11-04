@@ -406,6 +406,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             // Offres par lot
             Route::resource('promotions', \App\Http\Controllers\Admin\PromotionController::class)->names('promotions');
             Route::resource('couriers', \App\Http\Controllers\Admin\CourierController::class)->only(['index', 'store', 'update'])->names('couriers');
+            Route::post('couriers/{courier}/dispatch', [\App\Http\Controllers\Admin\CourierController::class, 'dispatch'])->name('couriers.dispatch');
+            Route::post('orders/{order}/withdraw-courier', [\App\Http\Controllers\Admin\CourierController::class, 'withdraw'])->name('orders.withdraw-courier');
             Route::post('/promotions-margin-preview', [\App\Http\Controllers\Admin\PromotionController::class, 'marginPreview'])->name('promotions.margin-preview');
 
             // Visites guidées (onboarding)

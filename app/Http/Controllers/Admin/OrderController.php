@@ -22,7 +22,7 @@ class OrderController extends Controller
     {
         Inertia::setRootView('layouts.admin-inertia');
 
-        $query = Order::with(['customer', 'items'])
+        $query = Order::with(['customer', 'items', 'courier:id,name'])
             ->latest();
 
         if ($search = $request->search) {
@@ -84,8 +84,10 @@ class OrderController extends Controller
                 'billing_email'  => $o->billing_email,
                 'billing_phone'  => $o->billing_phone,
                 'created_at_fmt' => $o->created_at->format('d/m/Y H:i'),
+                'courier_name'   => $o->status === Order::STATUS_DELIVERY_IN_PROGRESS ? $o->courier?->name : null,
             ]),
             'stats'   => $stats,
+            'couriers' => \App\Models\Courier::active()->orderBy('name')->get(['id', 'name']),
             'filters' => $request->only(['search', 'status', 'payment_status', 'date_from', 'date_to', 'date_range', 'per_page']),
         ]);
     }

@@ -7,6 +7,7 @@ import OrderBulkBar from '@/Components/Admin/Orders/OrderBulkBar.vue'
 const props = defineProps({
     orders: Object,
     stats:  Object,
+    couriers: { type: Array, default: () => [] },
     filters: Object,
 })
 
@@ -258,7 +259,7 @@ function flowIndex(s) { return FLOW.indexOf(s) }
 
             <!-- Actions groupées -->
             <div v-if="selectedIds.length" class="p-3 border-b border-gray-100">
-                <OrderBulkBar :selected-ids="selectedIds" @clear="selectedIds = []" />
+                <OrderBulkBar :selected-ids="selectedIds" :couriers="couriers" @clear="selectedIds = []" />
             </div>
 
             <!-- Tableau -->
@@ -323,6 +324,7 @@ function flowIndex(s) { return FLOW.indexOf(s) }
                                     class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border">
                                     {{ statusLabel(order.status) }}
                                 </span>
+                                <p v-if="order.courier_name" class="mt-1 text-[11px] text-gray-500">chez {{ order.courier_name }}</p>
                             </td>
 
                             <td class="px-4 py-3 text-center">

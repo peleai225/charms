@@ -9,13 +9,40 @@ import ToastContainer from '@/Components/UI/ToastContainer.vue'
 // Faire avancer plusieurs commandes d'un coup. Aucun message n'est envoyé aux clients.
 const props = defineProps({
     selectedIds: { type: Array, required: true },
+    couriers: { type: Array, default: () => [] }, // livreurs actifs [{ id, name }]
 })
 const emit = defineEmits(['clear'])
 
 const confirm = useConfirm()
 const toast = useToast()
 const status = ref('')
+const courierId = ref('')
 const sending = ref(false)
+
+async function dispatchToCourier() {
+    const courier = props.couriers.find((c) => c.id === Number(courierId.value))
+    if (!courier || !props.selectedIds.length) return
+    const count = props.selectedIds.length
+    const ok = await confirm({
+        title: `Confier ${count} commande(s) à ${courier.name} ?`,
+        message: "Seules les commandes confirmées ou en préparation partent. Aucun message n'est envoyé aux clients.",
+        confirmLabel: 'Confier',
+        variant: 'primary',
+    })
+    if (!ok) return
+
+    sending.value = true
+    router.post(route('admin.couriers.dispatch', courier.id), { ids: props.selectedIds }, {
+        preserveScroll: true,
+        onSuccess: (page) => {
+            toast.success(page.props.flash?.success ?? `${count} commande(s) confiée(s)`)
+            courierId.value = ''
+            emit('clear')
+        },
+        onError: (errors) => toast.error(Object.values(errors)[0] ?? 'Erreur lors de la remise au livreur'),
+        onFinish: () => { sending.value = false },
+    })
+}
 
 const choices = [
     { value: 'processing', label: 'En préparation' },
@@ -62,6 +89,16 @@ async function apply() {
         <button type="button" :disabled="!status || sending"
             class="h-11 px-4 text-[13px] font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-40"
             @click="apply">{{ sending ? 'Mise à jour…' : 'Appliquer' }}</button>
+        <template v-if="couriers.length">
+            <select v-model="courierId" aria-label="Livreur"
+                class="h-11 px-3 text-[13px] border border-blue-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Confier à…</option>
+                <option v-for="c in couriers" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+            <button type="button" :disabled="!courierId || sending"
+                class="h-11 px-4 text-[13px] font-semibold text-blue-700 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 disabled:opacity-40"
+                @click="dispatchToCourier">Confier</button>
+        </template>
         <button type="button" class="h-11 px-3 text-[13px] text-blue-800 hover:underline" @click="emit('clear')">Tout désélectionner</button>
     </div>
     <ConfirmModal />

@@ -405,6 +405,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
             // Offres par lot
             Route::resource('promotions', \App\Http\Controllers\Admin\PromotionController::class)->names('promotions');
+            Route::resource('couriers', \App\Http\Controllers\Admin\CourierController::class)->only(['index', 'store', 'update'])->names('couriers');
             Route::post('/promotions-margin-preview', [\App\Http\Controllers\Admin\PromotionController::class, 'marginPreview'])->name('promotions.margin-preview');
 
             // Visites guidées (onboarding)

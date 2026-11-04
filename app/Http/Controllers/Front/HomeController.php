@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Coupon;
 use App\Models\Product;
+use App\Models\Promotion;
 use App\Models\Review;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -114,6 +115,8 @@ class HomeController extends Controller
             'button_text'      => $b->button_text,
             'background_color' => $b->background_color,
             'text_color'       => $b->text_color,
+            'ends_at'          => $b->ends_at?->toIso8601String(),
+            'show_countdown'   => (bool) $b->show_countdown,
         ];
 
         $whatsapp = \App\Models\Setting::get('social_whatsapp');
@@ -150,6 +153,58 @@ class HomeController extends Controller
             'review_stats'    => $reviewStats,
             'whatsapp_number' => $whatsapp ? preg_replace('/\D/', '', $whatsapp) : null,
             'banners'         => $homeBanners,
+            'offers'          => $this->currentOffers($formatProduct),
         ];
+    }
+
+    /**
+     * Offres par lot en cours, avec les produits qu'elles concernent.
+     * Une offre sans produit actif dans sa fourchette de prix n'est pas montrée.
+     */
+    private function currentOffers(callable $formatProduct): array
+    {
+        return Promotion::valid()
+            ->resolutionOrder()
+            ->with(['categories', 'products'])
+            ->take(6)
+            ->get()
+            ->map(function (Promotion $promotion) use ($formatProduct) {
+                $categoryIds = $promotion->eligibleCategoryIds();
+                $productIds = $promotion->products->pluck('id')->all();
+                if (! $categoryIds && ! $productIds) {
+                    return null;
+                }
+
+                $products = Product::active()
+                    ->where(fn ($q) => $q->whereIn('id', $productIds)->orWhereIn('category_id', $categoryIds))
+                    ->with(['images', 'category', 'variants'])
+                    ->latest()
+                    ->take(24)
+                    ->get()
+                    ->filter(fn (Product $p) => $promotion->matchesPrice((float) $p->sale_price))
+                    ->take(8)
+                    ->values();
+
+                if ($products->isEmpty()) {
+                    return null;
+                }
+
+                $short = $promotion->lot_qty.' pour '.number_format((float) $promotion->lot_price, 0, ',', ' ');
+
+                return [
+                    'id'            => $promotion->id,
+                    'name'          => $promotion->name,
+                    'description'   => $promotion->description,
+                    'label'         => $short.' F CFA',
+                    'ends_at'       => $promotion->expires_at?->toIso8601String(),
+                    'category_slug' => ! $productIds && $promotion->categories->count() === 1
+                        ? $promotion->categories->first()->slug
+                        : null,
+                    'products'      => $products->map(fn ($p) => $formatProduct($p) + ['promotion_label' => $short])->all(),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 }

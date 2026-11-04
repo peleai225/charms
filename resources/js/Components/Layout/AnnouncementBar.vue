@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { usePage } from '@inertiajs/vue3';
+import Countdown from '@/Components/Promo/Countdown.vue';
 
 const props = defineProps({
     announcements: { type: Array, default: () => [] },
@@ -75,6 +76,10 @@ onUnmounted(() => {
             <span v-if="announcements[announcementIndex]?.subtitle" class="opacity-80 hidden sm:inline">
                 {{ announcements[announcementIndex]?.subtitle }}
             </span>
+            <Countdown v-if="announcements[announcementIndex]?.show_countdown && announcements[announcementIndex]?.ends_at"
+                :key="announcements[announcementIndex].id"
+                :ends-at="announcements[announcementIndex].ends_at" variant="inline" />
+
             <a v-if="announcements[announcementIndex]?.link"
                :href="announcements[announcementIndex].link"
                class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/20 hover:bg-white/30 transition-colors">
@@ -119,6 +124,7 @@ onUnmounted(() => {
                 <h3 class="text-xl font-bold leading-tight">{{ popup.title }}</h3>
                 <p v-if="popup.subtitle" class="mt-1 opacity-80 text-sm">{{ popup.subtitle }}</p>
                 <p v-if="popup.description" class="mt-3 text-sm opacity-70 leading-relaxed">{{ popup.description }}</p>
+                <Countdown v-if="popup.show_countdown && popup.ends_at" :ends-at="popup.ends_at" tone="inherit" class="mt-4" />
                 <div class="mt-5 flex items-center gap-3">
                     <a v-if="popup.link" :href="popup.link"
                        class="flex-1 text-center px-4 py-2.5 rounded-xl bg-white font-semibold text-sm transition-opacity hover:opacity-90"

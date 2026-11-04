@@ -2,6 +2,8 @@
 import FrontLayout from '@/Layouts/FrontLayout.vue';
 import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import ProductCard from '@/Components/ProductCard.vue';
+import Countdown from '@/Components/Promo/Countdown.vue';
+import { clockOffset, isEndingSoon, endDateText } from '@/Components/Promo/countdown.js';
 import { useHelpers } from '@/Composables/useHelpers';
 import { useCartStore } from '@/Stores/cart';
 import { useNotificationStore } from '@/Stores/notifications';
@@ -133,6 +135,8 @@ const activePromotions = computed(() =>
             saving: Math.max(0, currentPrice.value * offer.lot_qty - offer.lot_price),
         })),
 );
+
+const offerNow = Date.now() + clockOffset(usePage().props.server_now, Date.now());
 
 const variantLeavesOffer = computed(
     () => props.promotions.length > 0 && activePromotions.value.length === 0,
@@ -319,6 +323,11 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                                 </p>
                                 <p v-if="offer.description" class="text-xs text-slate-500 mt-0.5">
                                     {{ offer.description }}
+                                </p>
+                                <Countdown v-if="isEndingSoon(offer.ends_at, offerNow)" :ends-at="offer.ends_at"
+                                    label="Se termine dans" variant="inline" class="mt-1 text-xs text-red-600" />
+                                <p v-else-if="offer.ends_at" class="text-xs text-slate-500 mt-0.5">
+                                    Jusqu'au {{ endDateText(offer.ends_at) }}
                                 </p>
                             </div>
                         </div>

@@ -179,6 +179,7 @@ class BundlePricingService
                 'saving' => max(0, $price * (int) $promotion->lot_qty - (float) $promotion->lot_price),
                 'price_min' => $promotion->price_min === null ? null : (float) $promotion->price_min,
                 'price_max' => $promotion->price_max === null ? null : (float) $promotion->price_max,
+                'ends_at' => $promotion->expires_at?->toIso8601String(),
             ])
             ->values()
             ->all();

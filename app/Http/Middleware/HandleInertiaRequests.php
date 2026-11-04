@@ -113,6 +113,9 @@ class HandleInertiaRequests extends Middleware
                 ->first()
                 ?->items_sum_quantity ?? 0,
 
+            // Heure du serveur : les comptes à rebours ne dépendent pas de l'horloge du téléphone
+            'server_now' => fn () => now()->toIso8601String(),
+
             // Bannières globales (announcement_bar + popup_center) — toutes les pages
             'banners' => fn () => cache()->remember('banners_global', 120, function () {
                 $fmt = fn($b) => [
@@ -125,6 +128,8 @@ class HandleInertiaRequests extends Middleware
                     'image_url'        => $b->image_url,
                     'background_color' => $b->background_color,
                     'text_color'       => $b->text_color,
+                    'ends_at'          => $b->ends_at?->toIso8601String(),
+                    'show_countdown'   => (bool) $b->show_countdown,
                 ];
                 return [
                     'announcement' => \App\Models\Banner::active()

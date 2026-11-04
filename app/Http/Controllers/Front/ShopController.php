@@ -79,7 +79,7 @@ class ShopController extends Controller
                 $bindings = [];
                 foreach ($terms as $i => $t) {
                     $w = count($terms) - $i; // le premier mot-clé (type d'article) compte le plus
-                    $score[] = "(CASE WHEN name LIKE ? THEN ".($w * 3).' ELSE 0 END)';
+                    $score[] = '(CASE WHEN name LIKE ? THEN '.($w * 3).' ELSE 0 END)';
                     $score[] = "(CASE WHEN short_description LIKE ? THEN {$w} ELSE 0 END)";
                     $bindings[] = "%{$t}%";
                     $bindings[] = "%{$t}%";
@@ -464,11 +464,12 @@ class ShopController extends Controller
             'reviews' => $reviewsData,
             'review_avg' => $reviewAvg ? round($reviewAvg, 1) : null,
             'review_count' => $reviewCount,
-            'promotions' => app(BundlePricingService::class)->forProduct($product),
         ];
 
         return Inertia::render('Shop/Product', [
             'product' => $productData,
+            // Au premier niveau : c'est là que la fiche produit les lit
+            'promotions' => app(BundlePricingService::class)->forProduct($product),
             'related_products' => $relatedProducts->map($formatSmallProduct),
             'upsell_products' => $upsellProducts->map($formatSmallProduct),
             'whatsapp_number' => $whatsappNumber,

@@ -1,6 +1,9 @@
 <script setup>
 import FrontLayout from '@/Layouts/FrontLayout.vue'
 import ProductCard from '@/Components/ProductCard.vue'
+import Countdown from '@/Components/Promo/Countdown.vue'
+import PromoBanners from '@/Components/Promo/PromoBanners.vue'
+import OffersSection from '@/Components/Promo/OffersSection.vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ArrowRight, ChevronRight, Star, Package, ShieldCheck, MessageCircle, RotateCcw } from 'lucide-vue-next'
@@ -20,6 +23,7 @@ const props = defineProps({
     review_stats:        Object,
     whatsapp_number:     String,
     banners:             Object,
+    offers:              { type: Array, default: () => [] },
 })
 
 const page = usePage()
@@ -52,9 +56,6 @@ onMounted(() => {
     }
 });
 onUnmounted(() => { if (heroTimer) clearInterval(heroTimer); });
-
-// ─── Bannière milieu ─────────────────────────────────────────────────────────
-const promoBanner = computed(() => props.banners?.home_middle?.[0] || null)
 
 // ─── Produits onglets ─────────────────────────────────────────────────────────
 const activeTab = ref('featured')
@@ -135,6 +136,7 @@ const trustItems = [
                             <p v-if="b.description" class="text-white/60 text-sm mb-5 leading-relaxed">
                                 {{ b.description }}
                             </p>
+                            <Countdown v-if="b.show_countdown && b.ends_at" :ends-at="b.ends_at" tone="dark" class="mb-5" />
                             <div class="flex flex-wrap gap-2">
                                 <a v-if="b.link" :href="b.link"
                                    class="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white transition active:scale-95"
@@ -175,6 +177,7 @@ const trustItems = [
                                 <p v-if="b.description" class="text-white/70 text-base mb-8 max-w-md leading-relaxed">
                                     {{ b.description }}
                                 </p>
+                                <Countdown v-if="b.show_countdown && b.ends_at" :ends-at="b.ends_at" tone="dark" class="mb-6" />
                                 <div class="flex flex-wrap gap-3">
                                     <a v-if="b.link" :href="b.link"
                                        class="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition active:scale-95"
@@ -272,6 +275,9 @@ const trustItems = [
             </div>
         </section>
 
+        <!-- Offres par lot en cours (« 3 pour 10 000 F CFA ») -->
+        <OffersSection :offers="offers" />
+
         <!-- ═══════════════════════════════════════════════════════ -->
         <!-- [3] CATÉGORIES                                          -->
         <!-- ═══════════════════════════════════════════════════════ -->
@@ -339,30 +345,9 @@ const trustItems = [
         </section>
 
         <!-- ═══════════════════════════════════════════════════════ -->
-        <!-- [5] BANNIÈRE MILIEU (optionnelle, depuis DB)            -->
+        <!-- [5] BANNIÈRES MILIEU (position home_middle)            -->
         <!-- ═══════════════════════════════════════════════════════ -->
-        <section v-if="promoBanner" class="bg-slate-50 py-6">
-            <div class="container mx-auto px-4">
-                <div class="relative rounded-2xl overflow-hidden flex items-center"
-                     style="min-height: 160px"
-                     :style="{ backgroundColor: promoBanner.background_color || primary }">
-                    <img v-if="promoBanner.image" :src="promoBanner.image" alt=""
-                         class="absolute inset-0 w-full h-full object-cover opacity-20"/>
-                    <div class="relative px-8 py-8 max-w-xl">
-                        <h3 class="text-2xl font-black leading-tight mb-2"
-                            :style="{ color: promoBanner.text_color || '#fff' }">{{ promoBanner.title }}</h3>
-                        <p v-if="promoBanner.subtitle" class="text-sm opacity-80 mb-5"
-                           :style="{ color: promoBanner.text_color || '#fff' }">{{ promoBanner.subtitle }}</p>
-                        <a v-if="promoBanner.link" :href="promoBanner.link"
-                           class="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-sm font-bold transition hover:opacity-90"
-                           :style="{ color: promoBanner.background_color || primary }">
-                            {{ promoBanner.button_text || 'Découvrir' }}
-                            <ArrowRight class="w-4 h-4" />
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </section>
+        <PromoBanners :banners="banners?.home_middle || []" :primary="primary" />
 
         <!-- ═══════════════════════════════════════════════════════ -->
         <!-- [6] AVIS CLIENTS                                        -->
@@ -405,6 +390,9 @@ const trustItems = [
                 </div>
             </div>
         </section>
+
+        <!-- Bannières bas de page (position home_bottom) -->
+        <PromoBanners :banners="banners?.home_bottom || []" :primary="primary" />
 
         <!-- ═══════════════════════════════════════════════════════ -->
         <!-- [7] CTA WHATSAPP                                        -->

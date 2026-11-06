@@ -33,7 +33,8 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Fichiers privés : jamais servis par une URL
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
@@ -45,7 +46,8 @@ return [
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
-            'serve' => true,
+            // Servi par StorageFileController (avec cache), pas par la route intégrée qui interdit le cache
+            'serve' => false,
         ],
 
         's3' => [

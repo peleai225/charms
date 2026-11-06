@@ -1,18 +1,13 @@
 <script setup>
 import FrontLayout from '@/Layouts/FrontLayout.vue'
 import ProductCard from '@/Components/ProductCard.vue'
-import Countdown from '@/Components/Promo/Countdown.vue'
 import PromoBanners from '@/Components/Promo/PromoBanners.vue'
 import OffersSection from '@/Components/Promo/OffersSection.vue'
+import HeroBanners from '@/Components/Home/HeroBanners.vue'
+import ShopFacts from '@/Components/Home/ShopFacts.vue'
 import { Head, Link, usePage } from '@inertiajs/vue3'
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { ArrowRight, ChevronRight, Star, Package, ShieldCheck, MessageCircle, RotateCcw } from 'lucide-vue-next'
-
-// ─── Image load tracking ──────────────────────────────────────────────────────
-const loadedImages = ref(new Set())
-const markImageLoaded = (i) => {
-    loadedImages.value = new Set([...loadedImages.value, i])
-}
+import { ref, computed } from 'vue'
+import { ArrowRight, ChevronRight, Star } from 'lucide-vue-next'
 
 const props = defineProps({
     featured_categories: Array,
@@ -24,6 +19,7 @@ const props = defineProps({
     whatsapp_number:     String,
     banners:             Object,
     offers:              { type: Array, default: () => [] },
+    shop_facts:          { type: Array, default: () => [] },
 })
 
 const page = usePage()
@@ -33,29 +29,13 @@ const primary   = computed(() => settings.value.primary_color || '#2563EB')
 const siteName  = computed(() => settings.value.site_name     || 'Notre Boutique')
 const waEnabled = computed(() => settings.value.whatsapp_order_enabled !== '0')
 
-// ─── Hero banners DB ─────────────────────────────────────────────────────────
 const heroBanners = computed(() => props.banners?.home_hero || [])
-const heroIndex   = ref(0)
-let heroTimer     = null
 
-const setSlide = (i) => {
-    heroIndex.value = i;
-    clearInterval(heroTimer);
-    if (heroBanners.value.length > 1) {
-        heroTimer = setInterval(() => {
-            heroIndex.value = (heroIndex.value + 1) % heroBanners.value.length;
-        }, 5000);
-    }
-};
-
-onMounted(() => {
-    if (heroBanners.value.length > 1) {
-        heroTimer = setInterval(() => {
-            heroIndex.value = (heroIndex.value + 1) % heroBanners.value.length;
-        }, 5000);
-    }
-});
-onUnmounted(() => { if (heroTimer) clearInterval(heroTimer); });
+// Grille des catégories : autant de colonnes que de catégories (jusqu'à 6), sans case vide
+const categoryColumns = computed(() => ({
+    1: 'sm:grid-cols-1 sm:max-w-xs', 2: 'sm:grid-cols-2 sm:max-w-xl', 3: 'sm:grid-cols-3', 4: 'sm:grid-cols-4',
+    5: 'sm:grid-cols-3 lg:grid-cols-5', 6: 'sm:grid-cols-3 lg:grid-cols-6',
+})[Math.min(props.featured_categories?.length || 0, 6)] || 'sm:grid-cols-3')
 
 // ─── Produits onglets ─────────────────────────────────────────────────────────
 const activeTab = ref('featured')
@@ -79,201 +59,26 @@ const waUrl = computed(() => props.whatsapp_number
 // ─── Reviews ─────────────────────────────────────────────────────────────────
 const stars    = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n))
 const initials = (name) => name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'C'
-
-// ─── Trust items ─────────────────────────────────────────────────────────────
-const trustItems = [
-    { icon: Package, title: 'Livraison rapide', desc: "Partout en Côte d'Ivoire" },
-    { icon: ShieldCheck, title: 'Paiement sécurisé', desc: 'Transactions cryptées' },
-    { icon: MessageCircle, title: 'Support 7j/7', desc: 'Réponse rapide via WhatsApp' },
-    { icon: RotateCcw, title: 'Retours faciles', desc: '7 jours, sans frais' },
-]
 </script>
 
 <template>
     <FrontLayout :title="siteName">
         <Head>
             <title>{{ siteName }} — Boutique en ligne</title>
-            <meta name="description" :content="`Découvrez ${siteName}. Livraison rapide partout en Côte d'Ivoire.`" />
-            <!-- Préchargement prioritaire de la première image hero (LCP) -->
-            <link v-if="heroBanners[0]?.image" rel="preload" as="image"
-                  :href="heroBanners[0].image_mobile || heroBanners[0].image" />
+            <meta name="description" :content="settings.site_description || `Découvrez ${siteName}.`" />
+            <!-- Préchargement de la première bannière (LCP) : la bonne image selon l'écran -->
+            <template v-if="heroBanners[0]?.image">
+                <link v-if="heroBanners[0].image_mobile" rel="preload" as="image" :href="heroBanners[0].image_mobile" media="(max-width: 767px)" />
+                <link rel="preload" as="image" :href="heroBanners[0].image" :media="heroBanners[0].image_mobile ? '(min-width: 768px)' : undefined" />
+            </template>
         </Head>
 
-        <!-- ═══════════════════════════════════════════════════════ -->
-        <!-- [1] HERO — bannières DB ou fallback propre              -->
-        <!-- ═══════════════════════════════════════════════════════ -->
-        <section class="relative overflow-hidden bg-slate-900">
+        <!-- [1] Grande bannière (image entière, fin de l'offre dessous) -->
+        <HeroBanners :banners="heroBanners" :site-name="siteName" :primary="primary"
+            :featured-products="featured_products || []" :whatsapp-url="whatsapp_number && waEnabled ? waUrl : null" />
 
-            <!-- Bannières depuis DB (position home_hero) -->
-            <template v-if="heroBanners.length">
-                <div v-for="(b, i) in heroBanners" :key="b.id"
-                     class="transition-opacity duration-700"
-                     :class="[
-                         heroIndex === i ? 'opacity-100 relative' : 'opacity-0 pointer-events-none absolute inset-0',
-                     ]">
-
-                    <!-- MOBILE : image complète en haut + texte en dessous -->
-                    <div class="md:hidden">
-                        <div v-if="b.image" class="w-full bg-slate-800 relative">
-                            <!-- Skeleton shimmer tant que l'image n'est pas chargée -->
-                            <div v-if="!loadedImages.has(i)"
-                                 class="absolute inset-0 animate-pulse bg-slate-700"
-                                 style="aspect-ratio: 16/9" />
-                            <img :src="b.image_mobile || b.image" :alt="b.title || siteName"
-                                 class="w-full h-auto block transition-opacity duration-300"
-                                 :class="loadedImages.has(i) ? 'opacity-100' : 'opacity-0'"
-                                 :loading="i === 0 ? 'eager' : 'lazy'"
-                                 :fetchpriority="i === 0 ? 'high' : 'auto'"
-                                 @load="markImageLoaded(i)" />
-                        </div>
-                        <div class="px-4 py-6 bg-slate-900">
-                            <p v-if="b.subtitle" class="text-xs font-semibold text-white/60 mb-2 uppercase tracking-wider">
-                                {{ b.subtitle }}
-                            </p>
-                            <h1 class="text-2xl font-black text-white leading-tight mb-3">
-                                {{ b.title }}
-                            </h1>
-                            <p v-if="b.description" class="text-white/60 text-sm mb-5 leading-relaxed">
-                                {{ b.description }}
-                            </p>
-                            <Countdown v-if="b.show_countdown && b.ends_at" :ends-at="b.ends_at" tone="dark" class="mb-5" />
-                            <div class="flex flex-wrap gap-2">
-                                <a v-if="b.link" :href="b.link"
-                                   class="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white transition active:scale-95"
-                                   :style="{ backgroundColor: primary }">
-                                    {{ b.button_text || 'Découvrir' }}
-                                    <ArrowRight class="w-4 h-4" />
-                                </a>
-                                <Link href="/boutique"
-                                      class="inline-flex items-center gap-2 rounded-xl bg-white/15 px-5 py-3 text-sm font-bold text-white transition">
-                                    Voir la boutique
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- DESKTOP : image fond + overlay + texte à gauche -->
-                    <div class="hidden md:block relative hero-desktop">
-                        <img v-if="b.image" :src="b.image" :alt="b.title || siteName"
-                             class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500"
-                             :class="loadedImages.has(i) ? 'opacity-100' : 'opacity-0'"
-                             :loading="i === 0 ? 'eager' : 'lazy'"
-                             :fetchpriority="i === 0 ? 'high' : 'auto'"
-                             @load="markImageLoaded(i)" />
-                        <div class="absolute inset-0"
-                             :style="b.image
-                                ? 'background: linear-gradient(to right, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.3) 55%, transparent 100%)'
-                                : ''"
-                             :class="!b.image ? 'bg-slate-900' : ''"
-                        />
-                        <div class="relative container mx-auto px-4 h-full flex items-center">
-                            <div class="py-16 max-w-xl">
-                                <p v-if="b.subtitle" class="text-sm font-semibold text-white/70 mb-3 uppercase tracking-wider">
-                                    {{ b.subtitle }}
-                                </p>
-                                <h1 class="text-4xl lg:text-5xl font-black text-white leading-tight mb-4">
-                                    {{ b.title }}
-                                </h1>
-                                <p v-if="b.description" class="text-white/70 text-base mb-8 max-w-md leading-relaxed">
-                                    {{ b.description }}
-                                </p>
-                                <Countdown v-if="b.show_countdown && b.ends_at" :ends-at="b.ends_at" tone="dark" class="mb-6" />
-                                <div class="flex flex-wrap gap-3">
-                                    <a v-if="b.link" :href="b.link"
-                                       class="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition active:scale-95"
-                                       :style="{ backgroundColor: primary }">
-                                        {{ b.button_text || 'Découvrir' }}
-                                        <ArrowRight class="w-4 h-4" />
-                                    </a>
-                                    <Link href="/boutique"
-                                          class="inline-flex items-center gap-2 rounded-xl bg-white/20 hover:bg-white/30 px-6 py-3 text-sm font-bold text-white transition backdrop-blur-sm">
-                                        Voir la boutique
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Navigation dots (plusieurs bannières) -->
-                <div v-if="heroBanners.length > 1" class="absolute bottom-3 md:bottom-5 left-0 right-0 flex justify-center gap-1 z-10">
-                    <button v-for="(_, i) in heroBanners" :key="i"
-                            @click="setSlide(i)"
-                            class="p-3 md:p-1 flex items-center justify-center">
-                        <span class="block h-2 rounded-full transition-all duration-300 bg-white"
-                              :class="heroIndex === i ? 'w-6 opacity-100' : 'w-2 opacity-50'" />
-                    </button>
-                </div>
-            </template>
-
-            <!-- Fallback : texte gauche + mosaïque produits droite -->
-            <div v-else class="relative container mx-auto px-4 min-h-[320px] md:min-h-[420px] flex items-center">
-                <div class="py-14 w-full flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-
-                    <!-- Texte + CTA -->
-                    <div class="flex-1 max-w-lg">
-                        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight mb-4">
-                            Bienvenue sur<br>{{ siteName }}
-                        </h1>
-                        <p class="text-white/60 text-base mb-8 leading-relaxed">
-                            Découvrez notre sélection de produits. Livraison rapide partout en Côte d'Ivoire.
-                        </p>
-                        <div class="flex flex-wrap gap-3">
-                            <Link href="/boutique"
-                                  class="inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold text-white transition"
-                                  :style="{ backgroundColor: primary }">
-                                Voir la boutique
-                                <ArrowRight class="w-4 h-4" />
-                            </Link>
-                            <a v-if="whatsapp_number && waEnabled" :href="waUrl" target="_blank" rel="noopener"
-                               class="inline-flex items-center gap-2 rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] px-6 py-3 text-sm font-bold text-white transition">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                                WhatsApp
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Mosaïque produits (desktop only) -->
-                    <div v-if="featured_products?.length"
-                         class="hidden lg:grid grid-cols-3 gap-2 flex-shrink-0 rounded-2xl overflow-hidden"
-                         style="width: 380px; height: 320px">
-                        <Link v-for="p in featured_products.slice(0, 6)" :key="p.id"
-                              :href="`/produit/${p.slug}`"
-                              class="relative bg-slate-700 overflow-hidden group">
-                            <img v-if="p.primary_image"
-                                 :src="p.primary_image.startsWith('http') ? p.primary_image : `/storage/${p.primary_image}`"
-                                 :alt="p.name"
-                                 class="absolute inset-0 w-full h-full object-cover opacity-75 group-hover:opacity-100 group-hover:scale-105 transition-all duration-300"/>
-                            <div v-else class="absolute inset-0 flex items-center justify-center text-slate-500 text-lg font-bold">
-                                {{ p.name[0] }}
-                            </div>
-                        </Link>
-                    </div>
-
-                </div>
-            </div>
-        </section>
-
-        <!-- ═══════════════════════════════════════════════════════ -->
-        <!-- [2] RÉASSURANCE                                         -->
-        <!-- ═══════════════════════════════════════════════════════ -->
-        <section class="bg-white border-y border-slate-100">
-            <div class="container mx-auto px-4">
-                <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-slate-100">
-                    <div v-for="item in trustItems" :key="item.title"
-                         class="flex flex-col sm:flex-row items-center sm:items-start gap-3 px-5 py-5 text-center sm:text-left">
-                        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                             :style="{ backgroundColor: primary + '15' }">
-                            <component :is="item.icon" class="w-5 h-5" :style="{ color: primary }" />
-                        </div>
-                        <div>
-                            <p class="text-[13px] font-semibold text-slate-900">{{ item.title }}</p>
-                            <p class="text-[11px] text-slate-500 mt-0.5 leading-snug">{{ item.desc }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+        <!-- [2] Infos réelles de la boutique : livraison, paiement, contact -->
+        <ShopFacts :facts="shop_facts" />
 
         <!-- Offres par lot en cours (« 3 pour 10 000 F CFA ») -->
         <OffersSection :offers="offers" />
@@ -292,21 +97,22 @@ const trustItems = [
                         <ChevronRight class="w-4 h-4" />
                     </Link>
                 </div>
-                <div class="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 sm:overflow-visible sm:pb-0 scrollbar-none">
+                <div class="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 snap-x sm:grid sm:overflow-visible sm:pb-0 scrollbar-none"
+                     :class="categoryColumns">
                     <Link v-for="cat in featured_categories" :key="cat.id"
                           :href="`/categorie/${cat.slug}`"
-                          class="group relative flex-shrink-0 w-36 sm:w-auto rounded-2xl overflow-hidden bg-slate-200 snap-start transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
-                          style="aspect-ratio: 3/4">
-                        <img v-if="cat.image" :src="`/storage/${cat.image}`" :alt="cat.name"
-                             class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
-                        <div v-else class="absolute inset-0 flex items-center justify-center text-2xl font-black text-slate-400">
-                            {{ cat.name[0] }}
+                          class="group flex-shrink-0 w-32 sm:w-auto snap-start">
+                        <div class="relative rounded-xl overflow-hidden bg-slate-200" style="aspect-ratio: 1/1">
+                            <img v-if="cat.image" :src="`/storage/${cat.image}`" :alt="cat.name" loading="lazy"
+                                 class="absolute inset-0 w-full h-full object-cover"/>
+                            <div v-else class="absolute inset-0 flex items-center justify-center text-2xl font-bold text-slate-400">
+                                {{ cat.name[0] }}
+                            </div>
                         </div>
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent"/>
-                        <div class="absolute bottom-0 left-0 right-0 p-3">
-                            <p class="text-white font-bold text-sm leading-tight">{{ cat.name }}</p>
-                            <p v-if="cat.products_count" class="text-white/60 text-[11px] mt-0.5">{{ cat.products_count }} articles</p>
-                        </div>
+                        <p class="mt-2 text-sm font-semibold text-slate-900 leading-tight group-hover:underline">{{ cat.name }}</p>
+                        <p v-if="cat.products_count" class="text-xs text-slate-500 mt-0.5">
+                            {{ cat.products_count }} article{{ cat.products_count > 1 ? 's' : '' }}
+                        </p>
                     </Link>
                 </div>
             </div>
@@ -403,23 +209,12 @@ const trustItems = [
                     <svg class="w-6 h-6 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                 </div>
                 <h2 class="text-2xl font-black text-white mb-3">Une question sur un article ?</h2>
-                <p class="text-slate-400 mb-7 leading-relaxed">Notre équipe répond en moins de 5 minutes. Sans engagement.</p>
+                <p class="text-slate-400 mb-7 leading-relaxed">Taille, couleur, disponibilité : écrivez-nous sur WhatsApp.</p>
                 <a :href="waUrl" target="_blank" rel="noopener"
                    class="inline-flex items-center gap-3 rounded-xl bg-[#25D366] hover:bg-[#1ebe5d] px-7 py-3.5 text-sm font-bold text-white transition">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
                     Contacter sur WhatsApp
                 </a>
-                <div class="flex items-center justify-center gap-6 mt-5">
-                    <span class="text-[12px] text-slate-600 flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"/>Réponse rapide
-                    </span>
-                    <span class="text-[12px] text-slate-600 flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"/>7j/7
-                    </span>
-                    <span class="text-[12px] text-slate-600 flex items-center gap-1.5">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"/>Sans engagement
-                    </span>
-                </div>
             </div>
         </section>
 

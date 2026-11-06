@@ -4,7 +4,7 @@ import { useHelpers } from '@/Composables/useHelpers';
 import { useCartStore } from '@/Stores/cart';
 import { useNotificationStore } from '@/Stores/notifications';
 import { ref, computed, onMounted } from 'vue';
-import { Heart, Search, ShoppingCart, SlidersHorizontal, Star, Check, Image, Tag } from 'lucide-vue-next'
+import { Heart, Search, ShoppingCart, SlidersHorizontal, Star, Check, Image } from 'lucide-vue-next'
 
 const props = defineProps({
     product: Object,
@@ -34,6 +34,15 @@ const discount = computed(() => {
     const { price, compare_price } = props.product;
     if (!compare_price || compare_price <= price) return null;
     return Math.round((1 - price / compare_price) * 100);
+});
+
+// Rupture > offre par lot > réduction > nouveauté : une étiquette, jamais une pile
+const badge = computed(() => {
+    if (!isInStock.value) return { text: 'Rupture', class: 'bg-slate-700 text-white' };
+    if (props.product.promotion_label) return { text: props.product.promotion_label, class: 'bg-white text-slate-900 border border-slate-200' };
+    if (discount.value) return { text: `-${discount.value} %`, class: 'bg-red-600 text-white' };
+    if (props.product.is_new) return { text: 'Nouveau', class: 'bg-white text-slate-900 border border-slate-200' };
+    return null;
 });
 
 const toggleWishlist = async (e) => {
@@ -124,26 +133,10 @@ const stars = computed(() => {
                 <Image class="w-14 h-14 text-slate-200" />
             </div>
 
-            <!-- Badge promo top-left -->
-            <div class="absolute top-3 left-3 flex flex-col gap-1 z-10">
-                <span v-if="discount" class="px-2.5 py-1 bg-accent-600 text-white text-xs font-bold rounded-full shadow-sm">
-                    {{ discount }}% off
-                </span>
-                <span v-if="product.is_new" class="px-2.5 py-1 bg-primary-600 text-white text-xs font-bold rounded-full shadow-sm">
-                    Nouveau
-                </span>
-                <span v-if="!isInStock" class="px-2.5 py-1 bg-slate-500 text-white text-xs font-bold rounded-full shadow-sm">
-                    Rupture
-                </span>
-            </div>
-
-            <!-- Badge offre par lot bottom-left -->
-            <div v-if="product.promotion_label" class="absolute bottom-2 left-2 z-10">
-                <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-semibold rounded-full border border-blue-200 shadow-sm">
-                    <Tag class="w-3 h-3" />
-                    {{ product.promotion_label }}
-                </span>
-            </div>
+            <!-- Une seule étiquette, la plus utile -->
+            <span v-if="badge" class="absolute top-3 left-3 z-10 px-2 py-0.5 rounded-md text-xs font-semibold" :class="badge.class">
+                {{ badge.text }}
+            </span>
 
             <!-- 3 boutons d'action verticaux — toujours visibles sur mobile, slide sur desktop -->
             <div class="absolute top-3 right-3 flex flex-col gap-2 z-10

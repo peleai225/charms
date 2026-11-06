@@ -1,18 +1,11 @@
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue';
-import { usePage } from '@inertiajs/vue3';
-import Countdown from '@/Components/Promo/Countdown.vue';
+import { ref, onMounted, onUnmounted } from 'vue';
+import PromoDeadline from '@/Components/Promo/PromoDeadline.vue';
 
 const props = defineProps({
     announcements: { type: Array, default: () => [] },
     popup: { type: Object, default: null },
 });
-
-const page = usePage();
-const userRole = computed(() => page.props.auth?.user?.role || null);
-const hasAdminBar = computed(() =>
-    ['admin', 'manager', 'staff', 'superadmin'].includes(userRole.value)
-);
 
 const announcementIndex  = ref(0);
 const announcementHidden = ref(false);
@@ -76,7 +69,7 @@ onUnmounted(() => {
             <span v-if="announcements[announcementIndex]?.subtitle" class="opacity-80 hidden sm:inline">
                 {{ announcements[announcementIndex]?.subtitle }}
             </span>
-            <Countdown v-if="announcements[announcementIndex]?.show_countdown && announcements[announcementIndex]?.ends_at"
+            <PromoDeadline v-if="announcements[announcementIndex]?.show_countdown && announcements[announcementIndex]?.ends_at"
                 :key="announcements[announcementIndex].id"
                 :ends-at="announcements[announcementIndex].ends_at" variant="inline" />
 
@@ -100,16 +93,6 @@ onUnmounted(() => {
     </div>
     </Transition>
 
-    <!-- Fallback topbar si aucune annonce -->
-    <div v-if="!announcements.length && !hasAdminBar"
-         class="bg-slate-900 text-slate-400 text-xs py-2 text-center px-4 hidden sm:block shrink-0">
-        <span>Livraison rapide partout en Côte d'Ivoire</span>
-        <span class="mx-3 text-slate-700">·</span>
-        <span>Paiement sécurisé</span>
-        <span class="mx-3 text-slate-700">·</span>
-        <span>Support 7j/7 sur WhatsApp</span>
-    </div>
-
     <!-- Popup bannière -->
     <Transition enter-from-class="opacity-0" enter-active-class="transition duration-300"
                 leave-to-class="opacity-0" leave-active-class="transition duration-200">
@@ -124,7 +107,7 @@ onUnmounted(() => {
                 <h3 class="text-xl font-bold leading-tight">{{ popup.title }}</h3>
                 <p v-if="popup.subtitle" class="mt-1 opacity-80 text-sm">{{ popup.subtitle }}</p>
                 <p v-if="popup.description" class="mt-3 text-sm opacity-70 leading-relaxed">{{ popup.description }}</p>
-                <Countdown v-if="popup.show_countdown && popup.ends_at" :ends-at="popup.ends_at" tone="inherit" class="mt-4" />
+                <div v-if="popup.show_countdown && popup.ends_at" class="mt-4"><PromoDeadline :ends-at="popup.ends_at" tone="inherit" /></div>
                 <div class="mt-5 flex items-center gap-3">
                     <a v-if="popup.link" :href="popup.link"
                        class="flex-1 text-center px-4 py-2.5 rounded-xl bg-white font-semibold text-sm transition-opacity hover:opacity-90"

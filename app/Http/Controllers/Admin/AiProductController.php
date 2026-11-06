@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use RuntimeException;
 
@@ -140,21 +141,29 @@ class AiProductController extends Controller
     }
 
     /**
-     * Mode arrivage : l'IA regroupe les photos du même article (miniatures envoyées par la page)
+     * Mode arrivage : l'IA regroupe les photos du même article.
+     * Les miniatures arrivent en JSON (data URL) : un envoi de fichiers serait coupé à 20 par PHP (max_file_uploads).
      */
     public function groupPhotos(Request $request, AiService $ai)
     {
         $request->validate([
             'images' => 'required|array|min:2|max:40',
-            'images.*' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'images.*' => ['required', 'string', 'max:3000000', 'regex:/^data:image\/(jpeg|png|webp);base64,/'],
         ], [
-            'images.max' => "40 photos maximum à la fois pour le tri automatique.",
+            'images.max' => '40 photos maximum à la fois pour le tri automatique.',
+            'images.*.regex' => 'Une des photos envoyées n\'est pas une image.',
+            'images.*.max' => 'Une des photos envoyées est trop lourde.',
         ]);
 
-        $images = array_map(fn ($file) => [
-            'data' => file_get_contents($file->getRealPath()),
-            'mime' => $file->getMimeType(),
-        ], $request->file('images'));
+        $images = [];
+        foreach ($request->input('images') as $dataUrl) {
+            $binary = base64_decode(substr($dataUrl, strpos($dataUrl, ',') + 1), true);
+            $info = $binary === false ? false : @getimagesizefromstring($binary);
+            if (! $info) {
+                throw ValidationException::withMessages(['images' => 'Une des photos envoyées n\'a pas pu être lue.']);
+            }
+            $images[] = ['data' => $binary, 'mime' => $info['mime']];
+        }
 
         return $this->respond(fn () => ['groups' => $ai->groupPhotos($images)]);
     }

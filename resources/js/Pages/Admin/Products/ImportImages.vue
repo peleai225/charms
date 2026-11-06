@@ -1,17 +1,21 @@
 <script setup>
-import { ref, computed, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, watch, onBeforeUnmount } from 'vue'
 import axios from 'axios'
+import { LoaderCircle } from 'lucide-vue-next'
 import { useToast } from '@/Composables/useToast'
 import Breadcrumb from '@/Components/UI/Breadcrumb.vue'
 import ToastContainer from '@/Components/UI/ToastContainer.vue'
 import ImportCard from '@/Components/Admin/PhotoImport/ImportCard.vue'
+import ArrivalDefaults from '@/Components/Admin/PhotoImport/ArrivalDefaults.vue'
 import {
     makePhoto, makeCard, nameFromFile, applyColorSuggestion, applyTextSuggestion,
     isVariantMode, variantRows, cardProblems,
+    emptyArrivalDefaults, applyArrivalDefault, applyArrivalDefaults, makeThumbnail, groupsToPhotos,
 } from '@/Components/Admin/PhotoImport/photoImport.js'
 
 const props = defineProps({
     aiConfigured: Boolean,
+    aiProvider: { type: String, default: '' },
     categories: Array,
     colors: { type: Array, default: () => [] },
     optionAttributes: { type: Array, default: () => [] },
@@ -22,16 +26,34 @@ const toast = useToast()
 const cards = ref([])
 const status = ref('draft')
 const useAi = ref(props.aiConfigured)
+const autoGroup = ref(true)
+const sorting = ref(0) // photos en cours de tri par l'IA
 const analyzing = ref(false)
 const creating = ref(false)
 const fileInput = ref(null)
+const defaults = reactive(emptyArrivalDefaults())
 
 // Un tableau PHP vide arrive en [] au lieu de {}
 const categoryOptions = computed(() => (Array.isArray(props.categoryOptions) ? {} : props.categoryOptions))
 
 const MAX_SIZE = 5 * 1024 * 1024
+const SORT_LIMIT = 40
+// Gemini gratuit : une photo à la fois, espacées ; fournisseurs payants : trois en parallèle
+const PACE = props.aiProvider === 'gemini' ? { workers: 1, pause: 4000 } : { workers: 3, pause: 300 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const isBusyPhoto = (p) => ['pending', 'analyzing'].includes(p.status)
+const editingCards = () => cards.value.filter((c) => c.status === 'editing')
+
+// Un réglage commun modifié → recopié dans toutes les fiches pas encore créées
+const DEFAULT_SOURCES = {
+    sale_price: () => defaults.sale_price,
+    purchase_price: () => defaults.purchase_price,
+    stock: () => defaults.stock,
+    sizes: () => [defaults.optionAttributeId, ...defaults.optionValueIds],
+}
+Object.entries(DEFAULT_SOURCES).forEach(([field, source]) => {
+    watch(source, () => editingCards().forEach((c) => applyArrivalDefault(c, field, defaults, categoryOptions.value)))
+})
 
 const counts = computed(() => {
     const photos = cards.value.flatMap((c) => c.photos)
@@ -45,19 +67,63 @@ const counts = computed(() => {
     }
 })
 
-function addFiles(fileList) {
+function newCard(photos) {
+    const card = makeCard(photos, { name: nameFromFile(photos[0].file) })
+    if (!useAi.value) card.autofilled = true
+    applyArrivalDefaults(card, defaults, categoryOptions.value)
+    return card
+}
+
+async function addFiles(fileList) {
+    const photos = []
     for (const file of Array.from(fileList)) {
         if (!file.type.startsWith('image/')) continue
         if (file.size > MAX_SIZE) {
             toast.error(`« ${file.name} » dépasse 5 Mo`)
             continue
         }
-        const card = makeCard([makePhoto(file, useAi.value ? 'pending' : 'skipped')], { name: nameFromFile(file) })
-        if (!useAi.value) card.autofilled = true
-        cards.value.push(card)
+        photos.push(makePhoto(file, useAi.value ? 'pending' : 'skipped'))
     }
     if (fileInput.value) fileInput.value.value = ''
+    if (!photos.length) return
+
+    const groups = useAi.value && autoGroup.value && photos.length > 1 ? await sortByArticle(photos) : photos.map((p) => [p])
+    cards.value.push(...groups.map(newCard))
     if (useAi.value) runAnalysis()
+}
+
+// ── Mode arrivage : l'IA regroupe les photos du même article ────────────────
+
+async function sortChunk(chunk) {
+    const images = await Promise.all(chunk.map((p) => makeThumbnail(p.file)))
+    const { data: res } = await axios.post(route('admin.ai.group-photos'), { images }, { timeout: 150000 })
+    return groupsToPhotos(res.groups, chunk)
+}
+
+async function sortByArticle(photos) {
+    sorting.value += photos.length
+    const groups = []
+    let failure = null
+    try {
+        for (let start = 0; start < photos.length; start += SORT_LIMIT) {
+            const chunk = photos.slice(start, start + SORT_LIMIT)
+            if (chunk.length < 2) {
+                groups.push(chunk)
+                continue
+            }
+            try {
+                groups.push(...await sortChunk(chunk))
+            } catch (e) {
+                failure = e.response?.data?.message ?? "Le tri automatique n'a pas abouti."
+                chunk.forEach((p) => groups.push([p]))
+            }
+        }
+    } finally {
+        sorting.value -= photos.length
+    }
+    if (failure) toast.error(`${failure} Regroupez les fiches à la main si besoin.`)
+    else toast.success(`${photos.length} photos → ${groups.length} article(s). Une photo mal placée ? Bouton « Séparer ».`)
+    return groups
 }
 
 function onDrop(e) {
@@ -93,26 +159,31 @@ async function analyzePhoto(photo, retry = true) {
     }
 }
 
+// La première photo de chaque fiche d'abord : c'est elle qui donne le texte
 function nextPendingPhoto() {
-    for (const card of cards.value) {
-        const photo = card.photos.find((p) => p.status === 'pending')
-        if (photo) return photo
+    return cards.value.map((c) => c.photos[0]).find((p) => p?.status === 'pending')
+        ?? cards.value.flatMap((c) => c.photos).find((p) => p.status === 'pending')
+        ?? null
+}
+
+async function analysisWorker() {
+    let photo
+    while ((photo = nextPendingPhoto())) {
+        await analyzePhoto(photo) // passe la photo en « analyzing » tout de suite : un autre ouvrier ne la prendra pas
+        await sleep(PACE.pause)
     }
-    return null
 }
 
 async function runAnalysis() {
     if (analyzing.value) return
     analyzing.value = true
     try {
-        let photo
-        while ((photo = nextPendingPhoto())) {
-            await analyzePhoto(photo)
-            await sleep(4000) // espacement pour rester dans les quotas gratuits
-        }
+        await Promise.all(Array.from({ length: PACE.workers }, analysisWorker))
     } finally {
         analyzing.value = false
     }
+    // Photos ajoutées pendant que les derniers ouvriers s'arrêtaient
+    if (nextPendingPhoto()) runAnalysis()
 }
 
 function reanalyze(card) {
@@ -137,7 +208,7 @@ function groupSelected() {
 
 function separatePhoto(card, photo) {
     card.photos.splice(card.photos.indexOf(photo), 1)
-    const fresh = makeCard([photo], { name: nameFromFile(photo.file) })
+    const fresh = newCard([photo])
     if (photo.suggestion) applyTextSuggestion(fresh, photo.suggestion, categoryOptions.value)
     else if (!isBusyPhoto(photo)) fresh.autofilled = true
     cards.value.splice(cards.value.indexOf(card) + 1, 0, fresh)
@@ -256,8 +327,8 @@ const breadcrumbs = [
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Créer des produits par photos</h1>
             <p class="text-sm text-gray-500 mt-1">
-                Déposez vos photos : chaque photo devient une fiche. L'IA prépare le nom, la description, la catégorie et repère la couleur.
-                Même article en plusieurs couleurs ? Cochez ses fiches puis « Regrouper » : vous obtenez un seul produit avec une variante par couleur.
+                Déposez toutes les photos de l'arrivage : l'IA regroupe les photos du même article (une variante par couleur), rédige les fiches et choisit la catégorie.
+                Indiquez le prix, le stock et les tailles une seule fois dans les réglages communs, puis créez tout d'un clic.
             </p>
         </div>
 
@@ -277,9 +348,22 @@ const breadcrumbs = [
             <p class="text-sm text-gray-500 mt-1">JPG, PNG ou WEBP, 5 Mo maximum par photo</p>
         </label>
 
-        <div v-if="aiConfigured" class="flex items-center gap-2 text-sm text-gray-700">
-            <input id="use-ai" v-model="useAi" type="checkbox" class="w-4 h-4 rounded border-gray-300">
-            <label for="use-ai">Remplir automatiquement avec l'IA</label>
+        <div v-if="aiConfigured" class="flex flex-wrap gap-x-6 text-sm text-gray-700">
+            <label class="min-h-11 flex items-center gap-2 cursor-pointer">
+                <input v-model="useAi" type="checkbox" class="w-4 h-4 rounded border-gray-300">
+                Remplir automatiquement avec l'IA
+            </label>
+            <label class="min-h-11 flex items-center gap-2" :class="useAi ? 'cursor-pointer' : 'opacity-50'">
+                <input v-model="autoGroup" type="checkbox" :disabled="!useAi" class="w-4 h-4 rounded border-gray-300">
+                Regrouper les photos du même article
+            </label>
+        </div>
+
+        <ArrivalDefaults :defaults="defaults" :option-attributes="optionAttributes" :disabled="creating" />
+
+        <div v-if="sorting" role="status" class="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+            <LoaderCircle class="w-5 h-5 flex-shrink-0 animate-spin" aria-hidden="true" />
+            L'IA regarde vos {{ sorting }} photos et regroupe celles du même article…
         </div>
 
         <!-- Barre d'actions -->
@@ -307,7 +391,7 @@ const breadcrumbs = [
         </div>
 
         <!-- État vide -->
-        <p v-else class="text-center text-sm text-gray-500 py-6">Aucune photo pour l'instant.</p>
+        <p v-else-if="!sorting" class="text-center text-sm text-gray-500 py-6">Aucune photo pour l'instant.</p>
 
         <!-- Fiches -->
         <div class="space-y-3">

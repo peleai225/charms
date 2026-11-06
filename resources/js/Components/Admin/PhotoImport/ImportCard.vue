@@ -1,6 +1,7 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, watchEffect } from 'vue'
 import VariantStockGrid from './VariantStockGrid.vue'
+import SizePicker from './SizePicker.vue'
 import { isVariantMode, variantRows, photoColorKey, applyCategoryOptions } from './photoImport.js'
 
 // Une fiche = un produit (une ou plusieurs photos du même article).
@@ -21,29 +22,20 @@ const analyzing = computed(() => card.photos.some((p) => ['pending', 'analyzing'
 const waitingForText = computed(() => props.useAi && !card.autofilled && ['pending', 'analyzing'].includes(card.photos[0]?.status))
 const variantMode = computed(() => isVariantMode(card))
 const rows = computed(() => variantRows(card, props.colors, props.optionAttributes))
-const optionAttribute = computed(() => props.optionAttributes.find((a) => a.id === Number(card.optionAttributeId)))
+
+// Stock commun de l'arrivage : chaque variante qui apparaît (couleur repérée, taille cochée) le reçoit
+watchEffect(() => {
+    if (card.stockDefault === '' || card.status === 'created') return
+    rows.value.forEach((r) => {
+        if (card.stock[r.key] === undefined) card.stock[r.key] = card.stockDefault
+    })
+})
+
 const suggestedFromCategory = computed(() => {
     const s = props.categoryOptions[card.fields.category_id]
     return !card.optionsTouched && s && s.attribute_id === Number(card.optionAttributeId) && card.optionValueIds.length > 0
 })
 const categoryName = computed(() => props.categories.find((c) => c.id === Number(card.fields.category_id))?.name ?? '')
-
-function onOptionAttributeChange() {
-    card.optionsTouched = true
-    card.optionValueIds = []
-}
-
-function toggleValue(id) {
-    card.optionsTouched = true
-    const i = card.optionValueIds.indexOf(id)
-    if (i >= 0) card.optionValueIds.splice(i, 1)
-    else card.optionValueIds.push(id)
-}
-
-function selectAllValues(all) {
-    card.optionsTouched = true
-    card.optionValueIds = all ? optionAttribute.value.values.map((v) => v.id) : []
-}
 
 const swatch = (photo) => {
     if (photo.colorPick === 'new') return photo.newColorHex
@@ -146,26 +138,8 @@ const inputClass = 'w-full h-11 px-3 text-[13px] border border-gray-200 rounded-
 
             <!-- Déclinaison : tailles, pointures… -->
             <div v-if="optionAttributes.length" class="md:col-span-2 space-y-2">
-                <div class="flex flex-wrap items-end gap-3">
-                    <div class="w-full sm:w-56">
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Tailles / déclinaison</label>
-                        <select v-model="card.optionAttributeId" :class="inputClass" :disabled="busy" @change="onOptionAttributeChange">
-                            <option value="">Aucune (taille unique)</option>
-                            <option v-for="a in optionAttributes" :key="a.id" :value="a.id">{{ a.name }}</option>
-                        </select>
-                    </div>
-                    <div v-if="optionAttribute" class="flex gap-2">
-                        <button type="button" class="h-11 px-3 text-xs text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50" :disabled="busy" @click="selectAllValues(true)">Tout</button>
-                        <button type="button" class="h-11 px-3 text-xs text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50" :disabled="busy" @click="selectAllValues(false)">Aucune</button>
-                    </div>
-                </div>
-                <div v-if="optionAttribute" class="flex flex-wrap gap-2">
-                    <button v-for="v in optionAttribute.values" :key="v.id" type="button" :disabled="busy"
-                        :aria-pressed="card.optionValueIds.includes(v.id)"
-                        class="min-w-[44px] h-11 px-3 text-sm rounded-lg border transition-colors"
-                        :class="card.optionValueIds.includes(v.id) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'"
-                        @click="toggleValue(v.id)">{{ v.value }}</button>
-                </div>
+                <SizePicker v-model:attribute-id="card.optionAttributeId" v-model:value-ids="card.optionValueIds"
+                    :attributes="optionAttributes" :disabled="busy" @touched="card.optionsTouched = true" />
                 <p v-if="suggestedFromCategory" class="text-xs text-gray-500">
                     Pré-coché d'après vos autres produits « {{ categoryName }} ». Décochez ce que vous n'avez pas.
                 </p>

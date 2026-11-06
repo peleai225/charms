@@ -43,6 +43,7 @@ export function makeCard(photos, fields = {}) {
         optionValueIds: [],
         optionsTouched: false,
         stock: {},
+        stockDefault: '', // quantité mise d'office dans chaque nouvelle variante
         selected: false,
         error: null,
         missing: false,
@@ -131,6 +132,72 @@ export function variantRows(card, colors, optionAttributes) {
         }
     }
     return rows
+}
+
+// ── Mode arrivage ────────────────────────────────────────────────────────────
+
+// Réglages saisis une fois pour tout l'arrivage
+export const emptyArrivalDefaults = () => ({
+    sale_price: '',
+    purchase_price: '',
+    stock: '',
+    optionAttributeId: '',
+    optionValueIds: [],
+})
+
+// Recopie un réglage commun dans une fiche (field : sale_price | purchase_price | stock | sizes).
+// Le réglage commun fait foi à chaque modification, même vidé ; une fiche modifiée à part le reste jusque-là.
+export function applyArrivalDefault(card, field, defaults, categoryOptions) {
+    if (field === 'sale_price' || field === 'purchase_price') {
+        card.fields[field] = defaults[field]
+    } else if (field === 'stock') {
+        card.stockDefault = defaults.stock
+        card.fields.stock_quantity = defaults.stock
+        Object.keys(card.stock).forEach((key) => { card.stock[key] = defaults.stock })
+    } else if (field === 'sizes') {
+        if (defaults.optionAttributeId === '') {
+            // Plus de tailles communes : on revient aux tailles habituelles de la catégorie
+            card.optionsTouched = false
+            applyCategoryOptions(card, categoryOptions)
+            return
+        }
+        card.optionAttributeId = defaults.optionAttributeId
+        card.optionValueIds = [...defaults.optionValueIds]
+        card.optionsTouched = true
+    }
+}
+
+// Nouvelle fiche : elle reprend les réglages déjà remplis
+export function applyArrivalDefaults(card, defaults, categoryOptions) {
+    ['sale_price', 'purchase_price', 'stock'].forEach((field) => {
+        if (defaults[field] !== '') applyArrivalDefault(card, field, defaults, categoryOptions)
+    })
+    if (defaults.optionAttributeId !== '') applyArrivalDefault(card, 'sizes', defaults, categoryOptions)
+}
+
+// Miniature légère (data URL JPEG) pour le tri par l'IA ; la photo d'origine reste celle du produit
+export async function makeThumbnail(file, max = 512) {
+    const bitmap = await createImageBitmap(file)
+    const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    bitmap.close?.()
+    return canvas.toDataURL('image/jpeg', 0.75)
+}
+
+// Groupes renvoyés par l'IA (index) → groupes de photos ; une photo absente de la réponse devient un article à part
+export function groupsToPhotos(groups, photos) {
+    const used = new Set()
+    const result = []
+    for (const group of groups ?? []) {
+        const members = (group ?? []).map((i) => photos[i]).filter((p) => p && !used.has(p))
+        members.forEach((p) => used.add(p))
+        if (members.length) result.push(members)
+    }
+    photos.filter((p) => !used.has(p)).forEach((p) => result.push([p]))
+    return result
 }
 
 // Erreurs bloquantes avant l'envoi

@@ -42,9 +42,16 @@ class AiGroupPhotosTest extends TestCase
         ])]);
     }
 
+    /**
+     * Miniatures envoyées en JSON (data URL) : pas de limite PHP max_file_uploads (20 par défaut sur cPanel).
+     */
     private function photos(int $count): array
     {
-        return array_map(fn ($i) => UploadedFile::fake()->image("photo-{$i}.jpg", 300, 300), range(1, $count));
+        return array_map(function ($i) {
+            $file = UploadedFile::fake()->image("photo-{$i}.jpg", 300, 300);
+
+            return 'data:image/jpeg;base64,'.base64_encode(file_get_contents($file->getRealPath()));
+        }, range(1, $count));
     }
 
     private function group(array $photos)
@@ -110,11 +117,33 @@ class AiGroupPhotosTest extends TestCase
             ->assertJsonPath('message', "L'IA n'est pas configurée. Ajoutez une clé API dans Paramètres → IA.");
     }
 
+    public function test_forty_photos_are_sorted_in_a_single_request(): void
+    {
+        $this->fakeOpenRouterAnswer(['groups' => [range(1, 40)]]);
+
+        $this->group($this->photos(40))->assertOk()->assertExactJson(['groups' => [range(0, 39)]]);
+
+        Http::assertSent(fn ($request) => collect($request->data()['messages'][0]['content'])->where('type', 'image_url')->count() === 40);
+    }
+
     public function test_at_most_forty_photos_are_sorted_at_once(): void
     {
         $this->useProvider('openrouter');
 
         $this->group($this->photos(41))->assertStatus(422)->assertJsonValidationErrors('images');
+    }
+
+    public function test_something_that_is_not_a_photo_is_refused(): void
+    {
+        $this->useProvider('openrouter');
+
+        $this->group([$this->photos(1)[0], 'data:image/jpeg;base64,'.base64_encode('pas une image')])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('images');
+
+        $this->group([$this->photos(1)[0], 'https://exemple.ci/photo.jpg'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('images.1');
     }
 
     public function test_the_import_page_tells_which_ai_provider_paces_the_analysis(): void

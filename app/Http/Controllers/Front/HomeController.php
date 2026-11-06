@@ -8,6 +8,8 @@ use App\Models\Coupon;
 use App\Models\Product;
 use App\Models\Promotion;
 use App\Models\Review;
+use App\Models\Setting;
+use App\Services\ShippingZones;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -98,7 +100,8 @@ class HomeController extends Controller
             'stock'          => $p->variants->isNotEmpty() ? $p->variants->sum('stock_quantity') : $p->stock_quantity,
             'allow_backorder'=> (bool) $p->allow_backorder,
             'has_variants'   => $p->variants->isNotEmpty(),
-            'is_new'        => (bool) $p->is_new,
+            // « Nouveau » sur tout le catalogue ne veut plus rien dire : seulement les 30 derniers jours
+            'is_new'        => (bool) $p->is_new && $p->created_at?->gt(now()->subDays(30)),
             'category_name' => $p->category?->name,
             'primary_image' => $p->images->where('is_primary', true)->first()?->path
                 ?? $p->images->first()?->path,
@@ -154,7 +157,53 @@ class HomeController extends Controller
             'whatsapp_number' => $whatsapp ? preg_replace('/\D/', '', $whatsapp) : null,
             'banners'         => $homeBanners,
             'offers'          => $this->currentOffers($formatProduct),
+            'shop_facts'      => $this->shopFacts(),
         ];
+    }
+
+    /**
+     * Infos réelles de la boutique (livraison, paiement, contact), tirées des réglages.
+     * Rien n'est affiché pour ce que la boutique n'a pas configuré.
+     *
+     * @return array<int, array{key: string, title: string, desc: string, href: ?string}>
+     */
+    private function shopFacts(): array
+    {
+        $facts = [];
+
+        $zones = collect(app(ShippingZones::class)->all())->filter(fn ($z) => trim((string) ($z['name'] ?? '')) !== '');
+        if ($zones->isNotEmpty()) {
+            $minPrice = $zones->pluck('price')->filter(fn ($p) => is_numeric($p) && $p > 0)->min();
+            $names = $zones->pluck('name')->map(fn ($n) => trim($n));
+            $others = $names->count() - 3;
+            $facts[] = [
+                'key' => 'delivery',
+                'title' => $minPrice ? 'Livraison dès '.number_format((float) $minPrice, 0, ',', ' ').' F CFA' : 'Livraison',
+                'desc' => $names->take(3)->implode(', ').($others > 0 ? " et {$others} autre".($others > 1 ? 's zones' : ' zone') : ''),
+                'href' => null,
+            ];
+        }
+
+        if (Setting::get('payment_cod_enabled', '1') === '1') {
+            $facts[] = ['key' => 'cod', 'title' => 'Paiement à la livraison', 'desc' => 'Vous payez en recevant votre colis', 'href' => null];
+        }
+
+        $digits = preg_replace('/\D/', '', (string) Setting::get('social_whatsapp'));
+        if ($digits !== '') {
+            $facts[] = ['key' => 'whatsapp', 'title' => 'Une question ?', 'desc' => 'WhatsApp '.$this->phoneText($digits), 'href' => "https://wa.me/{$digits}"];
+        }
+
+        return $facts;
+    }
+
+    // 2250707070707 → +225 07 07 07 07 07
+    private function phoneText(string $digits): string
+    {
+        if (strlen($digits) === 13 && str_starts_with($digits, '225')) {
+            return '+225 '.implode(' ', str_split(substr($digits, 3), 2));
+        }
+
+        return strlen($digits) === 10 ? implode(' ', str_split($digits, 2)) : '+'.$digits;
     }
 
     /**

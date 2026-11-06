@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { router } from '@inertiajs/vue3'
+import TodoCards from './Partials/TodoCards.vue'
 
 const props = defineProps({
     stats:         Object,
@@ -9,6 +10,7 @@ const props = defineProps({
     lowStock:      Array,
     topProducts:   Array,
     currentPeriod: String,
+    todo:          { type: Object, default: null },
 })
 
 // ── Période ──────────────────────────────────────────────────────────────────
@@ -172,6 +174,8 @@ function fmtGrowth(g) {
                 </button>
             </div>
         </div>
+
+        <TodoCards v-if="todo" :todo="todo" />
 
         <!-- KPI strip -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">

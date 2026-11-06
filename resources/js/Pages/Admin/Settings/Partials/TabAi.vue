@@ -11,12 +11,21 @@ const providers = {
         model: 'gemini-3.8-flash',
         keyUrl: 'https://aistudio.google.com/app/apikey',
         placeholder: 'AIza...',
+        fallbackHint: 'ex : un modèle « flash-lite » listé dans votre console',
     },
     openrouter: {
         label: 'OpenRouter (Qwen, DeepSeek…)',
         model: 'qwen/qwen2.5-vl-72b-instruct:free',
         keyUrl: 'https://openrouter.ai/keys',
         placeholder: 'sk-or-...',
+        fallbackHint: 'ex : un autre modèle « vl » gratuit',
+    },
+    anthropic: {
+        label: 'Anthropic Claude (payant à l\'usage)',
+        model: 'claude-opus-5-5',
+        keyUrl: 'https://console.anthropic.com/settings/keys',
+        placeholder: 'sk-ant-...',
+        fallbackHint: 'ex : claude-haiku-5-5 (plus rapide et moins cher)',
     },
 }
 
@@ -105,7 +114,7 @@ async function test() {
 
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">Modèle de secours <span class="font-normal text-gray-400">(facultatif)</span></label>
-                    <input v-model="form.ai_fallback_model" type="text" placeholder="ex : un modèle « flash-lite » listé dans votre console"
+                    <input v-model="form.ai_fallback_model" type="text" :placeholder="current.fallbackHint"
                         class="w-full h-11 px-3 text-[13px] font-mono border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <p class="mt-1 text-[12px] text-gray-500">Utilisé automatiquement si le modèle principal est surchargé ou a atteint son quota. Doit aussi savoir lire les images.</p>
                 </div>

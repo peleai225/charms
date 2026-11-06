@@ -58,12 +58,20 @@ class Order extends Model
         'customer_notes',
         'admin_notes',
         'affiliate_code',
+        'courier_id',
+        'dispatched_at',
+        'courier_fee',
+        'delivery_attempts',
+        'last_delivery_issue',
         'source',
         'ip_address',
         'user_agent',
     ];
 
     protected $casts = [
+        'dispatched_at' => 'datetime',
+        'courier_fee' => 'decimal:2',
+        'delivery_attempts' => 'integer',
         'subtotal' => 'decimal:2',
         'tax_amount' => 'decimal:2',
         'shipping_amount' => 'decimal:2',
@@ -105,6 +113,11 @@ class Order extends Model
     }
 
     // ========== RELATIONS ==========
+
+    public function courier(): BelongsTo
+    {
+        return $this->belongsTo(Courier::class);
+    }
 
     public function customer(): BelongsTo
     {
@@ -168,6 +181,25 @@ class Order extends Model
     public function scopeCompleted($query)
     {
         return $query->where('status', self::STATUS_DELIVERED);
+    }
+
+    /**
+     * Une vente = commande payée, ou livrée (paiement à la livraison : l'argent est encaissé à la remise),
+     * et ni annulée ni remboursée. Utilisable aussi sur une requête jointe, avec le nom de la table.
+     */
+    public static function whereCountsAsSale($query, string $table = '')
+    {
+        $column = fn (string $name) => $table !== '' ? "{$table}.{$name}" : $name;
+
+        return $query
+            ->where(fn ($q) => $q->where($column('payment_status'), self::PAYMENT_PAID)
+                ->orWhere($column('status'), self::STATUS_DELIVERED))
+            ->whereNotIn($column('status'), [self::STATUS_CANCELLED, self::STATUS_REFUNDED]);
+    }
+
+    public function scopeCountsAsSale($query)
+    {
+        return self::whereCountsAsSale($query);
     }
 
     public function scopePaid($query)

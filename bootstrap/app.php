@@ -11,6 +11,12 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
+        // Hors du groupe « web » : pas de session ni de cookie pour chaque image
+        then: function () {
+            \Illuminate\Support\Facades\Route::get('/storage/{path}', \App\Http\Controllers\StorageFileController::class)
+                ->where('path', '.*')
+                ->name('storage.public');
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([

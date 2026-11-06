@@ -260,6 +260,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         // Commandes — tous les rôles (consultation + mise à jour statut)
         Route::get('orders', [\App\Http\Controllers\Admin\OrderController::class, 'index'])->name('orders.index');
+        Route::post('orders/bulk-status', [\App\Http\Controllers\Admin\OrderController::class, 'bulkUpdateStatus'])->name('orders.bulk-status');
         Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->only(['show','store','update','destroy'])->names('orders');
         Route::patch('orders/{order}/status', [\App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('orders.status');
         Route::get('orders/{order}/invoice', [\App\Http\Controllers\Admin\OrderController::class, 'invoice'])->name('orders.invoice');
@@ -358,9 +359,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('products/bulk-category', [\App\Http\Controllers\Admin\ProductController::class, 'bulkUpdateCategory'])->name('products.bulk-category');
             Route::get('products/import-images', [\App\Http\Controllers\Admin\AiProductController::class, 'importImages'])->name('products.import-images');
             Route::post('ai/analyze-image', [\App\Http\Controllers\Admin\AiProductController::class, 'analyzeImage'])->name('ai.analyze-image');
+            Route::post('ai/group-photos', [\App\Http\Controllers\Admin\AiProductController::class, 'groupPhotos'])->name('ai.group-photos');
             Route::post('ai/products/{product}/suggest', [\App\Http\Controllers\Admin\AiProductController::class, 'suggestForProduct'])->name('ai.products.suggest');
             Route::post('ai/apply-categories', [\App\Http\Controllers\Admin\AiProductController::class, 'applyCategories'])->name('ai.apply-categories');
+            Route::post('ai/apply-descriptions', [\App\Http\Controllers\Admin\AiProductController::class, 'applyDescriptions'])->name('ai.apply-descriptions');
             Route::post('ai/store-from-image', [\App\Http\Controllers\Admin\AiProductController::class, 'storeFromImage'])->name('ai.store-from-image');
+            Route::post('ai/store-variant-product', [\App\Http\Controllers\Admin\AiProductController::class, 'storeVariantProduct'])->name('ai.store-variant-product');
             Route::resource('products', \App\Http\Controllers\Admin\ProductController::class)->only(['create','store','show','edit','update','destroy'])->names('products');
             Route::post('products/{product}/variants', [\App\Http\Controllers\Admin\ProductController::class, 'storeVariant'])->name('products.variants.store');
             Route::post('products/{product}/variants/bulk', [\App\Http\Controllers\Admin\ProductController::class, 'bulkStoreVariants'])->name('products.variants.bulk');
@@ -402,6 +406,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
             // Offres par lot
             Route::resource('promotions', \App\Http\Controllers\Admin\PromotionController::class)->names('promotions');
+            Route::resource('couriers', \App\Http\Controllers\Admin\CourierController::class)->only(['index', 'store', 'update'])->names('couriers');
+            Route::post('couriers/{courier}/dispatch', [\App\Http\Controllers\Admin\CourierController::class, 'dispatch'])->name('couriers.dispatch');
+            Route::get('couriers/{courier}', [\App\Http\Controllers\Admin\CourierController::class, 'show'])->name('couriers.show');
+            Route::post('couriers/{courier}/settle', [\App\Http\Controllers\Admin\CourierController::class, 'settle'])->name('couriers.settle');
+            Route::post('couriers/{courier}/payments', [\App\Http\Controllers\Admin\CourierController::class, 'storePayment'])->name('couriers.payments.store');
+            Route::post('orders/{order}/withdraw-courier', [\App\Http\Controllers\Admin\CourierController::class, 'withdraw'])->name('orders.withdraw-courier');
             Route::post('/promotions-margin-preview', [\App\Http\Controllers\Admin\PromotionController::class, 'marginPreview'])->name('promotions.margin-preview');
 
             // Visites guidées (onboarding)

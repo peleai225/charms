@@ -19,7 +19,7 @@ const form = useForm({
 })
 
 function addZone() {
-    shippingZones.value.push({ name: '', cities: '', price: '' })
+    shippingZones.value.push({ name: '', cities: '', price: '', courier_fee: '' })
 }
 
 function removeZone(i) {
@@ -77,7 +77,7 @@ function submit() {
                     Aucune zone configurée. Utilisez le tarif forfaitaire ou ajoutez des zones.
                 </p>
                 <div v-for="(zone, i) in shippingZones" :key="i" class="p-4 border border-gray-200 rounded-xl">
-                    <div class="grid md:grid-cols-3 gap-3">
+                    <div class="grid md:grid-cols-4 gap-3">
                         <div>
                             <label class="block text-[12px] font-medium text-gray-700 mb-1">Nom de la zone</label>
                             <input v-model="zone.name" type="text" placeholder="Ex: Abidjan"
@@ -88,10 +88,15 @@ function submit() {
                             <input v-model="zone.cities" type="text" placeholder="Ex: Cocody, Plateau"
                                 class="w-full h-9 px-3 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-600">
                         </div>
+                        <div>
+                            <label class="block text-[12px] font-medium text-gray-700 mb-1">Prix client (F CFA)</label>
+                            <input v-model="zone.price" type="number" min="0"
+                                class="w-full h-9 px-3 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
                         <div class="flex gap-2">
                             <div class="flex-1">
-                                <label class="block text-[12px] font-medium text-gray-700 mb-1">Prix (F CFA)</label>
-                                <input v-model="zone.price" type="number"
+                                <label class="block text-[12px] font-medium text-gray-700 mb-1">Frais livreur (F CFA)</label>
+                                <input v-model="zone.courier_fee" type="number" min="0" placeholder="Ce que garde le livreur"
                                     class="w-full h-9 px-3 border border-gray-200 rounded-lg text-[13px] focus:outline-none focus:ring-2 focus:ring-blue-600">
                             </div>
                             <button type="button" @click="removeZone(i)"

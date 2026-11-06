@@ -2,15 +2,20 @@
 
 namespace App\Services;
 
+use Anthropic\Client as AnthropicClient;
+use Anthropic\Core\Exceptions\APIConnectionException;
+use Anthropic\Core\Exceptions\APIStatusException;
+use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Setting;
+use GuzzleHttp\Client as GuzzleClient;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
- * Service IA multi-fournisseurs (Gemini, OpenRouter).
+ * Service IA multi-fournisseurs (Gemini, OpenRouter, Anthropic Claude).
  * Le fournisseur, la clé et le modèle se règlent dans Admin → Paramètres → IA.
  */
 class AiService
@@ -18,6 +23,7 @@ class AiService
     public const PROVIDERS = [
         'gemini' => ['label' => 'Google Gemini', 'default_model' => 'gemini-3.8-flash'],
         'openrouter' => ['label' => 'OpenRouter (Qwen, DeepSeek…)', 'default_model' => 'qwen/qwen2.5-vl-72b-instruct:free'],
+        'anthropic' => ['label' => 'Anthropic Claude', 'default_model' => 'claude-opus-5-5'],
     ];
 
     protected string $provider;
@@ -47,15 +53,17 @@ class AiService
     /**
      * Analyse une image (et/ou un nom) et propose une fiche produit + catégorie.
      *
-     * @return array{name: string, short_description: string, description: string, category_id: ?int, category_name: ?string}
+     * @return array{name: string, short_description: string, description: string, category_id: ?int, category_name: ?string, color_id: ?int, color_name: ?string, color_hex: ?string}
      */
     public function suggestProduct(?string $imageBinary, ?string $mimeType, ?string $currentName = null): array
     {
         $categories = $this->categoryList();
+        $colors = $this->colorList();
 
         $catalog = collect($categories)->map(fn ($c) => "{$c['id']}: {$c['path']}")->implode("\n");
+        $palette = collect($colors)->map(fn ($c) => "{$c['id']}: {$c['value']}")->implode("\n") ?: '(aucune couleur enregistrée)';
 
-        $prompt = <<<PROMPT
+        $prompt = <<<'PROMPT'
 Tu es un expert e-commerce en Côte d'Ivoire. Analyse ce produit et rédige sa fiche en français, de façon simple, vendeuse et honnête (n'invente pas de matière, de marque ou de caractéristique invisible).
 PROMPT;
         if ($currentName) {
@@ -66,8 +74,11 @@ PROMPT;
 Choisis la catégorie la plus précise possible dans cette liste (id: chemin). Préfère la catégorie la plus profonde qui correspond. Si aucune ne convient, mets null.
 {$catalog}
 
+Couleur principale de l'article lui-même (pas du fond ni de l'emballage). Si elle correspond à une couleur de cette liste (id: nom), mets son id dans color_id. Sinon mets color_id à null. Dans tous les cas, donne son nom simple en français dans color_name (ex : "Bordeaux") et son code hexadécimal dans color_hex.
+{$palette}
+
 Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour :
-{"name": "nom court et clair (max 60 caractères)", "short_description": "1 phrase d'accroche (max 160 caractères)", "description": "2 à 4 phrases descriptives", "category_id": 12}
+{"name": "nom court et clair (max 60 caractères)", "short_description": "1 phrase d'accroche (max 160 caractères)", "description": "2 à 4 phrases descriptives", "category_id": 12, "color_id": 3, "color_name": "Rouge", "color_hex": "#C62828"}
 PROMPT;
 
         $text = $this->generate($prompt, $imageBinary, $mimeType);
@@ -76,12 +87,20 @@ PROMPT;
         $categoryId = isset($data['category_id']) && is_numeric($data['category_id']) ? (int) $data['category_id'] : null;
         $category = $categoryId ? collect($categories)->firstWhere('id', $categoryId) : null;
 
+        $colorId = isset($data['color_id']) && is_numeric($data['color_id']) ? (int) $data['color_id'] : null;
+        $color = $colorId ? collect($colors)->firstWhere('id', $colorId) : null;
+        $colorName = mb_substr(trim((string) ($data['color_name'] ?? '')), 0, 50);
+        $colorHex = trim((string) ($data['color_hex'] ?? ''));
+
         return [
             'name' => mb_substr(trim((string) ($data['name'] ?? '')), 0, 255),
             'short_description' => mb_substr(trim((string) ($data['short_description'] ?? '')), 0, 500),
             'description' => trim((string) ($data['description'] ?? '')),
             'category_id' => $category ? $category['id'] : null,
             'category_name' => $category ? $category['path'] : null,
+            'color_id' => $color ? $color['id'] : null,
+            'color_name' => $color ? $color['value'] : ($colorName !== '' ? $colorName : null),
+            'color_hex' => preg_match('/^#[0-9A-Fa-f]{6}$/', $colorHex) ? strtoupper($colorHex) : null,
         ];
     }
 
@@ -125,6 +144,62 @@ PROMPT;
     }
 
     /**
+     * Mode arrivage : regroupe les photos qui montrent le même article (un groupe = un produit,
+     * une couleur par photo). Chaque photo finit dans exactement un groupe, dans l'ordre d'envoi.
+     *
+     * @param  array<int, array{data: string, mime: ?string}>  $images
+     * @return array<int, array<int, int>> index des photos (à partir de 0) par article
+     */
+    public function groupPhotos(array $images): array
+    {
+        $count = count($images);
+        $prompt = <<<PROMPT
+Voici {$count} photos d'un arrivage de marchandises pour une boutique en ligne, numérotées de 1 à {$count} dans l'ordre où elles te sont données.
+Regroupe les photos qui montrent le MÊME article : même modèle, même forme, même coupe, même motif. Le même article dans une autre couleur va dans le même groupe (ce sera un seul produit avec une variante par couleur). Deux photos du même article dans la même couleur vont aussi ensemble.
+Ne mets jamais ensemble deux modèles différents. En cas de doute, sépare-les.
+Chaque photo doit apparaître dans exactement un groupe.
+
+Réponds UNIQUEMENT avec un objet JSON valide, sans texte autour :
+{"groups": [[1, 4], [2], [3, 5, 6]]}
+PROMPT;
+
+        $data = $this->parseJson($this->generateFromImages($prompt, $images, 90));
+        if (! isset($data['groups']) || ! is_array($data['groups'])) {
+            throw new RuntimeException("Réponse de l'IA illisible. Réessayez.");
+        }
+
+        $placed = [];
+        $groups = [];
+        foreach ($data['groups'] as $group) {
+            $indexes = [];
+            foreach ((array) $group as $number) {
+                $index = is_numeric($number) ? (int) $number - 1 : -1;
+                if ($index >= 0 && $index < $count && ! isset($placed[$index])) {
+                    $placed[$index] = true;
+                    $indexes[] = $index;
+                }
+            }
+            if ($indexes) {
+                $groups[] = $indexes;
+            }
+        }
+
+        // Une photo oubliée par l'IA devient un article à part
+        for ($index = 0; $index < $count; $index++) {
+            if (! isset($placed[$index])) {
+                $groups[] = [$index];
+            }
+        }
+
+        return $groups;
+    }
+
+    public function provider(): string
+    {
+        return $this->provider;
+    }
+
+    /**
      * Test simple de la connexion.
      */
     public function ping(): string
@@ -137,29 +212,57 @@ PROMPT;
      */
     public function generate(string $prompt, ?string $imageBinary = null, ?string $mimeType = null): string
     {
+        return $this->generateFromImages($prompt, $imageBinary ? [['data' => $imageBinary, 'mime' => $mimeType]] : []);
+    }
+
+    /**
+     * Appel brut avec plusieurs photos dans la même question.
+     *
+     * @param  array<int, array{data: string, mime: ?string}>  $images
+     */
+    public function generateFromImages(string $prompt, array $images, int $timeout = 12): string
+    {
         if (! $this->isConfigured()) {
             throw new RuntimeException("L'IA n'est pas configurée. Ajoutez une clé API dans Paramètres → IA.");
         }
 
-        @set_time_limit(60);
+        // Limite pour les requêtes web seulement : en ligne de commande (tests, files d'attente) elle tuerait tout le processus
+        if (! app()->runningInConsole()) {
+            @set_time_limit(max(60, $timeout + 30));
+        }
 
         // Modèle principal, puis modèle de secours si le principal est surchargé
         $models = array_values(array_unique(array_filter([$this->model, $this->fallbackModel])));
 
         foreach ($models as $i => $model) {
-            $response = $this->provider === 'openrouter'
-                ? $this->callOpenRouter($model, $prompt, $imageBinary, $mimeType)
-                : $this->callGemini($model, $prompt, $imageBinary, $mimeType);
+            if ($this->provider === 'anthropic') {
+                try {
+                    return $this->callAnthropic($model, $prompt, $images, max(45, $timeout));
+                } catch (APIStatusException $e) {
+                    $status = (int) $e->status;
+                    $message = $e->getMessage();
+                } catch (APIConnectionException $e) {
+                    throw new RuntimeException('Le service IA ne répond pas. Réessayez dans un instant.', 0, $e);
+                }
+            } else {
+                $response = $this->provider === 'openrouter'
+                    ? $this->callOpenRouter($model, $prompt, $images, $timeout)
+                    : $this->callGemini($model, $prompt, $images, $timeout);
 
-            if ($response->successful()) {
-                return $this->provider === 'openrouter'
-                    ? (string) $response->json('choices.0.message.content', '')
-                    : (string) $response->json('candidates.0.content.parts.0.text', '');
+                if ($response->successful()) {
+                    return $this->provider === 'openrouter'
+                        ? (string) $response->json('choices.0.message.content', '')
+                        : (string) $response->json('candidates.0.content.parts.0.text', '');
+                }
+
+                $status = $response->status();
+                $message = $response->json('error.message') ?? $response->body();
             }
 
-            $overloaded = in_array($response->status(), [429, 500, 502, 503]);
+            // 529 = surcharge chez Anthropic
+            $overloaded = in_array($status, [429, 500, 502, 503, 529]);
             if (! $overloaded || $i === count($models) - 1) {
-                $this->fail($response->status(), $response->json('error.message') ?? $response->body());
+                $this->fail($status, $message);
             }
 
             Log::info('AiService: modèle surchargé, bascule sur le modèle de secours', ['model' => $model]);
@@ -169,14 +272,14 @@ PROMPT;
         throw new RuntimeException("Le service IA n'a pas répondu.");
     }
 
-    protected function callGemini(string $model, string $prompt, ?string $imageBinary, ?string $mimeType): Response
+    protected function callGemini(string $model, string $prompt, array $images, int $timeout): Response
     {
         $parts = [['text' => $prompt]];
-        if ($imageBinary) {
-            $parts[] = ['inline_data' => ['mime_type' => $mimeType ?: 'image/jpeg', 'data' => base64_encode($imageBinary)]];
+        foreach ($images as $image) {
+            $parts[] = ['inline_data' => ['mime_type' => $image['mime'] ?: 'image/jpeg', 'data' => base64_encode($image['data'])]];
         }
 
-        $response = Http::timeout(12)
+        $response = Http::timeout($timeout)
             ->withHeaders(['x-goog-api-key' => $this->apiKey])
             ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
                 'contents' => [['parts' => $parts]],
@@ -186,16 +289,16 @@ PROMPT;
         return $response;
     }
 
-    protected function callOpenRouter(string $model, string $prompt, ?string $imageBinary, ?string $mimeType): Response
+    protected function callOpenRouter(string $model, string $prompt, array $images, int $timeout): Response
     {
         $content = [['type' => 'text', 'text' => $prompt]];
-        if ($imageBinary) {
+        foreach ($images as $image) {
             $content[] = ['type' => 'image_url', 'image_url' => [
-                'url' => 'data:'.($mimeType ?: 'image/jpeg').';base64,'.base64_encode($imageBinary),
+                'url' => 'data:'.($image['mime'] ?: 'image/jpeg').';base64,'.base64_encode($image['data']),
             ]];
         }
 
-        $response = Http::timeout(12)
+        $response = Http::timeout($timeout)
             ->withToken($this->apiKey)
             ->withHeaders(['HTTP-Referer' => config('app.url'), 'X-Title' => config('app.name')])
             ->post('https://openrouter.ai/api/v1/chat/completions', [
@@ -207,13 +310,53 @@ PROMPT;
         return $response;
     }
 
+    protected function callAnthropic(string $model, string $prompt, array $images, int $timeout): string
+    {
+        $content = [];
+        foreach ($images as $image) {
+            $content[] = ['type' => 'image', 'source' => [
+                'type' => 'base64',
+                'mediaType' => $image['mime'] ?: 'image/jpeg',
+                'data' => base64_encode($image['data']),
+            ]];
+        }
+        $content[] = ['type' => 'text', 'text' => $prompt];
+
+        // Le SDK ne gère pas lui-même le délai d'attente : c'est le client HTTP qui l'impose
+        $client = app()->makeWith(AnthropicClient::class, [
+            'apiKey' => $this->apiKey,
+            'requestOptions' => ['transporter' => new GuzzleClient(['timeout' => $timeout]), 'maxRetries' => 0],
+        ]);
+
+        $message = $client->beta->messages->create(
+            maxTokens: 16000,
+            messages: [['role' => 'user', 'content' => $content]],
+            model: $model,
+            fallbacks: 'default',
+            outputConfig: ['effort' => 'low'],
+            betas: ['server-side-fallback-2026-07-01'],
+        );
+
+        if ($message->stopReason === 'refusal') {
+            throw new RuntimeException("L'IA a refusé d'analyser ce contenu. Essayez avec une autre photo.");
+        }
+
+        foreach ($message->content as $block) {
+            if ($block->type === 'text') {
+                return (string) $block->text;
+            }
+        }
+
+        return '';
+    }
+
     protected function fail(int $status, string $message): never
     {
         Log::warning('AiService: erreur fournisseur', ['provider' => $this->provider, 'status' => $status, 'message' => $message]);
 
         $hint = match (true) {
             $status === 429 => 'Quota gratuit atteint. Patientez une minute puis réessayez.',
-            in_array($status, [500, 502, 503]) => 'Le service IA est surchargé en ce moment (problème temporaire chez le fournisseur). Réessayez dans quelques minutes, ou ajoutez un modèle de secours dans Paramètres → IA.',
+            in_array($status, [500, 502, 503, 529]) => 'Le service IA est surchargé en ce moment (problème temporaire chez le fournisseur). Réessayez dans quelques minutes, ou ajoutez un modèle de secours dans Paramètres → IA.',
             in_array($status, [401, 403]) => 'Clé API invalide ou refusée. Vérifiez-la dans Paramètres → IA.',
             $status === 404 => 'Modèle introuvable. Vérifiez le nom du modèle dans Paramètres → IA.',
             default => 'Le service IA a renvoyé une erreur.',
@@ -240,6 +383,18 @@ PROMPT;
     /**
      * @return array<int, array{id: int, path: string}>
      */
+    /**
+     * @return array<int, array{id: int, value: string}>
+     */
+    protected function colorList(): array
+    {
+        $attribute = Attribute::colorAttribute();
+
+        return $attribute
+            ? $attribute->values()->get(['id', 'value'])->map(fn ($v) => ['id' => $v->id, 'value' => $v->value])->all()
+            : [];
+    }
+
     protected function categoryList(): array
     {
         return Category::active()->with('parent.parent')->get()

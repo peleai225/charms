@@ -26,13 +26,35 @@ class Banner extends Model
         'is_active',
         'starts_at',
         'ends_at',
+        'show_countdown',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
+        'show_countdown' => 'boolean',
     ];
+
+    /**
+     * Emplacements réellement affichés sur le site : les seuls proposés à la création.
+     */
+    const DISPLAYED_POSITIONS = [
+        'announcement_bar',
+        'popup_center',
+        'home_hero',
+        'home_middle',
+        'home_bottom',
+    ];
+
+    public static function selectablePositions(?string $current = null): array
+    {
+        return array_filter(
+            self::POSITIONS,
+            fn ($key) => in_array($key, self::DISPLAYED_POSITIONS, true) || $key === $current,
+            ARRAY_FILTER_USE_KEY
+        );
+    }
 
     /**
      * Types de bannières
@@ -109,7 +131,6 @@ class Banner extends Model
      */
     public function getImageUrlAttribute()
     {
-        return $this->image ? asset('storage/' . $this->image) : null;
+        return $this->image ? asset('storage/'.$this->image) : null;
     }
 }
-

@@ -50,6 +50,12 @@ class Attribute extends Model
         return $this->belongsToMany(Product::class, 'product_attributes');
     }
 
+    public static function colorAttribute(): ?self
+    {
+        return static::where('type', 'color')->orderBy('id')->first()
+            ?? static::where('slug', 'couleur')->first();
+    }
+
     // ========== SCOPES ==========
 
     public function scopeFilterable($query)
@@ -67,4 +73,3 @@ class Attribute extends Model
         return $query->orderBy('order');
     }
 }
-

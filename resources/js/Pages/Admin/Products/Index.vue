@@ -14,6 +14,7 @@ import Breadcrumb from '@/Components/UI/Breadcrumb.vue'
 import ConfirmModal from '@/Components/UI/ConfirmModal.vue'
 import ToastContainer from '@/Components/UI/ToastContainer.vue'
 import AiCategorySuggest from '@/Components/Admin/AiCategorySuggest.vue'
+import AiDescriptionSuggest from '@/Components/Admin/AiDescriptionSuggest.vue'
 
 const props = defineProps({
     products: Object,
@@ -30,10 +31,11 @@ const search = ref(props.filters?.search ?? '')
 const status = ref(props.filters?.status ?? '')
 const category = ref(props.filters?.category ?? '')
 const stock = ref(props.filters?.stock ?? '')
+const fiche = ref(props.filters?.fiche ?? '')
 const perPage = ref(props.filters?.per_page ?? '')
 
 const activeFilterCount = computed(() => {
-    return [status.value, category.value, stock.value].filter(Boolean).length
+    return [status.value, category.value, stock.value, fiche.value].filter(Boolean).length
 })
 
 function applyFilters() {
@@ -42,6 +44,7 @@ function applyFilters() {
         status: status.value || undefined,
         category: category.value || undefined,
         stock: stock.value || undefined,
+        fiche: fiche.value || undefined,
         per_page: perPage.value || undefined,
     }, { preserveState: true, replace: true })
 }
@@ -51,6 +54,7 @@ function resetFilters() {
     status.value = ''
     category.value = ''
     stock.value = ''
+    fiche.value = ''
     perPage.value = ''
     router.get(route('admin.products.index'), {}, { preserveState: false })
 }
@@ -62,6 +66,7 @@ function goToPage(page) {
         status: status.value || undefined,
         category: category.value || undefined,
         stock: stock.value || undefined,
+        fiche: fiche.value || undefined,
         per_page: perPage.value || undefined,
     }, { preserveState: true, replace: true })
 }
@@ -167,6 +172,18 @@ function onAiDone() {
     selected.value = []
 }
 
+const showAiDescribe = ref(false)
+
+function openAiDescribe() {
+    aiProducts.value = [...selected.value]
+    showAiDescribe.value = true
+}
+
+function onAiDescribeDone() {
+    showAiDescribe.value = false
+    selected.value = []
+}
+
 const bulkCategoryId = ref('')
 const bulkCategoryProcessing = ref(false)
 
@@ -202,6 +219,10 @@ const statusOptions = [
 const stockOptions = [
     { label: 'Stock faible', value: 'low' },
     { label: 'Rupture', value: 'out' },
+]
+
+const ficheOptions = [
+    { label: 'Fiche incomplète', value: 'incomplete' },
 ]
 
 const perPageOptions = [
@@ -289,6 +310,12 @@ const breadcrumbs = [
                 @update:model-value="applyFilters"
             />
             <FilterSelect
+                v-model="fiche"
+                label="Fiche"
+                :options="ficheOptions"
+                @update:model-value="applyFilters"
+            />
+            <FilterSelect
                 v-model="perPage"
                 label="Par page"
                 :options="perPageOptions"
@@ -353,6 +380,12 @@ const breadcrumbs = [
                     >
                         Ranger avec l'IA ({{ sel.length }})
                     </button>
+                    <button
+                        class="h-8 px-3 text-sm font-medium text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                        @click="openAiDescribe"
+                    >
+                        Compléter les fiches avec l'IA ({{ sel.length }})
+                    </button>
                 </div>
                 <button
                     class="h-8 px-3 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
@@ -389,6 +422,12 @@ const breadcrumbs = [
         :categories="categories"
         @close="showAiSuggest = false"
         @done="onAiDone"
+    />
+    <AiDescriptionSuggest
+        v-if="showAiDescribe"
+        :products="aiProducts"
+        @close="showAiDescribe = false"
+        @done="onAiDescribeDone"
     />
     <ConfirmModal />
     <ToastContainer />

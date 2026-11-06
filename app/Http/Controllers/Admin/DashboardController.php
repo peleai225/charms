@@ -27,7 +27,25 @@ class DashboardController extends Controller
             'lowStock'      => $this->getLowStockProducts(),
             'topProducts'   => $this->getTopProducts(),
             'currentPeriod' => $period,
+            'todo'          => $this->getTodo(),
         ]);
+    }
+
+    /**
+     * Ce qui attend la gérante : commandes à confirmer, à confier, chez les livreurs, à relivrer.
+     */
+    private function getTodo(): array
+    {
+        $onRoute = Order::where('status', Order::STATUS_DELIVERY_IN_PROGRESS);
+
+        return [
+            'to_confirm' => Order::where('status', Order::STATUS_PENDING)->count(),
+            'to_dispatch' => Order::whereIn('status', [Order::STATUS_CONFIRMED, Order::STATUS_PROCESSING])->whereNull('courier_id')->count(),
+            'on_route' => (clone $onRoute)->count(),
+            'on_route_to_collect' => (float) (clone $onRoute)->where('payment_status', '!=', Order::PAYMENT_PAID)->sum('total'),
+            'to_redeliver' => Order::where('status', Order::STATUS_PROCESSING)->where('delivery_attempts', '>', 0)->count(),
+            'couriers_balance' => (float) \App\Models\CourierMovement::sum('balance_change'),
+        ];
     }
 
     private function getMainStats(): array

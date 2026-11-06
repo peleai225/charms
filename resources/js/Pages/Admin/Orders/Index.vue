@@ -1,11 +1,13 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
+import OrderBulkBar from '@/Components/Admin/Orders/OrderBulkBar.vue'
 
 
 const props = defineProps({
     orders: Object,
     stats:  Object,
+    couriers: { type: Array, default: () => [] },
     filters: Object,
 })
 
@@ -13,13 +15,32 @@ const search        = ref(props.filters?.search ?? '')
 const status        = ref(props.filters?.status ?? '')
 const paymentStatus = ref(props.filters?.payment_status ?? '')
 const dateRange     = ref(props.filters?.date_range ?? '')
+const perPage       = ref(props.filters?.per_page ?? '')
 
 let searchTimer = null
 watch(search, v => {
     clearTimeout(searchTimer)
     searchTimer = setTimeout(() => applyFilters(), 300)
 })
-watch([status, paymentStatus, dateRange], () => applyFilters())
+watch([status, paymentStatus, dateRange, perPage], () => applyFilters())
+
+// ── Sélection pour les actions groupées ──────────────────────────────────────
+const selectedIds = ref([])
+const allOnPageSelected = computed(() =>
+    props.orders.data.length > 0 && props.orders.data.every((o) => selectedIds.value.includes(o.id)))
+
+function toggleAllOnPage() {
+    const pageIds = props.orders.data.map((o) => o.id)
+    selectedIds.value = allOnPageSelected.value
+        ? selectedIds.value.filter((id) => !pageIds.includes(id))
+        : [...new Set([...selectedIds.value, ...pageIds])]
+}
+
+function toggleOrder(id) {
+    selectedIds.value = selectedIds.value.includes(id)
+        ? selectedIds.value.filter((x) => x !== id)
+        : [...selectedIds.value, id]
+}
 
 function applyFilters() {
     router.get(route('admin.orders.index'), {
@@ -27,6 +48,7 @@ function applyFilters() {
         status:         status.value || undefined,
         payment_status: paymentStatus.value || undefined,
         date_range:     dateRange.value || undefined,
+        per_page:       perPage.value || undefined,
     }, { preserveState: true, replace: true })
 }
 
@@ -219,6 +241,12 @@ function flowIndex(s) { return FLOW.indexOf(s) }
                         <option value="month">Ce mois</option>
                     </select>
 
+                    <select v-model="perPage" aria-label="Commandes par page" class="h-9 px-3 text-[13px] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        <option value="">20 par page</option>
+                        <option value="50">50 par page</option>
+                        <option value="100">100 par page</option>
+                    </select>
+
                     <!-- Reset -->
                     <button v-if="hasFilters" @click="resetFilters"
                         class="h-9 px-3 flex items-center justify-center border border-gray-200 text-[13px] font-medium text-gray-600 rounded-lg hover:bg-gray-50 transition">
@@ -229,11 +257,20 @@ function flowIndex(s) { return FLOW.indexOf(s) }
                 </div>
             </div>
 
+            <!-- Actions groupées -->
+            <div v-if="selectedIds.length" class="p-3 border-b border-gray-100">
+                <OrderBulkBar :selected-ids="selectedIds" :couriers="couriers" @clear="selectedIds = []" />
+            </div>
+
             <!-- Tableau -->
             <div class="overflow-x-auto">
                 <table class="w-full text-[13px]">
                     <thead class="bg-gray-50 border-b border-gray-100">
                         <tr>
+                            <th class="pl-4 py-3 w-10">
+                                <input type="checkbox" :checked="allOnPageSelected" aria-label="Sélectionner toutes les commandes de la page"
+                                    class="w-5 h-5 rounded border-gray-300" @change="toggleAllOnPage">
+                            </th>
                             <th class="px-4 py-3 text-left font-semibold text-gray-700 whitespace-nowrap">N° Commande</th>
                             <th class="px-4 py-3 text-left font-semibold text-gray-700 whitespace-nowrap">Client</th>
                             <th class="px-4 py-3 text-left font-semibold text-gray-700 whitespace-nowrap">Date</th>
@@ -246,7 +283,7 @@ function flowIndex(s) { return FLOW.indexOf(s) }
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         <tr v-if="orders.data.length === 0">
-                            <td colspan="8" class="px-4 py-12 text-center text-gray-500">
+                            <td colspan="9" class="px-4 py-12 text-center text-gray-500">
                                 <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
@@ -258,6 +295,10 @@ function flowIndex(s) { return FLOW.indexOf(s) }
                             class="hover:bg-blue-50/30 transition cursor-pointer group"
                             @click="openDrawer(order.id)">
 
+                            <td class="pl-4 py-3" @click.stop>
+                                <input type="checkbox" :checked="selectedIds.includes(order.id)" :aria-label="`Sélectionner ${order.order_number}`"
+                                    class="w-5 h-5 rounded border-gray-300" @change="toggleOrder(order.id)">
+                            </td>
                             <td class="px-4 py-3">
                                 <span class="font-semibold text-gray-900 group-hover:text-blue-600 transition">
                                     {{ order.order_number }}
@@ -283,6 +324,7 @@ function flowIndex(s) { return FLOW.indexOf(s) }
                                     class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border">
                                     {{ statusLabel(order.status) }}
                                 </span>
+                                <p v-if="order.courier_name" class="mt-1 text-[11px] text-gray-500">chez {{ order.courier_name }}</p>
                             </td>
 
                             <td class="px-4 py-3 text-center">

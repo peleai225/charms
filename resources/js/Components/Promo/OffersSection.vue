@@ -32,7 +32,7 @@ const single = computed(() => props.offers.length === 1)
                     <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-slate-600 shrink-0">
                         <PromoDeadline v-if="offer.ends_at" :ends-at="offer.ends_at" label="Se termine dans" variant="inline" />
                         <Link v-if="offer.category_slug" :href="`/categorie/${offer.category_slug}`"
-                            class="inline-flex h-11 items-center gap-1 text-sm font-semibold text-slate-900 hover:underline">
+                            class="inline-flex h-11 items-center gap-1 text-sm font-semibold text-primary-700 hover:underline">
                             Tout voir
                             <ArrowRight class="w-4 h-4" />
                         </Link>

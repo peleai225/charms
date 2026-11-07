@@ -62,9 +62,10 @@ class HandleInertiaRequests extends Middleware
                     'site_description'   => \App\Models\Setting::get('site_description'),
                     'logo'               => \App\Models\Setting::get('logo'),
                     'favicon'            => \App\Models\Setting::get('favicon'),
-                    'primary_color'      => \App\Models\Setting::get('primary_color', '#2563EB'),
-                    'secondary_color'    => \App\Models\Setting::get('secondary_color', '#8b5cf6'),
-                    'accent_color'       => \App\Models\Setting::get('accent_color', '#f59e0b'),
+                    // Mêmes valeurs que les variables CSS du thème (ThemeColors)
+                    'primary_color'      => \App\Support\ThemeColors::hex(\App\Models\Setting::get('primary_color'), \App\Support\ThemeColors::DEFAULTS['primary']),
+                    'secondary_color'    => \App\Support\ThemeColors::hex(\App\Models\Setting::get('secondary_color'), \App\Support\ThemeColors::DEFAULTS['secondary']),
+                    'accent_color'       => \App\Support\ThemeColors::hex(\App\Models\Setting::get('accent_color'), \App\Support\ThemeColors::DEFAULTS['accent']),
                     'theme_mode'         => \App\Models\Setting::get('theme_mode', 'light'),
                     'footer_text'        => \App\Models\Setting::get('footer_text'),
                     'contact_phone'      => \App\Models\Setting::get('contact_phone'),

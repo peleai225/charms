@@ -25,7 +25,6 @@ const props = defineProps({
 const page = usePage()
 
 const settings  = computed(() => page.props.settings || {})
-const primary   = computed(() => settings.value.primary_color || '#2563EB')
 const siteName  = computed(() => settings.value.site_name     || 'Notre Boutique')
 const waEnabled = computed(() => settings.value.whatsapp_order_enabled !== '0')
 
@@ -74,7 +73,7 @@ const initials = (name) => name?.split(' ').map(w => w[0]).join('').slice(0, 2).
         </Head>
 
         <!-- [1] Grande bannière (image entière, fin de l'offre dessous) -->
-        <HeroBanners :banners="heroBanners" :site-name="siteName" :primary="primary"
+        <HeroBanners :banners="heroBanners" :site-name="siteName"
             :featured-products="featured_products || []" :whatsapp-url="whatsapp_number && waEnabled ? waUrl : null" />
 
         <!-- [2] Infos réelles de la boutique : livraison, paiement, contact -->
@@ -91,8 +90,7 @@ const initials = (name) => name?.split(' ').map(w => w[0]).join('').slice(0, 2).
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-xl font-black text-slate-900">Catégories</h2>
                     <Link href="/boutique"
-                          class="text-sm font-semibold flex items-center gap-1 hover:opacity-70 transition"
-                          :style="{ color: primary }">
+                          class="h-11 text-sm font-semibold flex items-center gap-1 text-primary-700 hover:underline">
                         Tout voir
                         <ChevronRight class="w-4 h-4" />
                     </Link>
@@ -121,7 +119,7 @@ const initials = (name) => name?.split(' ').map(w => w[0]).join('').slice(0, 2).
         <!-- ═══════════════════════════════════════════════════════ -->
         <!-- [4] PRODUITS — ONGLETS                                  -->
         <!-- ═══════════════════════════════════════════════════════ -->
-        <section class="py-12 bg-white" :style="{ '--primary': primary }">
+        <section class="py-12 bg-white">
             <div class="container mx-auto px-4">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-7">
                     <h2 class="text-xl font-black text-slate-900">Nos produits</h2>
@@ -142,7 +140,7 @@ const initials = (name) => name?.split(' ').map(w => w[0]).join('').slice(0, 2).
                     <p class="text-sm">Aucun produit dans cette sélection.</p>
                 </div>
                 <div class="text-center mt-8">
-                    <Link href="/boutique" class="inline-flex items-center gap-2 rounded-xl border-2 px-6 py-3 text-sm font-bold transition cta-outline">
+                    <Link href="/boutique" class="inline-flex h-11 items-center gap-2 rounded-lg border-2 border-primary-600 px-6 text-sm font-semibold text-primary-700 hover:bg-primary-600 hover:text-primary-contrast transition-colors">
                         Voir tous les produits
                         <ArrowRight class="w-4 h-4" />
                     </Link>
@@ -153,7 +151,7 @@ const initials = (name) => name?.split(' ').map(w => w[0]).join('').slice(0, 2).
         <!-- ═══════════════════════════════════════════════════════ -->
         <!-- [5] BANNIÈRES MILIEU (position home_middle)            -->
         <!-- ═══════════════════════════════════════════════════════ -->
-        <PromoBanners :banners="banners?.home_middle || []" :primary="primary" />
+        <PromoBanners :banners="banners?.home_middle || []" />
 
         <!-- ═══════════════════════════════════════════════════════ -->
         <!-- [6] AVIS CLIENTS                                        -->
@@ -169,7 +167,7 @@ const initials = (name) => name?.split(' ').map(w => w[0]).join('').slice(0, 2).
                     </div>
                     <div v-if="review_stats" class="flex items-center gap-1">
                         <Star v-for="i in 5" :key="i" class="w-4 h-4"
-                             :class="i <= Math.round(review_stats.avg) ? 'text-amber-400' : 'text-slate-200'"
+                             :class="i <= Math.round(review_stats.avg) ? 'text-accent-500' : 'text-slate-200'"
                              fill="currentColor" />
                     </div>
                 </div>
@@ -178,13 +176,12 @@ const initials = (name) => name?.split(' ').map(w => w[0]).join('').slice(0, 2).
                          class="bg-slate-50 rounded-2xl p-5 border border-slate-100 flex flex-col gap-3">
                         <div class="flex gap-0.5">
                             <Star v-for="(filled, i) in stars(r.rating)" :key="i" class="w-4 h-4"
-                                 :class="filled ? 'text-amber-400' : 'text-slate-200'"
+                                 :class="filled ? 'text-accent-500' : 'text-slate-200'"
                                  fill="currentColor" />
                         </div>
                         <p class="text-sm text-slate-700 leading-relaxed line-clamp-4 flex-1">"{{ r.body }}"</p>
                         <div class="flex items-center gap-3 pt-3 border-t border-slate-100">
-                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                                 :style="{ backgroundColor: primary + '20', color: primary }">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 bg-primary-100 text-primary-800">
                                 {{ initials(r.author) }}
                             </div>
                             <div>
@@ -198,7 +195,7 @@ const initials = (name) => name?.split(' ').map(w => w[0]).join('').slice(0, 2).
         </section>
 
         <!-- Bannières bas de page (position home_bottom) -->
-        <PromoBanners :banners="banners?.home_bottom || []" :primary="primary" />
+        <PromoBanners :banners="banners?.home_bottom || []" />
 
         <!-- ═══════════════════════════════════════════════════════ -->
         <!-- [7] CTA WHATSAPP                                        -->
@@ -222,19 +219,6 @@ const initials = (name) => name?.split(' ').map(w => w[0]).join('').slice(0, 2).
 </template>
 
 <style scoped>
-.hero-desktop {
-    min-height: 420px;
-}
-
-.cta-outline {
-    border-color: var(--primary, #2563EB);
-    color: var(--primary, #2563EB);
-}
-.cta-outline:hover {
-    background-color: var(--primary, #2563EB);
-    color: white;
-}
-
 .scrollbar-none {
     scrollbar-width: none;
     -ms-overflow-style: none;

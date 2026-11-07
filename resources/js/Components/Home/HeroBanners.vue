@@ -9,7 +9,6 @@ import PromoDeadline from '@/Components/Promo/PromoDeadline.vue'
 const props = defineProps({
     banners: { type: Array, default: () => [] },
     siteName: { type: String, default: '' },
-    primary: { type: String, default: '#2563EB' },
     featuredProducts: { type: Array, default: () => [] },
     whatsappUrl: { type: String, default: null },
 })
@@ -39,7 +38,8 @@ const imageUrl = (path) => (path.startsWith('http') ? path : `/storage/${path}`)
     <section v-if="banners.length" class="bg-white">
         <div v-for="(b, i) in banners" v-show="index === i" :key="b.id">
             <component :is="b.link ? 'a' : 'div'" :href="b.link || undefined"
-                class="relative block" :style="!b.image ? { backgroundColor: b.background_color || '#0f172a' } : null">
+                class="relative block" :class="!b.image && !b.background_color ? 'bg-primary-600 text-primary-contrast' : ''"
+                :style="!b.image && b.background_color ? { backgroundColor: b.background_color, color: b.text_color || '#ffffff' } : null">
 
                 <!-- Visuel en entier, jamais recadré -->
                 <picture v-if="b.image" class="block bg-slate-100">
@@ -51,14 +51,14 @@ const imageUrl = (path) => (path.startsWith('http') ? path : `/storage/${path}`)
 
                 <!-- Texte : sur l'image (ordinateur) seulement si un titre est saisi -->
                 <div v-if="b.title"
-                    :class="b.image ? 'md:absolute md:inset-y-0 md:left-0 md:flex md:items-center md:w-1/2 bg-slate-900 md:bg-transparent' : ''"
+                    :class="b.image ? 'md:absolute md:inset-y-0 md:left-0 md:flex md:items-center md:w-1/2 bg-primary-950 md:bg-transparent' : ''"
                     :style="b.image ? { backgroundImage: 'linear-gradient(to right, rgba(15,23,42,.75), rgba(15,23,42,0))' } : null">
-                    <div class="container mx-auto px-4 py-6 md:py-12" :style="{ color: !b.image ? (b.text_color || '#fff') : '#fff' }">
+                    <div class="container mx-auto px-4 py-6 md:py-12" :class="b.image ? 'text-white' : ''">
                         <p v-if="b.subtitle" class="text-xs md:text-sm font-semibold uppercase tracking-wider opacity-70 mb-2">{{ b.subtitle }}</p>
                         <h1 class="text-2xl md:text-4xl font-bold leading-tight max-w-xl">{{ b.title }}</h1>
                         <p v-if="b.description" class="mt-3 text-sm md:text-base opacity-80 max-w-md">{{ b.description }}</p>
-                        <span v-if="b.link" class="mt-5 inline-flex h-11 items-center gap-2 rounded-lg px-5 text-sm font-semibold text-white"
-                            :style="{ backgroundColor: primary }">
+                        <span v-if="b.link" class="mt-5 inline-flex h-11 items-center gap-2 rounded-lg px-5 text-sm font-semibold"
+                            :class="!b.image && !b.background_color ? 'bg-primary-contrast text-primary-700' : 'bg-primary-600 text-primary-contrast'">
                             {{ b.button_text || "Voir l'offre" }}
                             <ArrowRight class="w-4 h-4" />
                         </span>
@@ -67,7 +67,7 @@ const imageUrl = (path) => (path.startsWith('http') ? path : `/storage/${path}`)
             </component>
 
             <!-- Fin de l'offre -->
-            <div v-if="b.show_countdown && b.ends_at" class="bg-slate-900 text-white">
+            <div v-if="b.show_countdown && b.ends_at" class="bg-accent-600 text-accent-contrast">
                 <div class="container mx-auto px-4 py-2.5 flex justify-center text-sm">
                     <PromoDeadline :ends-at="b.ends_at" label="Fin de l'offre dans" variant="inline" tone="dark" />
                 </div>
@@ -78,20 +78,19 @@ const imageUrl = (path) => (path.startsWith('http') ? path : `/storage/${path}`)
         <div v-if="banners.length > 1" class="flex justify-center gap-1 py-1">
             <button v-for="(b, i) in banners" :key="b.id" type="button" class="w-11 h-11 flex items-center justify-center"
                 :aria-label="`Bannière ${i + 1}`" :aria-current="index === i" @click="show(i)">
-                <span class="block h-1.5 rounded-full" :class="index === i ? 'w-6 bg-slate-800' : 'w-1.5 bg-slate-300'" />
+                <span class="block h-1.5 rounded-full" :class="index === i ? 'w-6 bg-primary-600' : 'w-1.5 bg-slate-300'" />
             </button>
         </div>
     </section>
 
     <!-- Aucune bannière : accueil simple -->
-    <section v-else class="bg-slate-900">
+    <section v-else class="bg-primary-950">
         <div class="container mx-auto px-4 py-12 md:py-16 flex flex-col lg:flex-row items-center gap-10">
             <div class="flex-1 max-w-lg">
                 <h1 class="text-3xl md:text-4xl font-bold text-white leading-tight mb-4">Bienvenue sur {{ siteName }}</h1>
                 <p class="text-white/70 mb-8">Découvrez notre sélection de produits.</p>
                 <div class="flex flex-wrap gap-3">
-                    <Link href="/boutique" class="inline-flex h-11 items-center gap-2 rounded-lg px-6 text-sm font-semibold text-white"
-                        :style="{ backgroundColor: primary }">
+                    <Link href="/boutique" class="inline-flex h-11 items-center gap-2 rounded-lg px-6 text-sm font-semibold bg-primary-600 text-primary-contrast">
                         Voir la boutique
                         <ArrowRight class="w-4 h-4" />
                     </Link>

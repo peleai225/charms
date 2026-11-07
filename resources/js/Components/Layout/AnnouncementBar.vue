@@ -60,10 +60,11 @@ onUnmounted(() => {
     <Transition enter-from-class="opacity-0 -translate-y-2" enter-active-class="transition duration-300">
     <div v-if="announcements.length && !announcementHidden"
          class="relative text-sm py-2.5 text-center px-10 shrink-0 overflow-hidden"
-         :style="{
-             backgroundColor: announcements[announcementIndex]?.background_color || '#2563EB',
-             color: announcements[announcementIndex]?.text_color || '#ffffff',
-         }">
+         :class="announcements[announcementIndex]?.background_color ? '' : 'bg-primary-600 text-primary-contrast'"
+         :style="announcements[announcementIndex]?.background_color ? {
+             backgroundColor: announcements[announcementIndex].background_color,
+             color: announcements[announcementIndex].text_color || '#ffffff',
+         } : null">
         <div class="flex items-center justify-center gap-2 flex-wrap">
             <span class="font-medium">{{ announcements[announcementIndex]?.title }}</span>
             <span v-if="announcements[announcementIndex]?.subtitle" class="opacity-80 hidden sm:inline">
@@ -99,11 +100,12 @@ onUnmounted(() => {
     <div v-if="popup && popupVisible"
          class="fixed inset-0 z-[500] flex items-center justify-center p-4"
          @keydown.escape="dismissPopup" tabindex="-1">
-        <div class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" @click="dismissPopup"/>
+        <div class="absolute inset-0 bg-slate-900/70" @click="dismissPopup"/>
         <div class="relative z-10 w-full max-w-md rounded-2xl overflow-hidden shadow-2xl"
-             :style="{ backgroundColor: popup.background_color || '#1e293b' }">
+             :class="popup.background_color ? '' : 'bg-primary-950 text-white'"
+             :style="popup.background_color ? { backgroundColor: popup.background_color, color: popup.text_color || '#ffffff' } : null">
             <img v-if="popup.image_url" :src="popup.image_url" class="w-full object-cover max-h-52"/>
-            <div class="p-6" :style="{ color: popup.text_color || '#ffffff' }">
+            <div class="p-6">
                 <h3 class="text-xl font-bold leading-tight">{{ popup.title }}</h3>
                 <p v-if="popup.subtitle" class="mt-1 opacity-80 text-sm">{{ popup.subtitle }}</p>
                 <p v-if="popup.description" class="mt-3 text-sm opacity-70 leading-relaxed">{{ popup.description }}</p>
@@ -111,7 +113,8 @@ onUnmounted(() => {
                 <div class="mt-5 flex items-center gap-3">
                     <a v-if="popup.link" :href="popup.link"
                        class="flex-1 text-center px-4 py-2.5 rounded-xl bg-white font-semibold text-sm transition-opacity hover:opacity-90"
-                       :style="{ color: popup.background_color || '#1e293b' }"
+                       :class="popup.background_color ? '' : 'text-primary-800'"
+                       :style="popup.background_color ? { color: popup.background_color } : null"
                        @click="dismissPopup">
                         {{ popup.button_text || 'Découvrir' }}
                     </a>

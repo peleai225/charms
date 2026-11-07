@@ -88,7 +88,7 @@ class PromoBannersTest extends TestCase
         $this->actingAs($this->admin)
             ->get(route('admin.banners.create'))
             ->assertInertia(fn (Assert $page) => $page->where('positions', fn ($positions) => collect($positions)->keys()->sort()->values()->all()
-                === ['announcement_bar', 'home_bottom', 'home_hero', 'home_middle', 'popup_center']));
+                === ['announcement_bar', 'home_bottom', 'home_hero', 'home_middle', 'home_side', 'popup_center']));
 
         $this->actingAs($this->admin)
             ->post(route('admin.banners.store'), $this->bannerPayload(['position' => 'cart_bottom']))

@@ -10,6 +10,9 @@ use App\Models\Promotion;
 use App\Models\Review;
 use App\Models\Setting;
 use App\Services\ShippingZones;
+use App\Services\Storefront\CategoryMenu;
+use App\Services\Storefront\FlashSaleShowcase;
+use App\Services\Storefront\PopularCategories;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -125,7 +128,7 @@ class HomeController extends Controller
         $whatsapp = \App\Models\Setting::get('social_whatsapp');
 
         $homeBanners = \App\Models\Banner::active()
-            ->whereIn('position', ['home_hero', 'home_middle', 'home_bottom'])
+            ->whereIn('position', ['home_hero', 'home_side', 'home_middle', 'home_bottom'])
             ->orderBy('order')
             ->get()
             ->groupBy('position')
@@ -158,6 +161,10 @@ class HomeController extends Controller
             'banners'         => $homeBanners,
             'offers'          => $this->currentOffers($formatProduct),
             'shop_facts'      => $this->shopFacts(),
+            // Blocs de l'accueil « marketplace » : chacun a son service dans App\Services\Storefront
+            'menu_categories'    => app(CategoryMenu::class)->forHome(),
+            'popular_categories' => app(PopularCategories::class)->forHome(),
+            'flash_sale'         => app(FlashSaleShowcase::class)->current($formatProduct),
         ];
     }
 

@@ -43,6 +43,7 @@ class Banner extends Model
         'announcement_bar',
         'popup_center',
         'home_hero',
+        'home_side',
         'home_middle',
         'home_bottom',
     ];
@@ -75,6 +76,7 @@ class Banner extends Model
         'announcement_bar' => 'Barre d\'annonce (tout en haut)',
         'popup_center' => 'Popup (centre de l\'écran)',
         'home_hero' => 'Accueil - Slider principal',
+        'home_side' => 'Accueil - À côté du slider (petites cartes)',
         'home_middle' => 'Accueil - Milieu de page',
         'home_bottom' => 'Accueil - Bas de page',
         'category_top' => 'Catégorie - Haut',

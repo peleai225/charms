@@ -1,49 +1,48 @@
 <script setup>
-import { Link, usePage } from '@inertiajs/vue3'
+import { computed } from 'vue'
+import { Link } from '@inertiajs/vue3'
 import { ArrowRight } from 'lucide-vue-next'
 import ProductCard from '@/Components/ProductCard.vue'
-import Countdown from './Countdown.vue'
-import { clockOffset, isEndingSoon, endDateText } from './countdown.js'
+import PromoDeadline from './PromoDeadline.vue'
 
-// Offres par lot en cours (« 3 pour 10 000 F CFA »), avec leurs produits
-defineProps({
+// Offres par lot en cours (« 3 pour 10 000 F CFA »), avec leurs produits sur une ligne qui défile.
+// Une seule offre : son nom sert de titre de section, sans répéter « Offres du moment ».
+const props = defineProps({
     offers: { type: Array, default: () => [] },
 })
 
-const page = usePage()
-const now = Date.now() + clockOffset(page.props.server_now, Date.now())
+const single = computed(() => props.offers.length === 1)
 </script>
 
 <template>
     <section v-if="offers.length" class="py-10 bg-white">
         <div class="container mx-auto px-4 space-y-10">
-            <div class="flex items-end justify-between gap-3">
-                <h2 class="text-xl font-black text-slate-900">Offres du moment</h2>
-            </div>
+            <h2 v-if="!single" class="text-xl font-bold text-slate-900">Offres du moment</h2>
 
             <div v-for="offer in offers" :key="offer.id" class="space-y-4">
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
                     <div class="min-w-0">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span class="rounded-lg bg-slate-900 px-3 py-1 text-sm font-bold text-white">{{ offer.label }}</span>
-                            <h3 class="text-base font-bold text-slate-900">{{ offer.name }}</h3>
-                        </div>
-                        <p v-if="offer.description" class="mt-1 text-sm text-slate-600">{{ offer.description }}</p>
-                        <p v-else class="mt-1 text-sm text-slate-600">Mélangez les articles de l'offre : le prix du lot s'applique automatiquement au panier.</p>
+                        <component :is="single ? 'h2' : 'h3'" class="font-bold text-slate-900" :class="single ? 'text-xl' : 'text-base'">
+                            {{ offer.name }}
+                        </component>
+                        <p class="mt-1 text-sm text-slate-600">
+                            {{ offer.description || "Mélangez les articles de l'offre : le prix du lot s'applique au panier." }}
+                        </p>
                     </div>
-                    <div class="flex flex-wrap items-center gap-3 md:justify-end">
-                        <Countdown v-if="isEndingSoon(offer.ends_at, now)" :ends-at="offer.ends_at" label="Se termine dans" />
-                        <p v-else-if="offer.ends_at" class="text-sm text-slate-600">Jusqu'au {{ endDateText(offer.ends_at) }}</p>
+                    <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-slate-600 shrink-0">
+                        <PromoDeadline v-if="offer.ends_at" :ends-at="offer.ends_at" label="Se termine dans" variant="inline" />
                         <Link v-if="offer.category_slug" :href="`/categorie/${offer.category_slug}`"
-                            class="inline-flex h-11 items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 hover:bg-slate-100">
-                            Voir tout
+                            class="inline-flex h-11 items-center gap-1 text-sm font-semibold text-slate-900 hover:underline">
+                            Tout voir
                             <ArrowRight class="w-4 h-4" />
                         </Link>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                    <ProductCard v-for="p in offer.products" :key="p.id" :product="p" />
+                <div class="flex gap-4 overflow-x-auto snap-x pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+                    <div v-for="p in offer.products" :key="p.id" class="w-44 sm:w-56 shrink-0 snap-start">
+                        <ProductCard :product="p" />
+                    </div>
                 </div>
             </div>
         </div>

@@ -50,7 +50,7 @@ const blocks = computed(() => [
             <div class="flex items-center gap-1.5">
                 <span v-for="b in blocks" :key="b.unit"
                     class="min-w-[44px] rounded-lg px-2 py-1.5 text-center tabular-nums"
-                    :class="{ dark: 'bg-white/15 text-white', light: 'bg-slate-900 text-white', inherit: 'border border-current' }[tone]">
+                    :class="{ dark: 'bg-white/15 text-white', light: 'bg-accent-600 text-accent-contrast', inherit: 'border border-current' }[tone]">
                     <span class="block text-base font-bold leading-none">{{ b.value }}</span>
                     <span class="block text-[10px] leading-none mt-1 opacity-70">{{ b.unit }}</span>
                 </span>

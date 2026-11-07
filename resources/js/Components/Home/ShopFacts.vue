@@ -15,7 +15,7 @@ const ICONS = { delivery: Truck, cod: Banknote, whatsapp: MessageCircle }
             <component :is="f.href ? 'a' : 'div'" v-for="f in facts" :key="f.key" :href="f.href || undefined"
                 :target="f.href ? '_blank' : undefined" :rel="f.href ? 'noopener' : undefined"
                 class="flex items-center gap-3 min-h-11" :class="f.href ? 'hover:text-slate-900' : ''">
-                <component :is="ICONS[f.key]" class="w-5 h-5 text-slate-400 shrink-0" aria-hidden="true" />
+                <component :is="ICONS[f.key]" class="w-5 h-5 text-primary-600 shrink-0" aria-hidden="true" />
                 <span class="text-sm leading-snug">
                     <span class="font-semibold text-slate-900">{{ f.title }}</span>
                     <span class="text-slate-500"> · {{ f.desc }}</span>

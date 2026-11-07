@@ -8,9 +8,6 @@
     @php
         $siteName      = \App\Models\Setting::get('site_name', config('app.name', 'Chamse'));
         $siteFavicon   = \App\Models\Setting::get('favicon');
-        $primaryColor  = \App\Models\Setting::get('primary_color', '#2563EB');
-        $secondaryColor= \App\Models\Setting::get('secondary_color', '#8b5cf6');
-        $accentColor   = \App\Models\Setting::get('accent_color', '#f59e0b');
         $metaPixelId   = \App\Models\Setting::get('meta_pixel_id');
         $tiktokPixelId = \App\Models\Setting::get('tiktok_pixel_id');
         $ga4Id         = \App\Models\Setting::get('ga4_id');
@@ -140,34 +137,12 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
-        /* Tailwind v4 : on écrase les variables --color-primary-* directement dans :root.
-           Toutes les classes bg-primary-600, text-primary-600, etc. lisent ces vars nativement. */
+        /* Tailwind v4 : les couleurs du back-office écrasent les variables du thème dans :root.
+           Toutes les classes bg-primary-600, text-accent-contrast, etc. lisent ces vars nativement. */
         :root {
-            --color-primary-50:  color-mix(in srgb, {{ $primaryColor }}  6%, white);
-            --color-primary-100: color-mix(in srgb, {{ $primaryColor }} 12%, white);
-            --color-primary-200: color-mix(in srgb, {{ $primaryColor }} 22%, white);
-            --color-primary-300: color-mix(in srgb, {{ $primaryColor }} 40%, white);
-            --color-primary-400: color-mix(in srgb, {{ $primaryColor }} 65%, white);
-            --color-primary-500: color-mix(in srgb, {{ $primaryColor }} 90%, white);
-            --color-primary-600: {{ $primaryColor }};
-            --color-primary-700: color-mix(in srgb, {{ $primaryColor }} 85%, black);
-            --color-primary-800: color-mix(in srgb, {{ $primaryColor }} 70%, black);
-            --color-primary-900: color-mix(in srgb, {{ $primaryColor }} 55%, black);
-            --color-primary-950: color-mix(in srgb, {{ $primaryColor }} 40%, black);
-
-            --color-secondary-50:  color-mix(in srgb, {{ $secondaryColor }}  6%, white);
-            --color-secondary-100: color-mix(in srgb, {{ $secondaryColor }} 12%, white);
-            --color-secondary-500: color-mix(in srgb, {{ $secondaryColor }} 90%, white);
-            --color-secondary-600: {{ $secondaryColor }};
-            --color-secondary-700: color-mix(in srgb, {{ $secondaryColor }} 85%, black);
-
-            --color-accent-50:  color-mix(in srgb, {{ $accentColor }}  8%, white);
-            --color-accent-100: color-mix(in srgb, {{ $accentColor }} 14%, white);
-            --color-accent-400: color-mix(in srgb, {{ $accentColor }} 70%, white);
-            --color-accent-500: color-mix(in srgb, {{ $accentColor }} 90%, white);
-            --color-accent-600: {{ $accentColor }};
-            --color-accent-700: color-mix(in srgb, {{ $accentColor }} 85%, black);
-            --color-accent-800: color-mix(in srgb, {{ $accentColor }} 70%, black);
+@foreach (\App\Support\ThemeColors::cssVariables() as $var => $value)
+            {{ $var }}: {{ $value }};
+@endforeach
         }
     </style>
 

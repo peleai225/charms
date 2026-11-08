@@ -85,6 +85,7 @@ Route::post('/favoris/{product}/toggle', [App\Http\Controllers\Front\WishlistCon
 
 // Catalogue
 Route::get('/boutique', [App\Http\Controllers\Front\ShopController::class, 'index'])->name('shop.index');
+Route::get('/ventes-flash', [App\Http\Controllers\Front\FlashSaleController::class, 'index'])->name('flash-sales.index');
 Route::get('/feed/meta.csv', [App\Http\Controllers\Front\FeedController::class, 'metaCsv'])->name('feed.meta');
 Route::get('/feed/images/{image}.jpg', [App\Http\Controllers\Front\FeedController::class, 'imageJpeg'])->name('feed.image');
 Route::post('/recherche-photo',[App\Http\Controllers\Front\ImageSearchController::class, 'search'])->middleware('throttle:6,60')->name('shop.image-search');

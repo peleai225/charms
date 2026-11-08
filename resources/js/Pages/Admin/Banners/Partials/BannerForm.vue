@@ -19,7 +19,8 @@ const isAnnouncementBar = computed(() => form.position === 'announcement_bar')
 const isPopup = computed(() => form.position === 'popup_center')
 const isHero = computed(() => form.position === 'home_hero')
 const isHomePromo = computed(() => ['home_middle', 'home_bottom'].includes(form.position))
-const usesColors = computed(() => isAnnouncementBar.value || isPopup.value || isHomePromo.value)
+const isSide = computed(() => form.position === 'home_side')
+const usesColors = computed(() => isAnnouncementBar.value || isPopup.value || isHomePromo.value || isSide.value)
 
 function selectImage(file) {
     form.image = file
@@ -66,6 +67,7 @@ const label = 'block text-[11px] font-semibold text-gray-500 uppercase tracking-
             </div>
             <p v-if="isAnnouncementBar" class="mt-3 text-[12px] text-amber-700">Barre tout en haut du site : seul le titre est obligatoire.</p>
             <p v-if="isPopup" class="mt-3 text-[12px] text-indigo-700">Popup au centre de l'écran, affiché une fois par visiteur. L'image est facultative.</p>
+            <p v-if="isSide" class="mt-3 text-[12px] text-gray-600">Petite carte à droite de la grande bannière sur ordinateur, sous la bannière sur téléphone. Deux cartes au maximum sont affichées (les premières dans l'ordre d'affichage).</p>
         </div>
 
         <!-- Images -->
@@ -73,7 +75,7 @@ const label = 'block text-[11px] font-semibold text-gray-500 uppercase tracking-
             <h2 class="text-[13px] font-semibold text-gray-900 mb-4">Images</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <BannerImagePicker label="Image ordinateur" :preview="preview" :error="form.errors.image"
-                    :hint="isHero ? 'Recommandé : 1920 × 600 px, 5 Mo max' : 'PNG, JPG, WEBP — 5 Mo max'"
+                    :hint="isHero ? 'Recommandé : 1920 × 600 px, 5 Mo max' : isSide ? 'Recommandé : 600 × 400 px, 5 Mo max' : 'PNG, JPG, WEBP — 5 Mo max'"
                     @select="selectImage" @remove="removeImage" />
                 <BannerImagePicker v-if="isHero || isHomePromo" label="Image téléphone (facultative)" :preview="previewMobile"
                     :error="form.errors.image_mobile" hint="Format vertical ou carré, ex. 1080 × 1080 px. Sinon l'image ordinateur est utilisée."
@@ -81,6 +83,9 @@ const label = 'block text-[11px] font-semibold text-gray-500 uppercase tracking-
             </div>
             <p v-if="isHomePromo" class="mt-3 text-[12px] text-gray-500">
                 Votre visuel s'affiche en entier. Si l'image contient déjà le texte de la promo, laissez le titre vide.
+            </p>
+            <p v-if="isSide" class="mt-3 text-[12px] text-gray-500">
+                Sans titre, l'image s'affiche seule et en entier. Avec un titre, le sous-titre, le titre et le bouton s'affichent sur la couleur de fond, l'image en illustration à droite.
             </p>
         </div>
 
@@ -118,7 +123,7 @@ const label = 'block text-[11px] font-semibold text-gray-500 uppercase tracking-
         <div v-if="usesColors" class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <h2 class="text-[13px] font-semibold text-gray-900 mb-1">Couleurs</h2>
             <p class="text-[12px] text-gray-500 mb-4">
-                {{ isHomePromo ? 'Utilisées quand la bannière n\'a pas d\'image.' : 'Fond et texte de la barre ou du popup.' }}
+                {{ isHomePromo ? 'Utilisées quand la bannière n\'a pas d\'image.' : isSide ? 'Fond et texte de la carte quand elle a un titre. Vides = couleurs du thème.' : 'Fond et texte de la barre ou du popup.' }}
             </p>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
                 <div v-for="field in [{ key: 'background_color', text: 'Fond', fallback: '#2563EB' }, { key: 'text_color', text: 'Texte', fallback: '#FFFFFF' }]" :key="field.key">

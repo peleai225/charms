@@ -1,9 +1,9 @@
 <script setup>
 import FrontLayout from '@/Layouts/FrontLayout.vue';
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import ProductCard from '@/Components/ProductCard.vue';
-import Countdown from '@/Components/Promo/Countdown.vue';
-import { clockOffset, isEndingSoon, endDateText } from '@/Components/Promo/countdown.js';
+import ProductPriceBlock from '@/Components/Shop/ProductPriceBlock.vue';
+import ProductReviews from '@/Components/Shop/ProductReviews.vue';
 import { useHelpers } from '@/Composables/useHelpers';
 import { useCartStore } from '@/Stores/cart';
 import { useNotificationStore } from '@/Stores/notifications';
@@ -111,36 +111,19 @@ const selectColor = (colorId) => {
     }
 };
 
+// En vente flash, price est déjà le prix flash (serveur) et regular_price le prix normal
 const currentPrice = computed(() => selectedVariant.value?.price ?? props.product.price);
+const regularPrice = computed(() => selectedVariant.value?.regular_price ?? props.product.regular_price);
 const currentStock = computed(() => selectedVariant.value?.stock ?? props.product.stock);
 const isInStock    = computed(() => currentStock.value > 0 || props.product.allow_backorder);
 const discountPct  = computed(() => {
+    if (props.product.flash_sale) return props.product.flash_sale.discount_percent;
     if (!props.product.compare_price) return null;
     return Math.round((1 - currentPrice.value / props.product.compare_price) * 100);
 });
 
-// ─── Offres par lot ──────────────────────────────────────────────────────────
-// Les offres viennent du serveur. Une variante peut avoir son propre prix et
-// sortir de la fourchette de l'offre : on le dit, au lieu de masquer en silence.
-const inBand = (offer, price) =>
-    (offer.price_min == null || price >= offer.price_min)
-    && (offer.price_max == null || price <= offer.price_max);
-
-const activePromotions = computed(() =>
-    props.promotions
-        .filter(offer => inBand(offer, currentPrice.value))
-        // L'économie est recalculée au prix de la variante choisie, pas au prix de base.
-        .map(offer => ({
-            ...offer,
-            saving: Math.max(0, currentPrice.value * offer.lot_qty - offer.lot_price),
-        })),
-);
-
-const offerNow = Date.now() + clockOffset(usePage().props.server_now, Date.now());
-
-const variantLeavesOffer = computed(
-    () => props.promotions.length > 0 && activePromotions.value.length === 0,
-);
+// Fin de la vente flash pendant la visite : on recharge pour réafficher le prix normal
+const onFlashEnded = () => router.reload({ only: ['product', 'promotions'] });
 
 // ─── Panier ───────────────────────────────────────────────────────────────────
 const quantity = ref(1);
@@ -252,7 +235,7 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                             <svg class="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                         </div>
                         <!-- Badge promo -->
-                        <div v-if="discountPct" class="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                        <div v-if="discountPct > 0" class="absolute top-3 left-3 bg-accent-600 text-accent-contrast text-xs font-bold px-2.5 py-1 rounded-full">
                             -{{ discountPct }}%
                         </div>
                         <!-- Prev / Next -->
@@ -299,43 +282,9 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                         </button>
                     </div>
 
-                    <!-- Prix -->
-                    <div class="flex items-baseline gap-3 mb-2">
-                        <span class="text-3xl font-bold text-slate-900">{{ formatPrice(currentPrice) }}</span>
-                        <span v-if="product.compare_price" class="text-xl text-slate-400 line-through">{{ formatPrice(product.compare_price) }}</span>
-                    </div>
-
-                    <!-- Offres par lot -->
-                    <div v-if="activePromotions.length" class="mb-4 border border-primary-600/20 rounded-lg overflow-hidden">
-                        <div class="bg-primary-600/5 px-3 py-2">
-                            <p class="text-xs font-semibold text-primary-600">Offres en cours</p>
-                        </div>
-                        <div class="divide-y divide-slate-100">
-                            <div v-for="offer in activePromotions" :key="offer.name" class="px-3 py-2 text-sm">
-                                <div class="flex items-center justify-between gap-3">
-                                    <span class="font-medium text-slate-900">{{ offer.name }}</span>
-                                    <span class="font-semibold text-primary-600 whitespace-nowrap">
-                                        {{ formatPrice(offer.unit_price_in_lot) }} / unité
-                                    </span>
-                                </div>
-                                <p v-if="offer.saving > 0" class="text-xs text-green-600 mt-0.5">
-                                    Économisez {{ formatPrice(offer.saving) }} sur {{ offer.lot_qty }} articles
-                                </p>
-                                <p v-if="offer.description" class="text-xs text-slate-500 mt-0.5">
-                                    {{ offer.description }}
-                                </p>
-                                <Countdown v-if="isEndingSoon(offer.ends_at, offerNow)" :ends-at="offer.ends_at"
-                                    label="Se termine dans" variant="inline" class="mt-1 text-xs text-red-600" />
-                                <p v-else-if="offer.ends_at" class="text-xs text-slate-500 mt-0.5">
-                                    Jusqu'au {{ endDateText(offer.ends_at) }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <p v-else-if="variantLeavesOffer" class="mb-4 text-sm text-slate-500">
-                        Cette option n'entre pas dans les offres par lot en cours.
-                    </p>
+                    <!-- Prix, vente flash, offres par lot -->
+                    <ProductPriceBlock :product="product" :price="currentPrice" :regular-price="regularPrice"
+                        :promotions="promotions" @flash-ended="onFlashEnded" />
 
                     <!-- Description courte -->
                     <p v-if="product.short_description" class="text-sm text-slate-600 leading-relaxed mb-5 border-t border-slate-100 pt-4">
@@ -473,42 +422,7 @@ const stars = (n) => Array.from({ length: 5 }, (_, i) => i < Math.round(n));
                 </div>
 
                 <!-- Avis -->
-                <div v-else-if="activeTab === 'reviews'">
-                    <!-- Note globale -->
-                    <div v-if="product.review_count > 0" class="flex items-center gap-6 mb-8 p-5 bg-slate-50 rounded-xl border border-slate-200 max-w-sm">
-                        <div class="text-center">
-                            <p class="text-5xl font-bold text-slate-900">{{ product.review_avg }}</p>
-                            <div class="flex gap-0.5 justify-center mt-1">
-                                <svg v-for="(full, i) in stars(product.review_avg)" :key="i" class="w-4 h-4" :class="full ? 'text-amber-400' : 'text-slate-200'" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                </svg>
-                            </div>
-                            <p class="text-xs text-slate-400 mt-1">{{ product.review_count }} avis</p>
-                        </div>
-                    </div>
-
-                    <!-- Liste avis -->
-                    <div v-if="product.reviews.length" class="space-y-5">
-                        <div v-for="review in product.reviews" :key="review.id" class="border-b border-slate-100 pb-5">
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center text-xs font-semibold text-slate-600">
-                                        {{ review.author[0] }}
-                                    </div>
-                                    <p class="text-sm font-semibold text-slate-900">{{ review.author }}</p>
-                                </div>
-                                <div class="flex gap-0.5">
-                                    <svg v-for="(full, i) in stars(review.rating)" :key="i" class="w-3.5 h-3.5" :class="full ? 'text-amber-400' : 'text-slate-200'" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                    </svg>
-                                </div>
-                            </div>
-                            <p class="text-sm text-slate-600 leading-relaxed">{{ review.body }}</p>
-                            <p class="text-xs text-slate-400 mt-1">{{ review.created_at }}</p>
-                        </div>
-                    </div>
-                    <div v-else class="text-sm text-slate-500 py-4">Aucun avis pour ce produit.</div>
-                </div>
+                <ProductReviews v-else-if="activeTab === 'reviews'" :product="product" />
             </div>
 
             <!-- ─── Upsell ─────────────────────────────────────────── -->

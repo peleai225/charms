@@ -16,11 +16,13 @@ class CartItem extends Model
         'product_variant_id',
         'quantity',
         'unit_price',
+        'flash_sale_id',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
         'unit_price' => 'decimal:2',
+        'flash_sale_id' => 'integer',
     ];
 
     // ========== RELATIONS ==========
@@ -38,6 +40,15 @@ class CartItem extends Model
     public function variant(): BelongsTo
     {
         return $this->belongsTo(ProductVariant::class, 'product_variant_id');
+    }
+
+    /**
+     * Vente flash qui a fixé le prix de la ligne. Peut être nulle alors que
+     * flash_sale_id est renseigné : la vente a été supprimée depuis.
+     */
+    public function flashSale(): BelongsTo
+    {
+        return $this->belongsTo(FlashSale::class);
     }
 
     // ========== ACCESSORS ==========

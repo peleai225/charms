@@ -38,12 +38,14 @@ final class CartPricing
 
     /**
      * Assiette du coupon. Les lignes en offre en sont exclues, sauf si l'offre
-     * est explicitement déclarée cumulable.
+     * est explicitement déclarée cumulable. Les lignes en vente flash en sont
+     * toujours exclues : la remise flash ne se cumule pas avec un code promo.
      */
     public function couponEligibleBase(): float
     {
         return array_sum(array_map(
-            fn (PricedLine $line) => $line->promotion === null || $line->promotion->stackable_with_coupons
+            fn (PricedLine $line) => ! $line->isFlashSale()
+                && ($line->promotion === null || $line->promotion->stackable_with_coupons)
                 ? $line->lineTotal()
                 : 0.0,
             $this->lines

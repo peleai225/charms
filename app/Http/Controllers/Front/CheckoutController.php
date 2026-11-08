@@ -45,6 +45,10 @@ class CheckoutController extends Controller
 
         $cart->load(['items.product.images', 'items.variant.attributeValues.attribute']);
 
+        // Avant la lecture des lignes : la tarification aligne les prix des
+        // ventes flash (une vente terminée revient au prix normal).
+        $cart->pricing();
+
         // Récupérer le client et ses adresses si connecté
         $customer = null;
         $addresses = collect();

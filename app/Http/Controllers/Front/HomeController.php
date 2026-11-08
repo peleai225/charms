@@ -169,13 +169,24 @@ class HomeController extends Controller
     }
 
     /**
-     * Infos réelles de la boutique (livraison, paiement, contact), tirées des réglages.
-     * Rien n'est affiché pour ce que la boutique n'a pas configuré.
+     * Engagements saisis dans Admin → Paramètres → Accueil ; sinon infos réelles de la boutique
+     * (livraison, paiement, contact), tirées des réglages. Rien n'est affiché pour ce que
+     * la boutique n'a pas configuré.
      *
      * @return array<int, array{key: string, title: string, desc: string, href: ?string}>
      */
     private function shopFacts(): array
     {
+        $engagements = \App\Support\HomeEngagements::saved();
+        if ($engagements) {
+            return array_map(fn (array $e) => [
+                'key' => $e['icon'],
+                'title' => $e['title'],
+                'desc' => $e['text'] ?? '',
+                'href' => $e['link'],
+            ], $engagements);
+        }
+
         $facts = [];
 
         $zones = collect(app(ShippingZones::class)->all())->filter(fn ($z) => trim((string) ($z['name'] ?? '')) !== '');

@@ -457,6 +457,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/settings/ai', [\App\Http\Controllers\Admin\SettingsController::class, 'ai'])->name('settings.ai');
             Route::post('/settings/ai', [\App\Http\Controllers\Admin\SettingsController::class, 'updateAi'])->name('settings.ai.update');
             Route::post('/settings/ai/test', [\App\Http\Controllers\Admin\SettingsController::class, 'testAi'])->name('settings.ai.test');
+            Route::get('/settings/home', [\App\Http\Controllers\Admin\SettingsController::class, 'home'])->name('settings.home');
+            Route::post('/settings/home', [\App\Http\Controllers\Admin\SettingsController::class, 'updateHome'])->name('settings.home.update');
 
             // Système / Déploiement (admin uniquement)
             Route::get('/system', [\App\Http\Controllers\Admin\SystemController::class, 'index'])->name('system.index');

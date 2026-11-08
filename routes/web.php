@@ -406,6 +406,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
             // Offres par lot
             Route::resource('promotions', \App\Http\Controllers\Admin\PromotionController::class)->names('promotions');
+
+            // Ventes flash
+            Route::resource('flash-sales', \App\Http\Controllers\Admin\FlashSaleController::class)->except('show')->names('flash-sales');
+            Route::get('/flash-sales-products', [\App\Http\Controllers\Admin\FlashSaleController::class, 'searchProducts'])->name('flash-sales.products');
             Route::resource('couriers', \App\Http\Controllers\Admin\CourierController::class)->only(['index', 'store', 'update'])->names('couriers');
             Route::post('couriers/{courier}/dispatch', [\App\Http\Controllers\Admin\CourierController::class, 'dispatch'])->name('couriers.dispatch');
             Route::get('couriers/{courier}', [\App\Http\Controllers\Admin\CourierController::class, 'show'])->name('couriers.show');

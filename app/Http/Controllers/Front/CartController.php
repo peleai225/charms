@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Cart;
 use App\Models\Coupon;
 use App\Models\Customer;
+use App\Models\FlashSale;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Services\BundlePricingService;
+use App\Services\FlashSalePricing;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -24,10 +26,15 @@ class CartController extends Controller
 
         $pricing = $cart->pricing();
 
+        // Lignes au prix flash : nom de la vente et prix normal, pour l'afficher barré
+        $flashSales = FlashSale::whereIn('id', $cart->items->pluck('flash_sale_id')->filter()->unique())
+            ->pluck('name', 'id');
+        $flashPricing = app(FlashSalePricing::class);
+
         // Format cart data for Inertia
         $cartData = [
             'id' => $cart->id,
-            'items' => $cart->items->map(function ($item) use ($pricing) {
+            'items' => $cart->items->map(function ($item) use ($pricing, $flashSales, $flashPricing) {
                 $primaryImage = $item->product->images->where('is_primary', true)->first()
                     ?? $item->product->images->first();
 
@@ -51,6 +58,10 @@ class CartController extends Controller
                     'discount' => $line->discount,
                     'line_total' => $line->lineTotal(),
                     'promotion' => $line->promotion?->name,
+                    'flash_sale' => $item->flash_sale_id ? $flashSales[$item->flash_sale_id] ?? null : null,
+                    'regular_price' => $item->flash_sale_id
+                        ? $flashPricing->regularPrice($item->product, $item->variant)
+                        : null,
                     'product' => [
                         'id' => $item->product->id,
                         'name' => $item->product->name,
@@ -308,9 +319,11 @@ class CartController extends Controller
             'cart_count' => $cart->items_count,
             'lines' => collect($pricing->lines)->map(fn ($line) => [
                 'id' => $line->cartItemId,
+                'unit_price' => $line->unitPrice,
                 'discount' => $line->discount,
                 'line_total' => $line->lineTotal(),
                 'promotion' => $line->promotion?->name,
+                'flash_sale' => $line->isFlashSale(),
             ])->values()->all(),
         ];
     }
@@ -335,6 +348,9 @@ class CartController extends Controller
     {
         $cart = $this->getCart();
         $cart->load(['items.product.images', 'items.variant.attributeValues.attribute', 'coupon']);
+
+        // Avant la lecture des lignes : la tarification aligne les prix flash
+        $pricing = $cart->pricing();
 
         $items = $cart->items->map(function ($item) {
             $image = $item->product->images->where('is_primary', true)->first()
@@ -364,8 +380,6 @@ class CartController extends Controller
                 'remove_url' => route('cart.remove', $item->id),
             ];
         });
-
-        $pricing = $cart->pricing();
 
         return response()->json([
             'items' => $items,

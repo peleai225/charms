@@ -61,6 +61,7 @@ class BundlePricingService
                 unitPrice: (float) $item->unit_price,
                 discount: (float) ($discounts[$item->id] ?? 0),
                 promotion: $promotions[$item->id] ?? null,
+                flashSaleId: $item->flash_sale_id,
             );
         }
 
@@ -218,6 +219,9 @@ class BundlePricingService
      * Le tri décroissant met les articles les plus chers dans le lot : la remise
      * est maximale pour le client, ce qui est l'usage du commerce.
      *
+     * Les lignes en vente flash n'entrent dans aucun lot : elles sont déjà
+     * remisées, et ne prennent pas la place d'un article qui profiterait du lot.
+     *
      * @param  iterable<CartItem>  $items
      * @param  array<int,int>  $consumed  cart_item_id => unités déjà prises
      * @return array<int, array{cart_item_id:int, price:float}>
@@ -230,6 +234,10 @@ class BundlePricingService
         $units = [];
 
         foreach ($items as $item) {
+            if ($item->flash_sale_id !== null) {
+                continue;
+            }
+
             if (! $this->isEligible($item, $categoryIds, $productIds)) {
                 continue;
             }

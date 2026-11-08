@@ -45,6 +45,15 @@ const applySummary = (data) => {
         item.discount   = line.discount;
         item.line_total = line.line_total;
         item.promotion  = line.promotion;
+        // Une vente flash peut finir pendant la visite : le prix unitaire vient aussi du serveur
+        if (line.unit_price !== undefined) {
+            item.unit_price = line.unit_price;
+            item.total      = line.unit_price * item.quantity;
+        }
+        if (!line.flash_sale) {
+            item.flash_sale    = null;
+            item.regular_price = null;
+        }
     }
 };
 
@@ -305,7 +314,11 @@ const waCartMessage = computed(() => {
                                             {{ attr.name }} : {{ attr.value }}
                                         </span>
                                     </div>
-                                    <p class="text-xs text-slate-400 mt-1">{{ formatPrice(item.unit_price) }} / unité</p>
+                                    <p class="text-xs text-slate-400 mt-1">
+                                        {{ formatPrice(item.unit_price) }} / unité
+                                        <span v-if="item.regular_price" class="ml-1 line-through">{{ formatPrice(item.regular_price) }}</span>
+                                    </p>
+                                    <p v-if="item.flash_sale" class="text-xs font-medium text-accent-700 mt-0.5">Vente flash · {{ item.flash_sale }}</p>
 
                                     <!-- Qté + supprimer -->
                                     <div class="flex items-center gap-3 mt-3">

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Front;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Services\BundlePricingService;
+use App\Services\FlashSalePricing;
 use App\Services\Storefront\BestSellers;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,7 +22,8 @@ class BestSellersController extends Controller
 
         return Inertia::render('Shop/BestSellers', [
             'days' => BestSellers::DAYS,
-            'products' => $bestSellers->top()->map(fn (Product $p) => [
+            // Prix flash en cours : le même que celui facturé au panier
+            'products' => app(FlashSalePricing::class)->applyToCards($bestSellers->top()->map(fn (Product $p) => [
                 'id' => $p->id,
                 'name' => $p->name,
                 'slug' => $p->slug,
@@ -33,7 +35,7 @@ class BestSellersController extends Controller
                 'promotion_label' => $pricing->labelForProduct($p),
                 'category_name' => $p->category?->name,
                 'primary_image' => $p->images->where('is_primary', true)->first()?->path ?? $p->images->first()?->path,
-            ])->values()->all(),
+            ])),
         ]);
     }
 }

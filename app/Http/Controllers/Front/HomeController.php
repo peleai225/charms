@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\Promotion;
 use App\Models\Review;
 use App\Models\Setting;
+use App\Services\FlashSalePricing;
 use App\Services\ShippingZones;
 use App\Services\Storefront\CategoryMenu;
 use App\Services\Storefront\FlashSaleShowcase;
@@ -134,6 +135,8 @@ class HomeController extends Controller
             ->groupBy('position')
             ->map(fn($group) => $group->map($mapBanner)->values()->all());
 
+        $flash = app(FlashSalePricing::class);
+
         return [
             'featured_categories' => $featuredCategories->map(fn($c) => [
                 'id'                => $c->id,
@@ -143,9 +146,10 @@ class HomeController extends Controller
                 'products_count'    => $c->products_count,
                 'min_product_price' => $c->min_product_price,
             ]),
-            'featured_products' => $featuredProducts->map($formatProduct),
-            'new_products'      => $newProducts->map($formatProduct),
-            'sale_products'     => $saleProducts->map($formatProduct),
+            // Prix flash en cours : le même que celui facturé au panier
+            'featured_products' => $flash->applyToCards($featuredProducts->map($formatProduct)),
+            'new_products'      => $flash->applyToCards($newProducts->map($formatProduct)),
+            'sale_products'     => $flash->applyToCards($saleProducts->map($formatProduct)),
             'reviews'           => $reviews->map(fn($r) => [
                 'id'           => $r->id,
                 'rating'       => $r->rating,
@@ -267,7 +271,9 @@ class HomeController extends Controller
                     'category_slug' => ! $productIds && $promotion->categories->count() === 1
                         ? $promotion->categories->first()->slug
                         : null,
-                    'products'      => $products->map(fn ($p) => $formatProduct($p) + ['promotion_label' => $short])->all(),
+                    'products'      => app(FlashSalePricing::class)->applyToCards(
+                        $products->map(fn ($p) => $formatProduct($p) + ['promotion_label' => $short])
+                    ),
                 ];
             })
             ->filter()

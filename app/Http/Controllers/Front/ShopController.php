@@ -128,7 +128,8 @@ class ShopController extends Controller
 
         // Format data for Inertia
         $productsData = [
-            'data' => $products->map(function ($product) use ($pricing) {
+            // Prix flash en cours : le même que celui facturé au panier
+            'data' => app(FlashSalePricing::class)->applyToCards($products->map(function ($product) use ($pricing) {
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
@@ -141,7 +142,7 @@ class ShopController extends Controller
                     'promotion_label' => $pricing->labelForProduct($product),
                     'primary_image' => $product->images->where('is_primary', true)->first()?->path ?? $product->images->first()?->path,
                 ];
-            }),
+            })),
             'current_page' => $products->currentPage(),
             'last_page' => $products->lastPage(),
             'per_page' => $products->perPage(),
@@ -257,7 +258,7 @@ class ShopController extends Controller
                 'image' => $s->image,
             ])->toArray(),
             'products' => [
-                'data' => $products->map($formatProduct)->toArray(),
+                'data' => app(FlashSalePricing::class)->applyToCards($products->map($formatProduct)),
                 'current_page' => $products->currentPage(),
                 'last_page' => $products->lastPage(),
                 'total' => $products->total(),
@@ -486,8 +487,8 @@ class ShopController extends Controller
             // Au premier niveau : c'est là que la fiche produit les lit. En vente
             // flash, le produit n'entre dans aucun lot : rien à annoncer.
             'promotions' => $flashSale ? [] : app(BundlePricingService::class)->forProduct($product),
-            'related_products' => $relatedProducts->map($formatSmallProduct),
-            'upsell_products' => $upsellProducts->map($formatSmallProduct),
+            'related_products' => $flashPricing->applyToCards($relatedProducts->map($formatSmallProduct)),
+            'upsell_products' => $flashPricing->applyToCards($upsellProducts->map($formatSmallProduct)),
             'whatsapp_number' => $whatsappNumber,
         ]);
     }

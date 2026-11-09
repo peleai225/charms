@@ -54,6 +54,36 @@ class FlashSalePricing
         return $best;
     }
 
+    /**
+     * Cartes produit des listes (boutique, catégorie, accueil, favoris…) : un produit couvert par
+     * une vente en cours affiche le prix que le panier facturera. price = prix flash,
+     * compare_price = prix normal (le badge « -X % » en découle), pas d'étiquette d'offre par lot
+     * (les lignes flash n'en profitent pas).
+     *
+     * @param  iterable<array>  $cards  cartes avec au moins id et price (prix normal)
+     * @return array<int, array>
+     */
+    public function applyToCards(iterable $cards): array
+    {
+        $cards = collect($cards)->map(fn ($card) => (array) $card)->values();
+        $best = $this->bestSales($cards->pluck('id')->all());
+
+        return $cards->map(function (array $card) use ($best) {
+            $sale = $best[$card['id']] ?? null;
+            if (! $sale) {
+                return $card;
+            }
+
+            $regular = (float) $card['price'];
+
+            return array_merge($card, [
+                'price' => $sale->priceFor($regular),
+                'compare_price' => $regular,
+                'promotion_label' => null,
+            ]);
+        })->all();
+    }
+
     public function saleFor(Product $product): ?FlashSale
     {
         return $this->bestSales([$product->id])[$product->id] ?? null;

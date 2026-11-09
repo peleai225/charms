@@ -43,7 +43,9 @@ class PosService
                     ...$this->priceData($product),
                     'stock' => $product->stock_quantity,
                     'image' => $product->primary_image_url,
-                    'has_variants' => $product->variants()->count() > 0,
+                    // Étiquette du produit « parent » : la caisse fait choisir la taille / couleur
+                    'has_variants' => ($variants = $this->variantChoices($product)) !== [],
+                    'variants' => $variants,
                 ],
             ];
         }
@@ -106,6 +108,37 @@ class PosService
         session(['pos_cart' => $cart]);
 
         return $this->getCartSummary();
+    }
+
+    /**
+     * Variantes vendables d'un produit (tailles, couleurs…), avec le prix facturé maintenant.
+     * Vide si le produit se vend sans variante.
+     *
+     * @return array<int, array{variant_id: int, name: string, sku: ?string, price: int|float, price_formatted: string, regular_price: int|float, stock: int}>
+     */
+    public function variantChoices(Product $product): array
+    {
+        $variants = $product->variants()->where('is_active', true)->orderBy('id')->get();
+        if ($variants->isEmpty()) {
+            return [];
+        }
+
+        $sale = $this->flash->saleFor($product);
+
+        return $variants->map(function (ProductVariant $variant) use ($product, $sale) {
+            $regular = $this->flash->regularPrice($product, $variant);
+            $price = $sale ? $sale->priceFor($regular) : $regular;
+
+            return [
+                'variant_id' => $variant->id,
+                'name' => $variant->name,
+                'sku' => $variant->sku,
+                'price' => $this->amount($price),
+                'price_formatted' => format_price($price),
+                'regular_price' => $this->amount($regular),
+                'stock' => (int) $variant->stock_quantity,
+            ];
+        })->values()->all();
     }
 
     /**

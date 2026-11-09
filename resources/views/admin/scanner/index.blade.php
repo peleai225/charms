@@ -182,12 +182,7 @@
                     </p>
                 </div>
                 <div class="text-right flex-shrink-0">
-                    <p class="text-lg font-bold" :class="lastScanned?.flash ? 'text-red-600' : 'text-slate-900'" x-text="lastScanned?.price_formatted"></p>
-                    {{-- Vente flash en cours : prix normal barré + remise --}}
-                    <p x-show="lastScanned?.flash" class="text-xs text-slate-400">
-                        <span class="line-through" x-text="formatPrice(lastScanned?.regular_price)"></span>
-                        <span class="ml-1 font-semibold text-red-600" x-text="'Vente flash -' + lastScanned?.flash?.discount_percent + ' %'"></span>
-                    </p>
+                    <p class="text-lg font-bold text-slate-900" x-text="lastScanned?.price_formatted"></p>
                     <span x-show="mode === 'cart'"
                           class="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
                         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -355,16 +350,7 @@
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-semibold text-slate-900 truncate leading-tight" x-text="item.name"></p>
                         <p x-show="item.variant_name" class="text-xs text-orange-600 font-medium leading-tight mt-0.5" x-text="item.variant_name"></p>
-                        <p class="text-xs text-slate-400 mt-0.5">
-                            <span x-text="formatPrice(item.price) + ' / u'"></span>
-                            {{-- Vente flash : prix normal barré, recalculé à l'encaissement --}}
-                            <template x-if="item.flash_label">
-                                <span>
-                                    <span class="line-through ml-1" x-text="formatPrice(item.regular_price)"></span>
-                                    <span class="block font-semibold text-red-600" x-text="item.flash_label"></span>
-                                </span>
-                            </template>
-                        </p>
+                        <p class="text-xs text-slate-400 mt-0.5" x-text="formatPrice(item.price) + ' / u'"></p>
                     </div>
                     <div class="flex flex-col items-end justify-between gap-1 flex-shrink-0">
                         <div class="flex items-center gap-1.5">

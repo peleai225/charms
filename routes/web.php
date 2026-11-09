@@ -289,11 +289,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/scanner', [\App\Http\Controllers\Admin\ScannerController::class, 'index'])->name('scanner.index');
         Route::post('/scanner/scan', [\App\Http\Controllers\Admin\ScannerController::class, 'scan'])->name('scanner.scan');
         Route::get('/scanner/cart', [\App\Http\Controllers\Admin\ScannerController::class, 'getCart'])->name('scanner.cart');
-        Route::post('/scanner/cart/add', [\App\Http\Controllers\Admin\ScannerController::class, 'addToCart'])->name('scanner.cart.add');
-        Route::patch('/scanner/cart/{key}', [\App\Http\Controllers\Admin\ScannerController::class, 'updateCartItem'])->name('scanner.cart.update');
-        Route::delete('/scanner/cart/{key}', [\App\Http\Controllers\Admin\ScannerController::class, 'removeCartItem'])->name('scanner.cart.remove');
-        Route::delete('/scanner/cart', [\App\Http\Controllers\Admin\ScannerController::class, 'clearCart'])->name('scanner.cart.clear');
-        Route::post('/scanner/checkout', [\App\Http\Controllers\Admin\ScannerController::class, 'checkout'])->name('scanner.checkout');
+        // Panier de caisse en session : les requêtes d'une même caisse passent l'une après l'autre (block),
+        // sinon deux scans coup sur coup s'écrasent et un article disparaît.
+        Route::post('/scanner/cart/add', [\App\Http\Controllers\Admin\ScannerController::class, 'addToCart'])->name('scanner.cart.add')->block(10, 10);
+        Route::patch('/scanner/cart/{key}', [\App\Http\Controllers\Admin\ScannerController::class, 'updateCartItem'])->name('scanner.cart.update')->block(10, 10);
+        Route::delete('/scanner/cart/{key}', [\App\Http\Controllers\Admin\ScannerController::class, 'removeCartItem'])->name('scanner.cart.remove')->block(10, 10);
+        Route::delete('/scanner/cart', [\App\Http\Controllers\Admin\ScannerController::class, 'clearCart'])->name('scanner.cart.clear')->block(10, 10);
+        Route::post('/scanner/checkout', [\App\Http\Controllers\Admin\ScannerController::class, 'checkout'])->name('scanner.checkout')->block(10, 10);
         Route::get('/scanner/receipt/{order}', [\App\Http\Controllers\Admin\ScannerController::class, 'receipt'])->name('scanner.receipt');
         Route::get('/scanner/receipt/{order}/thermal', [\App\Http\Controllers\Admin\ScannerController::class, 'thermalReceipt'])->name('scanner.receipt.thermal');
         Route::get('/scanner/receipt/{order}/text', [\App\Http\Controllers\Admin\ScannerController::class, 'textReceipt'])->name('scanner.receipt.text');

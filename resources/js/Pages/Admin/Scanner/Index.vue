@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import VariantPicker from '@/Components/Admin/Scanner/VariantPicker.vue'
 
 const props = defineProps({
     receiptAutoPrint: Boolean,
@@ -80,6 +81,8 @@ async function scanCode(code) {
             return
         }
         lastScanned.value = data.data
+        // Étiquette de la taille scannée alors que la fenêtre de choix est ouverte : elle n'a plus lieu d'être
+        if (data.type === 'variant') variantPicker.value = null
         flash('ok')
         const now = new Date()
         scanHistory.value.unshift({
@@ -91,15 +94,46 @@ async function scanCode(code) {
         })
         if (scanHistory.value.length > 30) scanHistory.value.pop()
 
+        // Étiquette « parent » d'un produit à tailles / couleurs : faire choisir la variante vendue
+        if (mode.value === 'cart' && data.type === 'product' && data.data.has_variants) {
+            openVariantPicker(data.data.name, data.data.id, data.data.variants)
+            return
+        }
         if (mode.value === 'cart') await addToCart(data.data)
         else await processStockMovement(data.data)
     } catch { error.value = 'Erreur de connexion' }
 }
 
+// Les scans passent un par un : deux codes bipés coup sur coup ne se croisent pas
+// (le serveur verrouille aussi le panier de caisse, cf. ->block() sur les routes)
+let scanQueue = Promise.resolve()
+function queueScan(code) {
+    const value = (code ?? '').trim()
+    if (!value) return
+    scanQueue = scanQueue.then(() => scanCode(value)).catch(() => {})
+}
+
 function handleScanEnter(e) {
     const val = (e.target.value ?? '').trim()
     e.target.value = ''
-    if (val) scanCode(val)
+    if (val) queueScan(val)
+}
+
+// ── Choix de la taille / couleur ──────────────────────────────────────────────
+const variantPicker = ref(null)
+function openVariantPicker(name, productId, variants) {
+    if (variants?.length) variantPicker.value = { name, product_id: productId, variants }
+}
+async function chooseVariant(variant) {
+    const productId = variantPicker.value?.product_id
+    variantPicker.value = null
+    if (productId) await addToCart({ product_id: productId, variant_id: variant.variant_id })
+    flash('ok')
+    refocusScan()
+}
+function closeVariantPicker() {
+    variantPicker.value = null
+    refocusScan()
 }
 
 // ── Recherche manuelle ─────────────────────────────────────────────────────────
@@ -145,6 +179,10 @@ async function addSearchResultToCart(result) {
             searchQuery.value   = ''
             searchResults.value = []
             flash('ok')
+        } else if (data.variants?.length) {
+            searchQuery.value   = ''
+            searchResults.value = []
+            openVariantPicker(result.name, result.id, data.variants)
         } else {
             error.value = data.message ?? 'Erreur ajout'
         }
@@ -165,7 +203,9 @@ async function addToCart(product) {
         })
         const data = await r.json()
         if (data.success) { cart.value = data.cart; recalcQuickAmounts() }
-    } catch { /* silent */ }
+        else if (data.variants?.length) openVariantPicker(product.name, product.product_id ?? product.id, data.variants)
+        else error.value = data.message ?? 'Erreur ajout'
+    } catch { error.value = 'Erreur de connexion' }
 }
 
 async function updateQuantity(key, quantity) {
@@ -284,7 +324,7 @@ async function openCamera() {
         if (window.ZXing) {
             codeReader = new ZXing.BrowserMultiFormatReader()
             codeReader.decodeFromVideoDevice(null, 'camera-preview', (result) => {
-                if (result) { scanCode(result.getText()); closeCamera() }
+                if (result) { queueScan(result.getText()); closeCamera() }
             })
         }
     } catch { error.value = "Impossible d'accéder à la caméra"; showCamera.value = false }
@@ -415,7 +455,12 @@ onUnmounted(() => {
                         </p>
                     </div>
                     <div class="text-right flex-shrink-0">
-                        <p class="text-lg font-bold text-slate-900">{{ lastScanned.price_formatted }}</p>
+                        <p class="text-lg font-bold" :class="lastScanned.flash ? 'text-red-600' : 'text-slate-900'">{{ lastScanned.price_formatted }}</p>
+                        <!-- Vente flash en cours : prix normal barré + remise -->
+                        <p v-if="lastScanned.flash" class="text-xs text-slate-400">
+                            <span class="line-through">{{ formatPrice(lastScanned.regular_price) }}</span>
+                            <span class="ml-1 font-semibold text-red-600">Vente flash -{{ lastScanned.flash.discount_percent }} %</span>
+                        </p>
                         <span v-if="mode === 'cart'" class="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full">Ajouté</span>
                         <span v-else-if="mode === 'stock_in'" class="inline-block mt-1 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">+1 stock</span>
                         <span v-else class="inline-block mt-1 px-2 py-0.5 bg-red-100 text-red-700 text-xs font-semibold rounded-full">-1 stock</span>
@@ -567,7 +612,14 @@ onUnmounted(() => {
                 <div class="flex-1 min-w-0">
                     <p class="text-sm font-semibold text-slate-900 truncate leading-tight">{{ item.name }}</p>
                     <p v-if="item.variant_name" class="text-xs text-blue-600 font-medium leading-tight mt-0.5">{{ item.variant_name }}</p>
-                    <p class="text-xs text-slate-400 mt-0.5">{{ formatPrice(item.price) }} / u</p>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                        {{ formatPrice(item.price) }} / u
+                        <!-- Vente flash : prix normal barré (recalculé à l'encaissement) -->
+                        <template v-if="item.flash_label">
+                            <span class="line-through ml-1">{{ formatPrice(item.regular_price) }}</span>
+                            <span class="block font-semibold text-red-600">{{ item.flash_label }}</span>
+                        </template>
+                    </p>
                 </div>
                 <div class="flex flex-col items-end justify-between gap-1 flex-shrink-0">
                     <div class="flex items-center gap-1.5">
@@ -783,6 +835,9 @@ onUnmounted(() => {
             </div>
         </Transition>
     </Teleport>
+
+    <!-- MODAL — Choix de la taille / couleur -->
+    <VariantPicker v-if="variantPicker" :picker="variantPicker" @choose="chooseVariant" @close="closeVariantPicker" />
 
 </div>
 </template>

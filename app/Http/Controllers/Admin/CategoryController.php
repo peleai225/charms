@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Category;
+use App\Support\CategoryIcons;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class CategoryController extends Controller
@@ -28,6 +30,7 @@ class CategoryController extends Controller
             'name' => $c->name,
             'slug' => $c->slug,
             'image' => $c->image,
+            'icon' => $c->icon,
             'is_active' => $c->is_active,
             'is_featured' => $c->is_featured,
             'parent_id' => $c->parent_id,
@@ -55,6 +58,10 @@ class CategoryController extends Controller
         return Inertia::render('Admin/Categories/Index', [
             'categories' => $allFlat,
             'tree' => $treeData,
+            // Icônes proposées dans le formulaire : la même liste fermée que la validation
+            'icon_options' => collect(CategoryIcons::ICONS)
+                ->map(fn ($label, $key) => ['key' => $key, 'label' => $label])
+                ->values(),
         ]);
     }
 
@@ -71,6 +78,7 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
             'parent_id' => 'nullable|exists:categories,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'icon' => ['nullable', 'string', Rule::in(CategoryIcons::keys())],
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'order' => 'nullable|integer|min:0',
@@ -142,6 +150,7 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
             'parent_id' => 'nullable|exists:categories,id',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'icon' => ['nullable', 'string', Rule::in(CategoryIcons::keys())],
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'order' => 'nullable|integer|min:0',
@@ -160,8 +169,11 @@ class CategoryController extends Controller
         $validated['is_active'] = $request->boolean('is_active');
         $validated['is_featured'] = $request->boolean('is_featured');
 
+        // Parent non envoyé : il reste inchangé (et pas d'erreur 500 sur la clé absente)
+        $parentId = $validated['parent_id'] ?? null;
+
         // Empêcher de se définir comme son propre parent
-        if ($validated['parent_id'] == $category->id) {
+        if ($parentId == $category->id) {
             return redirect()
                 ->route('admin.categories.index', ['open_modal' => 'edit', 'category_id' => $category->id])
                 ->with('error', 'Une catégorie ne peut pas être son propre parent.')
@@ -169,7 +181,7 @@ class CategoryController extends Controller
         }
 
         // Empêcher de choisir une de ses sous-catégories comme parent (boucle infinie)
-        if ($validated['parent_id'] && in_array((int) $validated['parent_id'], $category->getAllChildrenIds())) {
+        if ($parentId && in_array((int) $parentId, $category->getAllChildrenIds())) {
             return redirect()
                 ->route('admin.categories.index', ['open_modal' => 'edit', 'category_id' => $category->id])
                 ->with('error', 'Une catégorie ne peut pas avoir une de ses sous-catégories comme parent.')

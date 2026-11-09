@@ -7,6 +7,7 @@ use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\BundlePricingService;
+use App\Services\FlashSalePricing;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -127,7 +128,8 @@ class ShopController extends Controller
 
         // Format data for Inertia
         $productsData = [
-            'data' => $products->map(function ($product) use ($pricing) {
+            // Prix flash en cours : le même que celui facturé au panier
+            'data' => app(FlashSalePricing::class)->applyToCards($products->map(function ($product) use ($pricing) {
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
@@ -140,7 +142,7 @@ class ShopController extends Controller
                     'promotion_label' => $pricing->labelForProduct($product),
                     'primary_image' => $product->images->where('is_primary', true)->first()?->path ?? $product->images->first()?->path,
                 ];
-            }),
+            })),
             'current_page' => $products->currentPage(),
             'last_page' => $products->lastPage(),
             'per_page' => $products->perPage(),
@@ -256,7 +258,7 @@ class ShopController extends Controller
                 'image' => $s->image,
             ])->toArray(),
             'products' => [
-                'data' => $products->map($formatProduct)->toArray(),
+                'data' => app(FlashSalePricing::class)->applyToCards($products->map($formatProduct)),
                 'current_page' => $products->currentPage(),
                 'last_page' => $products->lastPage(),
                 'total' => $products->total(),
@@ -373,17 +375,25 @@ class ShopController extends Controller
                 ->toArray()
             : [];
 
+        // Vente flash en cours : price est le prix facturé au panier, regular_price
+        // le prix normal à barrer. Même règle que le panier (FlashSalePricing).
+        $flashPricing = app(FlashSalePricing::class);
+        $flashSale = $flashPricing->saleFor($product);
+        $chargedPrice = fn (float $regular) => $flashSale ? $flashSale->priceFor($regular) : $regular;
+
         // Format variants
-        $variantsData = $product->variants->map(function ($variant) use ($secondaryAttribute, $visualAttributeId) {
+        $variantsData = $product->variants->map(function ($variant) use ($secondaryAttribute, $visualAttributeId, $flashPricing, $product, $chargedPrice) {
             $colorAttr = $visualAttributeId ? $variant->attributeValues->first(fn ($av) => (int) $av->attribute_id === (int) $visualAttributeId) : null;
             $secondaryAttr = $secondaryAttribute
                 ? $variant->attributeValues->firstWhere(fn ($av) => $av->attribute?->id === $secondaryAttribute->id)
                 : null;
+            $regular = $flashPricing->regularPrice($product, $variant);
 
             return [
                 'id' => $variant->id,
                 'sku' => $variant->sku,
-                'price' => $variant->sale_price ?? $variant->product->sale_price,
+                'price' => $chargedPrice($regular),
+                'regular_price' => $regular,
                 'stock' => $variant->stock_quantity,
                 'color_id' => $colorAttr?->id,
                 'secondary_id' => $secondaryAttr?->id,
@@ -427,8 +437,14 @@ class ShopController extends Controller
             'name' => $product->name,
             'slug' => $product->slug,
             'sku' => $product->sku,
-            'price' => $product->sale_price,
+            'price' => $chargedPrice($flashPricing->regularPrice($product)),
+            'regular_price' => $flashPricing->regularPrice($product),
             'compare_price' => $product->compare_price,
+            'flash_sale' => $flashSale ? [
+                'name' => $flashSale->name,
+                'discount_percent' => $flashSale->discount_percent,
+                'ends_at' => $flashSale->ends_at->toIso8601String(),
+            ] : null,
             'stock' => $product->has_variants ? $product->variants->sum('stock_quantity') : $product->stock_quantity,
             'allow_backorder' => (bool) $product->allow_backorder,
             'short_description' => $product->short_description,
@@ -468,10 +484,11 @@ class ShopController extends Controller
 
         return Inertia::render('Shop/Product', [
             'product' => $productData,
-            // Au premier niveau : c'est là que la fiche produit les lit
-            'promotions' => app(BundlePricingService::class)->forProduct($product),
-            'related_products' => $relatedProducts->map($formatSmallProduct),
-            'upsell_products' => $upsellProducts->map($formatSmallProduct),
+            // Au premier niveau : c'est là que la fiche produit les lit. En vente
+            // flash, le produit n'entre dans aucun lot : rien à annoncer.
+            'promotions' => $flashSale ? [] : app(BundlePricingService::class)->forProduct($product),
+            'related_products' => $flashPricing->applyToCards($relatedProducts->map($formatSmallProduct)),
+            'upsell_products' => $flashPricing->applyToCards($upsellProducts->map($formatSmallProduct)),
             'whatsapp_number' => $whatsappNumber,
         ]);
     }

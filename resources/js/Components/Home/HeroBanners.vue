@@ -6,11 +6,14 @@ import PromoDeadline from '@/Components/Promo/PromoDeadline.vue'
 
 // Grande bannière de l'accueil. L'image s'affiche en entier, sans rien par-dessus quand elle porte
 // déjà son message (titre vide) ; toute la bannière mène au lien. La fin de l'offre est dans une bande dessous.
+// framed : sur ordinateur, la bannière est une colonne de la grille du haut de l'accueil (coins arrondis,
+// image centrée sur fond neutre si elle est moins haute que les colonnes voisines). Rien ne change sur téléphone.
 const props = defineProps({
     banners: { type: Array, default: () => [] },
     siteName: { type: String, default: '' },
     featuredProducts: { type: Array, default: () => [] },
     whatsappUrl: { type: String, default: null },
+    framed: { type: Boolean, default: false },
 })
 
 const index = ref(0)
@@ -35,7 +38,8 @@ const imageUrl = (path) => (path.startsWith('http') ? path : `/storage/${path}`)
 </script>
 
 <template>
-    <section v-if="banners.length" class="bg-white">
+    <section v-if="banners.length" class="bg-white"
+        :class="framed ? 'lg:flex lg:h-full lg:flex-col lg:justify-center lg:overflow-hidden lg:rounded-xl lg:bg-slate-100' : ''">
         <div v-for="(b, i) in banners" v-show="index === i" :key="b.id">
             <component :is="b.link ? 'a' : 'div'" :href="b.link || undefined"
                 class="relative block" :class="!b.image && !b.background_color ? 'bg-primary-600 text-primary-contrast' : ''"
@@ -84,8 +88,8 @@ const imageUrl = (path) => (path.startsWith('http') ? path : `/storage/${path}`)
     </section>
 
     <!-- Aucune bannière : accueil simple -->
-    <section v-else class="bg-primary-950">
-        <div class="container mx-auto px-4 py-12 md:py-16 flex flex-col lg:flex-row items-center gap-10">
+    <section v-else class="bg-primary-950" :class="framed ? 'lg:flex lg:h-full lg:items-center lg:overflow-hidden lg:rounded-xl' : ''">
+        <div class="container mx-auto px-4 py-12 md:py-16 flex flex-col lg:flex-row items-center gap-10" :class="framed ? 'lg:px-10' : ''">
             <div class="flex-1 max-w-lg">
                 <h1 class="text-3xl md:text-4xl font-bold text-white leading-tight mb-4">Bienvenue sur {{ siteName }}</h1>
                 <p class="text-white/70 mb-8">Découvrez notre sélection de produits.</p>
@@ -100,7 +104,8 @@ const imageUrl = (path) => (path.startsWith('http') ? path : `/storage/${path}`)
                     </a>
                 </div>
             </div>
-            <div v-if="featuredProducts.length >= 6" class="hidden lg:grid grid-cols-3 gap-2 w-[380px] h-[320px] rounded-xl overflow-hidden">
+            <div v-if="featuredProducts.length >= 6" class="hidden grid-cols-3 gap-2 rounded-xl overflow-hidden"
+                :class="framed ? '2xl:grid w-[300px] h-[250px] shrink-0' : 'lg:grid w-[380px] h-[320px]'">
                 <Link v-for="p in featuredProducts.slice(0, 6)" :key="p.id" :href="`/produit/${p.slug}`" class="relative bg-slate-700">
                     <img v-if="p.primary_image" :src="imageUrl(p.primary_image)" :alt="p.name" class="absolute inset-0 w-full h-full object-cover">
                 </Link>

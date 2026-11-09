@@ -335,6 +335,8 @@ class CustomerAuthController extends Controller
                         'product_variant_id' => $item->product_variant_id,
                         'quantity' => $item->quantity,
                         'unit_price' => $item->unit_price,
+                        // Sans la marque, un prix flash survivrait à la fin de la vente
+                        'flash_sale_id' => $item->flash_sale_id,
                     ]);
                 }
             }

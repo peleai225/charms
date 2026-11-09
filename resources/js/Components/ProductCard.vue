@@ -4,7 +4,7 @@ import { useHelpers } from '@/Composables/useHelpers';
 import { useCartStore } from '@/Stores/cart';
 import { useNotificationStore } from '@/Stores/notifications';
 import { ref, computed, onMounted } from 'vue';
-import { Heart, Search, ShoppingCart, SlidersHorizontal, Star, Check, Image } from 'lucide-vue-next'
+import { Heart, ShoppingCart, Star, Check, Image } from 'lucide-vue-next'
 
 const props = defineProps({
     product: Object,
@@ -45,6 +45,9 @@ const badge = computed(() => {
     if (props.product.is_new) return { text: 'Nouveau', class: 'bg-primary-50 text-primary-800 border border-primary-200' };
     return null;
 });
+
+// Deuxième photo montrée au survol, s'il y en a une
+const secondaryImage = computed(() => props.product.secondary_image || props.product.images?.[1] || null);
 
 const toggleWishlist = async (e) => {
     e.preventDefault();
@@ -108,145 +111,132 @@ const stars = computed(() => {
 </script>
 
 <template>
-    <div class="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 border border-transparent hover:border-slate-100">
+    <div class="group flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition-[border-color,box-shadow] duration-200 hover:border-slate-300 hover:shadow-md">
 
-        <!-- Zone image -->
-        <Link :href="`/produit/${product.slug}`" class="block relative overflow-hidden bg-slate-50" style="aspect-ratio: 1/1">
+        <!-- Photo, étiquette, favoris et ajout au panier (boutons hors du lien : pas d'éléments interactifs imbriqués) -->
+        <!-- Cadre carré fixe : une photo en portrait ne doit pas allonger la carte -->
+        <div class="relative aspect-square overflow-hidden bg-slate-50">
+            <Link :href="`/produit/${product.slug}`" tabindex="-1" class="absolute inset-0 block">
+                <img
+                    v-if="product.primary_image"
+                    :src="`/storage/${product.primary_image}`"
+                    :alt="product.name"
+                    class="h-full w-full object-cover"
+                    :class="{ 'transition-opacity duration-200 group-hover:opacity-0': secondaryImage }"
+                    loading="lazy"
+                />
+                <img
+                    v-if="product.primary_image && secondaryImage"
+                    :src="`/storage/${secondaryImage}`"
+                    :alt="`${product.name} survol`"
+                    class="absolute inset-0 h-full w-full object-cover opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                    loading="lazy"
+                />
+                <span v-if="!product.primary_image" class="flex h-full w-full items-center justify-center">
+                    <Image class="h-14 w-14 text-slate-200" aria-hidden="true" />
+                </span>
+            </Link>
 
-            <!-- Image produit principal -->
-            <img
-                v-if="product.primary_image"
-                :src="`/storage/${product.primary_image}`"
-                :alt="product.name"
-                class="w-full h-full object-cover group-hover:scale-105 transition-all duration-500"
-                :class="{ 'group-hover:opacity-0': product.secondary_image || (product.images && product.images[1]) }"
-                loading="lazy"
-            />
-            <!-- Image secondaire au hover si disponible -->
-            <img
-                v-if="product.secondary_image || (product.images && product.images[1])"
-                :src="`/storage/${product.secondary_image || product.images[1]}`"
-                :alt="`${product.name} survol`"
-                class="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
-                loading="lazy"
-            />
-            <div v-if="!product.primary_image" class="w-full h-full flex items-center justify-center">
-                <Image class="w-14 h-14 text-slate-200" />
-            </div>
-
-            <!-- Une seule étiquette, la plus utile -->
-            <span v-if="badge" class="absolute top-3 left-3 z-10 px-2 py-0.5 rounded-md text-xs font-semibold" :class="badge.class">
+            <!-- Une seule étiquette, la plus utile (à gauche : le cœur est à droite) -->
+            <span v-if="badge"
+                  class="pointer-events-none absolute left-2 top-2 max-w-[calc(100%-3.75rem)] truncate rounded-md px-2 py-0.5 text-xs font-semibold"
+                  :class="badge.class">
                 {{ badge.text }}
             </span>
 
-            <!-- 3 boutons d'action verticaux — toujours visibles sur mobile, slide sur desktop -->
-            <div class="absolute top-3 right-3 flex flex-col gap-2 z-10
-                        sm:translate-x-10 sm:opacity-0
-                        sm:group-hover:translate-x-0 sm:group-hover:opacity-100
-                        transition-all duration-300 ease-out">
-
-                <!-- Favoris -->
-                <button
-                    @click.prevent="toggleWishlist"
-                    :disabled="wishlistLoading"
-                    class="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md
-                           hover:scale-110 transition-transform duration-150 disabled:opacity-60"
-                    :title="inWishlist ? 'Retirer des favoris' : 'Ajouter aux favoris'"
-                >
-                    <Heart class="w-4 h-4 transition-colors duration-150"
-                        :class="inWishlist ? 'text-red-500' : 'text-slate-400'"
+            <!-- Favoris : zone tactile de 44 px, pastille de 36 px -->
+            <button
+                type="button"
+                @click.prevent="toggleWishlist"
+                :disabled="wishlistLoading"
+                :aria-pressed="inWishlist"
+                :aria-label="inWishlist ? `Retirer ${product.name} des favoris` : `Ajouter ${product.name} aux favoris`"
+                :title="inWishlist ? 'Retirer des favoris' : 'Ajouter aux favoris'"
+                class="absolute right-1 top-1 flex h-11 w-11 items-center justify-center rounded-full disabled:opacity-60
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+            >
+                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-slate-200">
+                    <Heart class="h-4 w-4"
+                        :class="inWishlist ? 'text-primary-600' : 'text-slate-500'"
                         :fill="inWishlist ? 'currentColor' : 'none'" />
-                </button>
+                </span>
+            </button>
 
-                <!-- Voir le produit (loupe) -->
-                <Link
-                    :href="`/produit/${product.slug}`"
-                    class="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md
-                           hover:scale-110 transition-transform duration-150"
-                    title="Voir le produit"
-                    @click.stop
-                >
-                    <Search class="w-4 h-4 text-slate-500" />
-                </Link>
+            <!-- Ajout au panier (produit simple en stock) -->
+            <button
+                v-if="isInStock && !product.has_variants"
+                type="button"
+                @click.prevent="addToCart"
+                :disabled="addingToCart"
+                :aria-label="inCart ? `${product.name} est déjà dans le panier : en ajouter un` : `Ajouter ${product.name} au panier`"
+                :title="inCart ? 'Déjà dans le panier' : 'Ajouter au panier'"
+                class="absolute bottom-2 right-2 flex h-11 w-11 items-center justify-center rounded-full bg-primary-600 text-primary-contrast shadow-sm
+                       transition-colors hover:bg-primary-700 disabled:opacity-60
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+            >
+                <svg v-if="addingToCart" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                <Check v-else-if="inCart" class="h-5 w-5" aria-hidden="true" />
+                <ShoppingCart v-else class="h-5 w-5" aria-hidden="true" />
+            </button>
 
-                <!-- Panier -->
-                <button
-                    v-if="isInStock && !product.has_variants"
-                    @click.prevent="addToCart"
-                    :disabled="addingToCart"
-                    class="w-9 h-9 rounded-full flex items-center justify-center shadow-md
-                           hover:scale-110 transition-all duration-150 disabled:opacity-60"
-                    :class="inCart ? 'bg-primary-600' : 'bg-white'"
-                    :title="inCart ? 'Déjà dans le panier' : 'Ajouter au panier'"
-                >
-                    <ShoppingCart v-if="!addingToCart" class="w-4 h-4" :class="inCart ? 'text-white' : 'text-slate-500'" />
-                    <svg v-else class="w-4 h-4 text-slate-400 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                    </svg>
-                </button>
-
-                <Link
-                    v-else-if="product.has_variants"
-                    :href="`/produit/${product.slug}`"
-                    class="w-9 h-9 bg-white rounded-full flex items-center justify-center shadow-md
-                           hover:scale-110 transition-transform duration-150"
-                    title="Choisir les options"
-                    @click.stop
-                >
-                    <SlidersHorizontal class="w-4 h-4 text-slate-500" />
-                </Link>
-            </div>
-
-        </Link>
+            <!-- Produit à déclinaisons : choisir taille, couleur… sur sa page -->
+            <Link
+                v-else-if="isInStock && product.has_variants"
+                :href="`/produit/${product.slug}`"
+                :aria-label="`Choisir les options de ${product.name}`"
+                class="absolute bottom-2 right-2 inline-flex h-11 items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-primary-700 shadow-sm
+                       transition-colors hover:border-primary-300 hover:bg-primary-50
+                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+            >
+                Choisir
+            </Link>
+        </div>
 
         <!-- Infos produit -->
-        <div class="px-3.5 py-3">
+        <div class="flex flex-1 flex-col px-3 pb-3 pt-2.5">
 
             <!-- Catégorie + étoiles -->
-            <div class="flex items-center justify-between mb-1.5">
-                <span v-if="product.category_name" class="text-[11px] text-slate-400 uppercase tracking-wide font-medium">
+            <div v-if="product.category_name || product.rating" class="mb-1 flex items-center justify-between gap-2">
+                <span v-if="product.category_name" class="truncate text-[11px] font-medium uppercase tracking-wide text-slate-400">
                     {{ product.category_name }}
                 </span>
                 <span v-else class="flex-1"></span>
 
                 <!-- Étoiles -->
-                <div v-if="product.rating" class="flex items-center gap-0.5">
+                <div v-if="product.rating" class="flex shrink-0 items-center gap-0.5">
                     <!-- Étoiles pleines -->
                     <template v-for="i in stars.full" :key="'f'+i">
-                        <Star class="w-3 h-3 text-accent-500" fill="currentColor" />
+                        <Star class="h-3 w-3 text-accent-500" fill="currentColor" />
                     </template>
                     <!-- Demi-étoile -->
-                    <svg v-if="stars.half" class="w-3 h-3 text-accent-500" viewBox="0 0 20 20">
+                    <svg v-if="stars.half" class="h-3 w-3 text-accent-500" viewBox="0 0 20 20">
                         <defs><linearGradient :id="halfId"><stop offset="50%" stop-color="currentColor"/><stop offset="50%" stop-color="#d1d5db"/></linearGradient></defs>
                         <path :fill="`url(#${halfId})`" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                     </svg>
                     <!-- Étoiles vides -->
                     <template v-for="i in stars.empty" :key="'e'+i">
-                        <Star class="w-3 h-3 text-slate-200" fill="currentColor" />
+                        <Star class="h-3 w-3 text-slate-200" fill="currentColor" />
                     </template>
-                    <span class="text-[11px] text-slate-400 ml-1 font-medium">{{ product.rating }}</span>
+                    <span class="ml-1 text-[11px] font-medium text-slate-400">{{ product.rating }}</span>
                 </div>
             </div>
 
-            <!-- Nom produit -->
-            <Link :href="`/produit/${product.slug}`" class="block text-sm font-semibold text-slate-800 hover:text-primary-600 transition-colors line-clamp-2 leading-snug mb-2">
+            <!-- Nom produit (2 lignes, hauteur réservée pour aligner les prix d'une rangée) -->
+            <Link :href="`/produit/${product.slug}`"
+                  class="mb-1.5 line-clamp-2 min-h-10 text-sm font-medium leading-5 text-slate-800 hover:text-primary-700">
                 {{ product.name }}
             </Link>
 
-            <!-- Prix -->
-            <div class="flex items-center gap-2">
-                <span class="text-base font-bold" :class="discount ? 'text-primary-600' : 'text-slate-900'">
+            <!-- Prix : prix barré à côté, ou dessous si la carte est étroite -->
+            <div class="mt-auto flex flex-wrap items-baseline gap-x-2">
+                <span class="whitespace-nowrap text-base font-bold" :class="discount ? 'text-primary-700' : 'text-slate-900'">
                     {{ formatPrice(product.price) }}
                 </span>
-                <span v-if="product.compare_price" class="text-sm text-slate-400 line-through font-normal">
+                <span v-if="discount" class="whitespace-nowrap text-xs text-slate-400 line-through">
                     {{ formatPrice(product.compare_price) }}
-                </span>
-
-                <!-- Petit indicateur "dans le panier" discret -->
-                <span v-if="inCart" class="ml-auto flex items-center gap-0.5 text-[10px] text-primary-600 font-semibold">
-                    <Check class="w-3 h-3" />
-                    Panier
                 </span>
             </div>
         </div>

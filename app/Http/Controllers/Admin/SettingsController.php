@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Support\HomeEngagements;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Artisan;
 use Inertia\Inertia;
@@ -461,6 +463,52 @@ class SettingsController extends Controller
         } catch (\Throwable $e) {
             return response()->json(['ok' => false, 'message' => $e->getMessage()], 422);
         }
+    }
+
+    /**
+     * Paramètres de l'accueil : bandeau d'engagements sous la grande bannière
+     */
+    public function home()
+    {
+        Inertia::setRootView('layouts.admin-inertia');
+
+        return Inertia::render('Admin/Settings/Index', [
+            'settings' => $this->publicSettings(),
+            'activeTab' => 'home',
+            'engagementIcons' => HomeEngagements::ICONS,
+        ]);
+    }
+
+    public function updateHome(Request $request)
+    {
+        $validated = $request->validate([
+            'engagements' => ['nullable', 'array', 'max:'.HomeEngagements::MAX],
+            'engagements.*' => ['array'],
+            'engagements.*.icon' => ['required', Rule::in(HomeEngagements::ICONS)],
+            'engagements.*.title' => ['required', 'string', 'max:'.HomeEngagements::TITLE_MAX],
+            'engagements.*.text' => ['nullable', 'string', 'max:'.HomeEngagements::TEXT_MAX],
+            'engagements.*.link' => ['nullable', 'string', 'max:255', 'regex:'.HomeEngagements::LINK_PATTERN],
+        ], [
+            'engagements.max' => 'Six engagements au maximum.',
+            'engagements.*.icon.required' => 'Choisissez une icône.',
+            'engagements.*.icon.in' => 'Choisissez une icône de la liste.',
+            'engagements.*.title.required' => 'Le titre est obligatoire.',
+            'engagements.*.title.max' => 'Le titre ne doit pas dépasser '.HomeEngagements::TITLE_MAX.' caractères.',
+            'engagements.*.text.max' => 'Le texte ne doit pas dépasser '.HomeEngagements::TEXT_MAX.' caractères.',
+            'engagements.*.link.regex' => 'Indiquez une page du site (ex : /boutique) ou une adresse web (https://…).',
+        ]);
+
+        $engagements = array_map(
+            fn (array $item) => HomeEngagements::normalize($item),
+            array_values($validated['engagements'] ?? [])
+        );
+
+        $this->setSetting(HomeEngagements::SETTING, json_encode($engagements, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        Setting::clearCache();
+
+        return back()->with('success', $engagements
+            ? 'Engagements de l\'accueil enregistrés.'
+            : 'Liste vide : l\'accueil affiche les informations automatiques de la boutique.');
     }
 
     /**

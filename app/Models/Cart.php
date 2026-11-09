@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\BundlePricingService;
+use App\Services\FlashSalePricing;
 use App\Support\CartPricing;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -44,10 +45,18 @@ class Cart extends Model
     /**
      * Tarification du panier, mémoïsée par instance. Toute mutation du panier
      * appelle forgetPricing().
+     *
+     * Les prix des ventes flash sont d'abord alignés sur les ventes en cours :
+     * une vente terminée n'est jamais facturée, au panier comme au checkout.
      */
     public function pricing(): CartPricing
     {
-        return $this->pricingCache ??= app(BundlePricingService::class)->price($this);
+        if ($this->pricingCache === null) {
+            app(FlashSalePricing::class)->syncCart($this);
+            $this->pricingCache = app(BundlePricingService::class)->price($this);
+        }
+
+        return $this->pricingCache;
     }
 
     protected function forgetPricing(): void
@@ -145,12 +154,16 @@ class Cart extends Model
 
         // Prix catalogue figé à l'ajout. Le prix de la variante prime sur celui
         // du produit, sans quoi une taille au tarif différent sortirait des
-        // fourchettes d'offres sans raison visible.
+        // fourchettes d'offres sans raison visible. Pendant une vente flash,
+        // c'est le prix flash, et la ligne garde la vente qui l'a fixé.
+        [$unitPrice, $flashSale] = app(FlashSalePricing::class)->unitPrice($product, $variant);
+
         $item = $this->items()->create([
             'product_id' => $product->id,
             'product_variant_id' => $variant?->id,
             'quantity' => $quantity,
-            'unit_price' => (float) ($variant?->sale_price ?? $product->sale_price),
+            'unit_price' => $unitPrice,
+            'flash_sale_id' => $flashSale?->id,
         ]);
 
         $this->forgetPricing();

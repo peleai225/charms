@@ -9,7 +9,11 @@ use App\Models\Product;
 use App\Models\Promotion;
 use App\Models\Review;
 use App\Models\Setting;
+use App\Services\FlashSalePricing;
 use App\Services\ShippingZones;
+use App\Services\Storefront\CategoryMenu;
+use App\Services\Storefront\FlashSaleShowcase;
+use App\Services\Storefront\PopularCategories;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -125,11 +129,13 @@ class HomeController extends Controller
         $whatsapp = \App\Models\Setting::get('social_whatsapp');
 
         $homeBanners = \App\Models\Banner::active()
-            ->whereIn('position', ['home_hero', 'home_middle', 'home_bottom'])
+            ->whereIn('position', ['home_hero', 'home_side', 'home_middle', 'home_bottom'])
             ->orderBy('order')
             ->get()
             ->groupBy('position')
             ->map(fn($group) => $group->map($mapBanner)->values()->all());
+
+        $flash = app(FlashSalePricing::class);
 
         return [
             'featured_categories' => $featuredCategories->map(fn($c) => [
@@ -140,9 +146,10 @@ class HomeController extends Controller
                 'products_count'    => $c->products_count,
                 'min_product_price' => $c->min_product_price,
             ]),
-            'featured_products' => $featuredProducts->map($formatProduct),
-            'new_products'      => $newProducts->map($formatProduct),
-            'sale_products'     => $saleProducts->map($formatProduct),
+            // Prix flash en cours : le même que celui facturé au panier
+            'featured_products' => $flash->applyToCards($featuredProducts->map($formatProduct)),
+            'new_products'      => $flash->applyToCards($newProducts->map($formatProduct)),
+            'sale_products'     => $flash->applyToCards($saleProducts->map($formatProduct)),
             'reviews'           => $reviews->map(fn($r) => [
                 'id'           => $r->id,
                 'rating'       => $r->rating,
@@ -158,17 +165,32 @@ class HomeController extends Controller
             'banners'         => $homeBanners,
             'offers'          => $this->currentOffers($formatProduct),
             'shop_facts'      => $this->shopFacts(),
+            // Blocs de l'accueil « marketplace » : chacun a son service dans App\Services\Storefront
+            'menu_categories'    => app(CategoryMenu::class)->forHome(),
+            'popular_categories' => app(PopularCategories::class)->forHome(),
+            'flash_sale'         => app(FlashSaleShowcase::class)->current($formatProduct),
         ];
     }
 
     /**
-     * Infos réelles de la boutique (livraison, paiement, contact), tirées des réglages.
-     * Rien n'est affiché pour ce que la boutique n'a pas configuré.
+     * Engagements saisis dans Admin → Paramètres → Accueil ; sinon infos réelles de la boutique
+     * (livraison, paiement, contact), tirées des réglages. Rien n'est affiché pour ce que
+     * la boutique n'a pas configuré.
      *
      * @return array<int, array{key: string, title: string, desc: string, href: ?string}>
      */
     private function shopFacts(): array
     {
+        $engagements = \App\Support\HomeEngagements::saved();
+        if ($engagements) {
+            return array_map(fn (array $e) => [
+                'key' => $e['icon'],
+                'title' => $e['title'],
+                'desc' => $e['text'] ?? '',
+                'href' => $e['link'],
+            ], $engagements);
+        }
+
         $facts = [];
 
         $zones = collect(app(ShippingZones::class)->all())->filter(fn ($z) => trim((string) ($z['name'] ?? '')) !== '');
@@ -249,7 +271,9 @@ class HomeController extends Controller
                     'category_slug' => ! $productIds && $promotion->categories->count() === 1
                         ? $promotion->categories->first()->slug
                         : null,
-                    'products'      => $products->map(fn ($p) => $formatProduct($p) + ['promotion_label' => $short])->all(),
+                    'products'      => app(FlashSalePricing::class)->applyToCards(
+                        $products->map(fn ($p) => $formatProduct($p) + ['promotion_label' => $short])
+                    ),
                 ];
             })
             ->filter()

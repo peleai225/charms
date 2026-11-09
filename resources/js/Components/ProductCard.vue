@@ -114,8 +114,9 @@ const stars = computed(() => {
     <div class="group flex h-full flex-col overflow-hidden rounded-xl border border-slate-200 bg-white transition-[border-color,box-shadow] duration-200 hover:border-slate-300 hover:shadow-md">
 
         <!-- Photo, étiquette, favoris et ajout au panier (boutons hors du lien : pas d'éléments interactifs imbriqués) -->
-        <div class="relative aspect-square bg-slate-50">
-            <Link :href="`/produit/${product.slug}`" tabindex="-1" class="block h-full w-full">
+        <!-- Cadre carré fixe : une photo en portrait ne doit pas allonger la carte -->
+        <div class="relative aspect-square overflow-hidden bg-slate-50">
+            <Link :href="`/produit/${product.slug}`" tabindex="-1" class="absolute inset-0 block">
                 <img
                     v-if="product.primary_image"
                     :src="`/storage/${product.primary_image}`"

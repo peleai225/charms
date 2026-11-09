@@ -55,6 +55,19 @@ class ScannerController extends Controller
             'quantity' => 'integer|min:1',
         ]);
 
+        // Produit à tailles / couleurs sans variante choisie : on ne l'ajoute pas (le stock décompté
+        // serait celui du produit et non de la taille vendue) ; la caisse propose les variantes.
+        if (! $request->variant_id) {
+            $variants = $this->pos->variantChoices(\App\Models\Product::findOrFail($request->product_id));
+            if ($variants) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ce produit existe en plusieurs tailles ou couleurs : choisissez celle vendue ou scannez son étiquette.',
+                    'variants' => $variants,
+                ], 422);
+            }
+        }
+
         $cart = $this->pos->addToCart(
             $request->product_id,
             $request->variant_id,

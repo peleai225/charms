@@ -11,8 +11,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Caisse en magasin. Les ventes flash en cours s'appliquent comme sur le site (FlashSalePricing) :
+ * chaque ligne garde son prix normal, et le prix facturé est recalculé à chaque lecture du panier
+ * et à l'encaissement, pour qu'une vente terminée ne soit jamais facturée au prix flash.
+ */
 class PosService
 {
+    public function __construct(private readonly FlashSalePricing $flash) {}
+
     /**
      * Rechercher un produit ou variante par code-barres / SKU.
      *
@@ -33,8 +40,7 @@ class PosService
                     'name' => $product->name,
                     'sku' => $product->sku,
                     'barcode' => $product->barcode,
-                    'price' => $product->sale_price,
-                    'price_formatted' => format_price($product->sale_price),
+                    ...$this->priceData($product),
                     'stock' => $product->stock_quantity,
                     'image' => $product->primary_image_url,
                     'has_variants' => $product->variants()->count() > 0,
@@ -55,8 +61,7 @@ class PosService
                     'name' => $variant->product->name,
                     'variant_name' => $variant->name,
                     'sku' => $variant->sku,
-                    'price' => $variant->sale_price ?? $variant->product->sale_price,
-                    'price_formatted' => format_price($variant->sale_price ?? $variant->product->sale_price),
+                    ...$this->priceData($variant->product, $variant),
                     'stock' => $variant->stock_quantity,
                 ],
             ];
@@ -90,7 +95,9 @@ class PosService
                 'name' => $product->name,
                 'variant_name' => $variant?->name,
                 'sku' => $variant?->sku ?? $product->sku,
-                'price' => $variant?->sale_price ?? $product->sale_price,
+                // Prix normal figé à l'ajout ; « price » (facturé) est recalculé selon les ventes flash
+                'regular_price' => $this->amount($this->flash->regularPrice($product, $variant)),
+                'price' => $this->amount($this->flash->regularPrice($product, $variant)),
                 'quantity' => $quantity,
                 'image' => $product->primary_image_url,
             ];
@@ -99,6 +106,65 @@ class PosService
         session(['pos_cart' => $cart]);
 
         return $this->getCartSummary();
+    }
+
+    /**
+     * Prix à afficher et à facturer pour un produit (ou une variante), vente flash comprise.
+     *
+     * @return array{price: int|float, price_formatted: string, regular_price: int|float, flash: ?array}
+     */
+    private function priceData(Product $product, ?ProductVariant $variant = null): array
+    {
+        [$price, $sale] = $this->flash->unitPrice($product, $variant);
+
+        return [
+            'price' => $this->amount($price),
+            'price_formatted' => format_price($price),
+            'regular_price' => $this->amount($this->flash->regularPrice($product, $variant)),
+            'flash' => $sale ? [
+                'id' => $sale->id,
+                'name' => $sale->name,
+                'discount_percent' => $sale->discount_percent,
+                'ends_at' => $sale->ends_at->toIso8601String(),
+            ] : null,
+        ];
+    }
+
+    /**
+     * Aligne les lignes du panier sur les ventes flash en cours (même règle que le panier du site) :
+     * prix flash si une vente couvre le produit maintenant, sinon prix normal.
+     */
+    private function syncFlashPrices(): array
+    {
+        $cart = session('pos_cart', []);
+        if (! $cart) {
+            return $cart;
+        }
+
+        $sales = $this->flash->bestSales(array_column($cart, 'product_id'));
+
+        foreach ($cart as $key => $item) {
+            // Panier ouvert avant cette version : le prix enregistré était le prix normal
+            $regular = (float) ($item['regular_price'] ?? $item['price']);
+            $sale = $sales[$item['product_id']] ?? null;
+
+            $cart[$key]['regular_price'] = $this->amount($regular);
+            $cart[$key]['price'] = $this->amount($sale ? $sale->priceFor($regular) : $regular);
+            $cart[$key]['flash_sale_id'] = $sale?->id;
+            $cart[$key]['flash_label'] = $sale ? "Vente flash -{$sale->discount_percent} %" : null;
+        }
+
+        session(['pos_cart' => $cart]);
+
+        return $cart;
+    }
+
+    // Les montants en F CFA sont entiers : 8000 plutôt que 8000.0 ou « 8000.00 »
+    private function amount(float|int|string $value): int|float
+    {
+        $value = (float) $value;
+
+        return floor($value) === $value ? (int) $value : $value;
     }
 
     /**
@@ -153,7 +219,7 @@ class PosService
      */
     public function getCartSummary(): array
     {
-        $cart = session('pos_cart', []);
+        $cart = $this->syncFlashPrices();
         $items = collect($cart)->values();
         $subtotal = $items->sum(fn($item) => $item['price'] * $item['quantity']);
         $count = $items->sum('quantity');
@@ -178,7 +244,8 @@ class PosService
      */
     public function checkout(array $data): array
     {
-        $cart = session('pos_cart', []);
+        // Prix facturés = ventes flash en cours au moment de l'encaissement
+        $cart = $this->syncFlashPrices();
 
         if (empty($cart)) {
             throw new \RuntimeException('Le panier est vide');

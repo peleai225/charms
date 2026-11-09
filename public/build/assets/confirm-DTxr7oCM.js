@@ -1,1 +1,0 @@
-import{P as i,i as s}from"./app-C5JKau9f.js";const a=i("confirm",()=>{const n=s(!1),r=s({});let e=null;function t(o){return r.value=o,n.value=!0,new Promise(u=>{e=u})}function l(o){n.value=!1,e&&(e(o),e=null)}return{isOpen:n,options:r,open:t,resolve:l}});export{a as u};

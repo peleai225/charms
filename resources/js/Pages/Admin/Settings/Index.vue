@@ -7,10 +7,12 @@ import TabEmails        from './Partials/TabEmails.vue'
 import TabPos           from './Partials/TabPos.vue'
 import TabNotifications from './Partials/TabNotifications.vue'
 import TabAi            from './Partials/TabAi.vue'
+import TabHome          from './Partials/TabHome.vue'
 
 const props = defineProps({
     settings:  Object,
     activeTab: { type: String, default: 'general' },
+    engagementIcons: { type: Array, default: () => [] },
 })
 
 const tab = ref(props.activeTab)
@@ -23,6 +25,7 @@ const tabs = [
     { key: 'pos',           label: 'Caisse / Impression' },
     { key: 'notifications', label: 'Notifications' },
     { key: 'ai',            label: 'IA' },
+    { key: 'home',          label: 'Accueil' },
 ]
 </script>
 
@@ -55,6 +58,7 @@ const tabs = [
         <TabPos           v-show="tab === 'pos'"           :settings="settings" />
         <TabNotifications v-show="tab === 'notifications'" :settings="settings" />
         <TabAi            v-show="tab === 'ai'"            :settings="settings" />
+        <TabHome          v-show="tab === 'home'"          :settings="settings" :icons="engagementIcons" />
 
     </div>
 </template>

@@ -86,6 +86,7 @@ Route::post('/favoris/{product}/toggle', [App\Http\Controllers\Front\WishlistCon
 // Catalogue
 Route::get('/boutique', [App\Http\Controllers\Front\ShopController::class, 'index'])->name('shop.index');
 Route::get('/ventes-flash', [App\Http\Controllers\Front\FlashSaleController::class, 'index'])->name('flash-sales.index');
+Route::get('/meilleures-ventes', App\Http\Controllers\Front\BestSellersController::class)->name('shop.best-sellers');
 Route::get('/feed/meta.csv', [App\Http\Controllers\Front\FeedController::class, 'metaCsv'])->name('feed.meta');
 Route::get('/feed/images/{image}.jpg', [App\Http\Controllers\Front\FeedController::class, 'imageJpeg'])->name('feed.image');
 Route::post('/recherche-photo',[App\Http\Controllers\Front\ImageSearchController::class, 'search'])->middleware('throttle:6,60')->name('shop.image-search');
@@ -462,6 +463,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/settings/ai', [\App\Http\Controllers\Admin\SettingsController::class, 'ai'])->name('settings.ai');
             Route::post('/settings/ai', [\App\Http\Controllers\Admin\SettingsController::class, 'updateAi'])->name('settings.ai.update');
             Route::post('/settings/ai/test', [\App\Http\Controllers\Admin\SettingsController::class, 'testAi'])->name('settings.ai.test');
+            Route::get('/settings/home', [\App\Http\Controllers\Admin\SettingsController::class, 'home'])->name('settings.home');
+            Route::post('/settings/home', [\App\Http\Controllers\Admin\SettingsController::class, 'updateHome'])->name('settings.home.update');
 
             // Système / Déploiement (admin uniquement)
             Route::get('/system', [\App\Http\Controllers\Admin\SystemController::class, 'index'])->name('system.index');
